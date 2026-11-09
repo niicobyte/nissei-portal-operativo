@@ -29,7 +29,7 @@ export async function sendWhapiMessage({
   channel,
   body,
 }: WhapiSendOptions): Promise<WhapiResponse> {
-  const token = process.env.WHAPI_API_TOKEN || "hTV4MQBqm4MgwEds9t9a0MITUHm6MhVj";
+  const token = process.env.WHAPI_API_TOKEN || "";
   const baseUrl = process.env.WHAPI_API_URL || "https://gate.whapi.cloud";
 
   if (!token) {

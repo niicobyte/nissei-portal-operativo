@@ -356,7 +356,6 @@ ${accText}`;
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          to: "120363426626761732@g.us",
           channel: "RECEPCION",
           body: msg,
         }),

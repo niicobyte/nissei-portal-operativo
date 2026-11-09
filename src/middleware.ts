@@ -38,8 +38,8 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const user = resolveAuthenticatedUser(req);
 
-  // 1. Protección de Endpoints de API (/api/db)
-  if (pathname.startsWith("/api/db")) {
+  // 1. Protección de Endpoints de API (/api/db y /api/whatsapp)
+  if (pathname.startsWith("/api/db") || pathname.startsWith("/api/whatsapp")) {
     const isAdminHeaderAllowed = hasValidAdminHeader(req);
 
     if (!user && !isAdminHeaderAllowed) {
@@ -51,11 +51,6 @@ export function middleware(req: NextRequest) {
         { status: 401 }
       );
     }
-    return NextResponse.next();
-  }
-
-  // Permitir envíos de notificaciones operativas vía WhatsApp
-  if (pathname.startsWith("/api/whatsapp")) {
     return NextResponse.next();
   }
 
@@ -85,5 +80,6 @@ export const config = {
     "/reparaciones/:path*",
     "/tecnicos/:path*",
     "/api/db/:path*",
+    "/api/whatsapp/:path*",
   ],
 };

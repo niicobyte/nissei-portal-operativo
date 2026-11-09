@@ -336,10 +336,9 @@ export default function NuevoIngresoRetornoPage() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        to: "120363426626761732@g.us",
         channel: "RECEPCION",
-        body: msg
-      })
+        body: msg,
+      }),
     }).catch((err) => console.error("[WHAPI ERROR]", err));
 
     setTimeout(() => {
