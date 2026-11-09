@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'Roboto Mono', monospace;
+}
+
+:root {
+  /* Hallmark Anti-AI-Slop Token System */
+  --bg-main: #f8f9fa;
+  --bg-surface: #ffffff;
+  --bg-surface-subtle: #f1f3f5;
+  --bg-surface-dim: #e9ecef;
+
+  --border-light: #e5e7eb;
+  --border-subtle: #f3f4f6;
+  --border-active: #111827;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-light: #94a3b8;
+
+  --font-roboto: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-roboto-mono: 'Roboto Mono', monospace;
+}
+
+/* Floor Rule 4: overflow-x: clip on html and body. Never hidden, never 100vw. */
+html,
+body {
+  font-family: var(--font-roboto), 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  overflow-x: clip;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Asegurar que botones, inputs, selects y textareas hereden tipografía */
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Floor Rule 6: Every interactive element has instant :focus-visible ring */
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid #0f172a;
+  outline-offset: 2px;
+}
+
+/* Tipografía tabular y mono para seriales, IDs técnicos y métricas */
+.font-mono,
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-roboto-mono), 'Roboto Mono', monospace !important;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

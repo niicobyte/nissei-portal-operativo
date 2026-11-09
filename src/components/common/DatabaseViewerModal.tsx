@@ -1,0 +1,838 @@
+"use client";
+
+import React, { useState, useEffect, useMemo } from "react";
+import {
+  Database,
+  X,
+  Search,
+  RefreshCw,
+  Download,
+  Table2,
+  CheckCircle2,
+  HardDrive,
+  Code2,
+  ChevronLeft,
+  ChevronRight,
+  Users,
+  Wrench,
+  PackageOpen,
+  Cpu,
+  Copy,
+  Check,
+} from "lucide-react";
+import { getSafeUserProfiles, getAdminAuthHeaders, UserProfile } from "@/data/authData";
+import { getStoredTickets, RecepcionTicket } from "@/data/recepcionData";
+import { getStoredReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
+import { getStoredMontajes, OrdenMontajeReal } from "@/data/montajesData";
+
+interface DatabaseViewerModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+type TableTab =
+  | "taller_reparaciones"
+  | "recepcion_tickets"
+  | "ordenes_montaje"
+  | "usuarios"
+  | "sql_schema";
+
+const SQL_SCHEMA_TEXT = `-- Base de Datos: nissei_portal (MySQL 8.0 / InnoDB / utf8mb4)
+CREATE DATABASE IF NOT EXISTS \`nissei_portal\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE \`nissei_portal\`;
+
+-- 1. Tabla de Usuarios y Perfiles Operativos
+CREATE TABLE IF NOT EXISTS usuarios (
+  id VARCHAR(50) PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL,
+  role ENUM('ADMIN', 'TECNICO', 'RECEPCION', 'MONTAJES') NOT NULL,
+  password VARCHAR(120) NOT NULL,
+  default_route VARCHAR(100) NOT NULL,
+  avatar VARCHAR(10) NOT NULL,
+  badge VARCHAR(100) NOT NULL,
+  descripcion TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. Tabla de Recepción Post-Venta (Tickets SATI)
+CREATE TABLE IF NOT EXISTS recepcion_tickets (
+  id_orden VARCHAR(50) PRIMARY KEY,
+  codigo_producto VARCHAR(80) DEFAULT '',
+  cliente VARCHAR(200) NOT NULL,
+  mensaje TEXT,
+  fecha_ingreso VARCHAR(50) NOT NULL,
+  fecha_entregada VARCHAR(50) DEFAULT NULL,
+  fecha_venta VARCHAR(50) DEFAULT NULL,
+  estado VARCHAR(80) NOT NULL,
+  tipo_componente VARCHAR(100) NOT NULL,
+  marca VARCHAR(100) NOT NULL,
+  modelo VARCHAR(200) NOT NULL,
+  serial VARCHAR(150) NOT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_recepcion_estado (estado),
+  INDEX idx_recepcion_cliente (cliente)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 3. Tabla de Taller de Reparaciones SATI
+CREATE TABLE IF NOT EXISTS taller_reparaciones (
+  id_orden VARCHAR(50) PRIMARY KEY,
+  codigo_producto VARCHAR(80) DEFAULT '',
+  cliente VARCHAR(200) NOT NULL,
+  equipo VARCHAR(255) NOT NULL,
+  marca VARCHAR(100) NOT NULL,
+  modelo VARCHAR(200) NOT NULL,
+  tipo_componente VARCHAR(100) NOT NULL,
+  serial VARCHAR(150) NOT NULL,
+  falla_reportada TEXT,
+  detalle_reparacion TEXT,
+  observaciones TEXT,
+  mensaje_sati TEXT,
+  fecha_ingreso VARCHAR(50) NOT NULL,
+  fecha_asignacion VARCHAR(50) DEFAULT NULL,
+  fecha_finalizacion VARCHAR(50) DEFAULT NULL,
+  estado ENUM('SIN_ASIGNAR', 'EN_REPARACION', 'FINALIZADA') NOT NULL DEFAULT 'SIN_ASIGNAR',
+  tecnico_asignado VARCHAR(100) DEFAULT NULL,
+  asignado_por VARCHAR(100) DEFAULT NULL,
+  dictamen_final ENUM('REPARADO', 'SIN_DEFECTO', 'NO_REPARADO') DEFAULT NULL,
+  repuestos_utilizados TEXT,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_taller_estado (estado),
+  INDEX idx_taller_tecnico (tecnico_asignado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 4. Tabla de Órdenes de Montaje de PC
+CREATE TABLE IF NOT EXISTS ordenes_montaje (
+  id VARCHAR(60) PRIMARY KEY,
+  nro_reg VARCHAR(60) NOT NULL,
+  cliente VARCHAR(200) NOT NULL,
+  fecha_facturacion VARCHAR(50) NOT NULL,
+  fecha_montaje VARCHAR(50) NOT NULL,
+  vendedor VARCHAR(150) NOT NULL,
+  canal VARCHAR(100) NOT NULL,
+  estado VARCHAR(60) NOT NULL,
+  tipo_servicio VARCHAR(60) NOT NULL,
+  cantidad_equipos INT NOT NULL DEFAULT 1,
+  tecnico VARCHAR(120) NOT NULL DEFAULT 'Sin Asignar',
+  etapa VARCHAR(60) NOT NULL DEFAULT 'PENDIENTE_PIEZAS',
+  progreso INT NOT NULL DEFAULT 15,
+  prioridad VARCHAR(40) NOT NULL DEFAULT 'NORMAL',
+  consumo_estimado VARCHAR(50) DEFAULT '450W',
+  observaciones TEXT,
+  componentes_json LONGTEXT NOT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_montaje_estado (estado),
+  INDEX idx_montaje_tecnico (tecnico)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
+
+export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerModalProps) {
+  const [activeTab, setActiveTab] = useState<TableTab>("taller_reparaciones");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 50;
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [mysqlConnected, setMysqlConnected] = useState<boolean>(false);
+  const [lastSyncTime, setLastSyncTime] = useState<string>("");
+  const [copiedSql, setCopiedSql] = useState(false);
+
+  const [reparaciones, setReparaciones] = useState<OrdenReparacion[]>([]);
+  const [recepcion, setRecepcion] = useState<RecepcionTicket[]>([]);
+  const [montajes, setMontajes] = useState<OrdenMontajeReal[]>([]);
+  const [usuarios, setUsuarios] = useState<UserProfile[]>(getSafeUserProfiles());
+
+  const loadAllData = async () => {
+    setIsLoading(true);
+    // Primero cargamos de inmediato los datos actuales sincronizados en el navegador
+    const localRep = getStoredReparaciones();
+    const localRec = getStoredTickets();
+    const localMnt = getStoredMontajes();
+    setReparaciones(localRep);
+    setRecepcion(localRec);
+    setMontajes(localMnt);
+    setUsuarios(getSafeUserProfiles());
+
+    // Luego consultamos directamente a MySQL (/api/db)
+    try {
+      const res = await fetch("/api/db", {
+        cache: "no-store",
+        headers: getAdminAuthHeaders(),
+      });
+      const json = await res.json();
+      if (json.ok) {
+        setMysqlConnected(true);
+        if (Array.isArray(json.reparaciones) && json.reparaciones.length > 0) {
+          setReparaciones(json.reparaciones);
+        }
+        if (Array.isArray(json.recepcion) && json.recepcion.length > 0) {
+          setRecepcion(json.recepcion);
+        }
+        if (Array.isArray(json.montajes) && json.montajes.length > 0) {
+          setMontajes(json.montajes);
+        }
+        if (Array.isArray(json.usuarios) && json.usuarios.length > 0) {
+          setUsuarios(json.usuarios);
+        }
+      } else {
+        setMysqlConnected(false);
+      }
+    } catch {
+      setMysqlConnected(false);
+    } finally {
+      setLastSyncTime(
+        new Date().toLocaleTimeString("es-PY", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        })
+      );
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      loadAllData();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    setPage(1);
+    setStatusFilter("ALL");
+  }, [activeTab, searchTerm]);
+
+  // Filtrado de taller_reparaciones
+  const filteredReparaciones = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return reparaciones.filter((r) => {
+      if (statusFilter !== "ALL" && r.estado !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        r.idOrden.toLowerCase().includes(q) ||
+        r.cliente.toLowerCase().includes(q) ||
+        r.equipo.toLowerCase().includes(q) ||
+        r.serial.toLowerCase().includes(q) ||
+        (r.tecnicoAsignado || "").toLowerCase().includes(q) ||
+        (r.fallaReportada || "").toLowerCase().includes(q) ||
+        (r.detalleReparacion || "").toLowerCase().includes(q) ||
+        (r.observaciones || "").toLowerCase().includes(q)
+      );
+    });
+  }, [reparaciones, searchTerm, statusFilter]);
+
+  // Filtrado de recepcion_tickets
+  const filteredRecepcion = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return recepcion.filter((t) => {
+      if (statusFilter !== "ALL" && t.estado !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        t.idOrden.toLowerCase().includes(q) ||
+        t.cliente.toLowerCase().includes(q) ||
+        t.marca.toLowerCase().includes(q) ||
+        t.modelo.toLowerCase().includes(q) ||
+        t.serial.toLowerCase().includes(q) ||
+        (t.mensaje || "").toLowerCase().includes(q) ||
+        t.tipoComponente.toLowerCase().includes(q)
+      );
+    });
+  }, [recepcion, searchTerm, statusFilter]);
+
+  // Filtrado de ordenes_montaje
+  const filteredMontajes = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return montajes.filter((m) => {
+      if (statusFilter !== "ALL" && m.etapa !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        m.id.toLowerCase().includes(q) ||
+        m.nro_reg.toLowerCase().includes(q) ||
+        m.cliente.toLowerCase().includes(q) ||
+        m.tecnico.toLowerCase().includes(q) ||
+        m.vendedor.toLowerCase().includes(q) ||
+        (m.observaciones || "").toLowerCase().includes(q)
+      );
+    });
+  }, [montajes, searchTerm, statusFilter]);
+
+  // Filtrado de usuarios
+  const filteredUsuarios = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return usuarios.filter((u) => {
+      if (!q) return true;
+      return (
+        u.id.toLowerCase().includes(q) ||
+        u.nombre.toLowerCase().includes(q) ||
+        u.role.toLowerCase().includes(q) ||
+        u.badge.toLowerCase().includes(q)
+      );
+    });
+  }, [usuarios, searchTerm]);
+
+  const handleExportJSON = () => {
+    let dataToExport: unknown = [];
+    if (activeTab === "taller_reparaciones") dataToExport = filteredReparaciones;
+    else if (activeTab === "recepcion_tickets") dataToExport = filteredRecepcion;
+    else if (activeTab === "ordenes_montaje") dataToExport = filteredMontajes;
+    else if (activeTab === "usuarios") {
+      dataToExport = filteredUsuarios.map(({ passwordHash: _ph, ...safeUser }) => ({
+        ...safeUser,
+        password: "•••••••• (SHA-256)",
+      }));
+    }
+
+    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `nissei_portal_${activeTab}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopySql = () => {
+    navigator.clipboard.writeText(SQL_SCHEMA_TEXT);
+    setCopiedSql(true);
+    setTimeout(() => setCopiedSql(false), 2000);
+  };
+
+  if (!isOpen) return null;
+
+  const currentListLength =
+    activeTab === "taller_reparaciones"
+      ? filteredReparaciones.length
+      : activeTab === "recepcion_tickets"
+      ? filteredRecepcion.length
+      : activeTab === "ordenes_montaje"
+      ? filteredMontajes.length
+      : filteredUsuarios.length;
+
+  const totalPages = Math.max(1, Math.ceil(currentListLength / PAGE_SIZE));
+  const startIndex = (page - 1) * PAGE_SIZE;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6">
+      <div className="bg-white w-full max-w-7xl h-[92vh] rounded-2xl border border-zinc-200 shadow-2xl flex flex-col overflow-hidden">
+        {/* Cabecera del Visor de Base de Datos */}
+        <div className="bg-zinc-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-800">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-emerald-400">
+              <Database className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="text-base sm:text-lg font-extrabold tracking-tight">
+                  Visor de Base de Datos MySQL
+                </h2>
+                <span className="px-2 py-0.5 text-[11px] font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300">
+                  DB: nissei_portal
+                </span>
+                {mysqlConnected ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <CheckCircle2 className="w-3 h-3" />
+                    MySQL Activo (localhost:3306)
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <HardDrive className="w-3 h-3" />
+                    Espejo Local Activo (Sincronizado con navegador · Puerto 3306 en espera)
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-zinc-400 mt-0.5 font-mono">
+                Host: localhost:3306 · Motor: InnoDB utf8mb4 · Última lectura: {lastSyncTime || "--:--"}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <button
+              type="button"
+              onClick={loadAllData}
+              disabled={isLoading}
+              className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors flex items-center gap-1.5"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
+              <span>Recargar</span>
+            </button>
+            {activeTab !== "sql_schema" && (
+              <button
+                type="button"
+                onClick={handleExportJSON}
+                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Exportar JSON</span>
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-2 rounded-lg bg-zinc-800 hover:bg-rose-600 text-zinc-300 hover:text-white transition-colors"
+              title="Cerrar visor de base de datos"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Pestañas de Tablas de la Base de Datos */}
+        <div className="bg-zinc-100 px-5 pt-3 border-b border-zinc-200 flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0">
+            <button
+              type="button"
+              onClick={() => setActiveTab("taller_reparaciones")}
+              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+                activeTab === "taller_reparaciones"
+                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
+                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+              }`}
+            >
+              <Wrench className="w-3.5 h-3.5 text-zinc-700" />
+              <span className="font-mono">taller_reparaciones</span>
+              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+                {reparaciones.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("recepcion_tickets")}
+              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+                activeTab === "recepcion_tickets"
+                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
+                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+              }`}
+            >
+              <PackageOpen className="w-3.5 h-3.5 text-zinc-700" />
+              <span className="font-mono">recepcion_tickets</span>
+              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+                {recepcion.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("ordenes_montaje")}
+              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+                activeTab === "ordenes_montaje"
+                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
+                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+              }`}
+            >
+              <Cpu className="w-3.5 h-3.5 text-zinc-700" />
+              <span className="font-mono">ordenes_montaje</span>
+              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+                {montajes.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("usuarios")}
+              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+                activeTab === "usuarios"
+                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
+                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+              }`}
+            >
+              <Users className="w-3.5 h-3.5 text-zinc-700" />
+              <span className="font-mono">usuarios</span>
+              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+                {usuarios.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("sql_schema")}
+              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+                activeTab === "sql_schema"
+                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
+                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+              }`}
+            >
+              <Code2 className="w-3.5 h-3.5 text-zinc-700" />
+              <span>Estructura SQL</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Barra de Filtros y Búsqueda */}
+        {activeTab !== "sql_schema" && (
+          <div className="px-5 py-3 bg-white border-b border-zinc-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 flex-1 max-w-xl">
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder={`Buscar en tabla ${activeTab} (orden, cliente, serie, técnico, fallo...)`}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:border-zinc-900 focus:bg-white outline-none"
+                />
+              </div>
+
+              {activeTab === "taller_reparaciones" && (
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-zinc-700 font-medium outline-none"
+                >
+                  <option value="ALL">Todos los estados</option>
+                  <option value="SIN_ASIGNAR">SIN_ASIGNAR</option>
+                  <option value="EN_REPARACION">EN_REPARACION</option>
+                  <option value="FINALIZADA">FINALIZADA</option>
+                </select>
+              )}
+
+              {activeTab === "ordenes_montaje" && (
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                  className="text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-zinc-700 font-medium outline-none"
+                >
+                  <option value="ALL">Todas las etapas</option>
+                  <option value="PENDIENTE_PIEZAS">PENDIENTE_PIEZAS</option>
+                  <option value="ARMADO_MECANICO">ARMADO_MECANICO</option>
+                  <option value="ESTRES_TERMICO">ESTRES_TERMICO</option>
+                  <option value="LISTO_ENTREGA">LISTO_ENTREGA</option>
+                </select>
+              )}
+            </div>
+
+            {/* Paginación */}
+            <div className="flex items-center justify-between sm:justify-end gap-3 text-xs text-zinc-600">
+              <span className="font-mono">
+                Mostrando{" "}
+                <strong>
+                  {currentListLength === 0 ? 0 : startIndex + 1}-
+                  {Math.min(startIndex + PAGE_SIZE, currentListLength)}
+                </strong>{" "}
+                de <strong>{currentListLength}</strong> filas
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded border border-zinc-200 disabled:opacity-40 hover:bg-zinc-100"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <span className="px-2 font-mono text-xs">
+                  Pág. {page}/{totalPages}
+                </span>
+                <button
+                  type="button"
+                  disabled={page >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  className="p-1.5 rounded border border-zinc-200 disabled:opacity-40 hover:bg-zinc-100"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Contenido Principal de la Tabla Seleccionada */}
+        <div className="flex-1 overflow-auto bg-zinc-50/50">
+          {/* 1. TABLA: taller_reparaciones */}
+          {activeTab === "taller_reparaciones" && (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+                <tr>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">id_orden</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">cliente</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">equipo</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">tipo_componente</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">serial</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">estado</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">tecnico_asignado</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">falla_reportada</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">detalle_reparacion</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">observaciones</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">dictamen_final</th>
+                  <th className="py-2.5 px-3">fecha_ingreso</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 bg-white">
+                {filteredReparaciones
+                  .slice(startIndex, startIndex + PAGE_SIZE)
+                  .map((r) => (
+                    <tr key={r.idOrden} className="hover:bg-zinc-50 transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                        #{r.idOrden}
+                      </td>
+                      <td className="py-2 px-3 font-medium text-zinc-800 border-r border-zinc-100">
+                        {r.cliente}
+                      </td>
+                      <td className="py-2 px-3 text-zinc-700 border-r border-zinc-100">
+                        {r.equipo}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {r.tipoComponente}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {r.serial}
+                      </td>
+                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                            r.estado === "FINALIZADA"
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : r.estado === "EN_REPARACION"
+                              ? "bg-amber-50 text-amber-700 border border-amber-200"
+                              : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                          }`}
+                        >
+                          {r.estado}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 font-semibold text-zinc-800 border-r border-zinc-100 whitespace-nowrap">
+                        {r.tecnicoAsignado || <span className="text-zinc-400 font-mono">NULL</span>}
+                      </td>
+                      <td className="py-2 px-3 text-zinc-700 border-r border-zinc-100 max-w-xs truncate" title={r.fallaReportada}>
+                        {r.fallaReportada || <span className="text-zinc-300 font-mono">-</span>}
+                      </td>
+                      <td className="py-2 px-3 text-emerald-800 border-r border-zinc-100 max-w-xs truncate" title={r.detalleReparacion}>
+                        {r.detalleReparacion || <span className="text-zinc-300 font-mono">-</span>}
+                      </td>
+                      <td className="py-2 px-3 text-amber-800 border-r border-zinc-100 max-w-xs truncate" title={r.observaciones}>
+                        {r.observaciones || <span className="text-zinc-300 font-mono">-</span>}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] border-r border-zinc-100 whitespace-nowrap">
+                        {r.dictamenFinal || <span className="text-zinc-400">NULL</span>}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap">
+                        {r.fechaIngreso}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* 2. TABLA: recepcion_tickets */}
+          {activeTab === "recepcion_tickets" && (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+                <tr>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">id_orden</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">codigo_producto</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">cliente</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">tipo_componente</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">marca</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">modelo</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">serial</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">estado</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">mensaje</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">fecha_ingreso</th>
+                  <th className="py-2.5 px-3">fecha_entregada</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 bg-white">
+                {filteredRecepcion
+                  .slice(startIndex, startIndex + PAGE_SIZE)
+                  .map((t) => (
+                    <tr key={t.idOrden} className="hover:bg-zinc-50 transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                        #{t.idOrden}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {t.codigoProducto || "-"}
+                      </td>
+                      <td className="py-2 px-3 font-medium text-zinc-800 border-r border-zinc-100">
+                        {t.cliente}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {t.tipoComponente}
+                      </td>
+                      <td className="py-2 px-3 text-zinc-700 border-r border-zinc-100 whitespace-nowrap">
+                        {t.marca}
+                      </td>
+                      <td className="py-2 px-3 text-zinc-700 border-r border-zinc-100">
+                        {t.modelo}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {t.serial}
+                      </td>
+                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+                          {t.estado}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-zinc-600 border-r border-zinc-100 max-w-xs truncate" title={t.mensaje}>
+                        {t.mensaje || "-"}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
+                        {t.fechaIngreso}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap">
+                        {t.fechaEntregada || <span className="text-zinc-400">NULL</span>}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* 3. TABLA: ordenes_montaje */}
+          {activeTab === "ordenes_montaje" && (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+                <tr>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">id</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">nro_reg</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">cliente</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">tipo_servicio</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">tecnico</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">etapa</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">progreso</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">estado</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">vendedor / canal</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">componentes_json</th>
+                  <th className="py-2.5 px-3">fecha_montaje</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 bg-white">
+                {filteredMontajes
+                  .slice(startIndex, startIndex + PAGE_SIZE)
+                  .map((m) => (
+                    <tr key={m.id} className="hover:bg-zinc-50 transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                        {m.id}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {m.nro_reg}
+                      </td>
+                      <td className="py-2 px-3 font-medium text-zinc-800 border-r border-zinc-100">
+                        {m.cliente}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-700 border-r border-zinc-100 whitespace-nowrap">
+                        {m.tipo_servicio} ({m.cantidadEquipos} eq.)
+                      </td>
+                      <td className="py-2 px-3 font-semibold text-zinc-800 border-r border-zinc-100 whitespace-nowrap">
+                        {m.tecnico}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-700 border-r border-zinc-100 whitespace-nowrap">
+                        {m.etapa}
+                      </td>
+                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                        {m.progreso}%
+                      </td>
+                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+                          {m.estado}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {m.vendedor} · <span className="text-zinc-400">{m.canal}</span>
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 max-w-xs truncate" title={JSON.stringify(m.componentes)}>
+                        [{m.componentes?.length || 0} piezas] {m.observaciones}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap">
+                        {m.fecha_montaje}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* 4. TABLA: usuarios */}
+          {activeTab === "usuarios" && (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+                <tr>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">id</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">avatar</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">nombre</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">role</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">password</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">default_route</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">badge</th>
+                  <th className="py-2.5 px-3">descripcion</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 bg-white">
+                {filteredUsuarios.map((u) => (
+                  <tr key={u.id} className="hover:bg-zinc-50 transition-colors">
+                    <td className="py-2.5 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100">
+                      {u.id}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono text-zinc-600 border-r border-zinc-100">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-zinc-900 text-white text-[10px] font-bold">
+                        {u.avatar}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 font-bold text-zinc-900 border-r border-zinc-100">
+                      {u.nombre}
+                    </td>
+                    <td className="py-2.5 px-3 font-mono text-[11px] border-r border-zinc-100">
+                      <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-800 font-bold">
+                        {u.role}
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3 font-mono text-emerald-700 font-bold border-r border-zinc-100">
+                      •••••••• (SHA-256)
+                    </td>
+                    <td className="py-2.5 px-3 font-mono text-zinc-600 border-r border-zinc-100">
+                      {u.defaultRoute}
+                    </td>
+                    <td className="py-2.5 px-3 text-zinc-700 border-r border-zinc-100">
+                      {u.badge}
+                    </td>
+                    <td className="py-2.5 px-3 text-zinc-600">{u.descripcion}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* 5. ESTRUCTURA SQL */}
+          {activeTab === "sql_schema" && (
+            <div className="p-6 max-w-5xl mx-auto space-y-4">
+              <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-zinc-200">
+                <div>
+                  <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
+                    <Table2 className="w-4 h-4 text-zinc-700" />
+                    <span>Esquema Oficial MySQL (`src/lib/mysql.ts`)</span>
+                  </h3>
+                  <p className="text-xs text-zinc-500 mt-0.5">
+                    Estas 4 tablas se crean y poblan automáticamente cuando el servicio MySQL está activo en `localhost:3306`.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCopySql}
+                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                >
+                  {copiedSql ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>SQL Copiado</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar Script SQL</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <pre className="p-5 rounded-xl bg-zinc-900 text-zinc-100 font-mono text-xs overflow-x-auto leading-relaxed border border-zinc-800">
+                {SQL_SCHEMA_TEXT}
+              </pre>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
