@@ -481,6 +481,13 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
     esNuevoIngreso:
       r.origen === "NUEVO_INGRESO" ||
       String(r.mensaje || "").includes("Accesorios:"),
+    esEstadoCambiadoReciente:
+      r.origen === "ESTADO_CAMBIADO" ||
+      r.origen === "RECIEN_ENTREGADO",
+    esEntregadoReciente:
+      r.origen === "RECIEN_ENTREGADO" ||
+      (r.origen === "NUEVO_INGRESO" &&
+        String(r.estado || "").toLowerCase() === "entregada"),
   }));
 }
 

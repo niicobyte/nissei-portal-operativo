@@ -13,6 +13,8 @@ export interface RecepcionTicket {
   modelo: string;
   serial: string;
   esNuevoIngreso?: boolean;
+  esEstadoCambiadoReciente?: boolean;
+  esEntregadoReciente?: boolean;
 }
 
 export const INITIAL_RECEPCION_DATA: RecepcionTicket[] = [
@@ -27303,11 +27305,20 @@ export function saveTickets(tickets: RecepcionTicket[]) {
 }
 
 const NEW_INGRESOS_STORAGE_KEY = 'nissei_recepcion_nuevos_ingresos_ids';
+const ESTADOS_CAMBIADOS_STORAGE_KEY = 'nissei_recepcion_estados_cambiados_ids';
+const ENTREGADOS_RECIENTES_STORAGE_KEY = 'nissei_recepcion_entregados_recientes_ids';
 
-export function getNuevoIngresoIds(): string[] {
+const INITIAL_STATUS_MAP = new Map<string, string>(
+  INITIAL_RECEPCION_DATA.map((t) => [
+    String(t.idOrden).trim(),
+    (t.estado || '').trim().toLowerCase(),
+  ])
+);
+
+function getStoredIds(key: string): string[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(NEW_INGRESOS_STORAGE_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.map(String) : [];
@@ -27316,24 +27327,53 @@ export function getNuevoIngresoIds(): string[] {
   }
 }
 
-function recordNuevoIngresoId(idOrden: string): void {
+function recordStoredId(key: string, idOrden: string): void {
   if (typeof window === 'undefined') return;
   try {
-    const current = getNuevoIngresoIds();
+    const current = getStoredIds(key);
     const cleanId = String(idOrden).trim();
     if (!current.includes(cleanId)) {
-      localStorage.setItem(NEW_INGRESOS_STORAGE_KEY, JSON.stringify([cleanId, ...current]));
+      localStorage.setItem(key, JSON.stringify([cleanId, ...current]));
     }
   } catch {
     // ignore storage errors
   }
 }
 
+export function getNuevoIngresoIds(): string[] {
+  return getStoredIds(NEW_INGRESOS_STORAGE_KEY);
+}
+
 export function isTicketNuevoIngreso(ticket: RecepcionTicket): boolean {
+  const cleanId = String(ticket.idOrden).trim();
   if (ticket.esNuevoIngreso) return true;
   if ((ticket.mensaje || '').includes('Accesorios:')) return true;
-  const ids = getNuevoIngresoIds();
-  return ids.includes(String(ticket.idOrden).trim());
+  if (!INITIAL_STATUS_MAP.has(cleanId)) return true;
+  return getStoredIds(NEW_INGRESOS_STORAGE_KEY).includes(cleanId);
+}
+
+export function isTicketEstadoCambiadoReciente(ticket: RecepcionTicket): boolean {
+  const cleanId = String(ticket.idOrden).trim();
+  if (ticket.esEstadoCambiadoReciente) return true;
+  if (getStoredIds(ESTADOS_CAMBIADOS_STORAGE_KEY).includes(cleanId)) return true;
+  const initialStatus = INITIAL_STATUS_MAP.get(cleanId);
+  if (initialStatus !== undefined) {
+    return initialStatus !== (ticket.estado || '').trim().toLowerCase();
+  }
+  return false;
+}
+
+export function isTicketEntregadoReciente(ticket: RecepcionTicket): boolean {
+  const cleanId = String(ticket.idOrden).trim();
+  const currentEst = (ticket.estado || '').trim().toLowerCase();
+  if (currentEst !== 'entregada') return false;
+
+  if (ticket.esEntregadoReciente) return true;
+  if (getStoredIds(ENTREGADOS_RECIENTES_STORAGE_KEY).includes(cleanId)) return true;
+
+  const initialStatus = INITIAL_STATUS_MAP.get(cleanId);
+  if (initialStatus === undefined) return true;
+  return initialStatus !== 'entregada';
 }
 
 export async function fetchTicketsFromMySQL(): Promise<RecepcionTicket[]> {
@@ -27341,14 +27381,33 @@ export async function fetchTicketsFromMySQL(): Promise<RecepcionTicket[]> {
     const res = await fetch('/api/db?module=recepcion', { cache: 'no-store' });
     const json = await res.json();
     if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
-      const localNewIds = new Set(getNuevoIngresoIds());
-      const enriched: RecepcionTicket[] = json.data.map((t: RecepcionTicket) => ({
-        ...t,
-        esNuevoIngreso:
-          Boolean(t.esNuevoIngreso) ||
-          localNewIds.has(String(t.idOrden).trim()) ||
-          (t.mensaje || '').includes('Accesorios:'),
-      }));
+      const localNewIds = new Set(getStoredIds(NEW_INGRESOS_STORAGE_KEY));
+      const localChangedIds = new Set(getStoredIds(ESTADOS_CAMBIADOS_STORAGE_KEY));
+      const localDeliveredIds = new Set(getStoredIds(ENTREGADOS_RECIENTES_STORAGE_KEY));
+
+      const enriched: RecepcionTicket[] = json.data.map((t: RecepcionTicket) => {
+        const cleanId = String(t.idOrden).trim();
+        const estLow = (t.estado || '').trim().toLowerCase();
+        const initialEst = INITIAL_STATUS_MAP.get(cleanId);
+        return {
+          ...t,
+          esNuevoIngreso:
+            Boolean(t.esNuevoIngreso) ||
+            localNewIds.has(cleanId) ||
+            !INITIAL_STATUS_MAP.has(cleanId) ||
+            (t.mensaje || '').includes('Accesorios:'),
+          esEstadoCambiadoReciente:
+            Boolean(t.esEstadoCambiadoReciente) ||
+            localChangedIds.has(cleanId) ||
+            (initialEst !== undefined && initialEst !== estLow),
+          esEntregadoReciente:
+            estLow === 'entregada' &&
+            (Boolean(t.esEntregadoReciente) ||
+              localDeliveredIds.has(cleanId) ||
+              initialEst === undefined ||
+              initialEst !== 'entregada'),
+        };
+      });
       saveTickets(enriched);
       return enriched;
     }
@@ -27359,8 +27418,16 @@ export async function fetchTicketsFromMySQL(): Promise<RecepcionTicket[]> {
 }
 
 export function addTicket(ticket: RecepcionTicket): RecepcionTicket[] {
-  const enrichedTicket: RecepcionTicket = { ...ticket, esNuevoIngreso: true };
-  recordNuevoIngresoId(enrichedTicket.idOrden);
+  const isDelivered = (ticket.estado || '').trim().toLowerCase() === 'entregada';
+  const enrichedTicket: RecepcionTicket = {
+    ...ticket,
+    esNuevoIngreso: true,
+    esEntregadoReciente: isDelivered,
+  };
+  recordStoredId(NEW_INGRESOS_STORAGE_KEY, enrichedTicket.idOrden);
+  if (isDelivered) {
+    recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, enrichedTicket.idOrden);
+  }
 
   const current = getStoredTickets();
   const updated = [enrichedTicket, ...current];
@@ -27378,8 +27445,30 @@ export function addTicket(ticket: RecepcionTicket): RecepcionTicket[] {
 }
 
 export function updateTicketStatus(idOrden: string, newStatus: string): RecepcionTicket[] {
+  const isDelivered = newStatus.trim().toLowerCase() === 'entregada';
+  recordStoredId(ESTADOS_CAMBIADOS_STORAGE_KEY, idOrden);
+  if (isDelivered) {
+    recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, idOrden);
+  }
+
+  const nowDate = new Date().toLocaleDateString('es-PY', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+
   const current = getStoredTickets();
-  const updated = current.map(t => t.idOrden === idOrden ? { ...t, estado: newStatus } : t);
+  const updated = current.map((t) =>
+    t.idOrden === idOrden
+      ? {
+          ...t,
+          estado: newStatus,
+          fechaEntregada: isDelivered ? t.fechaEntregada || nowDate : t.fechaEntregada,
+          esEstadoCambiadoReciente: true,
+          esEntregadoReciente: isDelivered ? true : t.esEntregadoReciente,
+        }
+      : t
+  );
   saveTickets(updated);
 
   if (typeof window !== 'undefined') {
@@ -27397,6 +27486,8 @@ export function resetTickets(): RecepcionTicket[] {
   if (typeof window !== 'undefined') {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_RECEPCION_DATA));
     localStorage.removeItem(NEW_INGRESOS_STORAGE_KEY);
+    localStorage.removeItem(ESTADOS_CAMBIADOS_STORAGE_KEY);
+    localStorage.removeItem(ENTREGADOS_RECIENTES_STORAGE_KEY);
     fetch('/api/db', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -27592,11 +27683,19 @@ export function procesarActualizacionCSV(
         estadoAnterior.toLowerCase() !== rawNuevoEstado.toLowerCase();
 
       if (cambioEstado) {
+        const isDelivered = rawNuevoEstado.toLowerCase() === 'entregada';
+        recordStoredId(ESTADOS_CAMBIADOS_STORAGE_KEY, rawId);
+        if (isDelivered) {
+          recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, rawId);
+        }
+
         const updatedTicket: RecepcionTicket = {
           ...actual,
           estado: rawNuevoEstado,
           fechaEntregada: fechaEntregadaCSV || actual.fechaEntregada,
           mensaje: mensajeCSV !== undefined && mensajeCSV !== '' ? mensajeCSV : actual.mensaje,
+          esEstadoCambiadoReciente: true,
+          esEntregadoReciente: isDelivered ? true : actual.esEntregadoReciente,
         };
         baseTickets[existingIndex] = updatedTicket;
 
@@ -27636,6 +27735,12 @@ export function procesarActualizacionCSV(
       const effMarca = idxMarca !== -1 ? row[idxMarca] : row.length >= 8 ? row[7] : '';
       const effModelo = idxModelo !== -1 ? row[idxModelo] : row.length >= 9 ? row[8] : '';
 
+      const isDelivered = rawNuevoEstado.toLowerCase() === 'entregada';
+      recordStoredId(NEW_INGRESOS_STORAGE_KEY, rawId);
+      if (isDelivered) {
+        recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, rawId);
+      }
+
       const nuevoTicket: RecepcionTicket = {
         idOrden: rawId,
         codigoProducto: idxCodigo !== -1 ? (row[idxCodigo] || '').trim() : '',
@@ -27650,6 +27755,8 @@ export function procesarActualizacionCSV(
         modelo: (effModelo || '').trim(),
         serial:
           idxSerial !== -1 && row[idxSerial] ? row[idxSerial].trim() : 'SIN SERIAL VISIBLE',
+        esNuevoIngreso: true,
+        esEntregadoReciente: isDelivered,
       };
 
       nuevasOrdenes.push(nuevoTicket);

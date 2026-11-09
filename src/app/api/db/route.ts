@@ -238,9 +238,23 @@ export async function POST(req: NextRequest) {
     // 5. Actualizar estado de ticket en Recepción Post-Venta
     if (action === "UPDATE_RECEPCION_STATUS") {
       const { idOrden, newStatus } = body;
+      const isDelivered = String(newStatus || "").trim().toLowerCase() === "entregada";
+      const fechaHoy = new Date().toLocaleDateString("es-PY", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
       await pool.query(
-        `UPDATE recepcion_tickets SET estado = ? WHERE id_orden = ?`,
-        [newStatus, idOrden]
+        `UPDATE recepcion_tickets
+         SET estado = ?,
+             fecha_entregada = CASE WHEN ? THEN COALESCE(fecha_entregada, ?) ELSE fecha_entregada END,
+             origen = CASE
+               WHEN origen = 'NUEVO_INGRESO' THEN 'NUEVO_INGRESO'
+               WHEN ? THEN 'RECIEN_ENTREGADO'
+               ELSE 'ESTADO_CAMBIADO'
+             END
+         WHERE id_orden = ?`,
+        [newStatus, isDelivered, fechaHoy, isDelivered, idOrden]
       );
       const data = await dbGetRecepcionTickets();
       return NextResponse.json({ ok: true, data });
@@ -251,12 +265,18 @@ export async function POST(req: NextRequest) {
       const { cambios = [], nuevasOrdenes = [] } = body;
 
       for (const c of cambios) {
+        const isDelivered = String(c.estadoNuevo || "").trim().toLowerCase() === "entregada";
         await pool.query(
           `UPDATE recepcion_tickets
            SET estado = ?,
-               fecha_entregada = COALESCE(?, fecha_entregada)
+               fecha_entregada = COALESCE(?, fecha_entregada),
+               origen = CASE
+                 WHEN origen = 'NUEVO_INGRESO' THEN 'NUEVO_INGRESO'
+                 WHEN ? THEN 'RECIEN_ENTREGADO'
+                 ELSE 'ESTADO_CAMBIADO'
+               END
            WHERE id_orden = ?`,
-          [c.estadoNuevo, c.fechaEntregada || null, c.idOrden]
+          [c.estadoNuevo, c.fechaEntregada || null, isDelivered, c.idOrden]
         );
 
         const estLower = String(c.estadoNuevo || "").toLowerCase();
@@ -273,15 +293,16 @@ export async function POST(req: NextRequest) {
       for (const t of nuevasOrdenes) {
         await pool.query(
           `INSERT INTO recepcion_tickets
-           (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+           (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NUEVO_INGRESO')
            ON DUPLICATE KEY UPDATE
              cliente = VALUES(cliente),
              estado = VALUES(estado),
              fecha_entregada = COALESCE(VALUES(fecha_entregada), fecha_entregada),
              tipo_componente = VALUES(tipo_componente),
              marca = VALUES(marca),
-             modelo = VALUES(modelo)`,
+             modelo = VALUES(modelo),
+             origen = 'NUEVO_INGRESO'`,
           [
             t.idOrden,
             t.codigoProducto || "",

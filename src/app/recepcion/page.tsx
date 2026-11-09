@@ -34,6 +34,8 @@ import {
   procesarActualizacionCSV,
   ResultadoCargaCSV,
   isTicketNuevoIngreso,
+  isTicketEstadoCambiadoReciente,
+  isTicketEntregadoReciente,
 } from "@/data/recepcionData";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { getActiveUser } from "@/data/authData";
@@ -48,7 +50,9 @@ export default function RecepcionDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("TODOS");
   const [statusFilter, setStatusFilter] = useState("TODOS");
-  const [onlyNuevosIngresos, setOnlyNuevosIngresos] = useState(false);
+  const [recentFilter, setRecentFilter] = useState<
+    "NINGUNO" | "NUEVOS_INGRESOS" | "ESTADOS_CAMBIADOS" | "RECIEN_ENTREGADOS" | "TODOS_RECIENTES"
+  >("NINGUNO");
   const [sortBy, setSortBy] = useState<"ID_DESC" | "ID_ASC" | "CLIENTE_ASC" | "MARCA_ASC">("ID_DESC");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -300,17 +304,43 @@ ${accText}
     };
   }, [tickets]);
 
-  // Cantidad de órdenes agregadas desde "+ Nuevo Ingreso"
-  const nuevosIngresosCount = useMemo(
-    () => tickets.filter((t) => isTicketNuevoIngreso(t)).length,
-    [tickets]
-  );
+  // Contadores de actividad reciente (Nuevos ingresos, Estados cambiados recientemente y Recientemente entregados)
+  const recentCounts = useMemo(() => {
+    let nuevosIngresos = 0;
+    let estadosCambiados = 0;
+    let recienEntregados = 0;
+    let todosRecientes = 0;
+
+    for (const t of tickets) {
+      const isNew = isTicketNuevoIngreso(t);
+      const isChanged = isTicketEstadoCambiadoReciente(t);
+      const isDeliv = isTicketEntregadoReciente(t);
+      if (isNew) nuevosIngresos++;
+      if (isChanged) estadosCambiados++;
+      if (isDeliv) recienEntregados++;
+      if (isNew || isChanged || isDeliv) todosRecientes++;
+    }
+
+    return { nuevosIngresos, estadosCambiados, recienEntregados, todosRecientes };
+  }, [tickets]);
 
   // Filtrado y ordenamiento
   const filteredTickets = useMemo(() => {
     let result = tickets.filter((ticket) => {
-      if (onlyNuevosIngresos || statusFilter === "RECIEN_AGREGADOS") {
+      if (recentFilter === "NUEVOS_INGRESOS") {
         if (!isTicketNuevoIngreso(ticket)) return false;
+      } else if (recentFilter === "ESTADOS_CAMBIADOS") {
+        if (!isTicketEstadoCambiadoReciente(ticket)) return false;
+      } else if (recentFilter === "RECIEN_ENTREGADOS") {
+        if (!isTicketEntregadoReciente(ticket)) return false;
+      } else if (recentFilter === "TODOS_RECIENTES") {
+        if (
+          !isTicketNuevoIngreso(ticket) &&
+          !isTicketEstadoCambiadoReciente(ticket) &&
+          !isTicketEntregadoReciente(ticket)
+        ) {
+          return false;
+        }
       }
 
       const query = searchTerm.toLowerCase().trim();
@@ -349,7 +379,6 @@ ${accText}
       const est = (ticket.estado || "").toLowerCase();
       const matchStatus =
         statusFilter === "TODOS" ||
-        statusFilter === "RECIEN_AGREGADOS" ||
         (statusFilter === "Entregada" && est === "entregada") ||
         (statusFilter === "En Reparación" && (est.includes("reparación") || est.includes("asignad"))) ||
         (statusFilter === "Reparada" && est === "reparada") ||
@@ -378,12 +407,12 @@ ${accText}
     });
 
     return result;
-  }, [tickets, searchTerm, categoryFilter, statusFilter, onlyNuevosIngresos, sortBy]);
+  }, [tickets, searchTerm, categoryFilter, statusFilter, recentFilter, sortBy]);
 
   // Reset a página 1 al filtrar
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter, statusFilter, onlyNuevosIngresos, sortBy]);
+  }, [searchTerm, categoryFilter, statusFilter, recentFilter, sortBy]);
 
   // Paginación
   const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE) || 1;
@@ -816,54 +845,52 @@ ${accText}
 
             {/* Controles de Estado y Orden */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Botón de Filtro Rápido: Recién agregados (+ Nuevo Ingreso) */}
-              <button
-                type="button"
-                onClick={() => {
-                  const isActive = onlyNuevosIngresos || statusFilter === "RECIEN_AGREGADOS";
-                  if (isActive) {
-                    setOnlyNuevosIngresos(false);
-                    if (statusFilter === "RECIEN_AGREGADOS") {
-                      setStatusFilter("TODOS");
-                    }
-                  } else {
-                    setOnlyNuevosIngresos(true);
-                  }
-                }}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
-                  onlyNuevosIngresos || statusFilter === "RECIEN_AGREGADOS"
-                    ? "bg-[#121212] text-white border-[#121212] shadow-sm"
-                    : "bg-[#f5f3f3] text-[#121212] border-[#e5e5e5] hover:bg-[#eae7e7]"
-                }`}
-                title="Filtrar órdenes añadidas recientemente desde + Nuevo Ingreso"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Recién agregados</span>
-                <span
-                  className={`px-1.5 py-0.2 rounded text-[11px] font-mono font-bold ${
-                    onlyNuevosIngresos || statusFilter === "RECIEN_AGREGADOS"
-                      ? "bg-white/20 text-white"
-                      : "bg-white text-zinc-700 border border-zinc-200"
+              {/* Filtro Desplegable de Recién Agregados / Actividad Reciente */}
+              <div className="flex items-center gap-1.5 text-xs">
+                <div
+                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition-colors ${
+                    recentFilter !== "NINGUNO"
+                      ? "bg-[#121212] text-white border-[#121212] shadow-sm"
+                      : "bg-[#f5f3f3] text-[#121212] border-[#e5e5e5]"
                   }`}
                 >
-                  {nuevosIngresosCount}
-                </span>
-              </button>
+                  <Plus className="w-3.5 h-3.5 shrink-0" />
+                  <select
+                    value={recentFilter}
+                    onChange={(e) => setRecentFilter(e.target.value as any)}
+                    className={`font-semibold outline-none cursor-pointer bg-transparent ${
+                      recentFilter !== "NINGUNO" ? "text-white" : "text-[#121212]"
+                    }`}
+                    title="Filtrar por Nuevos Ingresos, Estados cambiados recientemente o Recientemente entregados"
+                  >
+                    <option value="NINGUNO" className="bg-white text-zinc-900">
+                      Recién agregados ({recentCounts.todosRecientes})
+                    </option>
+                    <option value="NUEVOS_INGRESOS" className="bg-white text-zinc-900">
+                      Nuevos ingresos (+ Nuevo Ingreso) ({recentCounts.nuevosIngresos})
+                    </option>
+                    <option value="ESTADOS_CAMBIADOS" className="bg-white text-zinc-900">
+                      Estados cambiados recientemente ({recentCounts.estadosCambiados})
+                    </option>
+                    <option value="RECIEN_ENTREGADOS" className="bg-white text-zinc-900">
+                      Recientemente entregados ({recentCounts.recienEntregados})
+                    </option>
+                    <option value="TODOS_RECIENTES" className="bg-white text-zinc-900">
+                      Toda actividad reciente ({recentCounts.todosRecientes})
+                    </option>
+                  </select>
+                </div>
+              </div>
 
               {/* Filtro por Estado */}
               <div className="flex items-center gap-1.5 text-xs">
                 <Filter className="w-3.5 h-3.5 text-[#888888]" />
                 <select
                   value={statusFilter}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setStatusFilter(val);
-                    setOnlyNuevosIngresos(val === "RECIEN_AGREGADOS");
-                  }}
+                  onChange={(e) => setStatusFilter(e.target.value)}
                   className="bg-[#f5f3f3] text-[#121212] font-medium border border-[#e5e5e5] rounded-lg px-2.5 py-1.5 outline-none cursor-pointer"
                 >
                   <option value="TODOS">Todos los estados</option>
-                  <option value="RECIEN_AGREGADOS">Recién agregados (+ Nuevo Ingreso)</option>
                   <option value="Entregada">Entregada</option>
                   <option value="En Reparación">En Reparación / Taller</option>
                   <option value="Reparada">Reparada (Lista)</option>
@@ -970,12 +997,23 @@ ${accText}
                     <tr key={ticket.idOrden} className="hover:bg-zinc-50/75 transition-colors">
                       {/* Nº Orden */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-zinc-900 font-mono tabular-nums">#{ticket.idOrden}</span>
                           {isTicketNuevoIngreso(ticket) && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                              NUEVO
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                              NUEVO INGRESO
                             </span>
+                          )}
+                          {isTicketEntregadoReciente(ticket) ? (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              RECIÉN ENTREGADO
+                            </span>
+                          ) : (
+                            isTicketEstadoCambiadoReciente(ticket) && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                                ESTADO CAMBIADO
+                              </span>
+                            )
                           )}
                         </div>
                         <div className="text-[11px] text-zinc-500 font-mono tabular-nums">Cód: {ticket.codigoProducto || "N/A"}</div>
