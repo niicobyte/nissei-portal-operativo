@@ -31,14 +31,12 @@ import DatabaseViewerModal from "@/components/common/DatabaseViewerModal";
 export default function LoginPage() {
   const router = useRouter();
 
-  // Sector principal seleccionado: "RECEPCION" | "MONTAJES" | "TALLER"
-  const [activeSector, setActiveSector] = useState<"RECEPCION" | "MONTAJES" | "TALLER">("TALLER");
-  // Sub-grupo dentro de Taller: "ADMIN" | "TECNICO"
-  const [tallerSubGroup, setTallerSubGroup] = useState<"ADMIN" | "TECNICO">("ADMIN");
+  // Sector principal seleccionado: "MONTAJES" | "RECEPCION"
+  const [activeSector, setActiveSector] = useState<"MONTAJES" | "RECEPCION">("MONTAJES");
 
   // Perfil seleccionado para ingresar contraseña
   const [selectedProfile, setSelectedProfile] = useState<UserProfile>(
-    USER_PROFILES.find((p) => p.id === "admin") || USER_PROFILES[0]
+    USER_PROFILES.find((p) => p.id === "montajes") || USER_PROFILES[0]
   );
 
   const [password, setPassword] = useState("");
@@ -57,19 +55,19 @@ export default function LoginPage() {
   useEffect(() => {
     const active = getActiveUser();
     if (active) {
-      setSelectedProfile(active);
       if (active.role === "RECEPCION") {
         setActiveSector("RECEPCION");
-      } else if (active.role === "MONTAJES") {
-        setActiveSector("MONTAJES");
+        const prof = USER_PROFILES.find((p) => p.id === "recepcion");
+        if (prof) setSelectedProfile(prof);
       } else {
-        setActiveSector("TALLER");
-        setTallerSubGroup(active.role === "ADMIN" ? "ADMIN" : "TECNICO");
+        setActiveSector("MONTAJES");
+        const prof = USER_PROFILES.find((p) => p.id === "montajes");
+        if (prof) setSelectedProfile(prof);
       }
     }
   }, []);
 
-  const handleSelectSector = (sector: "RECEPCION" | "MONTAJES" | "TALLER") => {
+  const handleSelectSector = (sector: "MONTAJES" | "RECEPCION") => {
     setActiveSector(sector);
     setPassword("");
     setError(null);
@@ -77,38 +75,10 @@ export default function LoginPage() {
     if (sector === "RECEPCION") {
       const prof = USER_PROFILES.find((p) => p.id === "recepcion");
       if (prof) setSelectedProfile(prof);
-    } else if (sector === "MONTAJES") {
+    } else {
       const prof = USER_PROFILES.find((p) => p.id === "montajes");
       if (prof) setSelectedProfile(prof);
-    } else {
-      // Taller: si estaba en admin, selecciona admin; si tecnico, Carlos
-      if (tallerSubGroup === "ADMIN") {
-        const prof = USER_PROFILES.find((p) => p.id === "admin");
-        if (prof) setSelectedProfile(prof);
-      } else {
-        const prof = USER_PROFILES.find((p) => p.id === "carlos");
-        if (prof) setSelectedProfile(prof);
-      }
     }
-  };
-
-  const handleSelectTallerSubGroup = (sub: "ADMIN" | "TECNICO") => {
-    setTallerSubGroup(sub);
-    setPassword("");
-    setError(null);
-    if (sub === "ADMIN") {
-      const prof = USER_PROFILES.find((p) => p.id === "admin");
-      if (prof) setSelectedProfile(prof);
-    } else {
-      const prof = USER_PROFILES.find((p) => p.id === "carlos");
-      if (prof) setSelectedProfile(prof);
-    }
-  };
-
-  const handleSelectIndividualProfile = (prof: UserProfile) => {
-    setSelectedProfile(prof);
-    setPassword("");
-    setError(null);
   };
 
   const handleLogin = (e: React.FormEvent) => {
@@ -154,8 +124,6 @@ export default function LoginPage() {
 
   const recepcionProfile = USER_PROFILES.find((p) => p.id === "recepcion")!;
   const montajesProfile = USER_PROFILES.find((p) => p.id === "montajes")!;
-  const adminProfiles = USER_PROFILES.filter((p) => p.role === "ADMIN");
-  const tecnicoProfiles = USER_PROFILES.filter((p) => p.role === "TECNICO");
 
   return (
     <main className="min-h-screen bg-[#fbf9f9] py-8 sm:py-12 2xl:py-20 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
@@ -171,7 +139,7 @@ export default function LoginPage() {
             Identificación de Operador y Sector
           </h1>
           <p className="text-xs sm:text-sm text-zinc-600 max-w-xl mx-auto">
-            Seleccione el sector operativo correspondiente. Para el laboratorio técnico, seleccione perfil de supervisión o banco de trabajo.
+            Seleccione el sector operativo correspondiente: Taller de Montajes de PC o Recepción Post-Venta.
           </p>
         </div>
 
@@ -186,164 +154,22 @@ export default function LoginPage() {
               </h2>
             </div>
 
-            {/* Los 3 Sectores Principales */}
-            <div className="space-y-2.5">
+            {/* Los 2 Sectores Operativos */}
+            <div className="space-y-3">
               
-              {/* Opción 1: Taller de Reparaciones SATI (DESPLEGABLE INTERACTIVO) */}
-              <div
-                className={`rounded-xl border transition-colors overflow-hidden ${
-                  activeSector === "TALLER"
-                    ? "border-zinc-900 bg-zinc-50/50"
-                    : "border-zinc-200 bg-zinc-50/50 hover:border-zinc-300"
-                }`}
-              >
-                {/* Cabecera del Acordeón Taller */}
-                <button
-                  type="button"
-                  onClick={() => handleSelectSector("TALLER")}
-                  className="w-full p-3.5 text-left flex items-center justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="w-9 h-9 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-800">
-                      <Wrench className="w-4 h-4" />
-                    </span>
-                    <div>
-                      <strong className="text-sm font-bold text-zinc-900 block">
-                        Taller de Reparaciones SATI
-                      </strong>
-                      <span className="text-xs text-zinc-500 block">
-                        Supervisión y asignación de bancos técnicos
-                      </span>
-                    </div>
-                  </div>
-                  <ChevronDown
-                    className={`w-4 h-4 transition-transform ${
-                      activeSector === "TALLER" ? "rotate-180 text-zinc-900" : "text-zinc-400"
-                    }`}
-                  />
-                </button>
-
-                {/* Contenido Desplegado de Taller */}
-                {activeSector === "TALLER" && (
-                  <div className="p-3.5 pt-0 border-t border-zinc-200 space-y-3">
-                    
-                    {/* Selector de Sub-Área: Admin vs Técnicos */}
-                    <div className="flex items-center gap-1.5 bg-zinc-100 p-1 rounded-lg border border-zinc-200">
-                      <button
-                        type="button"
-                        onClick={() => handleSelectTallerSubGroup("ADMIN")}
-                        className={`flex-1 py-1.5 px-3 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                          tallerSubGroup === "ADMIN"
-                            ? "bg-zinc-900 text-white shadow-sm"
-                            : "text-zinc-600 hover:bg-zinc-200"
-                        }`}
-                      >
-                        <ShieldCheck className="w-3.5 h-3.5" />
-                        <span>Supervisión Admin</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSelectTallerSubGroup("TECNICO")}
-                        className={`flex-1 py-1.5 px-3 rounded-md text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 ${
-                          tallerSubGroup === "TECNICO"
-                            ? "bg-zinc-900 text-white shadow-sm"
-                            : "text-zinc-600 hover:bg-zinc-200"
-                        }`}
-                      >
-                        <Wrench className="w-3.5 h-3.5" />
-                        <span>Técnicos</span>
-                      </button>
-                    </div>
-
-                    {/* Despliegue de Admin */}
-                    {tallerSubGroup === "ADMIN" && (
-                      <div className="space-y-1.5">
-                        <span className="text-xs text-zinc-500 block font-medium">
-                          Perfil de administración
-                        </span>
-                        <div className="grid grid-cols-1 gap-2">
-                          {adminProfiles.map((adm) => {
-                            const isSelected = selectedProfile.id === adm.id;
-                            return (
-                              <button
-                                type="button"
-                                key={adm.id}
-                                onClick={() => handleSelectIndividualProfile(adm)}
-                                className={`p-3 rounded-lg border text-left transition-colors flex items-center gap-3 ${
-                                  isSelected
-                                    ? "border-zinc-900 bg-zinc-900 text-white font-bold shadow-sm"
-                                    : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400"
-                                }`}
-                              >
-                                <span className={`w-7 h-7 rounded font-mono text-xs font-bold flex items-center justify-center ${isSelected ? "bg-white text-zinc-900" : "bg-zinc-100 text-zinc-800"}`}>
-                                  {adm.avatar}
-                                </span>
-                                <div className="overflow-hidden">
-                                  <strong className="block text-xs font-bold truncate">{adm.nombre}</strong>
-                                  <span className={`text-[11px] block truncate ${isSelected ? "text-zinc-300" : "text-zinc-500"}`}>
-                                    {adm.badge}
-                                  </span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Despliegue de los 4 Técnicos */}
-                    {tallerSubGroup === "TECNICO" && (
-                      <div className="space-y-1.5">
-                        <span className="text-xs text-zinc-500 block font-medium">
-                          Seleccione técnico
-                        </span>
-                        <div className="grid grid-cols-2 gap-2">
-                          {tecnicoProfiles.map((tech) => {
-                            const isSelected = selectedProfile.id === tech.id;
-                            return (
-                              <button
-                                type="button"
-                                key={tech.id}
-                                onClick={() => handleSelectIndividualProfile(tech)}
-                                className={`p-2.5 rounded-lg border text-left transition-colors flex items-center gap-2.5 ${
-                                  isSelected
-                                    ? "border-zinc-900 bg-zinc-900 text-white font-bold shadow-sm"
-                                    : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400"
-                                }`}
-                              >
-                                <span className={`w-6 h-6 rounded font-mono text-xs font-bold flex items-center justify-center ${isSelected ? "bg-white text-zinc-900" : "bg-zinc-100 text-zinc-800"}`}>
-                                  {tech.avatar}
-                                </span>
-                                <div className="overflow-hidden">
-                                  <strong className="block text-xs truncate">{tech.nombre}</strong>
-                                  <span className={`text-[11px] block truncate ${isSelected ? "text-zinc-300" : "text-zinc-500"}`}>
-                                    {tech.badge}
-                                  </span>
-                                </div>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                  </div>
-                )}
-              </div>
-
-              {/* Opción 2: Taller de Montajes de PC */}
+              {/* Opción 1: Taller de Montajes de PC */}
               <button
                 type="button"
                 onClick={() => handleSelectSector("MONTAJES")}
-                className={`w-full p-3.5 rounded-xl border text-left transition-colors flex items-center justify-between ${
+                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
                   activeSector === "MONTAJES"
                     ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300"
+                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className={`w-9 h-9 rounded-lg flex items-center justify-center ${activeSector === "MONTAJES" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
-                    <Cpu className="w-4 h-4" />
+                <div className="flex items-center gap-3.5">
+                  <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeSector === "MONTAJES" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
+                    <Cpu className="w-5 h-5" />
                   </span>
                   <div>
                     <strong className="block text-sm font-bold">Taller de Montajes de PC</strong>
@@ -355,19 +181,19 @@ export default function LoginPage() {
                 <ChevronRight className={`w-4 h-4 ${activeSector === "MONTAJES" ? "text-white" : "text-zinc-400"}`} />
               </button>
 
-              {/* Opción 3: Recepción Post-Venta */}
+              {/* Opción 2: Recepción Post-Venta */}
               <button
                 type="button"
                 onClick={() => handleSelectSector("RECEPCION")}
-                className={`w-full p-3.5 rounded-xl border text-left transition-colors flex items-center justify-between ${
+                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
                   activeSector === "RECEPCION"
                     ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300"
+                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
                 }`}
               >
-                <div className="flex items-center gap-3">
-                  <span className={`w-9 h-9 rounded-lg flex items-center justify-center ${activeSector === "RECEPCION" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
-                    <PackageOpen className="w-4 h-4" />
+                <div className="flex items-center gap-3.5">
+                  <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeSector === "RECEPCION" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
+                    <PackageOpen className="w-5 h-5" />
                   </span>
                   <div>
                     <strong className="block text-sm font-bold">Recepción Post-Venta</strong>
