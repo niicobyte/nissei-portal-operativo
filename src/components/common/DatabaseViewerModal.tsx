@@ -19,11 +19,13 @@ import {
   Cpu,
   Copy,
   Check,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { getSafeUserProfiles, getAdminAuthHeaders, UserProfile } from "@/data/authData";
-import { getStoredTickets, RecepcionTicket } from "@/data/recepcionData";
-import { getStoredReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
-import { getStoredMontajes, OrdenMontajeReal } from "@/data/montajesData";
+import { getStoredTickets, saveTickets, RecepcionTicket } from "@/data/recepcionData";
+import { getStoredReparaciones, saveReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
+import { getStoredMontajes, saveMontajes, OrdenMontajeReal } from "@/data/montajesData";
 
 interface DatabaseViewerModalProps {
   isOpen: boolean;
@@ -140,6 +142,68 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
   const [recepcion, setRecepcion] = useState<RecepcionTicket[]>([]);
   const [montajes, setMontajes] = useState<OrdenMontajeReal[]>([]);
   const [usuarios, setUsuarios] = useState<UserProfile[]>(getSafeUserProfiles());
+
+  const [confirmDelete, setConfirmDelete] = useState<{
+    table: TableTab;
+    id: string;
+    label: string;
+  } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const executeDelete = async (table: TableTab, id: string) => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch("/api/db", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getAdminAuthHeaders(),
+        },
+        body: JSON.stringify({ action: "DELETE_ROW", table, id }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error || "No se pudo eliminar el registro");
+      }
+
+      // Actualizar el estado local y localStorage inmediatamente
+      if (table === "recepcion_tickets") {
+        setRecepcion((prev) => {
+          const next = prev.filter((t) => t.idOrden !== id);
+          saveTickets(next);
+          return next;
+        });
+        setReparaciones((prev) => {
+          const next = prev.filter((r) => r.idOrden !== id);
+          saveReparaciones(next);
+          return next;
+        });
+      } else if (table === "taller_reparaciones") {
+        setReparaciones((prev) => {
+          const next = prev.filter((r) => r.idOrden !== id);
+          saveReparaciones(next);
+          return next;
+        });
+      } else if (table === "ordenes_montaje") {
+        setMontajes((prev) => {
+          const next = prev.filter((m) => m.id !== id);
+          saveMontajes(next);
+          return next;
+        });
+      } else if (table === "usuarios") {
+        setUsuarios((prev) => prev.filter((u) => u.id !== id));
+      }
+
+      setConfirmDelete(null);
+      setToastMessage(`Registro ${id} eliminado con éxito de la base de datos.`);
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (err: any) {
+      alert(err.message || "Error al eliminar el registro.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const loadAllData = async () => {
     setIsLoading(true);
@@ -556,7 +620,8 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   <th className="py-2.5 px-3 border-r border-zinc-200">detalle_reparacion</th>
                   <th className="py-2.5 px-3 border-r border-zinc-200">observaciones</th>
                   <th className="py-2.5 px-3 border-r border-zinc-200">dictamen_final</th>
-                  <th className="py-2.5 px-3">fecha_ingreso</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">fecha_ingreso</th>
+                  <th className="py-2.5 px-3 text-center">acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 bg-white">
@@ -607,8 +672,24 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                       <td className="py-2 px-3 font-mono text-[11px] border-r border-zinc-100 whitespace-nowrap">
                         {r.dictamenFinal || <span className="text-zinc-400">NULL</span>}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
                         {r.fechaIngreso}
+                      </td>
+                      <td className="py-2 px-3 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setConfirmDelete({
+                              table: "taller_reparaciones",
+                              id: r.idOrden,
+                              label: `Orden #${r.idOrden} · ${r.cliente}`,
+                            })
+                          }
+                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title={`Eliminar orden #${r.idOrden} de la base de datos`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -631,7 +712,8 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   <th className="py-2.5 px-3 border-r border-zinc-200">estado</th>
                   <th className="py-2.5 px-3 border-r border-zinc-200">mensaje</th>
                   <th className="py-2.5 px-3 border-r border-zinc-200">fecha_ingreso</th>
-                  <th className="py-2.5 px-3">fecha_entregada</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">fecha_entregada</th>
+                  <th className="py-2.5 px-3 text-center">acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 bg-white">
@@ -671,8 +753,24 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                       <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
                         {t.fechaIngreso}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
                         {t.fechaEntregada || <span className="text-zinc-400">NULL</span>}
+                      </td>
+                      <td className="py-2 px-3 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setConfirmDelete({
+                              table: "recepcion_tickets",
+                              id: t.idOrden,
+                              label: `Orden #${t.idOrden} · ${t.cliente}`,
+                            })
+                          }
+                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title={`Eliminar orden #${t.idOrden} de la base de datos`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -695,7 +793,8 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   <th className="py-2.5 px-3 border-r border-zinc-200">estado</th>
                   <th className="py-2.5 px-3 border-r border-zinc-200">vendedor / canal</th>
                   <th className="py-2.5 px-3 border-r border-zinc-200">componentes_json</th>
-                  <th className="py-2.5 px-3">fecha_montaje</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">fecha_montaje</th>
+                  <th className="py-2.5 px-3 text-center">acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 bg-white">
@@ -735,8 +834,24 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                       <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 max-w-xs truncate" title={JSON.stringify(m.componentes)}>
                         [{m.componentes?.length || 0} piezas] {m.observaciones}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
                         {m.fecha_montaje}
+                      </td>
+                      <td className="py-2 px-3 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setConfirmDelete({
+                              table: "ordenes_montaje",
+                              id: m.id,
+                              label: `Montaje ${m.id} · ${m.cliente}`,
+                            })
+                          }
+                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title={`Eliminar orden de montaje ${m.id} de la base de datos`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -833,6 +948,67 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           )}
         </div>
       </div>
+
+      {/* Toast informativo */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[80] bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg border border-emerald-500 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <Check className="w-4 h-4" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
+
+      {/* Modal de confirmación para eliminar fila */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-zinc-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-6">
+              <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <h3 className="text-base font-bold text-zinc-900 mb-1">
+                ¿Eliminar registro de la base de datos?
+              </h3>
+              <p className="text-xs text-zinc-600 mb-4 leading-relaxed">
+                Esta acción eliminará permanentemente{" "}
+                <span className="font-mono font-bold text-zinc-900">{confirmDelete.label}</span>{" "}
+                de la tabla <span className="font-mono font-bold text-zinc-900">{confirmDelete.table}</span> en MySQL y en el almacenamiento local.
+              </p>
+              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-800 leading-relaxed mb-5">
+                <strong>Advertencia:</strong> Esta operación no se puede deshacer.
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => setConfirmDelete(null)}
+                  className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isDeleting}
+                  onClick={() => executeDelete(confirmDelete.table, confirmDelete.id)}
+                  className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Eliminando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Eliminar Definitivamente</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -447,6 +447,50 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
+    // 11. Eliminar registro individual de cualquier tabla desde el Visor de Base de Datos
+    if (action === "DELETE_ROW") {
+      const { table, id } = body;
+      if (!table || !id) {
+        return NextResponse.json(
+          { ok: false, error: "Parámetros tabla e ID son requeridos." },
+          { status: 400 }
+        );
+      }
+
+      if (table === "recepcion_tickets") {
+        await pool.query("DELETE FROM recepcion_tickets WHERE id_orden = ?", [id]);
+        await pool.query("DELETE FROM taller_reparaciones WHERE id_orden = ?", [id]);
+        const data = await dbGetRecepcionTickets();
+        return NextResponse.json({ ok: true, message: `Orden #${id} eliminada correctamente.`, data });
+      }
+
+      if (table === "taller_reparaciones") {
+        await pool.query("DELETE FROM taller_reparaciones WHERE id_orden = ?", [id]);
+        const data = await dbGetReparaciones();
+        return NextResponse.json({ ok: true, message: `Orden de taller #${id} eliminada correctamente.`, data });
+      }
+
+      if (table === "ordenes_montaje") {
+        await pool.query("DELETE FROM ordenes_montaje WHERE id = ?", [id]);
+        const data = await dbGetMontajes();
+        return NextResponse.json({ ok: true, message: `Orden de montaje ${id} eliminada correctamente.`, data });
+      }
+
+      if (table === "usuarios") {
+        if (id === "admin") {
+          return NextResponse.json(
+            { ok: false, error: "No se puede eliminar el usuario administrador principal." },
+            { status: 403 }
+          );
+        }
+        await pool.query("DELETE FROM usuarios WHERE id = ?", [id]);
+        const data = await dbGetUsuarios();
+        return NextResponse.json({ ok: true, message: `Usuario ${id} eliminado correctamente.`, data });
+      }
+
+      return NextResponse.json({ ok: false, error: "Tabla no válida para eliminación." }, { status: 400 });
+    }
+
     return NextResponse.json({ ok: false, error: "Acción no reconocida." }, { status: 400 });
   } catch (err: unknown) {
     console.error("[MYSQL POST ERROR]", err);
