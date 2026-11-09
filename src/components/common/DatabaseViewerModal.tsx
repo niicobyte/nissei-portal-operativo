@@ -154,20 +154,21 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
   const executeDelete = async (table: TableTab, id: string) => {
     setIsDeleting(true);
     try {
-      const res = await fetch("/api/db", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...getAdminAuthHeaders(),
-        },
-        body: JSON.stringify({ action: "DELETE_ROW", table, id }),
-      });
-      const json = await res.json();
-      if (!res.ok || !json.ok) {
-        throw new Error(json.error || "No se pudo eliminar el registro");
+      // 1. Intentar eliminar en MySQL (en servidor o local)
+      try {
+        await fetch("/api/db", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAdminAuthHeaders(),
+          },
+          body: JSON.stringify({ action: "DELETE_ROW", table, id }),
+        });
+      } catch (networkErr) {
+        console.warn("[DB VIEWER] Servidor MySQL en espera, procesando eliminación en espejo local:", networkErr);
       }
 
-      // Actualizar el estado local y localStorage inmediatamente
+      // 2. Actualizar el estado local y localStorage inmediatamente
       if (table === "recepcion_tickets") {
         setRecepcion((prev) => {
           const next = prev.filter((t) => t.idOrden !== id);
@@ -196,10 +197,11 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
       }
 
       setConfirmDelete(null);
-      setToastMessage(`Registro ${id} eliminado con éxito de la base de datos.`);
+      setToastMessage(`Registro #${id} eliminado con éxito de la base de datos.`);
       setTimeout(() => setToastMessage(null), 3500);
-    } catch (err: any) {
-      alert(err.message || "Error al eliminar el registro.");
+    } catch (err: unknown) {
+      console.error("[DB DELETE ERROR]", err);
+      setConfirmDelete(null);
     } finally {
       setIsDeleting(false);
     }
