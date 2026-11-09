@@ -27430,7 +27430,10 @@ export function addTicket(ticket: RecepcionTicket): RecepcionTicket[] {
   }
 
   const current = getStoredTickets();
-  const updated = [enrichedTicket, ...current];
+  const exists = current.some((t) => t.idOrden === ticket.idOrden);
+  const updated = exists
+    ? current.map((t) => (t.idOrden === ticket.idOrden ? enrichedTicket : t))
+    : [enrichedTicket, ...current];
   saveTickets(updated);
 
   if (typeof window !== 'undefined') {

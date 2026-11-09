@@ -208,7 +208,7 @@ export default function RecepcionDashboardPage() {
 🏷️ *Cód. Producto:* ${ticket.codigoProducto || "N/A"}
 💻 *Equipo:* ${ticket.marca} ${ticket.modelo || "Equipo"}
 📦 *Categoría:* ${ticket.tipoComponente || "GENERAL"}
-🔢 *Serie:* ${ticket.serial || "N/A"}
+🔢 *Serie:* ${ticket.serial && ticket.serial !== "S/N" && !ticket.serial.toUpperCase().includes("SIN SERIAL") ? ticket.serial : "SIN SERIAL"}
 
 📊 *Dictamen Técnico:*
 ${statusText}

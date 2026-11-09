@@ -17,6 +17,7 @@ import {
   Barcode
 } from "lucide-react";
 import { addTicket, getStoredTickets, RecepcionTicket } from "@/data/recepcionData";
+import { getStoredReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
 import {
   CATEGORY_FAMILIES,
   TOP_SATI_BRANDS,
@@ -24,11 +25,59 @@ import {
 } from "@/data/recepcionCategories";
 import { AuthBadge } from "@/components/common/AuthBadge";
 
+function findFamilyForComponent(tipo: string): CategoryFamily | undefined {
+  if (!tipo) return undefined;
+  const upper = tipo.toUpperCase().trim();
+  const exact = CATEGORY_FAMILIES.find((f) =>
+    f.components.some((c) => c === upper)
+  );
+  if (exact) return exact;
+  const partial = CATEGORY_FAMILIES.find((f) =>
+    f.components.some((c) => upper.includes(c) || c.includes(upper))
+  );
+  if (partial) return partial;
+  if (
+    upper.includes("NOTEBOOK") ||
+    upper.includes("PC") ||
+    upper.includes("GPU") ||
+    upper.includes("MACBOOK")
+  ) {
+    return CATEGORY_FAMILIES.find((f) => f.id === "COMPUTACION");
+  }
+  if (upper.includes("ASPIRAD") || upper.includes("ROBOT")) {
+    return CATEGORY_FAMILIES.find((f) => f.id === "LIMPIEZA");
+  }
+  if (
+    upper.includes("CELULAR") ||
+    upper.includes("IPHONE") ||
+    upper.includes("TABLET") ||
+    upper.includes("IPAD")
+  ) {
+    return CATEGORY_FAMILIES.find((f) => f.id === "TELEFONIA");
+  }
+  if (upper.includes("RELOJ") || upper.includes("WATCH")) {
+    return CATEGORY_FAMILIES.find((f) => f.id === "WEARABLES");
+  }
+  if (
+    upper.includes("AUDIO") ||
+    upper.includes("PARLANTE") ||
+    upper.includes("AURICULAR")
+  ) {
+    return CATEGORY_FAMILIES.find((f) => f.id === "AUDIO");
+  }
+  return undefined;
+}
+
 export default function NuevoIngresoRetornoPage() {
   const router = useRouter();
 
+  // Listados de órdenes para autocompletado en tiempo real
+  const [allTickets, setAllTickets] = useState<RecepcionTicket[]>([]);
+  const [allReparaciones, setAllReparaciones] = useState<OrdenReparacion[]>([]);
+  const [foundOrder, setFoundOrder] = useState<RecepcionTicket | OrdenReparacion | null>(null);
+
   // Estados del Formulario SATI
-  const [orderNumber, setOrderNumber] = useState("31409");
+  const [orderNumber, setOrderNumber] = useState("32491");
   const [codigoProducto, setCodigoProducto] = useState("769386");
   const [clientName, setClientName] = useState("Mariana Giménez Alcaraz");
 
@@ -58,16 +107,168 @@ export default function NuevoIngresoRetornoPage() {
   // Obtener la familia actual seleccionada
   const activeFamily = CATEGORY_FAMILIES.find((f) => f.id === selectedFamilyId) || CATEGORY_FAMILIES[0];
 
-  // Calcular correlativo de orden SATI automáticamente
+  // Función de búsqueda y autocompletado por ID de Orden
+  const handleOrderLookup = (
+    rawVal: string,
+    tList = allTickets,
+    rList = allReparaciones
+  ) => {
+    const cleanId = rawVal.replace(/^#+/, "").trim();
+    setOrderNumber(cleanId);
+
+    if (!cleanId) {
+      setFoundOrder(null);
+      return;
+    }
+
+    const ticketMatch = tList.find((t) => t.idOrden.trim() === cleanId);
+    const repMatch = rList.find((r) => r.idOrden.trim() === cleanId);
+    const match = ticketMatch || repMatch;
+
+    if (match) {
+      setFoundOrder(match);
+
+      // 1. Cliente
+      if (match.cliente) {
+        setClientName(match.cliente);
+      }
+
+      // 2. Cód. Producto
+      if (match.codigoProducto) {
+        setCodigoProducto(match.codigoProducto);
+      }
+
+      // 3. Marca
+      const m = (match.marca || "").trim().toUpperCase();
+      if (m) setMarca(m);
+
+      // 4. Modelo
+      const mod = match.modelo || (match as OrdenReparacion).equipo || "";
+      if (mod) setProductModel(mod);
+
+      // 5. Tipo componente & Familia
+      const comp = (match.tipoComponente || "").trim().toUpperCase();
+      if (comp) {
+        setTipoComponente(comp);
+        const fam = findFamilyForComponent(comp);
+        if (fam) {
+          setSelectedFamilyId(fam.id);
+        }
+      }
+
+      // 6. Serial ("el numero de serial ni no tiene deja sin serial")
+      const rawSerial = (match.serial || "").trim();
+      if (
+        !rawSerial ||
+        rawSerial.toUpperCase().includes("SIN SERIAL") ||
+        rawSerial.toUpperCase() === "S/N" ||
+        rawSerial === "-"
+      ) {
+        setSerialNumber("SIN SERIAL");
+      } else {
+        setSerialNumber(rawSerial);
+      }
+
+      // 7. Fecha de venta ("las fechas de ventas si no tiene fecha de venta pon el de ingreso")
+      const fechaVentaExistente = (match as RecepcionTicket).fechaVenta;
+      const fechaIngresoExistente = match.fechaIngreso;
+      if (fechaVentaExistente && fechaVentaExistente.trim()) {
+        setFechaVenta(fechaVentaExistente.trim());
+      } else if (fechaIngresoExistente && fechaIngresoExistente.trim()) {
+        setFechaVenta(fechaIngresoExistente.trim());
+      }
+
+      // 8. Dictamen ("y el ditacmensi se reparo Reparado con Éxito, si no tiene problema ℹ Sin Defecto Comprobado, los que son sin reparo ✕ No Reparado / RMA")
+      const fullText = [
+        (match as RecepcionTicket).mensaje || "",
+        (match as OrdenReparacion).detalleReparacion || "",
+        (match as OrdenReparacion).observaciones || "",
+        (match as OrdenReparacion).mensajeSATI || "",
+        match.estado || "",
+        (match as OrdenReparacion).dictamenFinal || "",
+      ]
+        .join(" ")
+        .toUpperCase();
+
+      const estadoUpper = (match.estado || "").toUpperCase();
+
+      if (
+        (match as OrdenReparacion).dictamenFinal === "SIN_DEFECTO" ||
+        fullText.includes("SIN DEFECTO") ||
+        fullText.includes("NO PRESENTA FALLA") ||
+        estadoUpper === "ENTREGADA"
+      ) {
+        setDictamen("SIN_DEFECTO");
+      } else if (
+        (match as OrdenReparacion).dictamenFinal === "NO_REPARADO" ||
+        fullText.includes("SIN REPARO") ||
+        fullText.includes("RMA") ||
+        fullText.includes("NC") ||
+        fullText.includes("CAMBIO POR NUEVO") ||
+        fullText.includes("RECHAZA") ||
+        fullText.includes("NO REPARADO")
+      ) {
+        setDictamen("NO_REPARADO");
+      } else if (
+        (match as OrdenReparacion).dictamenFinal === "REPARADO" ||
+        estadoUpper.includes("REPARAD") ||
+        fullText.includes("REPARADO")
+      ) {
+        setDictamen("REPARADO");
+      }
+
+      // 9. Detalle técnico y pruebas ejecutadas
+      const msgSource =
+        (match as RecepcionTicket).mensaje ||
+        (match as OrdenReparacion).detalleReparacion ||
+        (match as OrdenReparacion).observaciones ||
+        "";
+      if (msgSource) {
+        const parts = msgSource.split(/Accesorios:/i);
+        const det = parts[0].trim();
+        if (det) {
+          setTechnicalDetails(det);
+        }
+        // 10. Accesorios
+        if (parts[1]) {
+          const accs = parts[1]
+            .split(",")
+            .map((a) => a.trim())
+            .filter(Boolean);
+          if (accs.length > 0) {
+            setAccessories(accs);
+          }
+        }
+      }
+    } else {
+      setFoundOrder(null);
+    }
+  };
+
+  // Cargar órdenes existentes y autocompletar si viene parámetro o sugerir correlativo
   useEffect(() => {
-    const stored = getStoredTickets();
-    if (stored && stored.length > 0) {
-      const numericIds = stored
+    const tList = getStoredTickets();
+    const rList = getStoredReparaciones();
+    setAllTickets(tList);
+    setAllReparaciones(rList);
+
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const paramOrden = searchParams.get("orden");
+      if (paramOrden) {
+        handleOrderLookup(paramOrden, tList, rList);
+        return;
+      }
+    }
+
+    if (tList && tList.length > 0) {
+      const numericIds = tList
         .map((t) => Number(t.idOrden))
         .filter((n) => !isNaN(n));
       if (numericIds.length > 0) {
         const maxId = Math.max(...numericIds);
-        setOrderNumber(String(maxId + 1));
+        const defaultId = String(maxId + 1);
+        setOrderNumber(defaultId);
       }
     }
   }, []);
@@ -99,7 +300,7 @@ export default function NuevoIngresoRetornoPage() {
         ? "Reparada"
         : dictamen === "SIN_DEFECTO"
         ? "Entregada"
-        : "En Reparación";
+        : "No Reparado / RMA";
 
     const newTicket: RecepcionTicket = {
       idOrden: orderNumber,
@@ -108,18 +309,18 @@ export default function NuevoIngresoRetornoPage() {
       mensaje: `${technicalDetails}${
         accessories.length > 0 ? `\nAccesorios: ${accessories.join(", ")}` : ""
       }`,
-      fechaIngreso: new Date().toLocaleDateString("es-PY", {
+      fechaIngreso: foundOrder?.fechaIngreso || new Date().toLocaleDateString("es-PY", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
       }),
-      fechaEntregada: dictamen === "SIN_DEFECTO" ? new Date().toLocaleDateString("es-PY") : undefined,
+      fechaEntregada: dictamen === "SIN_DEFECTO" ? ((foundOrder as RecepcionTicket)?.fechaEntregada || new Date().toLocaleDateString("es-PY")) : undefined,
       fechaVenta: fechaVenta.trim() || undefined,
       estado: estadoTicket,
       tipoComponente: tipoComponente.trim().toUpperCase(),
       marca: marca.trim().toUpperCase(),
       modelo: productModel.trim(),
-      serial: serialNumber.trim(),
+      serial: serialNumber.trim() || "SIN SERIAL",
     };
 
     addTicket(newTicket);
@@ -156,11 +357,11 @@ export default function NuevoIngresoRetornoPage() {
 
     return `El Cliente *${clientName || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
 
-📋 *Orden SATI:* #${orderNumber}
+📋 *Orden SATI:* #${orderNumber ? orderNumber.replace(/^#+/, "") : ""}
 🏷️ *Cód. Producto:* ${codigoProducto || "N/A"}
 💻 *Equipo:* ${marca} ${productModel || "Equipo"}
 📦 *Categoría:* ${tipoComponente}
-🔢 *Serie:* ${serialNumber || "N/A"}
+🔢 *Serie:* ${serialNumber || "SIN SERIAL"}
 
 📊 *Dictamen Técnico:*
 ${statusText}
@@ -209,18 +410,48 @@ ${accText}`;
               </h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <label className="text-xs 2xl:text-sm text-zinc-500 font-mono block mb-1">
-                    Nº ORDEN SATI (AUTOGENERADO)
-                  </label>
-                  <input
-                    type="text"
-                    readOnly
-                    value={`#${orderNumber}`}
-                    className="w-full bg-zinc-100 text-xs sm:text-sm 2xl:text-base font-mono border border-zinc-200 rounded-xl px-3 py-2 text-zinc-700 cursor-not-allowed font-bold"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs 2xl:text-sm text-zinc-700 font-mono font-bold block">
+                      Nº ORDEN SATI *
+                    </label>
+                    <span className="text-[11px] font-mono text-zinc-500">
+                      ID para autocompletar
+                    </span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      required
+                      value={orderNumber ? `#${orderNumber.replace(/^#+/, "")}` : ""}
+                      onChange={(e) => handleOrderLookup(e.target.value)}
+                      placeholder="Ej. #32491 o 31807"
+                      list="ordenes-sati-datalist"
+                      className="w-full bg-white text-xs sm:text-sm 2xl:text-base font-mono border-2 border-zinc-300 focus:border-zinc-900 rounded-xl pl-9 pr-3 py-2 text-zinc-900 font-bold outline-none transition-colors"
+                    />
+                    <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <datalist id="ordenes-sati-datalist">
+                      {allTickets.slice(0, 100).map((t) => (
+                        <option key={t.idOrden} value={t.idOrden}>
+                          #{t.idOrden} - {t.cliente} ({t.marca} {t.modelo})
+                        </option>
+                      ))}
+                    </datalist>
+                  </div>
+                  {foundOrder ? (
+                    <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <span>
+                        Orden encontrada: <strong>#{foundOrder.idOrden} · {foundOrder.cliente}</strong>. Datos autocompletados para actualizar retorno.
+                      </span>
+                    </div>
+                  ) : orderNumber ? (
+                    <div className="flex items-center gap-1.5 mt-2 px-2.5 py-1.5 rounded-lg bg-zinc-50 border border-zinc-200 text-zinc-500 text-xs font-mono">
+                      <span>Nueva orden correlativa #{orderNumber.replace(/^#+/, "")}</span>
+                    </div>
+                  ) : null}
                 </div>
                 <div>
-                  <label className="text-xs 2xl:text-sm text-zinc-500 font-mono block mb-1">
+                  <label className="text-xs 2xl:text-sm text-zinc-700 font-mono font-bold block mb-1">
                     NOMBRE COMPLETO DEL CLIENTE *
                   </label>
                   <input
@@ -674,20 +905,26 @@ ${accText}`;
               <button
                 type="submit"
                 disabled={isSaved}
-                className="w-full py-3 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isSaved ? (
-                  <span>Registrando en SATI...</span>
+                  <span>Actualizando y notificando...</span>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>Guardar Registro de Retorno</span>
+                    <span>
+                      {foundOrder
+                        ? "Actualizar Estado y Notificar Retorno"
+                        : "Guardar Registro de Retorno"}
+                    </span>
                   </>
                 )}
               </button>
 
               <p className="text-[11px] text-zinc-400 text-center">
-                El equipo quedará registrado en la bandeja de retornos y se notificará al cliente vía WhatsApp.
+                {foundOrder
+                  ? `La orden #${foundOrder.idOrden} actualizará su estado y enviará el aviso al grupo de Recepción.`
+                  : "El equipo quedará registrado en la bandeja de retornos y se notificará al grupo de WhatsApp."}
               </p>
             </div>
 
