@@ -175,6 +175,133 @@ export function toggleCheckinDeposito(idOrden: string): boolean {
   }
 }
 
+export interface CambioEstadoCde {
+  idOrden: string;
+  cliente: string;
+  equipo: string;
+  estadoAnterior: string;
+  estadoNuevo: string;
+  fechaEntregada?: string;
+  esDanesa: boolean;
+  enTransito: boolean;
+}
+
+export interface ResultadoCargaCdeCSV {
+  updatedTickets: RecepcionCdeTicket[];
+  totalFilasLeidas: number;
+  totalActualizadas: number;
+  totalNuevas: number;
+  totalSinCambios: number;
+  totalEnTransitoNuevos: number;
+  cambios: CambioEstadoCde[];
+}
+
+export function procesarActualizacionCdeCSV(
+  csvContent: string,
+  currentTickets: RecepcionCdeTicket[]
+): ResultadoCargaCdeCSV {
+  const incoming = parseRecepcionCdeCSV(csvContent);
+  const currentMap = new Map<string, RecepcionCdeTicket>();
+  currentTickets.forEach((t) => currentMap.set(t.idOrden, t));
+
+  const checkinsRaw = typeof window !== 'undefined' ? localStorage.getItem(CDE_CHECKINS_KEY) : null;
+  const checkins: Record<string, boolean> = checkinsRaw ? JSON.parse(checkinsRaw) : {};
+
+  const cambios: CambioEstadoCde[] = [];
+  const updatedList: RecepcionCdeTicket[] = [];
+  const seenIds = new Set<string>();
+
+  let totalSinCambios = 0;
+  let totalEnTransitoNuevos = 0;
+
+  for (const inc of incoming) {
+    seenIds.add(inc.idOrden);
+    const existing = currentMap.get(inc.idOrden);
+    const isEntregada = inc.estado.toLowerCase().includes('entregada');
+    const esDanesa = inc.esDanesa || isTicketDanesa(inc.cliente);
+    const enTransito = isEntregada;
+
+    if (existing) {
+      const cambioEstado = existing.estado.trim() !== inc.estado.trim();
+      const cambioEntrega = (existing.fechaEntregada || '').trim() !== (inc.fechaEntregada || '').trim();
+      const cambioMensaje = (existing.mensaje || '').trim() !== (inc.mensaje || '').trim();
+
+      if (cambioEstado || cambioEntrega || cambioMensaje) {
+        if (enTransito && !existing.estado.toLowerCase().includes('entregada')) {
+          totalEnTransitoNuevos++;
+        }
+
+        cambios.push({
+          idOrden: inc.idOrden,
+          cliente: inc.cliente,
+          equipo: `${inc.marca} ${inc.modelo}`.trim() || inc.tipoComponente,
+          estadoAnterior: existing.estado,
+          estadoNuevo: inc.estado,
+          fechaEntregada: inc.fechaEntregada,
+          esDanesa,
+          enTransito,
+        });
+
+        updatedList.push({
+          ...existing,
+          ...inc,
+          diasResolucion: calcularDiasResolucion(inc.fechaIngreso, inc.fechaEntregada),
+          esDanesa,
+          recibidoEnDeposito: Boolean(checkins[inc.idOrden] || existing.recibidoEnDeposito),
+          esEstadoCambiadoReciente: true,
+        });
+      } else {
+        totalSinCambios++;
+        updatedList.push(existing);
+      }
+    } else {
+      if (enTransito) {
+        totalEnTransitoNuevos++;
+      }
+
+      cambios.push({
+        idOrden: inc.idOrden,
+        cliente: inc.cliente,
+        equipo: `${inc.marca} ${inc.modelo}`.trim() || inc.tipoComponente,
+        estadoAnterior: 'NO ESTABA EN CDE (NUEVA)',
+        estadoNuevo: inc.estado,
+        fechaEntregada: inc.fechaEntregada,
+        esDanesa,
+        enTransito,
+      });
+
+      updatedList.push({
+        ...inc,
+        diasResolucion: calcularDiasResolucion(inc.fechaIngreso, inc.fechaEntregada),
+        esDanesa,
+        recibidoEnDeposito: Boolean(checkins[inc.idOrden]),
+        esNuevoIngreso: true,
+      });
+    }
+  }
+
+  currentTickets.forEach((t) => {
+    if (!seenIds.has(t.idOrden)) {
+      updatedList.push(t);
+    }
+  });
+
+  saveCdeTickets(updatedList);
+
+  const totalNuevas = cambios.filter((c) => c.estadoAnterior === 'NO ESTABA EN CDE (NUEVA)').length;
+  const totalActualizadas = cambios.length - totalNuevas;
+
+  return {
+    updatedTickets: updatedList,
+    totalFilasLeidas: incoming.length,
+    totalActualizadas,
+    totalNuevas,
+    totalSinCambios,
+    totalEnTransitoNuevos,
+    cambios,
+  };
+}
+
 export const INITIAL_RECEPCION_CDE_DATA: RecepcionCdeTicket[] = [
   {
     "idOrden": "125652",

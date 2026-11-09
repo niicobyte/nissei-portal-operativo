@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
-import { HeaderActions } from "@/components/common/HeaderActions";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import {
   Truck,
@@ -11,24 +10,20 @@ import {
   Search,
   CheckCircle2,
   Clock,
-  Wrench,
   AlertCircle,
   FileSpreadsheet,
   Upload,
-  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   Eye,
-  MessageSquare,
   ArrowRight,
   ShieldCheck,
   RefreshCw,
   Box,
   Building2,
-  Calendar,
   X,
   Check,
-  Sparkles,
+  Info,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import {
@@ -37,17 +32,16 @@ import {
   getStoredCdeTickets,
   saveCdeTickets,
   toggleCheckinDeposito,
-  parseRecepcionCdeCSV,
-  calcularDiasResolucion,
-  isTicketDanesa,
+  procesarActualizacionCdeCSV,
+  ResultadoCargaCdeCSV,
 } from "@/data/recepcionCdeData";
-import { getActiveUser } from "@/data/authData";
 
 const ITEMS_PER_PAGE = 25;
 
 export default function RecepcionCdeDashboardPage() {
   const [tickets, setTickets] = useState<RecepcionCdeTicket[]>([]);
   const [isClient, setIsClient] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
 
   // Filtros
   const [viewScope, setViewScope] = useState<"DANESA" | "TODOS">("DANESA");
@@ -60,16 +54,69 @@ export default function RecepcionCdeDashboardPage() {
   // Modal de Detalle
   const [selectedTicket, setSelectedTicket] = useState<RecepcionCdeTicket | null>(null);
 
-  // Modal de Importación de CSV
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [importNotice, setImportNotice] = useState<string | null>(null);
+  // Subida y procesamiento de CSV (idéntico a Recepción)
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingCSV, setIsUploadingCSV] = useState(false);
+  const [csvReport, setCsvReport] = useState<
+    (ResultadoCargaCdeCSV & { fileName: string; timestamp: string }) | null
+  >(null);
 
   useEffect(() => {
     setIsClient(true);
     const loaded = getStoredCdeTickets();
     setTickets(loaded);
   }, []);
+
+  const showToast = (msg: string) => {
+    setNotification(msg);
+    setTimeout(() => setNotification(null), 4500);
+  };
+
+  // Manejar carga de archivo CSV para actualizar órdenes CDE y detectar cambios de estado
+  const handleCSVFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingCSV(true);
+    try {
+      const text = await file.text();
+      const resultado = procesarActualizacionCdeCSV(text, tickets);
+      setTickets(resultado.updatedTickets);
+
+      const nowStr = new Date().toLocaleTimeString("es-PY", {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      });
+
+      setCsvReport({
+        ...resultado,
+        fileName: file.name,
+        timestamp: nowStr,
+      });
+
+      const totalModificadas = resultado.totalActualizadas + resultado.totalNuevas;
+      if (totalModificadas > 0) {
+        showToast(
+          `CSV CDE procesado: ${resultado.totalActualizadas} orden(es) actualizaron su estado${
+            resultado.totalNuevas > 0 ? ` y ${resultado.totalNuevas} nueva(s)` : ""
+          } (${resultado.totalEnTransitoNuevos} pasaron a En Tránsito por transportadora).`
+        );
+      } else {
+        showToast(
+          `CSV verificado (${resultado.totalFilasLeidas.toLocaleString()} órdenes): No se detectaron cambios de estado.`
+        );
+      }
+    } catch (err) {
+      console.error("Error al procesar el archivo CSV CDE:", err);
+      showToast("Error al procesar el archivo CSV. Verifique que sea el formato oficial de SATI.");
+    } finally {
+      setIsUploadingCSV(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
 
   // Recalcular métricas de rendimiento Casa Matriz CDE vs Danesa
   const metrics = useMemo(() => {
@@ -166,7 +213,7 @@ export default function RecepcionCdeDashboardPage() {
       { value: "TODOS", label: "Todos los estados", count: tickets.length },
       ...sorted.map((st) => ({
         value: st,
-        label: st,
+        label: st === "Entregada" ? "Entregada / En Tránsito" : st,
         count: counts[st],
       })),
     ];
@@ -233,122 +280,58 @@ export default function RecepcionCdeDashboardPage() {
     }
   };
 
-  const handleImportCSVFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const getStatusBadge = (ticket: RecepcionCdeTicket) => {
+    const est = ticket.estado.toLowerCase();
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      if (!content) return;
-
-      try {
-        const parsed = parseRecepcionCdeCSV(content);
-        if (parsed.length === 0) {
-          setImportNotice("El archivo no contenía registros válidos en las 12 columnas requeridas.");
-          return;
-        }
-
-        saveCdeTickets(parsed);
-        setTickets(parsed);
-        setCurrentPage(1);
-        setImportNotice(`¡Importación exitosa! Se cargaron ${parsed.length.toLocaleString()} órdenes de Casa Matriz CDE.`);
-        setTimeout(() => {
-          setShowImportModal(false);
-          setImportNotice(null);
-        }, 1500);
-      } catch (err) {
-        console.error("Error al parsear CSV CDE:", err);
-        setImportNotice("Ocurrió un error al procesar el archivo CSV.");
-      }
-    };
-    reader.readAsText(file, "UTF-8");
-  };
-
-  const handleExportCSV = () => {
-    const headers = [
-      "idOrden",
-      "CodigoProducto",
-      "Cliente",
-      "Mensaje",
-      "FechaIngreso",
-      "FechaEntregada",
-      "FechaVenta",
-      "Estado",
-      "TipoComponente",
-      "Modelo",
-      "Marca",
-      "Serial",
-      "DiasEnTaller",
-      "RecibidoEnDeposito",
-    ];
-
-    const rows = filteredTickets.map((t) => [
-      t.idOrden,
-      t.codigoProducto,
-      `"${t.cliente.replace(/"/g, '""')}"`,
-      `"${(t.mensaje || "").replace(/"/g, '""')}"`,
-      t.fechaIngreso,
-      t.fechaEntregada || "",
-      t.fechaVenta || "",
-      t.estado,
-      t.tipoComponente,
-      `"${t.modelo.replace(/"/g, '""')}"`,
-      t.marca,
-      t.serial,
-      t.diasResolucion ?? "",
-      t.recibidoEnDeposito ? "SI" : "NO",
-    ]);
-
-    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", `rendimiento_cde_deposito_${Date.now()}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const getStatusBadge = (estado: string) => {
-    const est = estado.toLowerCase();
+    // Si dice Entregada: significa que CDE cerró la orden y fue despachada por transportadora
     if (est.includes("entregada")) {
+      if (ticket.recibidoEnDeposito) {
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
+            <span>Recibido en Depósito</span>
+          </span>
+        );
+      }
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-          <Truck className="w-3 h-3 text-emerald-600" />
-          <span>{estado}</span>
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+          <Truck className="w-3 h-3 text-amber-700" />
+          <span>En Tránsito (Transportadora)</span>
         </span>
       );
     }
+
     if (est.includes("reparada")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
           <CheckCircle2 className="w-3 h-3 text-sky-600" />
-          <span>{estado}</span>
+          <span>{ticket.estado}</span>
         </span>
       );
     }
+
     if (est.includes("sin reparo")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 border border-rose-200">
           <AlertCircle className="w-3 h-3 text-rose-600" />
-          <span>{estado}</span>
+          <span>{ticket.estado}</span>
         </span>
       );
     }
+
     if (est.includes("qc")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
           <ShieldCheck className="w-3 h-3 text-purple-600" />
-          <span>{estado}</span>
+          <span>{ticket.estado}</span>
         </span>
       );
     }
+
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800 border border-amber-200">
-        <Clock className="w-3 h-3 text-amber-600" />
-        <span>{estado}</span>
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+        <Clock className="w-3 h-3 text-zinc-600" />
+        <span>{ticket.estado}</span>
       </span>
     );
   };
@@ -365,62 +348,221 @@ export default function RecepcionCdeDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fbf9f9] text-[#121212] flex flex-col font-sans">
-      {/* Barra Superior / Header */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#e5e5e5] px-4 sm:px-6 2xl:px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-xl bg-zinc-900 text-white shadow-sm flex items-center justify-center">
-            <Truck className="w-5 h-5 text-amber-400" />
+    <main className="min-h-screen bg-[#fbf9f9] text-[#121212] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16 font-sans">
+      <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8">
+
+        {/* Notificación Toast Flotante */}
+        {notification && (
+          <div className="fixed top-5 right-5 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg border border-zinc-700 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <span>{notification}</span>
           </div>
+        )}
+
+        {/* Cabecera limpia y simple, idéntica a Recepción */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-200">
           <div>
-            <div className="flex items-center gap-2 text-[11px] font-mono text-zinc-500">
-              <Link href="/recepcion" className="hover:text-zinc-900 transition-colors">
-                Recepción Post-Venta
-              </Link>
-              <span>/</span>
-              <span className="text-zinc-900 font-semibold">Depósito Danesa & CDE</span>
-            </div>
-            <h1 className="text-base sm:text-lg font-black text-zinc-900 tracking-tight flex items-center gap-2">
-              <span>Monitoreo de Transportadora & Rendimiento Casa Matriz CDE</span>
-              <span className="text-[10px] font-mono font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded border border-amber-300">
-                SATI CDE
-              </span>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 tracking-tight">
+              Depósito Danesa &amp; Rendimiento CDE
             </h1>
+            <p className="text-xs sm:text-sm text-zinc-600 mt-1 max-w-3xl">
+              Monitoreo de envíos por transportadora, tiempos de retorno de laboratorio y confirmación de cajas físicas en depósito.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Link
+              href="/recepcion"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-700 hover:text-zinc-900 rounded-lg shadow-2xs transition-colors"
+            >
+              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
+              <span>Volver a Recepción</span>
+            </Link>
+
+            {/* Input oculto para carga de CSV */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              onChange={handleCSVFileChange}
+              className="hidden"
+            />
+
+            {/* Botón idéntico al de Recepción con icono verde y dos líneas de texto */}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploadingCSV}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer"
+              title="Subir archivo CSV para actualizar órdenes de CDE automáticamente"
+            >
+              <span className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center">
+                <Upload className="w-3.5 h-3.5" />
+              </span>
+              <div className="text-left leading-tight">
+                <strong className="block text-xs font-bold text-zinc-900">
+                  {isUploadingCSV ? "Procesando CSV..." : "Subir CSV · Estados"}
+                </strong>
+                <span className="text-[11px] text-zinc-500 font-normal">
+                  Actualizar órdenes SATI
+                </span>
+              </div>
+            </button>
+
+            {/* UN SOLO AuthBadge al extremo derecho */}
+            <AuthBadge requiredModule="deposito.danesa" />
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setShowImportModal(true)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-300 hover:border-zinc-900 rounded-lg text-xs font-semibold text-zinc-800 transition-colors shadow-xs"
+        {/* Panel de Notificación y Recuento de Actualización por CSV (idéntico a Recepción) */}
+        {csvReport && (
+          <section
+            className={`rounded-xl border p-4 sm:p-5 shadow-sm space-y-4 ${
+              csvReport.cambios.length > 0
+                ? "bg-emerald-50/70 border-emerald-200"
+                : "bg-zinc-100/80 border-zinc-300"
+            }`}
           >
-            <Upload className="w-3.5 h-3.5 text-zinc-600" />
-            <span>Importar recepcion-cde.csv</span>
-          </button>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    csvReport.cambios.length > 0
+                      ? "bg-emerald-600 text-white"
+                      : "bg-zinc-800 text-white"
+                  }`}
+                >
+                  {csvReport.cambios.length > 0 ? (
+                    <FileSpreadsheet className="w-5 h-5" />
+                  ) : (
+                    <Info className="w-5 h-5" />
+                  )}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-sm sm:text-base font-extrabold text-zinc-900">
+                      {csvReport.cambios.length > 0
+                        ? `¡Actualización completada! Se detectaron ${csvReport.cambios.length} cambio(s) en el CSV de Casa Matriz CDE`
+                        : "Archivo CSV verificado: No se detectaron cambios de estado"}
+                    </h3>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-white border border-zinc-200 text-zinc-600">
+                      {csvReport.fileName} · {csvReport.timestamp}
+                    </span>
+                  </div>
+                  <p className="text-xs text-zinc-600 mt-0.5">
+                    {csvReport.cambios.length > 0
+                      ? `Se actualizaron ${csvReport.totalActualizadas} estado(s)${
+                          csvReport.totalEnTransitoNuevos > 0
+                            ? ` (${csvReport.totalEnTransitoNuevos} pasaron a En Tránsito por transportadora)`
+                            : ""
+                        } y se integraron ${csvReport.totalNuevas} orden(es) nuevas.`
+                      : `Se compararon las ${csvReport.totalFilasLeidas.toLocaleString()} órdenes del archivo y todas coinciden con los registros actuales.`}
+                  </p>
+                </div>
+              </div>
 
-          <button
-            onClick={handleExportCSV}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-300 hover:border-zinc-900 rounded-lg text-xs font-semibold text-zinc-800 transition-colors shadow-xs"
-          >
-            <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-            <span>Exportar CSV</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setCsvReport(null)}
+                className="self-end sm:self-center px-2.5 py-1 rounded-lg bg-white border border-zinc-200 hover:bg-zinc-100 text-xs font-semibold text-zinc-600 flex items-center gap-1 cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+                <span>Cerrar resumen</span>
+              </button>
+            </div>
 
-          <Link
-            href="/recepcion"
-            className="inline-flex items-center gap-1 px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-semibold rounded-lg transition-colors"
-          >
-            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            <span>Volver a Recepción</span>
-          </Link>
+            {/* Tarjetas de Recuento de la Carga CSV */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="bg-white p-3 rounded-lg border border-zinc-200">
+                <span className="text-[11px] text-zinc-500 block">Órdenes leídas en CSV</span>
+                <strong className="text-lg font-extrabold text-zinc-900 font-mono">
+                  {csvReport.totalFilasLeidas.toLocaleString()}
+                </strong>
+              </div>
+              <div className="bg-white p-3 rounded-lg border border-zinc-200">
+                <span className="text-[11px] text-zinc-500 block">Estados actualizados</span>
+                <strong className="text-lg font-extrabold text-emerald-700 font-mono">
+                  {csvReport.totalActualizadas.toLocaleString()}
+                </strong>
+              </div>
+              <div className="bg-white p-3 rounded-lg border border-zinc-200">
+                <span className="text-[11px] text-zinc-500 block">En Tránsito (Transportadora)</span>
+                <strong className="text-lg font-extrabold text-amber-700 font-mono flex items-center gap-1">
+                  <Truck className="w-4 h-4 text-amber-600" />
+                  <span>{csvReport.totalEnTransitoNuevos.toLocaleString()}</span>
+                </strong>
+              </div>
+              <div className="bg-white p-3 rounded-lg border border-zinc-200">
+                <span className="text-[11px] text-zinc-500 block">Órdenes sin cambios</span>
+                <strong className="text-lg font-extrabold text-zinc-600 font-mono">
+                  {csvReport.totalSinCambios.toLocaleString()}
+                </strong>
+              </div>
+            </div>
 
-          <AuthBadge />
-          <HeaderActions />
-        </div>
-      </header>
+            {/* Tabla detallada de las órdenes que cambiaron de estado */}
+            {csvReport.cambios.length > 0 && (
+              <div className="bg-white rounded-lg border border-zinc-200 overflow-hidden">
+                <div className="px-3.5 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
+                  <span className="text-xs font-bold text-zinc-800">
+                    Detalle de órdenes con cambios ({csvReport.cambios.length})
+                  </span>
+                  <span className="text-[11px] font-mono text-zinc-500">
+                    Haz clic en una orden para buscarla en la tabla
+                  </span>
+                </div>
+                <div className="max-h-56 overflow-y-auto divide-y divide-zinc-100">
+                  {csvReport.cambios.map((c, idx) => (
+                    <div
+                      key={`${c.idOrden}-${idx}`}
+                      onClick={() => setSearchTerm(c.idOrden)}
+                      className="px-3.5 py-2 text-xs flex items-center justify-between hover:bg-zinc-50 cursor-pointer transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                          #{c.idOrden}
+                        </span>
+                        <div>
+                          <strong className="text-zinc-900">{c.cliente}</strong>
+                          {c.esDanesa && (
+                            <span className="ml-1.5 text-[10px] font-bold text-amber-800 bg-amber-100 px-1 rounded">
+                              Danesa SA
+                            </span>
+                          )}
+                          <span className="text-zinc-500 font-mono block text-[11px]">
+                            {c.equipo}
+                          </span>
+                        </div>
+                      </div>
 
-      {/* Contenido Principal */}
-      <div className="flex-1 max-w-[1700px] w-full mx-auto p-4 sm:p-6 2xl:p-8 space-y-6">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded text-[11px] bg-zinc-100 text-zinc-600 line-through">
+                          {c.estadoAnterior}
+                        </span>
+                        <ArrowRight className="w-3 h-3 text-zinc-400" />
+                        {c.enTransito ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                            <Truck className="w-3 h-3 text-amber-700" />
+                            <span>En Tránsito (Transportadora)</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            {c.estadoNuevo}
+                          </span>
+                        )}
+                        {c.fechaEntregada && (
+                          <span className="text-[10px] font-mono text-zinc-400">
+                            {c.fechaEntregada}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Tarjetas KPI de Rendimiento */}
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
@@ -547,7 +689,7 @@ export default function RecepcionCdeDashboardPage() {
                   setViewScope("DANESA");
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   viewScope === "DANESA"
                     ? "bg-zinc-900 text-white shadow-xs"
                     : "text-zinc-600 hover:text-zinc-900"
@@ -566,7 +708,7 @@ export default function RecepcionCdeDashboardPage() {
                   setViewScope("TODOS");
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   viewScope === "TODOS"
                     ? "bg-zinc-900 text-white shadow-xs"
                     : "text-zinc-600 hover:text-zinc-900"
@@ -596,7 +738,7 @@ export default function RecepcionCdeDashboardPage() {
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600"
+                  className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -604,7 +746,7 @@ export default function RecepcionCdeDashboardPage() {
             </div>
           </div>
 
-          {/* Filtros Secundarios */}
+          {/* Filtros Secundarios con CleanSelect */}
           <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
             {/* Filtro de Tránsito / Caja */}
             <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs">
@@ -614,7 +756,7 @@ export default function RecepcionCdeDashboardPage() {
                   setTransitFilter("TODOS");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors ${
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
                   transitFilter === "TODOS"
                     ? "bg-white font-bold text-zinc-900 shadow-xs"
                     : "text-zinc-500 hover:text-zinc-900"
@@ -628,7 +770,7 @@ export default function RecepcionCdeDashboardPage() {
                   setTransitFilter("EN_TRANSITO");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
                   transitFilter === "EN_TRANSITO"
                     ? "bg-amber-500 text-white font-bold shadow-xs"
                     : "text-amber-700 hover:bg-amber-100/60"
@@ -643,7 +785,7 @@ export default function RecepcionCdeDashboardPage() {
                   setTransitFilter("RECIBIDOS");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
                   transitFilter === "RECIBIDOS"
                     ? "bg-emerald-600 text-white font-bold shadow-xs"
                     : "text-emerald-700 hover:bg-emerald-100/60"
@@ -654,7 +796,7 @@ export default function RecepcionCdeDashboardPage() {
               </button>
             </div>
 
-            {/* Filtro de Estado */}
+            {/* Filtro de Estado con CleanSelect */}
             <CleanSelect
               options={statusOptions}
               value={statusFilter}
@@ -665,7 +807,7 @@ export default function RecepcionCdeDashboardPage() {
               className="w-56"
             />
 
-            {/* Filtro de Componente */}
+            {/* Filtro de Componente con CleanSelect */}
             <CleanSelect
               options={componentOptions}
               value={componentFilter}
@@ -701,7 +843,7 @@ export default function RecepcionCdeDashboardPage() {
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-zinc-500" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">
-                Órdenes SATI CDE · Rendimiento & Retornos de Laboratorio ({filteredTickets.length.toLocaleString()})
+                Órdenes SATI CDE · Rendimiento &amp; Retornos de Laboratorio ({filteredTickets.length.toLocaleString()})
               </h2>
             </div>
             <span className="text-xs text-zinc-400 font-mono">
@@ -793,7 +935,7 @@ export default function RecepcionCdeDashboardPage() {
                             <div className="flex flex-col">
                               <span className="font-bold text-zinc-900">{ticket.fechaEntregada}</span>
                               {isDanesa && (
-                                <span className="text-[10px] text-amber-700 font-sans flex items-center gap-0.5">
+                                <span className="text-[10px] text-amber-700 font-sans flex items-center gap-0.5 font-semibold">
                                   <Truck className="w-2.5 h-2.5" />
                                   <span>Despacho transportadora</span>
                                 </span>
@@ -824,9 +966,9 @@ export default function RecepcionCdeDashboardPage() {
                           )}
                         </td>
 
-                        {/* Estado CDE */}
+                        {/* Estado CDE con indicación de En Tránsito si dice Entregada */}
                         <td className="py-3 px-3 whitespace-nowrap">
-                          {getStatusBadge(ticket.estado)}
+                          {getStatusBadge(ticket)}
                         </td>
 
                         {/* Dictamen / Informe Técnico */}
@@ -964,7 +1106,7 @@ export default function RecepcionCdeDashboardPage() {
               </div>
               <button
                 onClick={() => setSelectedTicket(null)}
-                className="text-zinc-400 hover:text-zinc-900 text-lg font-bold p-1"
+                className="text-zinc-400 hover:text-zinc-900 text-lg font-bold p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -1010,7 +1152,7 @@ export default function RecepcionCdeDashboardPage() {
 
               {/* Hardware */}
               <div className="p-3 bg-white border border-zinc-200 rounded-xl space-y-1">
-                <span className="text-zinc-500 block text-[11px]">Hardware & Identificación</span>
+                <span className="text-zinc-500 block text-[11px]">Hardware &amp; Identificación</span>
                 <div className="font-bold text-sm text-zinc-900">
                   {selectedTicket.marca} {selectedTicket.modelo}
                 </div>
@@ -1023,7 +1165,7 @@ export default function RecepcionCdeDashboardPage() {
               {/* Dictamen / Informe Técnico */}
               <div>
                 <span className="text-zinc-500 font-bold text-[11px] uppercase tracking-wider block mb-1">
-                  Dictamen Técnico & Mensaje de Servicio de CDE
+                  Dictamen Técnico &amp; Mensaje de Servicio de CDE
                 </span>
                 <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-800 text-xs font-sans leading-relaxed whitespace-pre-wrap">
                   {selectedTicket.mensaje || "Sin observaciones técnicas cargadas en CDE."}
@@ -1052,7 +1194,7 @@ export default function RecepcionCdeDashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleToggleCheckin(selectedTicket.idOrden)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs ${
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer ${
                       selectedTicket.recibidoEnDeposito
                         ? "bg-emerald-600 text-white hover:bg-emerald-700"
                         : "bg-zinc-900 text-white hover:bg-black"
@@ -1068,77 +1210,9 @@ export default function RecepcionCdeDashboardPage() {
               <button
                 type="button"
                 onClick={() => setSelectedTicket(null)}
-                className="px-4 py-2 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-semibold transition-colors"
+                className="px-4 py-2 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
               >
                 Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Carga de Archivo CSV recepcion-cde.csv */}
-      {showImportModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-zinc-200">
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
-              <div className="flex items-center gap-2">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-600" />
-                <h3 className="text-base font-bold text-zinc-900">
-                  Importar recepcion-cde.csv
-                </h3>
-              </div>
-              <button
-                onClick={() => setShowImportModal(false)}
-                className="text-zinc-400 hover:text-zinc-900 text-lg font-bold p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-zinc-600 leading-relaxed">
-              <p>
-                Suba el archivo exportado de SATI Casa Matriz CDE. El sistema validará automáticamente las 12 columnas:
-              </p>
-              <div className="p-2.5 bg-zinc-50 border border-zinc-200 rounded-lg font-mono text-[10px] text-zinc-700">
-                idOrden, CodigoProducto, Cliente, Mensaje, FechaIngreso, FechaEntregada, FechaVenta, Estado, TipoComponente, Modelo, Marca, Serial
-              </div>
-
-              {/* Botón selector de archivo */}
-              <div className="pt-2">
-                <input
-                  type="file"
-                  accept=".csv,text/csv"
-                  ref={fileInputRef}
-                  onChange={handleImportCSVFile}
-                  className="hidden"
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full py-4 border-2 border-dashed border-zinc-300 hover:border-zinc-900 rounded-xl flex flex-col items-center justify-center gap-1.5 transition-colors cursor-pointer bg-zinc-50 hover:bg-zinc-100/60"
-                >
-                  <Upload className="w-6 h-6 text-zinc-600" />
-                  <span className="font-bold text-zinc-900 text-xs">Haga click para seleccionar recepcion-cde.csv</span>
-                  <span className="text-[11px] text-zinc-400">Archivo CSV separado por comas o tabuladores</span>
-                </button>
-              </div>
-
-              {importNotice && (
-                <div className="p-3 bg-zinc-900 text-white rounded-lg text-xs font-medium flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span>{importNotice}</span>
-                </div>
-              )}
-            </div>
-
-            <div className="pt-3 border-t border-zinc-200 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowImportModal(false)}
-                className="px-4 py-2 border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900"
-              >
-                Cancelar
               </button>
             </div>
           </div>
