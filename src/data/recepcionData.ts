@@ -27447,6 +27447,53 @@ export function addTicket(ticket: RecepcionTicket): RecepcionTicket[] {
   return updated;
 }
 
+export function updateTicketDetails(
+  idOrden: string,
+  updates: Partial<RecepcionTicket>
+): RecepcionTicket[] {
+  const isDelivered = updates.estado?.trim().toLowerCase() === 'entregada';
+  if (updates.estado) {
+    recordStoredId(ESTADOS_CAMBIADOS_STORAGE_KEY, idOrden);
+    if (isDelivered) {
+      recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, idOrden);
+    }
+  }
+
+  const nowDate = new Date().toLocaleDateString('es-PY', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+
+  const current = getStoredTickets();
+  const updated = current.map((t) => {
+    if (t.idOrden !== idOrden) return t;
+    return {
+      ...t,
+      ...updates,
+      fechaEntregada: isDelivered
+        ? (updates.fechaEntregada || t.fechaEntregada || nowDate)
+        : (updates.fechaEntregada !== undefined ? updates.fechaEntregada : t.fechaEntregada),
+      esEstadoCambiadoReciente: updates.estado ? true : t.esEstadoCambiadoReciente,
+      esEntregadoReciente: isDelivered ? true : t.esEntregadoReciente,
+    };
+  });
+  saveTickets(updated);
+
+  if (typeof window !== 'undefined') {
+    const updatedTicket = updated.find((t) => t.idOrden === idOrden);
+    if (updatedTicket) {
+      fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'ADD_RECEPCION_TICKET', ticket: updatedTicket }),
+      }).catch((err) => console.error('[MySQL Error Update Ticket Details]', err));
+    }
+  }
+
+  return updated;
+}
+
 export function updateTicketStatus(idOrden: string, newStatus: string): RecepcionTicket[] {
   const isDelivered = newStatus.trim().toLowerCase() === 'entregada';
   recordStoredId(ESTADOS_CAMBIADOS_STORAGE_KEY, idOrden);

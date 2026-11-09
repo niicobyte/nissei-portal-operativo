@@ -71,6 +71,11 @@ function findFamilyForComponent(tipo: string): CategoryFamily | undefined {
 export default function NuevoIngresoRetornoPage() {
   const router = useRouter();
 
+  // Redireccionar al Dashboard de Recepción (gestión centralizada desde el modal de órdenes)
+  useEffect(() => {
+    router.replace("/recepcion");
+  }, [router]);
+
   // Listados de órdenes para autocompletado en tiempo real
   const [allTickets, setAllTickets] = useState<RecepcionTicket[]>([]);
   const [allReparaciones, setAllReparaciones] = useState<OrdenReparacion[]>([]);

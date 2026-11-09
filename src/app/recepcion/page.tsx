@@ -22,7 +22,8 @@ import {
   Upload,
   FileSpreadsheet,
   ArrowRight,
-  Info
+  Info,
+  Save,
 } from "lucide-react";
 import {
   RecepcionTicket,
@@ -30,6 +31,7 @@ import {
   getStoredTickets,
   fetchTicketsFromMySQL,
   updateTicketStatus,
+  updateTicketDetails,
   resetTickets,
   procesarActualizacionCSV,
   ResultadoCargaCSV,
@@ -58,6 +60,13 @@ export default function RecepcionDashboardPage() {
 
   // Modales y notificaciones
   const [selectedTicket, setSelectedTicket] = useState<RecepcionTicket | null>(null);
+  const [modalMensaje, setModalMensaje] = useState<string>("");
+
+  useEffect(() => {
+    if (selectedTicket) {
+      setModalMensaje(selectedTicket.mensaje || "");
+    }
+  }, [selectedTicket]);
   const [showPrintModal, setShowPrintModal] = useState<RecepcionTicket | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -149,12 +158,38 @@ export default function RecepcionDashboardPage() {
     }
   };
 
-  // Actualizar estado de una orden (ej: Entregar)
+  // Guardar notas o comentarios del informe técnico de la orden
+  const handleGuardarMensaje = () => {
+    if (!selectedTicket) return;
+    const updated = updateTicketDetails(selectedTicket.idOrden, {
+      mensaje: modalMensaje,
+    });
+    setTickets(updated);
+    setSelectedTicket({ ...selectedTicket, mensaje: modalMensaje });
+    showToast(`Informe técnico de la orden #${selectedTicket.idOrden} guardado.`);
+  };
+
+  // Actualizar estado de una orden (ej: Entregar, Reparada, Pasar a QC, En Taller)
   const handleCambiarEstado = (idOrden: string, nuevoEstado: string) => {
-    const updated = updateTicketStatus(idOrden, nuevoEstado);
+    const isDelivered = nuevoEstado.toLowerCase() === "entregada";
+    const nowDate = new Date().toLocaleDateString("es-PY");
+    const updated = updateTicketDetails(idOrden, {
+      estado: nuevoEstado,
+      mensaje: modalMensaje,
+      fechaEntregada: isDelivered
+        ? selectedTicket?.fechaEntregada || nowDate
+        : selectedTicket?.fechaEntregada,
+    });
     setTickets(updated);
     if (selectedTicket && selectedTicket.idOrden === idOrden) {
-      setSelectedTicket({ ...selectedTicket, estado: nuevoEstado });
+      setSelectedTicket({
+        ...selectedTicket,
+        estado: nuevoEstado,
+        mensaje: modalMensaje,
+        fechaEntregada: isDelivered
+          ? selectedTicket.fechaEntregada || nowDate
+          : selectedTicket.fechaEntregada,
+      });
     }
     showToast(`Orden #${idOrden} actualizada a estado: ${nuevoEstado}`);
   };
@@ -186,8 +221,9 @@ export default function RecepcionDashboardPage() {
       msgUpper.includes("NC") ||
       msgUpper.includes("CAMBIO POR NUEVO") ||
       msgUpper.includes("RECHAZA") ||
-      estLower.includes("liquidacion") ||
-      estLower.includes("stock")
+      estLower.includes("sin reparo") ||
+      estLower.includes("no reparado") ||
+      estLower.includes("rma")
     ) {
       statusText =
         "⚠️ *NO REPARADO / DERIVADO A RMA*\nSe requiere gestión de garantía con fabricante o emisión de nota de crédito comercial.";
@@ -198,7 +234,7 @@ export default function RecepcionDashboardPage() {
       statusText = `🔧 *EN GESTIÓN DE TALLER (${ticket.estado || "En proceso"})*\nEl equipo se encuentra en evaluación técnica en el sector de Post-Venta.`;
     }
 
-    if (detalleTexto) {
+    if (detalleTexto && !detalleTexto.toUpperCase().includes("SIN DETALLES ADICIONALES")) {
       statusText += `\n📝 *Detalle:* ${detalleTexto}`;
     }
 
@@ -218,7 +254,15 @@ ${accText}`;
   };
 
   const handleNotificarWhatsAppRecepcion = async (ticket: RecepcionTicket) => {
-    const msg = generarMensajeWhatsAppRecepcion(ticket);
+    // Si el mensaje en el modal fue modificado, guardarlo en la orden antes de notificar
+    let currentTicket = ticket;
+    if (modalMensaje !== ticket.mensaje) {
+      const updated = updateTicketDetails(ticket.idOrden, { mensaje: modalMensaje });
+      setTickets(updated);
+      currentTicket = { ...ticket, mensaje: modalMensaje };
+      setSelectedTicket(currentTicket);
+    }
+    const msg = generarMensajeWhatsAppRecepcion(currentTicket);
 
     try {
       const res = await fetch("/api/whatsapp/send", {
@@ -863,16 +907,13 @@ ${accText}`;
                     title="Filtrar por Nuevos Ingresos, Estados cambiados recientemente o Recientemente entregados"
                   >
                     <option value="NINGUNO" className="bg-white text-zinc-900">
-                      Recién agregados ({recentCounts.todosRecientes})
-                    </option>
-                    <option value="NUEVOS_INGRESOS" className="bg-white text-zinc-900">
-                      Nuevos ingresos (+ Nuevo Ingreso) ({recentCounts.nuevosIngresos})
+                      Todos los registros ({tickets.length})
                     </option>
                     <option value="ESTADOS_CAMBIADOS" className="bg-white text-zinc-900">
                       Estados cambiados recientemente ({recentCounts.estadosCambiados})
                     </option>
                     <option value="RECIEN_ENTREGADOS" className="bg-white text-zinc-900">
-                      Recientemente entregados ({recentCounts.recienEntregados})
+                      Recién entregados ({recentCounts.recienEntregados})
                     </option>
                     <option value="TODOS_RECIENTES" className="bg-white text-zinc-900">
                       Toda actividad reciente ({recentCounts.todosRecientes})
@@ -960,13 +1001,6 @@ ${accText}`;
               <span className="text-xs font-mono text-zinc-600 bg-zinc-100 px-2.5 py-1.5 rounded-lg border border-zinc-200 tabular-nums">
                 Página {currentPage} de {totalPages} ({filteredTickets.length} resultados)
               </span>
-              <Link
-                href="/recepcion/nuevo"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-zinc-900 hover:bg-black rounded-lg shadow-sm transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Nuevo Ingreso</span>
-              </Link>
             </div>
           </div>
 
@@ -1213,10 +1247,27 @@ ${accText}`;
                 </div>
 
                 <div>
-                  <span className="text-[#888888] block mb-1 text-[11px]">Informe Técnico / Mensaje de Servicio</span>
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-[#222222] leading-relaxed whitespace-pre-wrap font-sans">
-                    {selectedTicket.mensaje || "Sin detalles adicionales registrados por el laboratorio."}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[#888888] font-bold text-[11px] uppercase tracking-wider">
+                      Informe Técnico / Mensaje de Servicio
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleGuardarMensaje}
+                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                      title="Guardar observaciones y comentarios"
+                    >
+                      <Save className="w-3 h-3" />
+                      <span>Guardar cambios</span>
+                    </button>
                   </div>
+                  <textarea
+                    value={modalMensaje}
+                    onChange={(e) => setModalMensaje(e.target.value)}
+                    placeholder="Añada o modifique aquí el informe técnico, observaciones del laboratorio, pruebas ejecutadas..."
+                    rows={3}
+                    className="w-full p-3 bg-white border border-slate-300 focus:border-zinc-900 rounded-xl text-xs text-[#222222] leading-relaxed outline-none transition-all placeholder:text-zinc-400 font-sans shadow-sm"
+                  />
                 </div>
 
                 {/* Acciones de cambio de estado en el modal */}
