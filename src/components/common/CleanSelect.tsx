@@ -23,6 +23,7 @@ interface CleanSelectProps {
   dropdownWidth?: string;
   align?: "left" | "right";
   size?: "sm" | "md";
+  fullWidth?: boolean;
 }
 
 export function CleanSelect({
@@ -33,14 +34,16 @@ export function CleanSelect({
   placeholder = "Seleccionar...",
   className = "",
   activeClassName = "",
-  dropdownWidth = "w-64",
+  dropdownWidth,
   align = "left",
   size = "sm",
+  fullWidth = false,
 }: CleanSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
+  const isFull = fullWidth || className.includes("w-full");
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -78,11 +81,13 @@ export function CleanSelect({
   const textClass = size === "sm" ? "text-xs" : "text-sm";
 
   return (
-    <div ref={containerRef} className="relative inline-block text-left">
+    <div ref={containerRef} className={`relative text-left ${isFull ? "w-full block" : "inline-block"}`}>
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
         className={`inline-flex items-center justify-between gap-2 ${pxClass} ${pyClass} ${textClass} font-semibold rounded-xl border transition-all duration-150 cursor-pointer shadow-sm select-none ${
+          isFull ? "w-full" : ""
+        } ${
           isOpen
             ? "border-zinc-900 ring-2 ring-zinc-900/10 bg-white text-zinc-900"
             : selectedOption && selectedOption.value !== "TODOS" && selectedOption.value !== "NINGUNO" && activeClassName
@@ -119,7 +124,7 @@ export function CleanSelect({
         <div
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
-          } mt-1.5 ${dropdownWidth} max-h-72 overflow-y-auto bg-white rounded-xl border border-zinc-200 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150`}
+          } mt-1.5 ${dropdownWidth || (isFull ? "w-full" : "w-64")} min-w-[200px] max-h-72 overflow-y-auto bg-white rounded-xl border border-zinc-200 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150`}
         >
           <div className="space-y-0.5">
             {options.map((opt) => {

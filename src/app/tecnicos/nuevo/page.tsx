@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
+import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -67,6 +68,52 @@ export default function NuevoIngresoMontajePage() {
     LISTA_TECNICOS_MONTAJE[0]
   );
   const [priority, setPriority] = useState<"NORMAL" | "EXPRESS" | "URGENTE">("NORMAL");
+
+  // Opciones con estilo CleanSelect
+  const vendedorOptions = useMemo<CleanSelectOption[]>(
+    () => [
+      ...LISTA_VENDEDORES_REALES.map((v) => ({ value: v, label: v })),
+      { value: "OTRO", label: "+ Otro vendedor (especificar)" },
+    ],
+    []
+  );
+
+  const canalOptions: CleanSelectOption[] = [
+    { value: "Tienda", label: "Tienda" },
+    { value: "Ecommerce - Web", label: "Ecommerce - Web" },
+    { value: "Empresas / Coorporativo", label: "Empresas / Coorporativo" },
+  ];
+
+  const categoriaOptions: CleanSelectOption[] =
+    tipoServicio === "Montaje"
+      ? [
+          { value: "PROCESADOR", label: "Procesador" },
+          { value: "PLACA_MADRE", label: "Placa Madre" },
+          { value: "RAM", label: "Memoria RAM Desktop" },
+          { value: "GPU", label: "Tarjeta de Video" },
+          { value: "ALMACENAMIENTO", label: "Almacenamiento SSD" },
+          { value: "FUENTE", label: "Fuente de Poder" },
+          { value: "GABINETE", label: "Gabinete" },
+          { value: "REFRIGERACION", label: "Cooler / Líquida" },
+          { value: "OTROS", label: "Otro Componente" },
+        ]
+      : [
+          { value: "NOTEBOOK", label: "Notebook del Cliente" },
+          { value: "RAM", label: "Memoria RAM SODIMM" },
+          { value: "ALMACENAMIENTO", label: "SSD Expansión (M.2/SATA)" },
+          { value: "OTROS", label: "Otro Accesorio" },
+        ];
+
+  const tecnicoOptions: CleanSelectOption[] = LISTA_TECNICOS_MONTAJE.map((t) => ({
+    value: t,
+    label: t,
+  }));
+
+  const prioridadOptions: CleanSelectOption[] = [
+    { value: "NORMAL", label: "NORMAL (Cola estándar 48h)" },
+    { value: "EXPRESS", label: "EXPRESS (Prioridad 24h)" },
+    { value: "URGENTE", label: "URGENTE (Despacho en el día)" },
+  ];
   const [assemblyDate, setAssemblyDate] = useState<string>(deliveryDateDefault);
   const [observations, setObservations] = useState<string>("");
 
@@ -316,18 +363,14 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Vendedor Comercial *
                   </label>
-                  <select
+                  <CleanSelect
                     value={salesAgent}
-                    onChange={(e) => setSalesAgent(e.target.value)}
-                    className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:border-zinc-900 outline-none text-zinc-900 font-medium"
-                  >
-                    {LISTA_VENDEDORES_REALES.map((v) => (
-                      <option key={v} value={v}>
-                        {v}
-                      </option>
-                    ))}
-                    <option value="OTRO">+ Otro vendedor (especificar)</option>
-                  </select>
+                    onChange={(val) => setSalesAgent(val)}
+                    options={vendedorOptions}
+                    fullWidth
+                    dropdownWidth="w-full"
+                    className="w-full justify-between"
+                  />
                 </div>
 
                 {/* Vendedor personalizado si seleccionó OTRO */}
@@ -352,15 +395,14 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Canal de Venta
                   </label>
-                  <select
+                  <CleanSelect
                     value={salesChannel}
-                    onChange={(e) => setSalesChannel(e.target.value as any)}
-                    className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:border-zinc-900 outline-none text-zinc-900 font-medium"
-                  >
-                    <option value="Tienda">Tienda</option>
-                    <option value="Ecommerce - Web">Ecommerce - Web</option>
-                    <option value="Empresas / Coorporativo">Empresas / Coorporativo</option>
-                  </select>
+                    onChange={(val) => setSalesChannel(val as any)}
+                    options={canalOptions}
+                    fullWidth
+                    dropdownWidth="w-full"
+                    className="w-full justify-between"
+                  />
                 </div>
 
                 {/* Nro. Registro / Interno */}
@@ -552,32 +594,14 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                     <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
                       Categoría *
                     </label>
-                    <select
+                    <CleanSelect
                       value={customCategory}
-                      onChange={(e) => setCustomCategory(e.target.value as any)}
-                      className="w-full text-xs bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 font-medium shadow-sm"
-                    >
-                      {tipoServicio === "Montaje" ? (
-                        <>
-                          <option value="PROCESADOR">Procesador</option>
-                          <option value="PLACA_MADRE">Placa Madre</option>
-                          <option value="RAM">Memoria RAM Desktop</option>
-                          <option value="GPU">Tarjeta de Video</option>
-                          <option value="ALMACENAMIENTO">Almacenamiento SSD</option>
-                          <option value="FUENTE">Fuente de Poder</option>
-                          <option value="GABINETE">Gabinete</option>
-                          <option value="REFRIGERACION">Cooler / Líquida</option>
-                          <option value="OTROS">Otro Componente</option>
-                        </>
-                      ) : (
-                        <>
-                          <option value="NOTEBOOK">Notebook del Cliente</option>
-                          <option value="RAM">Memoria RAM SODIMM</option>
-                          <option value="ALMACENAMIENTO">SSD Expansión (M.2/SATA)</option>
-                          <option value="OTROS">Otro Accesorio</option>
-                        </>
-                      )}
-                    </select>
+                      onChange={(val) => setCustomCategory(val as any)}
+                      options={categoriaOptions}
+                      fullWidth
+                      dropdownWidth="w-full"
+                      className="w-full justify-between"
+                    />
                   </div>
 
                   {/* Descripción del Hardware */}
@@ -730,17 +754,14 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Técnico Responsable *
                   </label>
-                  <select
+                  <CleanSelect
                     value={assignedTech}
-                    onChange={(e) => setAssignedTech(e.target.value as any)}
-                    className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:border-zinc-900 outline-none text-zinc-900 font-bold"
-                  >
-                    {LISTA_TECNICOS_MONTAJE.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setAssignedTech(val as any)}
+                    options={tecnicoOptions}
+                    fullWidth
+                    dropdownWidth="w-full"
+                    className="w-full justify-between"
+                  />
                 </div>
 
                 {/* Prioridad */}
@@ -748,15 +769,14 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Prioridad de Entrega
                   </label>
-                  <select
+                  <CleanSelect
                     value={priority}
-                    onChange={(e) => setPriority(e.target.value as any)}
-                    className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white focus:border-zinc-900 outline-none text-zinc-900 font-semibold"
-                  >
-                    <option value="NORMAL">NORMAL (Cola estándar 48h)</option>
-                    <option value="EXPRESS">EXPRESS (Prioridad 24h)</option>
-                    <option value="URGENTE">URGENTE (Despacho en el día)</option>
-                  </select>
+                    onChange={(val) => setPriority(val as any)}
+                    options={prioridadOptions}
+                    fullWidth
+                    dropdownWidth="w-full"
+                    className="w-full justify-between"
+                  />
                 </div>
 
                 {/* Fecha Estimada */}

@@ -30,6 +30,7 @@ import {
   OrdenMontajeReal
 } from "@/data/montajesData";
 import { getActiveUser } from "@/data/authData";
+import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 
 export default function TecnicosDashboardPage() {
   const [montajes, setMontajes] = useState<OrdenMontajeReal[]>([]);
@@ -188,6 +189,24 @@ export default function TecnicosDashboardPage() {
     });
     return Array.from(set).sort();
   }, [montajes]);
+
+  // Opciones CleanSelect para filtros
+  const servicioOptions: CleanSelectOption[] = useMemo(() => [
+    { value: "TODOS", label: `Todos los Servicios (${montajes.length})` },
+    { value: "Montaje", label: `Montaje de PC Completa (${metrics.totalMontajesOrdenes})` },
+    { value: "Expansion", label: `Expansión / Notebook (${metrics.totalExpansiones})` },
+  ], [montajes.length, metrics.totalMontajesOrdenes, metrics.totalExpansiones]);
+
+  const tecnicoFilterOptions: CleanSelectOption[] = useMemo(() => [
+    { value: "TODOS", label: "Todos los Técnicos" },
+    { value: "Sin Asignar", label: `Sin Asignar (${metrics.sinAsignarCount})` },
+    ...LISTA_TECNICOS_MONTAJE.map((t) => ({ value: t, label: t })),
+  ], [metrics.sinAsignarCount]);
+
+  const vendedorFilterOptions: CleanSelectOption[] = useMemo(() => [
+    { value: "TODOS", label: "Todos los Vendedores" },
+    ...listaVendedores.map((v) => ({ value: v, label: v })),
+  ], [listaVendedores]);
 
   // Filtrado de órdenes y ordenamiento por REG. INTERNO (más recientes primero)
   const filteredMontajes = useMemo(() => {
@@ -525,48 +544,38 @@ export default function TecnicosDashboardPage() {
 
             {/* Filtro por Modalidad: Todos / Montaje / Expansión */}
             <div className="lg:col-span-3 flex items-center gap-2">
-              <select
+              <CleanSelect
                 value={tipoServicioFilter}
-                onChange={(e) => setTipoServicioFilter(e.target.value as any)}
-                className="w-full text-xs border border-zinc-200 rounded-lg px-2.5 py-2 bg-white text-zinc-900 font-medium outline-none focus:border-zinc-900"
-              >
-                <option value="TODOS">Todos los Servicios ({montajes.length})</option>
-                <option value="Montaje">Montaje de PC Completa ({metrics.totalMontajesOrdenes})</option>
-                <option value="Expansion">Expansión / Notebook ({metrics.totalExpansiones})</option>
-              </select>
+                onChange={(val) => setTipoServicioFilter(val as any)}
+                options={servicioOptions}
+                fullWidth
+                dropdownWidth="w-full"
+                className="w-full justify-between"
+              />
             </div>
 
             {/* Filtro por Técnico (Nicolas Solis, Magaly Yegros, Juan Ronnebeck) */}
             <div className="lg:col-span-2 flex items-center gap-2">
-              <select
+              <CleanSelect
                 value={tecnicoFilter}
-                onChange={(e) => setTecnicoFilter(e.target.value)}
-                className="w-full text-xs border border-zinc-200 rounded-lg px-2.5 py-2 bg-white text-zinc-900 font-medium outline-none focus:border-zinc-900"
-              >
-                <option value="TODOS">Todos los Técnicos</option>
-                <option value="Sin Asignar">Sin Asignar ({metrics.sinAsignarCount})</option>
-                {LISTA_TECNICOS_MONTAJE.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setTecnicoFilter(val)}
+                options={tecnicoFilterOptions}
+                fullWidth
+                dropdownWidth="w-full"
+                className="w-full justify-between"
+              />
             </div>
 
             {/* Filtro por Vendedor */}
             <div className="lg:col-span-2 flex items-center gap-2">
-              <select
+              <CleanSelect
                 value={vendedorFilter}
-                onChange={(e) => setVendedorFilter(e.target.value)}
-                className="w-full text-xs border border-zinc-200 rounded-lg px-2.5 py-2 bg-white text-zinc-900 font-medium outline-none focus:border-zinc-900"
-              >
-                <option value="TODOS">Todos los Vendedores</option>
-                {listaVendedores.map((vend) => (
-                  <option key={vend} value={vend}>
-                    {vend}
-                  </option>
-                ))}
-              </select>
+                onChange={(val) => setVendedorFilter(val)}
+                options={vendedorFilterOptions}
+                fullWidth
+                dropdownWidth="w-full"
+                className="w-full justify-between"
+              />
             </div>
 
           </div>
