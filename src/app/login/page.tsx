@@ -17,7 +17,8 @@ import {
   Wrench,
   PackageOpen,
   Cpu,
-  Database
+  Database,
+  Truck
 } from "lucide-react";
 import {
   USER_PROFILES,
@@ -31,8 +32,8 @@ import DatabaseViewerModal from "@/components/common/DatabaseViewerModal";
 export default function LoginPage() {
   const router = useRouter();
 
-  // Sector principal seleccionado: "MONTAJES" | "RECEPCION"
-  const [activeSector, setActiveSector] = useState<"MONTAJES" | "RECEPCION">("MONTAJES");
+  // Sector principal seleccionado: "MONTAJES" | "RECEPCION" | "DEPOSITO"
+  const [activeSector, setActiveSector] = useState<"MONTAJES" | "RECEPCION" | "DEPOSITO">("MONTAJES");
 
   // Perfil seleccionado para ingresar contraseña
   const [selectedProfile, setSelectedProfile] = useState<UserProfile>(
@@ -55,7 +56,11 @@ export default function LoginPage() {
   useEffect(() => {
     const active = getActiveUser();
     if (active) {
-      if (active.role === "RECEPCION") {
+      if (active.role === "DEPOSITO" || active.id === "deposito.danesa") {
+        setActiveSector("DEPOSITO");
+        const prof = USER_PROFILES.find((p) => p.id === "deposito.danesa");
+        if (prof) setSelectedProfile(prof);
+      } else if (active.role === "RECEPCION") {
         setActiveSector("RECEPCION");
         const prof = USER_PROFILES.find((p) => p.id === "recepcion");
         if (prof) setSelectedProfile(prof);
@@ -67,12 +72,15 @@ export default function LoginPage() {
     }
   }, []);
 
-  const handleSelectSector = (sector: "MONTAJES" | "RECEPCION") => {
+  const handleSelectSector = (sector: "MONTAJES" | "RECEPCION" | "DEPOSITO") => {
     setActiveSector(sector);
     setPassword("");
     setError(null);
 
-    if (sector === "RECEPCION") {
+    if (sector === "DEPOSITO") {
+      const prof = USER_PROFILES.find((p) => p.id === "deposito.danesa");
+      if (prof) setSelectedProfile(prof);
+    } else if (sector === "RECEPCION") {
       const prof = USER_PROFILES.find((p) => p.id === "recepcion");
       if (prof) setSelectedProfile(prof);
     } else {
@@ -85,15 +93,21 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
 
-    const result = authenticate(selectedProfile.id, password);
+    let profileToAuth = selectedProfile.id;
+    if (password.trim() === "deposito.danesa" || password.trim() === "danesa") {
+      profileToAuth = "deposito.danesa";
+    }
+
+    const result = authenticate(profileToAuth, password);
     if (!result.success) {
       setError(result.message);
       return;
     }
 
-    setSuccess(`Autenticado como ${selectedProfile.nombre}. Redirigiendo a su panel...`);
+    const authUser = result.user || selectedProfile;
+    setSuccess(`Autenticado como ${authUser.nombre}. Redirigiendo a su panel...`);
     setTimeout(() => {
-      router.push(selectedProfile.defaultRoute);
+      router.push(authUser.defaultRoute);
     }, 700);
   };
 
@@ -203,6 +217,30 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <ChevronRight className={`w-4 h-4 ${activeSector === "RECEPCION" ? "text-white" : "text-zinc-400"}`} />
+              </button>
+
+              {/* Opción 3: Depósito Danesa & Taller Central CDE */}
+              <button
+                type="button"
+                onClick={() => handleSelectSector("DEPOSITO")}
+                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
+                  activeSector === "DEPOSITO"
+                    ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
+                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeSector === "DEPOSITO" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
+                    <Truck className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <strong className="block text-sm font-bold">Depósito Danesa</strong>
+                    <span className={`text-xs block ${activeSector === "DEPOSITO" ? "text-zinc-300" : "text-zinc-500"}`}>
+                      Control de cajas por transportadora y rendimiento CDE
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className={`w-4 h-4 ${activeSector === "DEPOSITO" ? "text-white" : "text-zinc-400"}`} />
               </button>
 
             </div>

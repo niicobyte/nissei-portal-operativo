@@ -28,7 +28,7 @@ function hasValidAdminHeader(req: NextRequest): boolean {
 
 function isAuthorizedForPath(user: UserProfile, pathname: string): boolean {
   if (user.role === "ADMIN") return true;
-  if (pathname.startsWith("/recepcion")) return user.role === "RECEPCION";
+  if (pathname.startsWith("/recepcion")) return user.role === "RECEPCION" || user.role === "DEPOSITO";
   if (pathname.startsWith("/reparaciones")) return user.role === "TECNICO";
   if (pathname.startsWith("/tecnicos")) return user.role === "MONTAJES";
   return false;

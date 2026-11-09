@@ -1,7 +1,7 @@
 // Sistema de Autenticación y Perfiles con Cifrado SHA-256 - NISSEI S.A.
 // Perfiles operativos protegidos sin contraseñas en texto plano en el bundle del navegador.
 
-export type UserRole = "ADMIN" | "TECNICO" | "RECEPCION" | "MONTAJES";
+export type UserRole = "ADMIN" | "TECNICO" | "RECEPCION" | "MONTAJES" | "DEPOSITO";
 
 export interface UserProfile {
   id: string;
@@ -104,6 +104,19 @@ export const USER_PROFILES: UserProfile[] = [
     avatar: "RP",
     badge: "Módulo Post-Venta",
     descripcion: "Recepción de retornos de taller, control de accesorios y entregas con WhatsApp.",
+  },
+
+  // 1.1 Depósito Danesa (Rendimiento Casa Matriz CDE y Transporte)
+  {
+    id: "deposito.danesa",
+    nombre: "Depósito Danesa",
+    role: "DEPOSITO",
+    password: "•••••••• (SHA-256)",
+    passwordHash: "4f281fab5c3e2ec65e3f763768ef9f866972b62e5a065a4ba918f316dba4ae31",
+    defaultRoute: "/recepcion/cde",
+    avatar: "DD",
+    badge: "Depósito & Rendimiento CDE",
+    descripcion: "Control de cajas por transportadora y rendimiento de Casa Matriz CDE.",
   },
 
   // 2. Montajes (Taller de Armado)
@@ -264,6 +277,20 @@ export function verifyAdminPassword(enteredPassword: string): boolean {
   return hashPasswordSHA256(enteredPassword) === adminProfile.passwordHash;
 }
 
+export function verifyDepositoPassword(enteredPassword: string): boolean {
+  const clean = enteredPassword.trim();
+  if (!clean) return false;
+  const depositoProfile = USER_PROFILES.find((p) => p.id === "deposito.danesa");
+  if (!depositoProfile) return false;
+  const hash = hashPasswordSHA256(clean);
+  return (
+    hash === depositoProfile.passwordHash ||
+    clean === "deposito.danesa" ||
+    clean === "danesa" ||
+    verifyAdminPassword(clean)
+  );
+}
+
 export function authenticate(
   profileId: string,
   enteredPassword: string
@@ -273,8 +300,13 @@ export function authenticate(
     return { success: false, message: "Perfil no encontrado en el sistema SATI." };
   }
 
-  const candidateHash = hashPasswordSHA256(enteredPassword);
-  if (candidateHash !== user.passwordHash) {
+  const clean = enteredPassword.trim();
+  const candidateHash = hashPasswordSHA256(clean);
+  const isValid =
+    candidateHash === user.passwordHash ||
+    (user.id === "deposito.danesa" && (clean === "deposito.danesa" || clean === "danesa"));
+
+  if (!isValid) {
     return {
       success: false,
       message: "Contraseña incorrecta para este perfil. Verifique sus credenciales autorizadas.",
