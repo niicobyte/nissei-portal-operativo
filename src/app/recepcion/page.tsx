@@ -26,6 +26,8 @@ import {
   Save,
   Layers,
   Sparkles,
+  Package,
+  Tag,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import {
@@ -64,12 +66,58 @@ export default function RecepcionDashboardPage() {
   // Modales y notificaciones
   const [selectedTicket, setSelectedTicket] = useState<RecepcionTicket | null>(null);
   const [modalMensaje, setModalMensaje] = useState<string>("");
+  const [modalAccesorios, setModalAccesorios] = useState<string>("");
+  const [modalAccessoriesList, setModalAccessoriesList] = useState<string[]>([]);
+  const [modalNewAccessory, setModalNewAccessory] = useState<string>("");
+
+  const parseAccesoriosString = (raw: string | undefined): string[] => {
+    if (!raw) return [];
+    const trimmed = raw.trim();
+    if (!trimmed || trimmed.toLowerCase().includes("sin accesorios")) return [];
+    return trimmed.split(/,\s*/).map((s) => s.trim()).filter(Boolean);
+  };
 
   useEffect(() => {
     if (selectedTicket) {
-      setModalMensaje(selectedTicket.mensaje || "");
+      const rawMsg = selectedTicket.mensaje || "";
+      let accRaw = selectedTicket.accesorios || "";
+      let cleanMsg = rawMsg;
+
+      // Si no hay accesorios explícitos pero el mensaje contiene "Accesorios: ...", extraerlo
+      if (!accRaw && rawMsg.includes("Accesorios:")) {
+        const parts = rawMsg.split(/Accesorios:/i);
+        cleanMsg = parts[0].trim();
+        accRaw = parts[1].trim();
+      }
+
+      setModalMensaje(cleanMsg);
+      setModalAccesorios(accRaw);
+      setModalAccessoriesList(parseAccesoriosString(accRaw));
+      setModalNewAccessory("");
     }
   }, [selectedTicket]);
+
+  const handleAddModalAccessory = (val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    if (!modalAccessoriesList.includes(trimmed)) {
+      const updated = [...modalAccessoriesList, trimmed];
+      setModalAccessoriesList(updated);
+      setModalAccesorios(updated.join(", "));
+    }
+    setModalNewAccessory("");
+  };
+
+  const handleRemoveModalAccessory = (index: number) => {
+    const updated = modalAccessoriesList.filter((_, i) => i !== index);
+    setModalAccessoriesList(updated);
+    setModalAccesorios(updated.join(", "));
+  };
+
+  const handleClearModalAccessories = () => {
+    setModalAccessoriesList([]);
+    setModalAccesorios("");
+  };
   const [showPrintModal, setShowPrintModal] = useState<RecepcionTicket | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -161,24 +209,42 @@ export default function RecepcionDashboardPage() {
     }
   };
 
-  // Guardar notas o comentarios del informe técnico de la orden
+  // Guardar notas o comentarios del informe técnico y accesorios de la orden
   const handleGuardarMensaje = () => {
     if (!selectedTicket) return;
+    const accFinal =
+      modalAccessoriesList.length > 0
+        ? modalAccessoriesList.join(", ")
+        : modalAccesorios.trim();
+
     const updated = updateTicketDetails(selectedTicket.idOrden, {
       mensaje: modalMensaje,
+      accesorios: accFinal,
     });
     setTickets(updated);
-    setSelectedTicket({ ...selectedTicket, mensaje: modalMensaje });
-    showToast(`Informe técnico de la orden #${selectedTicket.idOrden} guardado.`);
+    setSelectedTicket({
+      ...selectedTicket,
+      mensaje: modalMensaje,
+      accesorios: accFinal,
+    });
+    showToast(
+      `Detalles técnicos y accesorios de la orden #${selectedTicket.idOrden} guardados correctamente.`
+    );
   };
 
   // Actualizar estado de una orden (ej: Entregar, Reparada, Pasar a QC, En Taller)
   const handleCambiarEstado = (idOrden: string, nuevoEstado: string) => {
     const isDelivered = nuevoEstado.toLowerCase() === "entregada";
     const nowDate = new Date().toLocaleDateString("es-PY");
+    const accFinal =
+      modalAccessoriesList.length > 0
+        ? modalAccessoriesList.join(", ")
+        : modalAccesorios.trim();
+
     const updated = updateTicketDetails(idOrden, {
       estado: nuevoEstado,
       mensaje: modalMensaje,
+      accesorios: accFinal,
       fechaEntregada: isDelivered
         ? selectedTicket?.fechaEntregada || nowDate
         : selectedTicket?.fechaEntregada,
@@ -189,6 +255,7 @@ export default function RecepcionDashboardPage() {
         ...selectedTicket,
         estado: nuevoEstado,
         mensaje: modalMensaje,
+        accesorios: accFinal,
         fechaEntregada: isDelivered
           ? selectedTicket.fechaEntregada || nowDate
           : selectedTicket.fechaEntregada,
@@ -203,13 +270,19 @@ export default function RecepcionDashboardPage() {
     const msgRaw = (ticket.mensaje || "").trim();
     const msgUpper = msgRaw.toUpperCase();
 
-    // Separar detalle técnico y accesorios si existen en el mensaje
+    // Separar detalle técnico y accesorios si existen en el mensaje o en el campo accesorios
     let detalleTexto = msgRaw;
-    let accText = "Sin accesorios adicionales";
-    if (msgRaw.includes("Accesorios:")) {
-      const parts = msgRaw.split(/Accesorios:/i);
-      detalleTexto = parts[0].trim();
-      accText = parts[1].trim() || "Sin accesorios adicionales";
+    let accText = (ticket.accesorios || "").trim();
+
+    if (!accText) {
+      if (msgRaw.includes("Accesorios:")) {
+        const parts = msgRaw.split(/Accesorios:/i);
+        detalleTexto = parts[0].trim();
+        accText = parts[1].trim();
+      }
+    }
+    if (!accText || accText.toLowerCase() === "sin accesorios") {
+      accText = "Sin accesorios adicionales";
     }
 
     let statusText = "";
@@ -257,12 +330,23 @@ ${accText}`;
   };
 
   const handleNotificarWhatsAppRecepcion = async (ticket: RecepcionTicket) => {
-    // Si el mensaje en el modal fue modificado, guardarlo en la orden antes de notificar
+    const accFinal =
+      modalAccessoriesList.length > 0
+        ? modalAccessoriesList.join(", ")
+        : modalAccesorios.trim();
+
+    // Si el mensaje o accesorios en el modal fueron modificados, guardarlos antes de notificar
     let currentTicket = ticket;
-    if (modalMensaje !== ticket.mensaje) {
-      const updated = updateTicketDetails(ticket.idOrden, { mensaje: modalMensaje });
+    if (
+      modalMensaje !== ticket.mensaje ||
+      accFinal !== (ticket.accesorios || "")
+    ) {
+      const updated = updateTicketDetails(ticket.idOrden, {
+        mensaje: modalMensaje,
+        accesorios: accFinal,
+      });
       setTickets(updated);
-      currentTicket = { ...ticket, mensaje: modalMensaje };
+      currentTicket = { ...ticket, mensaje: modalMensaje, accesorios: accFinal };
       setSelectedTicket(currentTicket);
     }
     const msg = generarMensajeWhatsAppRecepcion(currentTicket);
@@ -1291,7 +1375,7 @@ ${accText}`;
                       type="button"
                       onClick={handleGuardarMensaje}
                       className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
-                      title="Guardar observaciones y comentarios"
+                      title="Guardar observaciones y accesorios"
                     >
                       <Save className="w-3 h-3" />
                       <span>Guardar cambios</span>
@@ -1304,6 +1388,106 @@ ${accText}`;
                     rows={3}
                     className="w-full p-3 bg-white border border-slate-300 focus:border-zinc-900 rounded-xl text-xs text-[#222222] leading-relaxed outline-none transition-all placeholder:text-zinc-400 font-sans shadow-sm"
                   />
+                </div>
+
+                {/* Sección de Accesorios Incluidos / Devueltos con el Equipo */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[#888888] font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
+                      <Package className="w-3.5 h-3.5 text-[#555555]" />
+                      Accesorios Incluidos / Devueltos con el Equipo
+                    </span>
+                    {modalAccessoriesList.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={handleClearModalAccessories}
+                        className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                      >
+                        Limpiar todos
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="p-3 bg-white border border-slate-300 rounded-xl space-y-2.5 shadow-sm">
+                    {/* Chips de accesorios actuales */}
+                    <div className="flex flex-wrap items-center gap-1.5 min-h-[26px]">
+                      {modalAccessoriesList.length > 0 ? (
+                        modalAccessoriesList.map((acc, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-lg text-xs font-medium border border-zinc-200 transition-colors"
+                          >
+                            <Tag className="w-3 h-3 text-zinc-500" />
+                            <span>{acc}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveModalAccessory(idx)}
+                              className="ml-1 text-zinc-400 hover:text-rose-600 font-bold leading-none cursor-pointer"
+                              title="Quitar accesorio"
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-xs text-zinc-400 italic">
+                          Sin accesorios registrados (se notificará &quot;Sin accesorios adicionales&quot;)
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Input para agregar accesorio personalizado */}
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        value={modalNewAccessory}
+                        onChange={(e) => setModalNewAccessory(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddModalAccessory(modalNewAccessory);
+                          }
+                        }}
+                        placeholder="Escriba un accesorio (ej: Cargador 230W, Funda, Caja) y presione Enter o +"
+                        className="flex-1 px-3 py-1.5 text-xs bg-zinc-50 border border-slate-200 focus:border-zinc-900 rounded-lg outline-none transition-colors placeholder:text-zinc-400 font-sans"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleAddModalAccessory(modalNewAccessory)}
+                        className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                        title="Agregar accesorio a la lista"
+                      >
+                        + Agregar
+                      </button>
+                    </div>
+
+                    {/* Sugerencias rápidas con un toque */}
+                    <div className="flex flex-wrap items-center gap-1 pt-1.5 border-t border-dashed border-zinc-200 text-[11px]">
+                      <span className="text-zinc-400 mr-1 font-mono text-[10px]">RÁPIDOS:</span>
+                      {[
+                        "Cargador Original",
+                        "Caja Original",
+                        "Cable USB",
+                        "Funda / Estuche",
+                        "Control Remoto",
+                        "Batería",
+                        "Adaptador de Corriente",
+                      ].map((sug) => (
+                        <button
+                          key={sug}
+                          type="button"
+                          onClick={() => handleAddModalAccessory(sug)}
+                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                            modalAccessoriesList.includes(sug)
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200"
+                          }`}
+                        >
+                          + {sug}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Acciones de cambio de estado en el modal */}
@@ -1395,6 +1579,14 @@ ${accText}`;
                   <span className="text-[#888888]">ESTADO:</span>
                   <span className="font-bold uppercase">{showPrintModal.estado}</span>
                 </div>
+                {showPrintModal.accesorios && (
+                  <div className="border-t border-dashed border-[#cccccc] pt-2 flex justify-between gap-2">
+                    <span className="text-[#888888]">ACCESORIOS:</span>
+                    <span className="font-semibold text-right max-w-[240px] text-[11px]">
+                      {showPrintModal.accesorios}
+                    </span>
+                  </div>
+                )}
                 <div className="border-t border-dashed border-[#cccccc] pt-2">
                   <span className="text-[#888888] block mb-1">INFORME TÉCNICO:</span>
                   <span className="text-[11px] font-sans text-slate-700 block leading-tight">

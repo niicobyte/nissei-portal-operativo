@@ -12,6 +12,7 @@ export interface RecepcionTicket {
   marca: string;
   modelo: string;
   serial: string;
+  accesorios?: string;
   esNuevoIngreso?: boolean;
   esEstadoCambiadoReciente?: boolean;
   esEntregadoReciente?: boolean;

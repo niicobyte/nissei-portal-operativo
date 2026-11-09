@@ -146,6 +146,14 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         // La columna origen ya existe en la tabla
       }
 
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN accesorios TEXT DEFAULT NULL"
+        );
+      } catch {
+        // La columna accesorios ya existe en la tabla
+      }
+
       await pool.query(`
         CREATE TABLE IF NOT EXISTS taller_reparaciones (
           id_orden VARCHAR(50) PRIMARY KEY,
@@ -478,6 +486,11 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
     marca: r.marca,
     modelo: r.modelo,
     serial: r.serial,
+    accesorios:
+      r.accesorios ||
+      (String(r.mensaje || "").includes("Accesorios:")
+        ? String(r.mensaje).split(/Accesorios:/i)[1]?.trim()
+        : undefined),
     esNuevoIngreso:
       r.origen === "NUEVO_INGRESO" ||
       String(r.mensaje || "").includes("Accesorios:"),

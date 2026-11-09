@@ -158,37 +158,73 @@ export async function POST(req: NextRequest) {
     // 4. Agregar nuevo ticket en Recepción Post-Venta
     if (action === "ADD_RECEPCION_TICKET") {
       const { ticket } = body;
-      await pool.query(
-        `INSERT INTO recepcion_tickets
-         (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NUEVO_INGRESO')
-         ON DUPLICATE KEY UPDATE
-           codigo_producto = VALUES(codigo_producto),
-           cliente = VALUES(cliente),
-           mensaje = VALUES(mensaje),
-           fecha_ingreso = VALUES(fecha_ingreso),
-           fecha_venta = VALUES(fecha_venta),
-           estado = VALUES(estado),
-           tipo_componente = VALUES(tipo_componente),
-           marca = VALUES(marca),
-           modelo = VALUES(modelo),
-           serial = VALUES(serial),
-           origen = 'NUEVO_INGRESO'`,
-        [
-          ticket.idOrden,
-          ticket.codigoProducto || "",
-          ticket.cliente,
-          ticket.mensaje || "",
-          ticket.fechaIngreso || "",
-          ticket.fechaEntregada || null,
-          ticket.fechaVenta || null,
-          ticket.estado || "En Asignacion",
-          ticket.tipoComponente || "GENERAL",
-          ticket.marca || "",
-          ticket.modelo || "",
-          ticket.serial || "S/N",
-        ]
-      );
+      try {
+        await pool.query(
+          `INSERT INTO recepcion_tickets
+           (id_orden, codigo_producto, cliente, mensaje, accesorios, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NUEVO_INGRESO')
+           ON DUPLICATE KEY UPDATE
+             codigo_producto = VALUES(codigo_producto),
+             cliente = VALUES(cliente),
+             mensaje = VALUES(mensaje),
+             accesorios = COALESCE(VALUES(accesorios), accesorios),
+             fecha_ingreso = VALUES(fecha_ingreso),
+             fecha_venta = VALUES(fecha_venta),
+             estado = VALUES(estado),
+             tipo_componente = VALUES(tipo_componente),
+             marca = VALUES(marca),
+             modelo = VALUES(modelo),
+             serial = VALUES(serial),
+             origen = 'NUEVO_INGRESO'`,
+          [
+            ticket.idOrden,
+            ticket.codigoProducto || "",
+            ticket.cliente,
+            ticket.mensaje || "",
+            ticket.accesorios || null,
+            ticket.fechaIngreso || "",
+            ticket.fechaEntregada || null,
+            ticket.fechaVenta || null,
+            ticket.estado || "En Asignacion",
+            ticket.tipoComponente || "GENERAL",
+            ticket.marca || "",
+            ticket.modelo || "",
+            ticket.serial || "S/N",
+          ]
+        );
+      } catch {
+        await pool.query(
+          `INSERT INTO recepcion_tickets
+           (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NUEVO_INGRESO')
+           ON DUPLICATE KEY UPDATE
+             codigo_producto = VALUES(codigo_producto),
+             cliente = VALUES(cliente),
+             mensaje = VALUES(mensaje),
+             fecha_ingreso = VALUES(fecha_ingreso),
+             fecha_venta = VALUES(fecha_venta),
+             estado = VALUES(estado),
+             tipo_componente = VALUES(tipo_componente),
+             marca = VALUES(marca),
+             modelo = VALUES(modelo),
+             serial = VALUES(serial),
+             origen = 'NUEVO_INGRESO'`,
+          [
+            ticket.idOrden,
+            ticket.codigoProducto || "",
+            ticket.cliente,
+            ticket.mensaje || "",
+            ticket.fechaIngreso || "",
+            ticket.fechaEntregada || null,
+            ticket.fechaVenta || null,
+            ticket.estado || "En Asignacion",
+            ticket.tipoComponente || "GENERAL",
+            ticket.marca || "",
+            ticket.modelo || "",
+            ticket.serial || "S/N",
+          ]
+        );
+      }
 
       // Si el estado corresponde al taller, también lo insertamos en taller_reparaciones
       const estLower = (ticket.estado || "").toLowerCase();
