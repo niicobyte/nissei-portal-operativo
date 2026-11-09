@@ -220,34 +220,36 @@ ${accText}
 ¡Gracias por confiar en NISSEI!`;
   };
 
-  const handleNotificarWhatsAppRecepcion = (ticket: RecepcionTicket) => {
+  const handleNotificarWhatsAppRecepcion = async (ticket: RecepcionTicket) => {
     const msg = generarMensajeWhatsAppRecepcion(ticket);
 
-    fetch("/api/whatsapp/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        channel: "RECEPCION",
-        body: msg,
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.success) {
-          showToast(
-            `Notificación enviada al grupo de Recepción por WhatsApp (Orden #${ticket.idOrden}).`
-          );
-        } else {
-          showToast(
-            `Aviso procesado para el grupo de Recepción (Orden #${ticket.idOrden}).`
-          );
-        }
-      })
-      .catch(() => {
-        showToast(
-          `Error de conexión al enviar aviso de la Orden #${ticket.idOrden}.`
-        );
+    try {
+      const res = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: "120363426626761732@g.us",
+          channel: "RECEPCION",
+          body: msg,
+        }),
       });
+
+      const data = await res.json();
+      if (res.ok && data?.success) {
+        showToast(
+          `Notificación enviada al grupo de Recepción por WhatsApp (Orden #${ticket.idOrden}).`
+        );
+      } else {
+        const errorMsg = data?.error || "Error al entregar mensaje";
+        console.error("[WHATSAPP ERROR]", errorMsg);
+        showToast(`Error al enviar a WhatsApp: ${errorMsg}`);
+      }
+    } catch (err: unknown) {
+      console.error("[WHATSAPP FETCH ERROR]", err);
+      showToast(
+        `Error de conexión al enviar aviso de la Orden #${ticket.idOrden}.`
+      );
+    }
   };
 
   // Métricas globales calculadas a partir del dataset real

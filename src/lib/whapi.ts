@@ -19,9 +19,9 @@ export interface WhapiResponse {
 }
 
 export const WHAPI_GROUPS: Record<WhapiChannel, string> = {
-  MONTAJES: process.env.WHAPI_GROUP_MONTAJES || "",
-  RECEPCION: process.env.WHAPI_GROUP_RECEPCION || "",
-  TALLER: process.env.WHAPI_GROUP_TALLER || "",
+  MONTAJES: process.env.WHAPI_GROUP_MONTAJES || "120363428540171277@g.us",
+  RECEPCION: process.env.WHAPI_GROUP_RECEPCION || "120363426626761732@g.us",
+  TALLER: process.env.WHAPI_GROUP_TALLER || "120363288459442182@g.us",
 };
 
 export async function sendWhapiMessage({
@@ -29,7 +29,7 @@ export async function sendWhapiMessage({
   channel,
   body,
 }: WhapiSendOptions): Promise<WhapiResponse> {
-  const token = process.env.WHAPI_API_TOKEN;
+  const token = process.env.WHAPI_API_TOKEN || "hTV4MQBqm4MgwEds9t9a0MITUHm6MhVj";
   const baseUrl = process.env.WHAPI_API_URL || "https://gate.whapi.cloud";
 
   if (!token) {
