@@ -24,7 +24,10 @@ import {
   ArrowRight,
   Info,
   Save,
+  Layers,
+  Sparkles,
 } from "lucide-react";
+import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import {
   RecepcionTicket,
   INITIAL_RECEPCION_DATA,
@@ -888,72 +891,105 @@ ${accText}`;
 
             {/* Controles de Estado y Orden */}
             <div className="flex items-center gap-2 flex-wrap">
-              {/* Filtro Desplegable de Recién Agregados / Actividad Reciente */}
-              <div className="flex items-center gap-1.5 text-xs">
-                <div
-                  className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 transition-colors ${
-                    recentFilter !== "NINGUNO"
-                      ? "bg-[#121212] text-white border-[#121212] shadow-sm"
-                      : "bg-[#f5f3f3] text-[#121212] border-[#e5e5e5]"
-                  }`}
-                >
-                  <Plus className="w-3.5 h-3.5 shrink-0" />
-                  <select
-                    value={recentFilter}
-                    onChange={(e) => setRecentFilter(e.target.value as any)}
-                    className={`font-semibold outline-none cursor-pointer bg-transparent ${
-                      recentFilter !== "NINGUNO" ? "text-white" : "text-[#121212]"
-                    }`}
-                    title="Filtrar por Nuevos Ingresos, Estados cambiados recientemente o Recientemente entregados"
-                  >
-                    <option value="NINGUNO" className="bg-white text-zinc-900">
-                      Todos los registros ({tickets.length})
-                    </option>
-                    <option value="ESTADOS_CAMBIADOS" className="bg-white text-zinc-900">
-                      Estados cambiados recientemente ({recentCounts.estadosCambiados})
-                    </option>
-                    <option value="RECIEN_ENTREGADOS" className="bg-white text-zinc-900">
-                      Recién entregados ({recentCounts.recienEntregados})
-                    </option>
-                    <option value="TODOS_RECIENTES" className="bg-white text-zinc-900">
-                      Toda actividad reciente ({recentCounts.todosRecientes})
-                    </option>
-                  </select>
-                </div>
-              </div>
+              {/* Filtro Desplegable de Actividad Reciente */}
+              <CleanSelect
+                value={recentFilter}
+                onChange={(val) => {
+                  setRecentFilter(val as any);
+                  setCurrentPage(1);
+                }}
+                dropdownWidth="w-72"
+                options={[
+                  {
+                    value: "NINGUNO",
+                    label: "Todos los registros",
+                    badge: tickets.length,
+                    icon: <Layers className="w-3.5 h-3.5" />,
+                  },
+                  {
+                    value: "ESTADOS_CAMBIADOS",
+                    label: "Estados cambiados recientemente",
+                    badge: recentCounts.estadosCambiados,
+                    badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
+                    icon: <Clock className="w-3.5 h-3.5 text-amber-600" />,
+                  },
+                  {
+                    value: "RECIEN_ENTREGADOS",
+                    label: "Recién entregados",
+                    badge: recentCounts.recienEntregados,
+                    badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
+                    icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />,
+                  },
+                  {
+                    value: "TODOS_RECIENTES",
+                    label: "Toda actividad reciente",
+                    badge: recentCounts.todosRecientes,
+                    badgeColor: "bg-zinc-100 text-zinc-800 border-zinc-200",
+                    icon: <Sparkles className="w-3.5 h-3.5 text-zinc-700" />,
+                  },
+                ]}
+                activeClassName="bg-zinc-900 text-white border-zinc-900 shadow-sm"
+              />
 
               {/* Filtro por Estado */}
-              <div className="flex items-center gap-1.5 text-xs">
-                <Filter className="w-3.5 h-3.5 text-[#888888]" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-[#f5f3f3] text-[#121212] font-medium border border-[#e5e5e5] rounded-lg px-2.5 py-1.5 outline-none cursor-pointer"
-                >
-                  <option value="TODOS">Todos los estados</option>
-                  <option value="Entregada">Entregada</option>
-                  <option value="En Reparación">En Reparación / Taller</option>
-                  <option value="Reparada">Reparada (Lista)</option>
-                  <option value="QC">Control de Calidad (QC)</option>
-                  <option value="Enviado Stock">Enviado a Stock</option>
-                  <option value="Liquidacion">Liquidación</option>
-                </select>
-              </div>
+              <CleanSelect
+                value={statusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val);
+                  setCurrentPage(1);
+                }}
+                icon={<Filter className="w-3.5 h-3.5" />}
+                dropdownWidth="w-64"
+                options={[
+                  { value: "TODOS", label: "Todos los estados" },
+                  {
+                    value: "Entregada",
+                    label: "Entregada",
+                    badge: "✓",
+                    badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
+                  },
+                  {
+                    value: "En Reparación",
+                    label: "En Reparación / Taller",
+                    badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
+                  },
+                  {
+                    value: "Reparada",
+                    label: "Reparada (Lista)",
+                    badgeColor: "bg-sky-100 text-sky-800 border-sky-200",
+                  },
+                  {
+                    value: "QC",
+                    label: "Control de Calidad (QC)",
+                    badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
+                  },
+                  {
+                    value: "Enviado Stock",
+                    label: "Enviado a Stock",
+                    badgeColor: "bg-zinc-100 text-zinc-700 border-zinc-200",
+                  },
+                  {
+                    value: "Liquidacion",
+                    label: "Liquidación",
+                    badgeColor: "bg-rose-100 text-rose-700 border-rose-200",
+                  },
+                ]}
+                activeClassName="bg-zinc-900 text-white border-zinc-900 shadow-sm"
+              />
 
               {/* Ordenamiento */}
-              <div className="flex items-center gap-1.5 text-xs">
-                <ArrowUpDown className="w-3.5 h-3.5 text-[#888888]" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
-                  className="bg-[#f5f3f3] text-[#121212] font-medium border border-[#e5e5e5] rounded-lg px-2.5 py-1.5 outline-none cursor-pointer"
-                >
-                  <option value="ID_DESC">Más recientes (ID ↓)</option>
-                  <option value="ID_ASC">Más antiguos (ID ↑)</option>
-                  <option value="CLIENTE_ASC">Cliente (A-Z)</option>
-                  <option value="MARCA_ASC">Marca (A-Z)</option>
-                </select>
-              </div>
+              <CleanSelect
+                value={sortBy}
+                onChange={(val) => setSortBy(val as any)}
+                icon={<ArrowUpDown className="w-3.5 h-3.5" />}
+                dropdownWidth="w-56"
+                options={[
+                  { value: "ID_DESC", label: "Más recientes (ID ↓)" },
+                  { value: "ID_ASC", label: "Más antiguos (ID ↑)" },
+                  { value: "CLIENTE_ASC", label: "Cliente (A-Z)" },
+                  { value: "MARCA_ASC", label: "Marca (A-Z)" },
+                ]}
+              />
             </div>
           </div>
 

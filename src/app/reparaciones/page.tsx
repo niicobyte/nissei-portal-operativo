@@ -38,6 +38,7 @@ import {
 } from "@/data/tallerReparacionesData";
 import { getActiveUser } from "@/data/authData";
 import { AuthBadge } from "@/components/common/AuthBadge";
+import { CleanSelect } from "@/components/common/CleanSelect";
 
 export default function TallerReparacionesPage() {
   // Usuario Activo (Por defecto: Admin)
@@ -679,30 +680,23 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
 
                           {/* Selector Desplegable de Asignación a Banco */}
                           <td className="py-3 px-3.5 whitespace-nowrap">
-                            <select
+                            <CleanSelect
                               value={ord.tecnicoAsignado || ""}
-                              onChange={(e) => {
-                                if (e.target.value) handleOpenAssignModal(ord, e.target.value);
+                              onChange={(val) => {
+                                if (val) handleOpenAssignModal(ord, val);
                               }}
-                              className={`text-xs font-semibold px-2.5 py-1.5 rounded-lg border outline-none transition-colors cursor-pointer shadow-sm ${
-                                ord.tecnicoAsignado
-                                  ? "bg-zinc-900 text-white border-zinc-900 hover:bg-black"
-                                  : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400 focus:border-zinc-900"
-                              }`}
-                            >
-                              <option value="" disabled className="bg-white text-zinc-400">
-                                Asignar técnico...
-                              </option>
-                              {LISTA_TECNICOS.map((t) => (
-                                <option
-                                  key={t.id}
-                                  value={t.nombre}
-                                  className="bg-white text-zinc-900 font-medium"
-                                >
-                                  {t.nombre} ({t.banco})
-                                </option>
-                              ))}
-                            </select>
+                              placeholder="Asignar técnico..."
+                              options={LISTA_TECNICOS.map((t) => ({
+                                value: t.nombre,
+                                label: `${t.nombre} (${t.banco})`,
+                                badge: t.banco.replace("Banco ", "B"),
+                                badgeColor: "bg-zinc-100 text-zinc-800 border border-zinc-200",
+                              }))}
+                              icon={<UserCheck className="w-3.5 h-3.5" />}
+                              dropdownWidth="w-56"
+                              activeClassName="bg-zinc-900 text-white border-zinc-900 shadow-sm"
+                              className="bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                            />
                           </td>
 
                           {/* Columna Acciones: Ojito (Ver Detalle), Imprimir y Avisar */}
