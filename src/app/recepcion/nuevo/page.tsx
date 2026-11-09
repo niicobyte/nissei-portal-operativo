@@ -360,7 +360,7 @@ export default function NuevoIngresoRetornoPage() {
 
     const accText = accessories.length > 0 ? accessories.join(", ") : "Sin accesorios adicionales";
 
-    return `El Cliente *${clientName || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
+    return `El equipo de *${clientName || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
 
 📋 *Orden SATI:* #${orderNumber ? orderNumber.replace(/^#+/, "") : ""}
 🏷️ *Cód. Producto:* ${codigoProducto || "N/A"}

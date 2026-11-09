@@ -314,7 +314,7 @@ export default function RecepcionDashboardPage() {
       statusText += `\n📝 *Detalle:* ${detalleTexto}`;
     }
 
-    return `El Cliente *${ticket.cliente || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
+    return `El equipo de *${ticket.cliente || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
 
 📋 *Orden SATI:* #${ticket.idOrden}
 🏷️ *Cód. Producto:* ${ticket.codigoProducto || "N/A"}
