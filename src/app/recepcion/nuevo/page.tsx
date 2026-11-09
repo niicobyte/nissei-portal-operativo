@@ -31,7 +31,6 @@ export default function NuevoIngresoRetornoPage() {
   const [orderNumber, setOrderNumber] = useState("31409");
   const [codigoProducto, setCodigoProducto] = useState("769386");
   const [clientName, setClientName] = useState("Mariana Giménez Alcaraz");
-  const [clientPhone, setClientPhone] = useState("+595 973 456789");
 
   // Selección de Familia y Categoría Enriquecida
   const [selectedFamilyId, setSelectedFamilyId] = useState<string>("COMPUTACION");
@@ -210,7 +209,7 @@ ${accText}
                 </span>
                 Datos Generales del Servicio
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="text-xs 2xl:text-sm text-zinc-500 font-mono block mb-1">
                     Nº ORDEN SATI (AUTOGENERADO)
@@ -232,19 +231,6 @@ ${accText}
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ej. Carlos Figueredo"
-                    className="w-full text-xs sm:text-sm border border-zinc-200 rounded-xl px-3 py-2 focus:border-zinc-900 outline-none transition-colors"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs 2xl:text-sm text-zinc-500 font-mono block mb-1">
-                    TELÉFONO / WHATSAPP *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
-                    placeholder="+595 973 456789"
                     className="w-full text-xs sm:text-sm border border-zinc-200 rounded-xl px-3 py-2 focus:border-zinc-900 outline-none transition-colors"
                   />
                 </div>
@@ -634,11 +620,6 @@ ${accText}
                   <strong className="text-zinc-900 text-right truncate max-w-[180px]">
                     {clientName || "Sin asignar"}
                   </strong>
-                </div>
-
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Teléfono:</span>
-                  <span className="font-mono text-zinc-800">{clientPhone || "---"}</span>
                 </div>
 
                 <div className="pt-2 flex justify-between">

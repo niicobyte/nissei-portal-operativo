@@ -155,6 +155,97 @@ export default function RecepcionDashboardPage() {
     showToast(`Orden #${idOrden} actualizada a estado: ${nuevoEstado}`);
   };
 
+  // Generar mensaje con el mismo formato de Nuevo Ingreso y enviar al grupo de Recepción
+  const generarMensajeWhatsAppRecepcion = (ticket: RecepcionTicket) => {
+    const estLower = (ticket.estado || "").toLowerCase();
+    const msgRaw = (ticket.mensaje || "").trim();
+    const msgUpper = msgRaw.toUpperCase();
+
+    // Separar detalle técnico y accesorios si existen en el mensaje
+    let detalleTexto = msgRaw;
+    let accText = "Sin accesorios adicionales";
+    if (msgRaw.includes("Accesorios:")) {
+      const parts = msgRaw.split(/Accesorios:/i);
+      detalleTexto = parts[0].trim();
+      accText = parts[1].trim() || "Sin accesorios adicionales";
+    }
+
+    let statusText = "";
+    if (
+      msgUpper.includes("SIN DEFECTO") ||
+      msgUpper.includes("NO PRESENTA FALLA")
+    ) {
+      statusText =
+        "ℹ️ *SIN DEFECTO COMPROBADO*\nEl equipo superó el ciclo de pruebas continuas de 48hs sin reproducir la falla indicada. Conserva su garantía de fábrica.";
+    } else if (
+      msgUpper.includes("SIN REPARO") ||
+      msgUpper.includes("NC") ||
+      msgUpper.includes("CAMBIO POR NUEVO") ||
+      msgUpper.includes("RECHAZA") ||
+      estLower.includes("liquidacion") ||
+      estLower.includes("stock")
+    ) {
+      statusText =
+        "⚠️ *NO REPARADO / DERIVADO A RMA*\nSe requiere gestión de garantía con fabricante o emisión de nota de crédito comercial.";
+    } else if (estLower === "reparada" || estLower === "entregada" || estLower === "qc") {
+      statusText =
+        "✅ *REPARADO CON ÉXITO*\nEl equipo superó satisfactoriamente las pruebas de control de calidad y está listo para ser retirado.";
+    } else {
+      statusText = `🔧 *EN GESTIÓN DE TALLER (${ticket.estado || "En proceso"})*\nEl equipo se encuentra en evaluación técnica en el sector de Post-Venta.`;
+    }
+
+    if (detalleTexto) {
+      statusText += `\n📝 *Detalle:* ${detalleTexto}`;
+    }
+
+    return `Estimado/a *${ticket.cliente || "Cliente"}*, le informamos desde *NISSEI Ciudad del Este* que su equipo se encuentra en el sector de Post-Venta:
+
+📋 *Orden SATI:* #${ticket.idOrden}
+🏷️ *Cód. Producto:* ${ticket.codigoProducto || "N/A"}
+💻 *Equipo:* ${ticket.marca} ${ticket.modelo || "Equipo"}
+📦 *Categoría:* ${ticket.tipoComponente || "GENERAL"}
+🔢 *Serie:* ${ticket.serial || "N/A"}
+
+📊 *Dictamen Técnico:*
+${statusText}
+
+📦 *Accesorios incluidos:*
+${accText}
+
+🕒 *Horario de Retiro:* Lunes a Viernes de 07:30 a 16:30 hs. Sábados de 07:30 a 12:00 hs.
+¡Gracias por confiar en NISSEI!`;
+  };
+
+  const handleNotificarWhatsAppRecepcion = (ticket: RecepcionTicket) => {
+    const msg = generarMensajeWhatsAppRecepcion(ticket);
+
+    fetch("/api/whatsapp/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        channel: "RECEPCION",
+        body: msg,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success) {
+          showToast(
+            `Notificación enviada al grupo de Recepción por WhatsApp (Orden #${ticket.idOrden}).`
+          );
+        } else {
+          showToast(
+            `Aviso procesado para el grupo de Recepción (Orden #${ticket.idOrden}).`
+          );
+        }
+      })
+      .catch(() => {
+        showToast(
+          `Error de conexión al enviar aviso de la Orden #${ticket.idOrden}.`
+        );
+      });
+  };
+
   // Métricas globales calculadas a partir del dataset real
   const metrics = useMemo(() => {
     const total = tickets.length || 1;
@@ -1124,17 +1215,14 @@ export default function RecepcionDashboardPage() {
               </div>
 
               <div className="pt-3 border-t border-[#e5e5e5] flex justify-between items-center">
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(
-                    `Estimado/a ${selectedTicket.cliente}, le contactamos desde *NISSEI Ciudad del Este* respecto a su orden SATI #${selectedTicket.idOrden} (${selectedTicket.marca} ${selectedTicket.modelo}). Estado: ${selectedTicket.estado}. Detalle: ${selectedTicket.mensaje}.`
-                  )}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm"
+                <button
+                  type="button"
+                  onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors"
                 >
                   <MessageSquare className="w-4 h-4" />
                   Notificar por WhatsApp
-                </a>
+                </button>
 
                 <button
                   onClick={() => setSelectedTicket(null)}
