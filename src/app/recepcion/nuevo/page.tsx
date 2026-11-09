@@ -154,7 +154,7 @@ export default function NuevoIngresoRetornoPage() {
 
     const accText = accessories.length > 0 ? accessories.join(", ") : "Sin accesorios adicionales";
 
-    return `Estimado/a *${clientName || "Cliente"}*, le informamos desde *NISSEI Ciudad del Este* que su equipo se encuentra en el sector de Post-Venta:
+    return `El Cliente *${clientName || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
 
 📋 *Orden SATI:* #${orderNumber}
 🏷️ *Cód. Producto:* ${codigoProducto || "N/A"}
@@ -166,10 +166,7 @@ export default function NuevoIngresoRetornoPage() {
 ${statusText}
 
 📦 *Accesorios incluidos:*
-${accText}
-
-🕒 *Horario de Retiro:* Lunes a Viernes de 07:30 a 16:30 hs. Sábados de 07:30 a 12:00 hs.
-¡Gracias por confiar en NISSEI!`;
+${accText}`;
   };
 
   return (

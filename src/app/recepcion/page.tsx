@@ -202,7 +202,7 @@ export default function RecepcionDashboardPage() {
       statusText += `\n📝 *Detalle:* ${detalleTexto}`;
     }
 
-    return `Estimado/a *${ticket.cliente || "Cliente"}*, le informamos desde *NISSEI Ciudad del Este* que su equipo se encuentra en el sector de Post-Venta:
+    return `El Cliente *${ticket.cliente || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
 
 📋 *Orden SATI:* #${ticket.idOrden}
 🏷️ *Cód. Producto:* ${ticket.codigoProducto || "N/A"}
@@ -214,10 +214,7 @@ export default function RecepcionDashboardPage() {
 ${statusText}
 
 📦 *Accesorios incluidos:*
-${accText}
-
-🕒 *Horario de Retiro:* Lunes a Viernes de 07:30 a 16:30 hs. Sábados de 07:30 a 12:00 hs.
-¡Gracias por confiar en NISSEI!`;
+${accText}`;
   };
 
   const handleNotificarWhatsAppRecepcion = async (ticket: RecepcionTicket) => {
