@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, LogOut, Key, ChevronDown, ShieldAlert, ArrowRight } from "lucide-react";
+import { Lock, LogOut, Key, ChevronDown, ShieldAlert, ArrowRight, Trash2 } from "lucide-react";
 import { getActiveUser, logout, UserProfile } from "@/data/authData";
 
 interface AuthBadgeProps {
@@ -49,6 +49,23 @@ export function AuthBadge({ requiredModule }: AuthBadgeProps) {
     setUser(null);
     setMenuOpen(false);
     router.replace("/login");
+  };
+
+  const handleClearLocalData = () => {
+    if (typeof window !== "undefined") {
+      const keys = [
+        "nissei_recepcion_data_v2",
+        "nissei_recepcion_cde_data_v3",
+        "nissei_deposito_cde_checkins_v1",
+        "nissei_reparaciones_data",
+        "nissei_montajes_data",
+        "nissei_usuarios_data",
+        "nissei_taller_data",
+      ];
+      keys.forEach((k) => localStorage.removeItem(k));
+      setMenuOpen(false);
+      window.location.reload();
+    }
   };
 
   // Mientras se verifica la sesión en el cliente, cubrimos la pantalla para evitar filtración visual (flash of unauthenticated content)
@@ -159,6 +176,16 @@ export function AuthBadge({ requiredModule }: AuthBadgeProps) {
             <Key className="w-3.5 h-3.5 text-zinc-500" />
             <span>Cambiar de perfil</span>
           </Link>
+
+          <button
+            type="button"
+            onClick={handleClearLocalData}
+            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-zinc-100 text-zinc-700 transition-colors text-left cursor-pointer"
+            title="Borra la memoria temporal de este navegador y fuerza la recarga 100% directa desde MySQL"
+          >
+            <Trash2 className="w-3.5 h-3.5 text-zinc-500" />
+            <span>Limpiar residuos locales</span>
+          </button>
 
           <button
             onClick={handleLogout}
