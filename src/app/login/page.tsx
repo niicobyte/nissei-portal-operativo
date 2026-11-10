@@ -222,7 +222,7 @@ export default function LoginPage() {
                 <ChevronRight className={`w-4 h-4 ${activeSector === "RECEPCION" ? "text-white" : "text-zinc-400"}`} />
               </button>
 
-              {/* Opción 3: Depósito Danesa & Taller Central CDE */}
+              {/* Opción 3: SATI ASU - CDE & Taller Central CDE */}
               <button
                 type="button"
                 onClick={() => handleSelectSector("DEPOSITO")}
@@ -237,9 +237,9 @@ export default function LoginPage() {
                     <Truck className="w-5 h-5" />
                   </span>
                   <div>
-                    <strong className="block text-sm font-bold">Depósito Danesa</strong>
+                    <strong className="block text-sm font-bold">SATI ASU - CDE</strong>
                     <span className={`text-xs block ${activeSector === "DEPOSITO" ? "text-zinc-300" : "text-zinc-500"}`}>
-                      Control de cajas por transportadora y rendimiento CDE
+                      Monitoreo SATI Casa Matriz CDE &amp; Envíos por transportadora
                     </span>
                   </div>
                 </div>

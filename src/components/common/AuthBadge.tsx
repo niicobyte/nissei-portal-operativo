@@ -7,16 +7,21 @@ import { Lock, LogOut, Key, ChevronDown, ShieldAlert, ArrowRight } from "lucide-
 import { getActiveUser, logout, UserProfile } from "@/data/authData";
 
 interface AuthBadgeProps {
-  requiredModule?: "recepcion" | "reparaciones" | "montajes" | "tecnicos" | "deposito.danesa";
+  requiredModule?: "recepcion" | "reparaciones" | "montajes" | "tecnicos" | "deposito.danesa" | "sati-cde";
 }
 
 function isAuthorizedForModule(
   user: UserProfile,
-  requiredModule?: "recepcion" | "reparaciones" | "montajes" | "tecnicos" | "deposito.danesa"
+  requiredModule?: "recepcion" | "reparaciones" | "montajes" | "tecnicos" | "deposito.danesa" | "sati-cde"
 ): boolean {
   if (!requiredModule) return true;
   if (user.role === "ADMIN") return true;
-  if (requiredModule === "recepcion" || requiredModule === "deposito.danesa") return user.role === "RECEPCION";
+  if (requiredModule === "recepcion") {
+    return user.role === "RECEPCION" || user.role === "DEPOSITO";
+  }
+  if (requiredModule === "deposito.danesa" || requiredModule === "sati-cde") {
+    return user.role === "DEPOSITO" || user.role === "RECEPCION";
+  }
   if (requiredModule === "reparaciones") return user.role === "TECNICO";
   if (requiredModule === "montajes" || requiredModule === "tecnicos") {
     return user.role === "MONTAJES";

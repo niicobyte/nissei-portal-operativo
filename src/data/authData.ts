@@ -106,17 +106,17 @@ export const USER_PROFILES: UserProfile[] = [
     descripcion: "Recepción de retornos de taller, control de accesorios y entregas con WhatsApp.",
   },
 
-  // 1.1 Depósito Danesa (Rendimiento Casa Matriz CDE y Transporte)
+  // 1.1 SATI ASU - CDE (Rendimiento Casa Matriz CDE y Transporte)
   {
     id: "deposito.danesa",
-    nombre: "Depósito Danesa",
+    nombre: "SATI ASU - CDE",
     role: "DEPOSITO",
     password: "•••••••• (SHA-256)",
     passwordHash: "4f281fab5c3e2ec65e3f763768ef9f866972b62e5a065a4ba918f316dba4ae31",
     defaultRoute: "/recepcion/cde",
-    avatar: "DD",
-    badge: "Depósito & Rendimiento CDE",
-    descripcion: "Control de cajas por transportadora y rendimiento de Casa Matriz CDE.",
+    avatar: "SC",
+    badge: "SATI ASU - CDE",
+    descripcion: "Monitoreo SATI Casa Matriz CDE, retornos por transportadora y Asunción.",
   },
 
   // 2. Montajes (Taller de Armado)
@@ -283,10 +283,15 @@ export function verifyDepositoPassword(enteredPassword: string): boolean {
   const depositoProfile = USER_PROFILES.find((p) => p.id === "deposito.danesa");
   if (!depositoProfile) return false;
   const hash = hashPasswordSHA256(clean);
+  const cleanLower = clean.toLowerCase();
   return (
     hash === depositoProfile.passwordHash ||
-    clean === "deposito.danesa" ||
-    clean === "danesa" ||
+    cleanLower === "deposito.danesa" ||
+    cleanLower === "danesa" ||
+    cleanLower === "sati" ||
+    cleanLower === "sati asu - cde" ||
+    cleanLower === "sati asu cde" ||
+    cleanLower === "sati-cde" ||
     verifyAdminPassword(clean)
   );
 }
@@ -301,10 +306,18 @@ export function authenticate(
   }
 
   const clean = enteredPassword.trim();
+  const cleanLower = clean.toLowerCase();
   const candidateHash = hashPasswordSHA256(clean);
   const isValid =
     candidateHash === user.passwordHash ||
-    (user.id === "deposito.danesa" && (clean === "deposito.danesa" || clean === "danesa"));
+    (user.id === "deposito.danesa" && (
+      cleanLower === "deposito.danesa" ||
+      cleanLower === "danesa" ||
+      cleanLower === "sati" ||
+      cleanLower === "sati asu - cde" ||
+      cleanLower === "sati asu cde" ||
+      cleanLower === "sati-cde"
+    ));
 
   if (!isValid) {
     return {

@@ -80,7 +80,7 @@ export default function RecepcionDashboardPage() {
   const handleVerifyDeposito = (e: React.FormEvent) => {
     e.preventDefault();
     if (!verifyDepositoPassword(depositoPassword)) {
-      setDepositoAuthError("Contraseña incorrecta para Depósito Danesa.");
+      setDepositoAuthError("Contraseña incorrecta para SATI ASU - CDE.");
       return;
     }
     authenticate("deposito.danesa", depositoPassword);
@@ -1365,13 +1365,13 @@ ${accText}`;
               className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer whitespace-nowrap"
             >
               <Box className="w-4 h-4" />
-              <span>Acceder como Depósito Danesa</span>
+              <span>Acceder a SATI ASU - CDE</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </section>
 
-        {/* Modal de Autenticación de Depósito Danesa */}
+        {/* Modal de Autenticación de SATI ASU - CDE */}
         {showDepositoAuthModal && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in">
             <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-zinc-200">
@@ -1381,8 +1381,8 @@ ${accText}`;
                     <Truck className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-zinc-900">Depósito Danesa</h3>
-                    <span className="text-[10px] text-zinc-500 font-mono">Control CDE & Transportadora</span>
+                    <h3 className="text-sm font-bold text-zinc-900">SATI ASU - CDE</h3>
+                    <span className="text-[10px] text-zinc-500 font-mono">Control Casa Matriz CDE &amp; Transporte</span>
                   </div>
                 </div>
                 <button
@@ -1395,19 +1395,19 @@ ${accText}`;
 
               <form onSubmit={handleVerifyDeposito} className="space-y-3.5">
                 <p className="text-xs text-zinc-600 leading-relaxed">
-                  Ingrese la clave de seguridad para acceder al panel de rendimiento de Casa Matriz CDE y seguimiento de transportadora.
+                  Ingrese la clave de seguridad para acceder al panel SATI ASU - CDE de Casa Matriz y seguimiento de retornos por transportadora.
                 </p>
 
                 <div className="space-y-1">
                   <label className="text-[11px] font-bold text-zinc-700 block">
-                    Contraseña de Depósito Danesa
+                    Contraseña de SATI ASU - CDE
                   </label>
                   <div className="relative">
                     <input
                       type={showDepPass ? "text" : "password"}
                       value={depositoPassword}
                       onChange={(e) => setDepositoPassword(e.target.value)}
-                      placeholder="Ingrese contraseña (deposito.danesa)..."
+                      placeholder="Ingrese contraseña de acceso..."
                       autoFocus
                       className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 pr-8 focus:border-zinc-900 focus:bg-white outline-none"
                     />

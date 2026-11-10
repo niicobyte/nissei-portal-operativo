@@ -350,7 +350,7 @@ export default function RecepcionCdeDashboardPage() {
       <div className="min-h-screen bg-[#fbf9f9] flex items-center justify-center">
         <div className="flex items-center gap-2 text-sm text-zinc-600">
           <RefreshCw className="w-4 h-4 animate-spin text-zinc-900" />
-          <span>Cargando datos de Rendimiento CDE & Depósito Danesa...</span>
+          <span>Cargando datos de SATI ASU - CDE...</span>
         </div>
       </div>
     );
@@ -372,10 +372,10 @@ export default function RecepcionCdeDashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-200">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 tracking-tight">
-              Depósito Danesa &amp; Rendimiento CDE
+              SATI ASU - CDE
             </h1>
             <p className="text-xs sm:text-sm text-zinc-600 mt-1 max-w-3xl">
-              Monitoreo de envíos por transportadora, tiempos de retorno de laboratorio y confirmación de cajas físicas en depósito.
+              Monitoreo de envíos por transportadora, tiempos de retorno de laboratorio SATI y confirmación de recepción en sucursal.
             </p>
           </div>
 
@@ -1204,8 +1204,8 @@ export default function RecepcionCdeDashboardPage() {
                     <div>
                       <strong className="block text-zinc-900 text-xs">
                         {selectedTicket.recibidoEnDeposito
-                          ? "Caja Física Recibida en Depósito Danesa"
-                          : "En Tránsito por Transportadora hacia Depósito"}
+                          ? "Caja Física Recibida en Sucursal ASU"
+                          : "En Tránsito por Transportadora hacia ASU"}
                       </strong>
                       <span className="text-[11px] text-zinc-600 block">
                         {selectedTicket.recibidoEnDeposito
