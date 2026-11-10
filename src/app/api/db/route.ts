@@ -6,9 +6,12 @@ import {
   dbGetRecepcionTickets,
   dbGetMontajes,
   dbGetUsuarios,
+  dbGetCdeTickets,
   seedReparacionesTable,
   seedRecepcionTable,
   seedMontajesTable,
+  seedCdeTable,
+  getMysqlInfo,
 } from "@/lib/mysql";
 import { clasificarMensajeCSV } from "@/data/tallerReparacionesData";
 
@@ -16,41 +19,54 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const mod = searchParams.get("module") || "all";
+    const serverInfo = getMysqlInfo();
 
     if (mod === "reparaciones") {
       const data = await dbGetReparaciones();
-      return NextResponse.json({ ok: true, data });
+      return NextResponse.json({ ok: true, serverInfo, data });
     }
     if (mod === "recepcion") {
       const data = await dbGetRecepcionTickets();
-      return NextResponse.json({ ok: true, data });
+      return NextResponse.json({ ok: true, serverInfo, data });
     }
     if (mod === "montajes") {
       const data = await dbGetMontajes();
-      return NextResponse.json({ ok: true, data });
+      return NextResponse.json({ ok: true, serverInfo, data });
     }
     if (mod === "usuarios") {
       const data = await dbGetUsuarios();
-      return NextResponse.json({ ok: true, data });
+      return NextResponse.json({ ok: true, serverInfo, data });
+    }
+    if (mod === "cde") {
+      const data = await dbGetCdeTickets();
+      return NextResponse.json({ ok: true, serverInfo, data });
     }
 
-    const [reparaciones, recepcion, montajes, usuarios] = await Promise.all([
+    const [reparaciones, recepcion, montajes, usuarios, cde] = await Promise.all([
       dbGetReparaciones(),
       dbGetRecepcionTickets(),
       dbGetMontajes(),
       dbGetUsuarios(),
+      dbGetCdeTickets(),
     ]);
+
     return NextResponse.json({
       ok: true,
+      serverInfo,
       reparaciones,
       recepcion,
       montajes,
       usuarios,
+      cde,
     });
   } catch (err: unknown) {
     console.error("[MYSQL GET ERROR]", err);
     return NextResponse.json(
-      { ok: false, error: "Servicio MySQL en espera (usando espejo local sincronizado)." },
+      {
+        ok: false,
+        serverInfo: getMysqlInfo(),
+        error: "Servicio MySQL en espera (usando espejo local sincronizado).",
+      },
       { status: 503 }
     );
   }
@@ -483,7 +499,84 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
-    // 11. Eliminar registro individual de cualquier tabla desde el Visor de Base de Datos
+    // 11. Alternar confirmación de llegada en Depósito Danesa (CDE)
+    if (action === "TOGGLE_CDE_CHECKIN") {
+      const { idOrden, recibidoEnDeposito, fechaRecibido } = body;
+      const fecha = fechaRecibido || new Date().toLocaleDateString("es-PY", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+
+      await pool.query(
+        `UPDATE recepcion_cde_tickets
+         SET recibido_en_deposito = ?,
+             fecha_recibido_deposito = ?
+         WHERE id_orden = ?`,
+        [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fecha : null, idOrden]
+      );
+      const data = await dbGetCdeTickets();
+      return NextResponse.json({ ok: true, data });
+    }
+
+    // 12. Actualización masiva desde CSV en SATI CDE / Depósito Danesa
+    if (action === "BULK_UPDATE_CDE_CSV") {
+      const { tickets = [] } = body;
+      const CHUNK_SIZE = 150;
+      for (let i = 0; i < tickets.length; i += CHUNK_SIZE) {
+        const chunk = tickets.slice(i, i + CHUNK_SIZE);
+        for (const t of chunk) {
+          await pool.query(
+            `INSERT INTO recepcion_cde_tickets
+             (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta,
+              estado, tipo_componente, modelo, marca, serial, dias_resolucion, es_danesa, recibido_en_deposito)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+               cliente = VALUES(cliente),
+               mensaje = VALUES(mensaje),
+               fecha_ingreso = VALUES(fecha_ingreso),
+               fecha_entregada = VALUES(fecha_entregada),
+               estado = VALUES(estado),
+               tipo_componente = VALUES(tipo_componente),
+               modelo = VALUES(modelo),
+               marca = VALUES(marca),
+               serial = VALUES(serial),
+               dias_resolucion = VALUES(dias_resolucion),
+               es_danesa = VALUES(es_danesa),
+               recibido_en_deposito = COALESCE(VALUES(recibido_en_deposito), recibido_en_deposito)`,
+            [
+              t.idOrden,
+              t.codigoProducto || "",
+              t.cliente,
+              t.mensaje || "",
+              t.fechaIngreso || "",
+              t.fechaEntregada || null,
+              t.fechaVenta || null,
+              t.estado,
+              t.tipoComponente || "GENERAL",
+              t.modelo || "",
+              t.marca || "",
+              t.serial || "S/N",
+              t.diasResolucion ?? null,
+              t.esDanesa ? 1 : 0,
+              t.recibidoEnDeposito ? 1 : 0,
+            ]
+          );
+        }
+      }
+      const data = await dbGetCdeTickets();
+      return NextResponse.json({ ok: true, data });
+    }
+
+    // 13. Restablecer datos SATI CDE
+    if (action === "RESET_CDE") {
+      await pool.query("TRUNCATE TABLE recepcion_cde_tickets");
+      await seedCdeTable(pool);
+      const data = await dbGetCdeTickets();
+      return NextResponse.json({ ok: true, data });
+    }
+
+    // 14. Eliminar registro individual de cualquier tabla desde el Visor de Base de Datos
     if (action === "DELETE_ROW") {
       const { table, id } = body;
       if (!table || !id) {
@@ -508,6 +601,8 @@ export async function POST(req: NextRequest) {
           await pool.query("DELETE FROM taller_reparaciones WHERE id_orden = ?", [id]);
         } else if (table === "ordenes_montaje") {
           await pool.query("DELETE FROM ordenes_montaje WHERE id = ?", [id]);
+        } else if (table === "recepcion_cde_tickets") {
+          await pool.query("DELETE FROM recepcion_cde_tickets WHERE id_orden = ?", [id]);
         } else if (table === "usuarios") {
           await pool.query("DELETE FROM usuarios WHERE id = ?", [id]);
         }

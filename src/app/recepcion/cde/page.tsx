@@ -34,6 +34,8 @@ import {
   toggleCheckinDeposito,
   procesarActualizacionCdeCSV,
   ResultadoCargaCdeCSV,
+  isFechaValida,
+  fetchCdeTicketsFromMySQL,
 } from "@/data/recepcionCdeData";
 
 const ITEMS_PER_PAGE = 25;
@@ -44,7 +46,7 @@ export default function RecepcionCdeDashboardPage() {
   const [notification, setNotification] = useState<string | null>(null);
 
   // Filtros
-  const [viewScope, setViewScope] = useState<"DANESA" | "TODOS">("DANESA");
+  const [viewScope, setViewScope] = useState<"DANESA" | "CLIENTES" | "TODOS">("DANESA");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("TODOS");
   const [componentFilter, setComponentFilter] = useState("TODOS");
@@ -65,6 +67,12 @@ export default function RecepcionCdeDashboardPage() {
     setIsClient(true);
     const loaded = getStoredCdeTickets();
     setTickets(loaded);
+    // Sincronizar en tiempo real directamente con MySQL
+    fetchCdeTicketsFromMySQL().then((dbData) => {
+      if (Array.isArray(dbData) && dbData.length > 0) {
+        setTickets(dbData);
+      }
+    });
   }, []);
 
   const showToast = (msg: string) => {
@@ -118,43 +126,33 @@ export default function RecepcionCdeDashboardPage() {
     }
   };
 
-  // Recalcular métricas de rendimiento Casa Matriz CDE vs Danesa
+  // Recalcular métricas de rendimiento según el ámbito seleccionado (Danesa SA / Clientes CDE / Todos)
   const metrics = useMemo(() => {
     const totalCde = tickets.length;
     const danesaTickets = tickets.filter((t) => t.esDanesa);
     const cdeDirectosTickets = tickets.filter((t) => !t.esDanesa);
+    const scopeTickets =
+      viewScope === "DANESA" ? danesaTickets : viewScope === "CLIENTES" ? cdeDirectosTickets : tickets;
 
-    // Días de resolución promedio
-    const danesaCerrados = danesaTickets.filter(
-      (t) => t.diasResolucion !== null && t.diasResolucion !== undefined && t.diasResolucion >= 0
-    );
-    const avgDiasDanesa =
-      danesaCerrados.length > 0
-        ? danesaCerrados.reduce((acc, t) => acc + (t.diasResolucion || 0), 0) / danesaCerrados.length
-        : 0;
+    const conDias = (list: RecepcionCdeTicket[]) =>
+      list.filter((t) => t.diasResolucion !== null && t.diasResolucion !== undefined && t.diasResolucion >= 0);
+    const promedio = (list: RecepcionCdeTicket[]) => {
+      const c = conDias(list);
+      return c.length > 0 ? c.reduce((acc, t) => acc + (t.diasResolucion || 0), 0) / c.length : 0;
+    };
 
-    const totalCerrados = tickets.filter(
-      (t) => t.diasResolucion !== null && t.diasResolucion !== undefined && t.diasResolucion >= 0
-    );
-    const avgDiasCdeTotal =
-      totalCerrados.length > 0
-        ? totalCerrados.reduce((acc, t) => acc + (t.diasResolucion || 0), 0) / totalCerrados.length
-        : 0;
+    const esEntregada = (t: RecepcionCdeTicket) => t.estado.toLowerCase().includes("entregada");
 
-    // Equipos en tránsito por transportadora (cerrados por CDE para Danesa)
-    const danesaEntregados = danesaTickets.filter((t) => t.estado.toLowerCase().includes("entregada"));
+    // Tránsito por transportadora: solo aplica a envíos de Danesa SA
     const danesaRecibidos = danesaTickets.filter((t) => t.recibidoEnDeposito);
-    const danesaEnTransito = danesaTickets.filter(
-      (t) => t.estado.toLowerCase().includes("entregada") && !t.recibidoEnDeposito
-    );
+    const danesaEnTransito = danesaTickets.filter((t) => esEntregada(t) && !t.recibidoEnDeposito);
 
-    // Equipos aún en laboratorio CDE de Danesa
-    const danesaEnLaboratorio = danesaTickets.filter(
-      (t) => !t.estado.toLowerCase().includes("entregada")
-    );
+    // Equipos del ámbito aún en laboratorio CDE / ya cerrados
+    const scopeEnLaboratorio = scopeTickets.filter((t) => !esEntregada(t));
+    const scopeEntregadas = scopeTickets.filter(esEntregada);
 
-    // Dictámenes: reparados vs sin reparo para Danesa
-    const reparadosDanesa = danesaTickets.filter(
+    // Dictámenes: reparados vs sin reparo del ámbito
+    const reparados = scopeTickets.filter(
       (t) =>
         t.estado === "Reparada" ||
         t.mensaje.toLowerCase().includes("cambio") ||
@@ -163,7 +161,7 @@ export default function RecepcionCdeDashboardPage() {
         t.mensaje.toLowerCase().includes("reemplazo")
     ).length;
 
-    const sinReparoDanesa = danesaTickets.filter(
+    const sinReparo = scopeTickets.filter(
       (t) =>
         t.estado.toLowerCase().includes("sin reparo") ||
         t.mensaje.toLowerCase().includes("sin reparo") ||
@@ -174,16 +172,17 @@ export default function RecepcionCdeDashboardPage() {
       totalCde,
       totalDanesa: danesaTickets.length,
       totalCdeDirectos: cdeDirectosTickets.length,
-      avgDiasDanesa: avgDiasDanesa.toFixed(1),
-      avgDiasCdeTotal: avgDiasCdeTotal.toFixed(1),
-      danesaEntregados: danesaEntregados.length,
+      totalScope: scopeTickets.length,
+      avgDiasScope: promedio(scopeTickets).toFixed(1),
+      avgDiasCdeTotal: promedio(tickets).toFixed(1),
       danesaRecibidos: danesaRecibidos.length,
       danesaEnTransito: danesaEnTransito.length,
-      danesaEnLaboratorio: danesaEnLaboratorio.length,
-      reparadosDanesa,
-      sinReparoDanesa,
+      scopeEnLaboratorio: scopeEnLaboratorio.length,
+      scopeEntregadas: scopeEntregadas.length,
+      reparados,
+      sinReparo,
     };
-  }, [tickets]);
+  }, [tickets, viewScope]);
 
   // Lista única de componentes para filtro
   const componentOptions = useMemo<CleanSelectOption[]>(() => {
@@ -223,9 +222,11 @@ export default function RecepcionCdeDashboardPage() {
   const filteredTickets = useMemo(() => {
     let result = tickets;
 
-    // 1. Ámbito: Danesa vs Todos
+    // 1. Ámbito: Danesa SA / Clientes directos CDE / Todos
     if (viewScope === "DANESA") {
       result = result.filter((t) => t.esDanesa);
+    } else if (viewScope === "CLIENTES") {
+      result = result.filter((t) => !t.esDanesa);
     }
 
     // 2. Filtro de Estado
@@ -283,7 +284,15 @@ export default function RecepcionCdeDashboardPage() {
   const getStatusBadge = (ticket: RecepcionCdeTicket) => {
     const est = ticket.estado.toLowerCase();
 
-    // Si dice Entregada: significa que CDE cerró la orden y fue despachada por transportadora
+    // Si dice Entregada en un envío de Danesa SA: CDE cerró la orden y la despachó por transportadora
+    if (est.includes("entregada") && !ticket.esDanesa) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+          <span>Entregada al cliente</span>
+        </span>
+      );
+    }
     if (est.includes("entregada")) {
       if (ticket.recibidoEnDeposito) {
         return (
@@ -564,162 +573,175 @@ export default function RecepcionCdeDashboardPage() {
           </section>
         )}
 
-        {/* Tarjetas KPI de Rendimiento */}
+        {/* Tarjetas KPI de Rendimiento (según el ámbito seleccionado) */}
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          {/* Card 1: Equipos Danesa SA */}
-          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-              Envíos Danesa SA
-            </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-zinc-900">
-                {metrics.totalDanesa.toLocaleString()}
-              </strong>
-              <span className="text-[11px] font-semibold text-zinc-500">
-                de {metrics.totalCde.toLocaleString()} tot.
+            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+                {viewScope === "DANESA" ? "Envíos Danesa SA" : viewScope === "CLIENTES" ? "Clientes CDE" : "Todos CDE"}
               </span>
+              <div className="flex items-baseline justify-between">
+                <strong className="text-2xl font-black text-zinc-900">
+                  {metrics.totalScope.toLocaleString()}
+                </strong>
+                <span className="text-[11px] font-semibold text-zinc-500">
+                  de {metrics.totalCde.toLocaleString()} tot.
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-tight">
+                Órdenes del ámbito registradas en CDE
+              </p>
             </div>
-            <p className="text-[11px] text-zinc-500 leading-tight">
-              Equipos de nuestra sucursal atendidos en CDE
-            </p>
-          </div>
-
-          {/* Card 2: En Tránsito por Transportadora */}
-          <div className="p-4 bg-white rounded-2xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-amber-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Truck className="w-3.5 h-3.5 text-amber-600" />
-              <span>En Transportadora</span>
-            </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-amber-700">
-                {metrics.danesaEnTransito}
-              </strong>
-              <span className="text-[11px] font-semibold text-amber-800">
-                En camino
+          {viewScope === "DANESA" ? (
+            <>
+            <div className="p-4 bg-white rounded-2xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-1">
+              <span className="text-[11px] font-mono font-bold text-amber-800 uppercase tracking-wider block">
+                En Transportadora
               </span>
+              <div className="flex items-baseline justify-between">
+                <strong className="text-2xl font-black text-amber-700">
+                  {metrics.danesaEnTransito}
+                </strong>
+                <span className="text-[11px] font-semibold text-amber-800">
+                  En camino
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-900/80 leading-tight">
+                Entregadas por CDE, pendientes de confirmar en caja
+              </p>
             </div>
-            <p className="text-[11px] text-amber-900/80 leading-tight">
-              Cerrados por CDE pendientes de confirmar en caja
-            </p>
-          </div>
-
-          {/* Card 3: Cajas Recibidas en Depósito */}
-          <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
-              <Box className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Recibidos en Depósito</span>
-            </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-emerald-700">
-                {metrics.danesaRecibidos}
-              </strong>
-              <span className="text-[11px] font-semibold text-emerald-700">
-                Verificados
+            <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
+              <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
+                Recibidos en Depósito
               </span>
+              <div className="flex items-baseline justify-between">
+                <strong className="text-2xl font-black text-emerald-700">
+                  {metrics.danesaRecibidos}
+                </strong>
+                <span className="text-[11px] font-semibold text-emerald-700">
+                  Verificados
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-900/80 leading-tight">
+                Cajas físicas recibidas en ASU
+              </p>
             </div>
-            <p className="text-[11px] text-emerald-900/80 leading-tight">
-              Cajas físicas ya recibidas al día siguiente
-            </p>
-          </div>
-
-          {/* Card 4: Días de Retorno Danesa */}
-          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-              Tiempo Prom. Retorno
-            </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-zinc-900">
-                {metrics.avgDiasDanesa} <span className="text-sm font-normal text-zinc-500">días</span>
-              </strong>
-              <span className="text-[11px] font-mono text-zinc-400">
-                CDE: {metrics.avgDiasCdeTotal}d
+            </>
+          ) : (
+            <>
+            <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
+              <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
+                Entregadas
               </span>
+              <div className="flex items-baseline justify-between">
+                <strong className="text-2xl font-black text-emerald-700">
+                  {metrics.scopeEntregadas}
+                </strong>
+                <span className="text-[11px] font-semibold text-emerald-700">
+                  Cerradas
+                </span>
+              </div>
+              <p className="text-[11px] text-emerald-900/80 leading-tight">
+                Órdenes cerradas y entregadas por CDE
+              </p>
             </div>
-            <p className="text-[11px] text-zinc-500 leading-tight">
-              Lapso entre FechaIngreso y FechaEntregada
-            </p>
-          </div>
-
-          {/* Card 5: Activos en Laboratorio CDE */}
-          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-              En Laboratorio CDE
-            </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-zinc-900">
-                {metrics.danesaEnLaboratorio}
-              </strong>
-              <span className="text-[11px] font-semibold text-zinc-500">
-                En proceso
+            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+                Envíos Danesa SA
               </span>
+              <div className="flex items-baseline justify-between">
+                <strong className="text-2xl font-black text-zinc-900">
+                  {metrics.totalDanesa}
+                </strong>
+                <span className="text-[11px] font-semibold text-zinc-500">
+                  Nuestra sucursal
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-tight">
+                Para comparar contra los clientes de CDE
+              </p>
             </div>
-            <p className="text-[11px] text-zinc-500 leading-tight">
-              Equipos de Danesa en diagnóstico o reparación
-            </p>
-          </div>
-
-          {/* Card 6: Efectividad / Reparados vs Sin Reparo */}
-          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-              Resolución Danesa
-            </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-emerald-600">
-                {metrics.reparadosDanesa}
-              </strong>
-              <span className="text-[11px] font-semibold text-rose-600">
-                {metrics.sinReparoDanesa} Sin Rep.
+            </>
+          )}
+            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+                Tiempo Prom. Retorno
               </span>
+              <div className="flex items-baseline justify-between">
+                <strong className="text-2xl font-black text-zinc-900">
+                  {metrics.avgDiasScope} <span className="text-sm font-normal text-zinc-500">días</span>
+                </strong>
+                <span className="text-[11px] font-semibold text-zinc-500">
+                  CDE: {metrics.avgDiasCdeTotal}d
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-tight">
+                Lapso entre ingreso y fecha de entrega CDE
+              </p>
             </div>
-            <p className="text-[11px] text-zinc-500 leading-tight">
-              Reparados / Nuevos vs Sin Reparo / RMA
-            </p>
-          </div>
+            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+                En Laboratorio CDE
+              </span>
+              <div className="flex items-baseline justify-between">
+                <strong className="text-2xl font-black text-zinc-900">
+                  {metrics.scopeEnLaboratorio}
+                </strong>
+                <span className="text-[11px] font-semibold text-zinc-500">
+                  En proceso
+                </span>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-tight">
+                Equipos aún en diagnóstico o reparación
+              </p>
+            </div>
+            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+                Resolución
+              </span>
+              <div className="flex items-baseline justify-between">
+                <strong className="text-2xl font-black text-emerald-600">{metrics.reparados}</strong>
+                <span className="text-[11px] font-semibold text-rose-600">{metrics.sinReparo} Sin Rep.</span>
+              </div>
+              <p className="text-[11px] text-zinc-500 leading-tight">Reparados / Nuevos vs Sin Reparo / RMA</p>
+            </div>
         </section>
 
         {/* Barra de Filtros, Selector de Ámbito y Búsqueda */}
         <section className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-            
-            {/* Selector de Ámbito: Danesa vs Todos */}
-            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setViewScope("DANESA");
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  viewScope === "DANESA"
-                    ? "bg-zinc-900 text-white shadow-xs"
-                    : "text-zinc-600 hover:text-zinc-900"
-                }`}
-              >
-                <Package className="w-3.5 h-3.5" />
-                <span>Solo Danesa SA (Nuestra Sucursal / Depósito)</span>
-                <span className="px-1.5 py-0.2 bg-white/20 text-white rounded text-[10px] font-mono font-normal">
-                  {metrics.totalDanesa}
-                </span>
-              </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setViewScope("TODOS");
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                  viewScope === "TODOS"
-                    ? "bg-zinc-900 text-white shadow-xs"
-                    : "text-zinc-600 hover:text-zinc-900"
-                }`}
-              >
-                <Building2 className="w-3.5 h-3.5" />
-                <span>Todos los Clientes (Casa Matriz CDE)</span>
-                <span className="px-1.5 py-0.2 bg-zinc-200 text-zinc-700 rounded text-[10px] font-mono font-normal">
-                  {metrics.totalCde}
-                </span>
-              </button>
+            {/* Selector de Ámbito: Danesa SA / Clientes CDE / Todos */}
+            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 flex-wrap">
+              {(
+                [
+                  { key: "DANESA", label: "Danesa SA (Nuestra Sucursal)", count: metrics.totalDanesa, icon: <Package className="w-3.5 h-3.5" /> },
+                  { key: "CLIENTES", label: "Clientes CDE", count: metrics.totalCdeDirectos, icon: <Building2 className="w-3.5 h-3.5" /> },
+                  { key: "TODOS", label: "Todos", count: metrics.totalCde, icon: <Layers className="w-3.5 h-3.5" /> },
+                ] as const
+              ).map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => {
+                    setViewScope(s.key);
+                    setTransitFilter("TODOS");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    viewScope === s.key ? "bg-zinc-900 text-white shadow-xs" : "text-zinc-600 hover:text-zinc-900"
+                  }`}
+                >
+                  {s.icon}
+                  <span>{s.label}</span>
+                  <span
+                    className={`px-1.5 rounded text-[10px] font-mono font-normal ${
+                      viewScope === s.key ? "bg-white/20 text-white" : "bg-zinc-200 text-zinc-700"
+                    }`}
+                  >
+                    {s.count.toLocaleString()}
+                  </span>
+                </button>
+              ))}
             </div>
 
             {/* Buscador de Órdenes */}
@@ -749,6 +771,7 @@ export default function RecepcionCdeDashboardPage() {
           {/* Filtros Secundarios con CleanSelect */}
           <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
             {/* Filtro de Tránsito / Caja */}
+            {viewScope === "DANESA" && (
             <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs">
               <button
                 type="button"
@@ -795,6 +818,7 @@ export default function RecepcionCdeDashboardPage() {
                 <span>Recibidos en caja ({metrics.danesaRecibidos})</span>
               </button>
             </div>
+            )}
 
             {/* Filtro de Estado con CleanSelect */}
             <CleanSelect
@@ -859,7 +883,7 @@ export default function RecepcionCdeDashboardPage() {
                   <th className="py-3 px-3">Cliente</th>
                   <th className="py-3 px-3">Equipo / Hardware</th>
                   <th className="py-3 px-3">Serial</th>
-                  <th className="py-3 px-3">Ingreso CDE</th>
+                  <th className="py-3 px-3">Ingreso ASU</th>
                   <th className="py-3 px-3">Despacho CDE</th>
                   <th className="py-3 px-3 text-center">Días Taller</th>
                   <th className="py-3 px-3">Estado CDE</th>
@@ -924,14 +948,14 @@ export default function RecepcionCdeDashboardPage() {
                           {ticket.serial || "SIN SERIAL"}
                         </td>
 
-                        {/* Fecha Ingreso CDE */}
+                        {/* Fecha de Ingreso (nuestra recepción ASU) */}
                         <td className="py-3 px-3 whitespace-nowrap text-zinc-600 font-mono text-[11px]">
-                          {ticket.fechaIngreso}
+                          {isFechaValida(ticket.fechaIngreso) ? ticket.fechaIngreso : "-"}
                         </td>
 
-                        {/* Despacho CDE */}
+                        {/* Despacho CDE: solo se muestra la fecha */}
                         <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px]">
-                          {ticket.fechaEntregada ? (
+                          {isFechaValida(ticket.fechaEntregada) ? (
                             <div className="flex flex-col">
                               <span className="font-bold text-zinc-900">{ticket.fechaEntregada}</span>
                               {isDanesa && (
@@ -1129,7 +1153,7 @@ export default function RecepcionCdeDashboardPage() {
                   <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.codigoProducto || "N/A"}</strong>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Fecha de Ingreso a CDE</span>
+                  <span className="text-zinc-500 block text-[11px]">Fecha de Ingreso ASU</span>
                   <span className="text-zinc-800 font-mono font-semibold">{selectedTicket.fechaIngreso}</span>
                 </div>
                 <div>

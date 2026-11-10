@@ -105,6 +105,9 @@ export default function LoginPage() {
     }
 
     const authUser = result.user || selectedProfile;
+    // Calentar e inicializar conexión a MySQL inmediatamente en segundo plano
+    fetch("/api/db", { cache: "no-store" }).catch(() => {});
+
     setSuccess(`Autenticado como ${authUser.nombre}. Redirigiendo a su panel...`);
     setTimeout(() => {
       router.push(authUser.defaultRoute);

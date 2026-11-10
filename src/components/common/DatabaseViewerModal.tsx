@@ -17,6 +17,7 @@ import {
   Wrench,
   PackageOpen,
   Cpu,
+  Truck,
   Copy,
   Check,
   Trash2,
@@ -26,6 +27,7 @@ import { getSafeUserProfiles, getAdminAuthHeaders, UserProfile } from "@/data/au
 import { getStoredTickets, saveTickets, RecepcionTicket } from "@/data/recepcionData";
 import { getStoredReparaciones, saveReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
 import { getStoredMontajes, saveMontajes, OrdenMontajeReal } from "@/data/montajesData";
+import { getStoredCdeTickets, saveCdeTickets, RecepcionCdeTicket } from "@/data/recepcionCdeData";
 
 interface DatabaseViewerModalProps {
   isOpen: boolean;
@@ -35,11 +37,12 @@ interface DatabaseViewerModalProps {
 type TableTab =
   | "taller_reparaciones"
   | "recepcion_tickets"
+  | "recepcion_cde_tickets"
   | "ordenes_montaje"
   | "usuarios"
   | "sql_schema";
 
-const SQL_SCHEMA_TEXT = `-- Base de Datos: nissei_portal (MySQL 8.0 / InnoDB / utf8mb4)
+const SQL_SCHEMA_TEXT = `-- Base de Datos: nissei_portal / railway (MySQL 8.0 / InnoDB / utf8mb4)
 CREATE DATABASE IF NOT EXISTS \`nissei_portal\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE \`nissei_portal\`;
 
@@ -47,7 +50,7 @@ USE \`nissei_portal\`;
 CREATE TABLE IF NOT EXISTS usuarios (
   id VARCHAR(50) PRIMARY KEY,
   nombre VARCHAR(120) NOT NULL,
-  role ENUM('ADMIN', 'TECNICO', 'RECEPCION', 'MONTAJES') NOT NULL,
+  role VARCHAR(50) NOT NULL,
   password VARCHAR(120) NOT NULL,
   default_route VARCHAR(100) NOT NULL,
   avatar VARCHAR(10) NOT NULL,
@@ -70,6 +73,8 @@ CREATE TABLE IF NOT EXISTS recepcion_tickets (
   marca VARCHAR(100) NOT NULL,
   modelo VARCHAR(200) NOT NULL,
   serial VARCHAR(150) NOT NULL,
+  origen VARCHAR(40) DEFAULT 'CSV',
+  accesorios TEXT DEFAULT NULL,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_recepcion_estado (estado),
   INDEX idx_recepcion_cliente (cliente)
@@ -124,6 +129,30 @@ CREATE TABLE IF NOT EXISTS ordenes_montaje (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_montaje_estado (estado),
   INDEX idx_montaje_tecnico (tecnico)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 5. Tabla de Rendimiento Casa Matriz CDE & Retornos Depósito Danesa
+CREATE TABLE IF NOT EXISTS recepcion_cde_tickets (
+  id_orden VARCHAR(50) PRIMARY KEY,
+  codigo_producto VARCHAR(80) DEFAULT '',
+  cliente VARCHAR(200) NOT NULL,
+  mensaje TEXT,
+  fecha_ingreso VARCHAR(50) NOT NULL,
+  fecha_entregada VARCHAR(50) DEFAULT NULL,
+  fecha_venta VARCHAR(50) DEFAULT NULL,
+  estado VARCHAR(80) NOT NULL,
+  tipo_componente VARCHAR(100) NOT NULL,
+  modelo VARCHAR(200) NOT NULL,
+  marca VARCHAR(100) NOT NULL,
+  serial VARCHAR(150) NOT NULL,
+  dias_resolucion INT DEFAULT NULL,
+  es_danesa TINYINT(1) DEFAULT 0,
+  recibido_en_deposito TINYINT(1) DEFAULT 0,
+  fecha_recibido_deposito VARCHAR(50) DEFAULT NULL,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  INDEX idx_cde_estado (estado),
+  INDEX idx_cde_cliente (cliente),
+  INDEX idx_cde_deposito (recibido_en_deposito)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;`;
 
 export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerModalProps) {
@@ -135,11 +164,20 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
   const [isLoading, setIsLoading] = useState(false);
   const [mysqlConnected, setMysqlConnected] = useState<boolean>(false);
+  const [serverInfo, setServerInfo] = useState<{
+    host: string;
+    port: number;
+    database: string;
+    user?: string;
+    isRailway?: boolean;
+    source?: string;
+  } | null>(null);
   const [lastSyncTime, setLastSyncTime] = useState<string>("");
   const [copiedSql, setCopiedSql] = useState(false);
 
   const [reparaciones, setReparaciones] = useState<OrdenReparacion[]>([]);
   const [recepcion, setRecepcion] = useState<RecepcionTicket[]>([]);
+  const [cde, setCde] = useState<RecepcionCdeTicket[]>([]);
   const [montajes, setMontajes] = useState<OrdenMontajeReal[]>([]);
   const [usuarios, setUsuarios] = useState<UserProfile[]>(getSafeUserProfiles());
 
@@ -186,6 +224,12 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           saveReparaciones(next);
           return next;
         });
+      } else if (table === "recepcion_cde_tickets") {
+        setCde((prev) => {
+          const next = prev.filter((c) => c.idOrden !== id);
+          saveCdeTickets(next);
+          return next;
+        });
       } else if (table === "ordenes_montaje") {
         setMontajes((prev) => {
           const next = prev.filter((m) => m.id !== id);
@@ -212,9 +256,11 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
     // Primero cargamos de inmediato los datos actuales sincronizados en el navegador
     const localRep = getStoredReparaciones();
     const localRec = getStoredTickets();
+    const localCde = getStoredCdeTickets();
     const localMnt = getStoredMontajes();
     setReparaciones(localRep);
     setRecepcion(localRec);
+    setCde(localCde);
     setMontajes(localMnt);
     setUsuarios(getSafeUserProfiles());
 
@@ -225,6 +271,9 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
         headers: getAdminAuthHeaders(),
       });
       const json = await res.json();
+      if (json.serverInfo) {
+        setServerInfo(json.serverInfo);
+      }
       if (json.ok) {
         setMysqlConnected(true);
         if (Array.isArray(json.reparaciones) && json.reparaciones.length > 0) {
@@ -232,6 +281,9 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
         }
         if (Array.isArray(json.recepcion) && json.recepcion.length > 0) {
           setRecepcion(json.recepcion);
+        }
+        if (Array.isArray(json.cde) && json.cde.length > 0) {
+          setCde(json.cde);
         }
         if (Array.isArray(json.montajes) && json.montajes.length > 0) {
           setMontajes(json.montajes);
@@ -304,6 +356,24 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
     });
   }, [recepcion, searchTerm, statusFilter]);
 
+  // Filtrado de recepcion_cde_tickets
+  const filteredCde = useMemo(() => {
+    const q = searchTerm.toLowerCase().trim();
+    return cde.filter((t) => {
+      if (statusFilter !== "ALL" && t.estado !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        t.idOrden.toLowerCase().includes(q) ||
+        t.cliente.toLowerCase().includes(q) ||
+        t.marca.toLowerCase().includes(q) ||
+        t.modelo.toLowerCase().includes(q) ||
+        t.serial.toLowerCase().includes(q) ||
+        (t.mensaje || "").toLowerCase().includes(q) ||
+        t.tipoComponente.toLowerCase().includes(q)
+      );
+    });
+  }, [cde, searchTerm, statusFilter]);
+
   // Filtrado de ordenes_montaje
   const filteredMontajes = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
@@ -339,6 +409,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
     let dataToExport: unknown = [];
     if (activeTab === "taller_reparaciones") dataToExport = filteredReparaciones;
     else if (activeTab === "recepcion_tickets") dataToExport = filteredRecepcion;
+    else if (activeTab === "recepcion_cde_tickets") dataToExport = filteredCde;
     else if (activeTab === "ordenes_montaje") dataToExport = filteredMontajes;
     else if (activeTab === "usuarios") {
       dataToExport = filteredUsuarios.map(({ passwordHash: _ph, ...safeUser }) => ({
@@ -371,12 +442,18 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
       ? filteredReparaciones.length
       : activeTab === "recepcion_tickets"
       ? filteredRecepcion.length
+      : activeTab === "recepcion_cde_tickets"
+      ? filteredCde.length
       : activeTab === "ordenes_montaje"
       ? filteredMontajes.length
       : filteredUsuarios.length;
 
   const totalPages = Math.max(1, Math.ceil(currentListLength / PAGE_SIZE));
   const startIndex = (page - 1) * PAGE_SIZE;
+
+  const displayHost = serverInfo?.host || "localhost:3306";
+  const displayDb = serverInfo?.database || "nissei_portal";
+  const isCloudRailway = Boolean(serverInfo?.isRailway || displayHost.includes("railway"));
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6">
@@ -393,22 +470,22 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   Visor de Base de Datos MySQL
                 </h2>
                 <span className="px-2 py-0.5 text-[11px] font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300">
-                  DB: nissei_portal
+                  DB: {displayDb}
                 </span>
                 {mysqlConnected ? (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                     <CheckCircle2 className="w-3 h-3" />
-                    MySQL Activo (localhost:3306)
+                    {isCloudRailway ? "MySQL Cloud Activo (Railway)" : `MySQL Activo (${displayHost})`}
                   </span>
                 ) : (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                     <HardDrive className="w-3 h-3" />
-                    Espejo Local Activo (Sincronizado con navegador · Puerto 3306 en espera)
+                    Espejo Local Activo (Sincronizado con navegador · MySQL en espera)
                   </span>
                 )}
               </div>
               <p className="text-xs text-zinc-400 mt-0.5 font-mono">
-                Host: localhost:3306 · Motor: InnoDB utf8mb4 · Última lectura: {lastSyncTime || "--:--"}
+                Host: {displayHost} · Motor: InnoDB utf8mb4 · Última lectura: {lastSyncTime || "--:--"}
               </p>
             </div>
           </div>
@@ -449,7 +526,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0">
             <button
               type="button"
-              onClick={() => setActiveTab("taller_reparaciones")}
+              onClick={() => { setActiveTab("taller_reparaciones"); setPage(1); }}
               className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
                 activeTab === "taller_reparaciones"
                   ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
@@ -465,7 +542,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
             <button
               type="button"
-              onClick={() => setActiveTab("recepcion_tickets")}
+              onClick={() => { setActiveTab("recepcion_tickets"); setPage(1); }}
               className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
                 activeTab === "recepcion_tickets"
                   ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
@@ -481,7 +558,23 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
             <button
               type="button"
-              onClick={() => setActiveTab("ordenes_montaje")}
+              onClick={() => { setActiveTab("recepcion_cde_tickets"); setPage(1); }}
+              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+                activeTab === "recepcion_cde_tickets"
+                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
+                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+              }`}
+            >
+              <Truck className="w-3.5 h-3.5 text-zinc-700" />
+              <span className="font-mono">recepcion_cde_tickets</span>
+              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+                {cde.length}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => { setActiveTab("ordenes_montaje"); setPage(1); }}
               className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
                 activeTab === "ordenes_montaje"
                   ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
@@ -497,7 +590,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
             <button
               type="button"
-              onClick={() => setActiveTab("usuarios")}
+              onClick={() => { setActiveTab("usuarios"); setPage(1); }}
               className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
                 activeTab === "usuarios"
                   ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
@@ -513,7 +606,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
             <button
               type="button"
-              onClick={() => setActiveTab("sql_schema")}
+              onClick={() => { setActiveTab("sql_schema"); setPage(1); }}
               className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
                 activeTab === "sql_schema"
                   ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
@@ -770,6 +863,94 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                           }
                           className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
                           title={`Eliminar orden #${t.idOrden} de la base de datos`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+
+          {/* 2b. TABLA: recepcion_cde_tickets (Casa Matriz CDE & Retornos Depósito Danesa) */}
+          {activeTab === "recepcion_cde_tickets" && (
+            <table className="w-full text-left border-collapse text-xs">
+              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+                <tr>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">id_orden</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">cliente</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">equipo / hardware</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">serial</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">ingreso_asu</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">despacho_cde</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">dias_taller</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">estado_cde</th>
+                  <th className="py-2.5 px-3 border-r border-zinc-200">deposito</th>
+                  <th className="py-2.5 px-3 text-center">acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-200 bg-white">
+                {filteredCde
+                  .slice(startIndex, startIndex + PAGE_SIZE)
+                  .map((cItem) => (
+                    <tr key={cItem.idOrden} className="hover:bg-zinc-50 transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                        #{cItem.idOrden}
+                      </td>
+                      <td className="py-2 px-3 font-medium text-zinc-800 border-r border-zinc-100 whitespace-nowrap">
+                        <span className="flex items-center gap-1.5">
+                          {cItem.cliente}
+                          {cItem.esDanesa && (
+                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                              DANESA
+                            </span>
+                          )}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 text-zinc-800 border-r border-zinc-100">
+                        {cItem.marca} {cItem.modelo} ({cItem.tipoComponente})
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {cItem.serial}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {cItem.fechaIngreso}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                        {cItem.fechaEntregada || <span className="text-zinc-300">-</span>}
+                      </td>
+                      <td className="py-2 px-3 font-mono text-[11px] font-bold text-amber-600 border-r border-zinc-100 whitespace-nowrap">
+                        {cItem.diasResolucion !== null && cItem.diasResolucion !== undefined ? `${cItem.diasResolucion} d` : "-"}
+                      </td>
+                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {cItem.estado}
+                        </span>
+                      </td>
+                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
+                        {cItem.recibidoEnDeposito ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                            Recibido
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                            En tránsito
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-2 px-3 text-center whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setConfirmDelete({
+                              table: "recepcion_cde_tickets",
+                              id: cItem.idOrden,
+                              label: `Orden CDE #${cItem.idOrden} · ${cItem.cliente}`,
+                            })
+                          }
+                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          title={`Eliminar orden #${cItem.idOrden} de la base de datos`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>

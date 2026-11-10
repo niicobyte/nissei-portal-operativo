@@ -6,9 +6,31 @@ import {
   OrdenReparacion,
   clasificarMensajeCSV,
 } from "@/data/tallerReparacionesData";
+import {
+  INITIAL_RECEPCION_CDE_DATA,
+  RecepcionCdeTicket,
+  calcularDiasResolucion,
+  isTicketDanesa,
+} from "@/data/recepcionCdeData";
 import { USER_PROFILES, UserProfile } from "@/data/authData";
 
-function resolveMysqlConfig() {
+export interface MysqlConfig {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+  source: string;
+  isRailway: boolean;
+}
+
+export function resolveMysqlConfig(): MysqlConfig {
+  const isRailway = Boolean(
+    process.env.RAILWAY_ENVIRONMENT ||
+    process.env.RAILWAY_SERVICE_NAME ||
+    process.env.RAILWAY_PROJECT_ID
+  );
+
   const connectionUrl =
     process.env.MYSQL_URL ||
     process.env.MYSQL_PUBLIC_URL ||
@@ -22,29 +44,40 @@ function resolveMysqlConfig() {
         port: Number(parsed.port || 3306),
         user: decodeURIComponent(parsed.username || "root"),
         password: decodeURIComponent(parsed.password || ""),
-        database: parsed.pathname.replace(/^\//, "") || "nissei_portal",
+        database: parsed.pathname.replace(/^\//, "") || (isRailway ? "railway" : "nissei_portal"),
+        source: "URL",
+        isRailway,
       };
     } catch {
       // Fallback a variables individuales si la URL no es válida
     }
   }
 
+  const defaultHost = isRailway ? "mysql.railway.internal" : "localhost";
+  const defaultDatabase = isRailway ? "railway" : "nissei_portal";
+
   return {
-    host: process.env.MYSQL_HOST || process.env.MYSQLHOST || "localhost",
+    host: process.env.MYSQL_HOST || process.env.MYSQLHOST || defaultHost,
     port: Number(process.env.MYSQL_PORT || process.env.MYSQLPORT || 3306),
     user: process.env.MYSQL_USER || process.env.MYSQLUSER || "root",
     password: process.env.MYSQL_PASSWORD || process.env.MYSQLPASSWORD || "",
-    database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || "nissei_portal",
+    database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || defaultDatabase,
+    source: isRailway ? "RAILWAY_INTERNAL" : "ENV_LOCAL",
+    isRailway,
   };
 }
 
-const {
-  host: MYSQL_HOST,
-  port: MYSQL_PORT,
-  user: MYSQL_USER,
-  password: MYSQL_PASSWORD,
-  database: MYSQL_DATABASE,
-} = resolveMysqlConfig();
+export function getMysqlInfo() {
+  const config = resolveMysqlConfig();
+  return {
+    host: config.host,
+    port: config.port,
+    database: config.database,
+    user: config.user,
+    isRailway: config.isRailway,
+    source: config.source,
+  };
+}
 
 declare global {
   // eslint-disable-next-line no-var
@@ -56,25 +89,27 @@ declare global {
 }
 
 export function getPool(): mysql.Pool {
+  const config = resolveMysqlConfig();
   if (!global.__nisseiMysqlPool) {
     global.__nisseiMysqlPool = mysql.createPool({
-      host: MYSQL_HOST,
-      port: MYSQL_PORT,
-      user: MYSQL_USER,
-      password: MYSQL_PASSWORD,
-      database: MYSQL_DATABASE,
+      host: config.host,
+      port: config.port,
+      user: config.user,
+      password: config.password,
+      database: config.database,
       waitForConnections: true,
       connectionLimit: 10,
       queueLimit: 0,
       charset: "utf8mb4",
+      connectTimeout: 7000,
     });
   }
   return global.__nisseiMysqlPool;
 }
 
 /**
- * Crea la base de datos y las 4 tablas si no existen, y realiza el seed inicial
- * con todos los datos reales del CSV de Recepción, Taller de Reparaciones, Montajes y Usuarios.
+ * Crea la base de datos y las 5 tablas si no existen, y realiza el seed inicial
+ * con todos los datos reales del CSV de Recepción, Taller de Reparaciones, Montajes, CDE y Usuarios.
  */
 export async function ensureDatabaseInitialized(): Promise<void> {
   if (global.__nisseiMysqlInitialized) return;
@@ -84,16 +119,19 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 
   global.__nisseiMysqlInitPromise = (async () => {
     try {
+      const config = resolveMysqlConfig();
+
       // 1. Asegurar que la base de datos exista (compatible con MySQL local y Railway Cloud)
       try {
         const bootstrapConn = await mysql.createConnection({
-          host: MYSQL_HOST,
-          port: MYSQL_PORT,
-          user: MYSQL_USER,
-          password: MYSQL_PASSWORD,
+          host: config.host,
+          port: config.port,
+          user: config.user,
+          password: config.password,
+          connectTimeout: 5000,
         });
         await bootstrapConn.query(
-          `CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+          `CREATE DATABASE IF NOT EXISTS \`${config.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
         );
         await bootstrapConn.end();
       } catch {
@@ -102,12 +140,12 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 
       const pool = getPool();
 
-      // 2. Crear las 4 tablas principales si no existen
+      // 2. Crear las 5 tablas principales si no existen
       await pool.query(`
         CREATE TABLE IF NOT EXISTS usuarios (
           id VARCHAR(50) PRIMARY KEY,
           nombre VARCHAR(120) NOT NULL,
-          role ENUM('ADMIN', 'TECNICO', 'RECEPCION', 'MONTAJES') NOT NULL,
+          role VARCHAR(50) NOT NULL,
           password VARCHAR(120) NOT NULL,
           default_route VARCHAR(100) NOT NULL,
           avatar VARCHAR(10) NOT NULL,
@@ -116,6 +154,12 @@ export async function ensureDatabaseInitialized(): Promise<void> {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
+
+      try {
+        await pool.query("ALTER TABLE usuarios MODIFY COLUMN role VARCHAR(50) NOT NULL");
+      } catch {
+        // Ignorar si ya es VARCHAR
+      }
 
       await pool.query(`
         CREATE TABLE IF NOT EXISTS recepcion_tickets (
@@ -132,6 +176,7 @@ export async function ensureDatabaseInitialized(): Promise<void> {
           modelo VARCHAR(200) NOT NULL,
           serial VARCHAR(150) NOT NULL,
           origen VARCHAR(40) DEFAULT 'CSV',
+          accesorios TEXT DEFAULT NULL,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
           INDEX idx_recepcion_estado (estado),
           INDEX idx_recepcion_cliente (cliente)
@@ -207,6 +252,31 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
 
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS recepcion_cde_tickets (
+          id_orden VARCHAR(50) PRIMARY KEY,
+          codigo_producto VARCHAR(80) DEFAULT '',
+          cliente VARCHAR(200) NOT NULL,
+          mensaje TEXT,
+          fecha_ingreso VARCHAR(50) NOT NULL,
+          fecha_entregada VARCHAR(50) DEFAULT NULL,
+          fecha_venta VARCHAR(50) DEFAULT NULL,
+          estado VARCHAR(80) NOT NULL,
+          tipo_componente VARCHAR(100) NOT NULL,
+          modelo VARCHAR(200) NOT NULL,
+          marca VARCHAR(100) NOT NULL,
+          serial VARCHAR(150) NOT NULL,
+          dias_resolucion INT DEFAULT NULL,
+          es_danesa TINYINT(1) DEFAULT 0,
+          recibido_en_deposito TINYINT(1) DEFAULT 0,
+          fecha_recibido_deposito VARCHAR(50) DEFAULT NULL,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_cde_estado (estado),
+          INDEX idx_cde_cliente (cliente),
+          INDEX idx_cde_deposito (recibido_en_deposito)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
       // 3. Seed de Usuarios (almacena únicamente hash SHA-256, nunca texto plano)
       for (const u of USER_PROFILES) {
         await pool.query(
@@ -248,6 +318,14 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         await seedMontajesTable(pool);
       }
 
+      // 7. Seed inicial de Tickets CDE Casa Matriz / Depósito Danesa si está vacía
+      const [cdeCountRows] = await pool.query<mysql.RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM recepcion_cde_tickets"
+      );
+      if ((cdeCountRows[0]?.count || 0) === 0) {
+        await seedCdeTable(pool);
+      }
+
       global.__nisseiMysqlInitialized = true;
     } catch (err) {
       global.__nisseiMysqlInitPromise = undefined;
@@ -256,6 +334,38 @@ export async function ensureDatabaseInitialized(): Promise<void> {
   })();
 
   return global.__nisseiMysqlInitPromise;
+}
+
+export async function seedCdeTable(pool: mysql.Pool): Promise<void> {
+  if (INITIAL_RECEPCION_CDE_DATA.length === 0) return;
+  const CHUNK_SIZE = 250;
+  for (let i = 0; i < INITIAL_RECEPCION_CDE_DATA.length; i += CHUNK_SIZE) {
+    const chunk = INITIAL_RECEPCION_CDE_DATA.slice(i, i + CHUNK_SIZE);
+    const values = chunk.map((t) => [
+      t.idOrden,
+      t.codigoProducto || "",
+      t.cliente,
+      t.mensaje || "",
+      t.fechaIngreso || "",
+      t.fechaEntregada || null,
+      t.fechaVenta || null,
+      t.estado,
+      t.tipoComponente || "GENERAL",
+      t.modelo || "",
+      t.marca || "",
+      t.serial || "S/N",
+      t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
+      (t.esDanesa ?? isTicketDanesa(t.cliente)) ? 1 : 0,
+      t.recibidoEnDeposito ? 1 : 0,
+    ]);
+    await pool.query(
+      `INSERT IGNORE INTO recepcion_cde_tickets
+       (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta,
+        estado, tipo_componente, modelo, marca, serial, dias_resolucion, es_danesa, recibido_en_deposito)
+       VALUES ?`,
+      [values]
+    );
+  }
 }
 
 export async function seedRecepcionTable(pool: mysql.Pool): Promise<void> {
@@ -556,4 +666,46 @@ export async function dbGetUsuarios(): Promise<UserProfile[]> {
     badge: r.badge,
     descripcion: r.descripcion || "",
   }));
+}
+
+export async function dbGetCdeTickets(): Promise<RecepcionCdeTicket[]> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    "SELECT * FROM recepcion_cde_tickets ORDER BY CAST(id_orden AS UNSIGNED) DESC"
+  );
+  return rows.map((r) => ({
+    idOrden: r.id_orden,
+    codigoProducto: r.codigo_producto || "",
+    cliente: r.cliente,
+    mensaje: r.mensaje || "",
+    fechaIngreso: r.fecha_ingreso,
+    fechaEntregada: r.fecha_entregada || undefined,
+    fechaVenta: r.fecha_venta || undefined,
+    estado: r.estado,
+    tipoComponente: r.tipo_componente,
+    modelo: r.modelo,
+    marca: r.marca,
+    serial: r.serial,
+    diasResolucion: r.dias_resolucion,
+    esDanesa: Boolean(r.es_danesa),
+    recibidoEnDeposito: Boolean(r.recibido_en_deposito),
+  }));
+}
+
+export async function getMysqlStats() {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  const [rec] = await pool.query<mysql.RowDataPacket[]>("SELECT COUNT(*) as count FROM recepcion_tickets");
+  const [rep] = await pool.query<mysql.RowDataPacket[]>("SELECT COUNT(*) as count FROM taller_reparaciones");
+  const [mnt] = await pool.query<mysql.RowDataPacket[]>("SELECT COUNT(*) as count FROM ordenes_montaje");
+  const [cde] = await pool.query<mysql.RowDataPacket[]>("SELECT COUNT(*) as count FROM recepcion_cde_tickets");
+  const [usr] = await pool.query<mysql.RowDataPacket[]>("SELECT COUNT(*) as count FROM usuarios");
+  return {
+    recepcion: rec[0]?.count || 0,
+    reparaciones: rep[0]?.count || 0,
+    montajes: mnt[0]?.count || 0,
+    cde: cde[0]?.count || 0,
+    usuarios: usr[0]?.count || 0,
+  };
 }
