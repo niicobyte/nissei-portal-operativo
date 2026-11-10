@@ -376,13 +376,14 @@ export default function NuevoIngresoMontajePage() {
 
     addMontaje(newOrder);
 
-    // Envío automático al Grupo de Montajes vía WhaApi (Canal MONTAJES)
+    // Envío automático al Grupo de Montajes vía WhaApi (Canal MONTAJES -> Grupo 120363428540171277@g.us)
     const msg = generateWhatsAppMessage();
     fetch("/api/whatsapp/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         channel: "MONTAJES",
+        to: "120363428540171277@g.us",
         body: msg
       })
     }).catch((err) => console.error("[WHAPI ERROR]", err));
@@ -400,7 +401,7 @@ export default function NuevoIngresoMontajePage() {
 
     const effectiveVendedor = salesAgent === "OTRO" ? customSalesAgent.trim() || "Asesor Comercial" : salesAgent;
 
-    return `Estimado/a *${clientName || "Cliente"}*, le informamos desde *NISSEI Ciudad del Este* que su ${tipoServicio === "Montaje" ? "orden de montaje fue ingresada:" : "orden de expansión fue ingresada:"}
+    return `El montaje de *${clientName || "Cliente"}*, ha ingresado y finalizara en la brevedad posible:
 
 *Nro. Registro / Interno:* ${nroRegistroInterno || "Pendiente"}
 *Vendedor Responsable:* ${effectiveVendedor} (${salesChannel})
@@ -481,6 +482,8 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                     options={vendedorOptions}
                     fullWidth
                     dropdownWidth="w-full"
+                    searchable
+                    searchPlaceholder="Buscar vendedor..."
                     className="w-full justify-between"
                   />
                 </div>

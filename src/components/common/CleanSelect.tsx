@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check } from "lucide-react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
+import { ChevronDown, Check, Search, X } from "lucide-react";
 
 export interface CleanSelectOption {
   value: string;
@@ -24,6 +24,8 @@ interface CleanSelectProps {
   align?: "left" | "right";
   size?: "sm" | "md";
   fullWidth?: boolean;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 export function CleanSelect({
@@ -38,12 +40,37 @@ export function CleanSelect({
   align = "left",
   size = "sm",
   fullWidth = false,
+  searchable = false,
+  searchPlaceholder = "Buscar...",
 }: CleanSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
   const isFull = fullWidth || className.includes("w-full");
+
+  useEffect(() => {
+    if (isOpen && searchable) {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      setSearchQuery("");
+    }
+  }, [isOpen, searchable]);
+
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !searchQuery.trim()) return options;
+    const q = searchQuery.toLowerCase().trim();
+    return options.filter(
+      (opt) =>
+        opt.label.toLowerCase().includes(q) ||
+        (opt.description && opt.description.toLowerCase().includes(q))
+    );
+  }, [options, searchable, searchQuery]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -126,56 +153,99 @@ export function CleanSelect({
             align === "right" ? "right-0" : "left-0"
           } mt-1.5 ${dropdownWidth || (isFull ? "w-full" : "w-64")} min-w-[200px] max-h-72 overflow-y-auto bg-white rounded-xl border border-zinc-200 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150`}
         >
-          <div className="space-y-0.5">
-            {options.map((opt) => {
-              const isSelected = opt.value === value;
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.value);
-                    setIsOpen(false);
+          {searchable && (
+            <div className="p-1 border-b border-zinc-100 mb-1 sticky top-0 bg-white/95 backdrop-blur-xs z-10">
+              <div className="relative flex items-center">
+                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 pointer-events-none" />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape") {
+                      setIsOpen(false);
+                    }
+                    e.stopPropagation();
                   }}
-                  className={`flex items-center justify-between w-full px-2.5 py-2 text-xs font-semibold rounded-lg text-left transition-colors cursor-pointer ${
-                    isSelected
-                      ? "bg-zinc-900 text-white shadow-sm font-bold"
-                      : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2 truncate">
-                    {opt.icon && (
-                      <span
-                        className={`shrink-0 ${
-                          isSelected ? "text-white" : "text-zinc-500"
-                        }`}
-                      >
-                        {opt.icon}
-                      </span>
-                    )}
-                    <span className="truncate">{opt.label}</span>
-                  </div>
+                  placeholder={searchPlaceholder}
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSearchQuery("");
+                      searchInputRef.current?.focus();
+                    }}
+                    className="absolute right-2 text-zinc-400 hover:text-zinc-600 p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
 
-                  <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                    {opt.badge !== undefined && (
-                      <span
-                        className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
-                          isSelected
-                            ? "bg-white/20 text-white"
-                            : opt.badgeColor ||
-                              "bg-zinc-100 text-zinc-700 border border-zinc-200"
-                        }`}
-                      >
-                        {opt.badge}
-                      </span>
-                    )}
-                    {isSelected && (
-                      <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    )}
-                  </div>
-                </button>
-              );
-            })}
+          <div className="space-y-0.5">
+            {filteredOptions.length === 0 ? (
+              <div className="py-4 px-2 text-center text-xs text-zinc-400 font-medium">
+                No se encontraron opciones
+              </div>
+            ) : (
+              filteredOptions.map((opt) => {
+                const isSelected = opt.value === value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => {
+                      onChange(opt.value);
+                      setSearchQuery("");
+                      setIsOpen(false);
+                    }}
+                    className={`flex items-center justify-between w-full px-2.5 py-2 text-xs font-semibold rounded-lg text-left transition-colors cursor-pointer ${
+                      isSelected
+                        ? "bg-zinc-900 text-white shadow-sm font-bold"
+                        : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 truncate">
+                      {opt.icon && (
+                        <span
+                          className={`shrink-0 ${
+                            isSelected ? "text-white" : "text-zinc-500"
+                          }`}
+                        >
+                          {opt.icon}
+                        </span>
+                      )}
+                      <span className="truncate">{opt.label}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 ml-2 shrink-0">
+                      {opt.badge !== undefined && (
+                        <span
+                          className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-full ${
+                            isSelected
+                              ? "bg-white/20 text-white"
+                              : opt.badgeColor ||
+                                "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                          }`}
+                        >
+                          {opt.badge}
+                        </span>
+                      )}
+                      {isSelected && (
+                        <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
           </div>
         </div>
       )}
