@@ -328,8 +328,14 @@ export function buildUnifiedSatiList(
 
   const unifiedList: RecepcionCdeTicket[] = [];
 
-  // Helper para extraer estado y fecha de checkin
-  const getCheckinInfo = (rowKey: string, fallbackRecibido?: boolean, fallbackFecha?: string) => {
+  // Helper para extraer estado y fecha de checkin (auto-confirma Reparada y Entregada)
+  const getCheckinInfo = (
+    rowKey: string,
+    fallbackRecibido?: boolean,
+    fallbackFecha?: string,
+    stAsu?: string,
+    stCde?: string
+  ) => {
     const val = checkins[rowKey];
     if (typeof val === 'boolean') {
       return { recibido: val, fecha: fallbackFecha || '' };
@@ -340,8 +346,18 @@ export function buildUnifiedSatiList(
         fecha: val.fecha || fallbackFecha || '',
       };
     }
+
+    // Auto-confirmación mandatoria: toda orden en estado Reparada o Entregada se confirma como Recibido
+    const st1 = (stAsu || "").toLowerCase();
+    const st2 = (stCde || "").toLowerCase();
+    const esAutoRecibido =
+      st1.includes("entregad") ||
+      st1.includes("reparad") ||
+      st2.includes("entregad") ||
+      st2.includes("reparad");
+
     return {
-      recibido: Boolean(fallbackRecibido),
+      recibido: Boolean(fallbackRecibido || esAutoRecibido),
       fecha: fallbackFecha || '',
     };
   };
@@ -361,13 +377,20 @@ export function buildUnifiedSatiList(
     const matchedCde = esCronologicamenteCoherente ? rawMatchedCde : undefined;
 
     const rowKey = asu.rowKey || `ASU_${asu.idOrden}_${asu.codigoProducto || ""}_${asu.serial || ""}_${idx}`;
-    const checkin = getCheckinInfo(rowKey, asu.recibidoEnDeposito, (asu as any).fechaRecibidoDeposito);
 
     // Fecha de despacho CDE (solo si el cruce es legítimo y cronológicamente coherente)
     const fechaDespachoCde = matchedCde?.fechaEntregada || "";
 
     // Fecha de ingreso en ASU (nuestra recepción)
     const fechaIngreso = asu.fechaIngreso || "";
+
+    const checkin = getCheckinInfo(
+      rowKey,
+      asu.recibidoEnDeposito,
+      fechaDespachoCde || asu.fechaEntregada || (asu as any).fechaRecibidoDeposito,
+      asu.estado,
+      matchedCde?.estado
+    );
 
     // Días de taller (solo si hay fecha de despacho legítima)
     const dias = fechaDespachoCde ? calcularDiasResolucion(fechaIngreso, fechaDespachoCde) : null;
@@ -410,7 +433,13 @@ export function buildUnifiedSatiList(
     }
 
     const rowKey = cde.rowKey || `CDE_${cde.idOrden}_${cde.codigoProducto || ""}_${cde.serial || ""}_${idx}`;
-    const checkin = getCheckinInfo(rowKey, cde.recibidoEnDeposito, cde.fechaRecibidoDeposito);
+    const checkin = getCheckinInfo(
+      rowKey,
+      cde.recibidoEnDeposito,
+      cde.fechaEntregada || cde.fechaRecibidoDeposito,
+      undefined,
+      cde.estado
+    );
 
     unifiedList.push({
       ...cde,

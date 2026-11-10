@@ -298,6 +298,23 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         "DELETE FROM recepcion_cde_tickets WHERE CAST(id_orden AS UNSIGNED) < 100000"
       ).catch(() => {});
 
+      // Auto-confirmar en depósito las órdenes con estado Entregada o Reparada
+      await pool.query(
+        `UPDATE recepcion_cde_tickets
+         SET recibido_en_deposito = 1,
+             fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
+         WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
+           AND recibido_en_deposito = 0`
+      ).catch(() => {});
+
+      await pool.query(
+        `UPDATE recepcion_tickets
+         SET recibido_en_deposito = 1,
+             fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
+         WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
+           AND recibido_en_deposito = 0`
+      ).catch(() => {});
+
       // 3. Seed de Usuarios (almacena únicamente hash SHA-256, nunca texto plano)
       for (const u of USER_PROFILES) {
         await pool.query(

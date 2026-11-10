@@ -62,7 +62,8 @@ export type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE
 export function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: RecibidosDateFilter): boolean {
   if (filter === "TODAS") return true;
 
-  const dateStr = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || ticket.fechaIngreso;
+  // Filtrar primordialmente con la fecha de entregada (despacho/entrega) para seguimiento de días
+  const dateStr = ticket.fechaEntregada || ticket.fechaRecibidoDeposito || ticket.fechaIngreso;
   if (!dateStr) return false;
 
   const d = parseFechaDMY(dateStr);
@@ -86,6 +87,29 @@ export function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: Recibid
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }
   return true;
+}
+
+/**
+ * Determina si una orden está confirmada / en estado recibido en Llegada a Depósito:
+ * 1. Si el usuario la desmarcó manualmente, devuelve false.
+ * 2. Si t.recibidoEnDeposito es true.
+ * 3. Si su estado es "Entregada" o "Reparada" (mandatorio por regla de negocio).
+ */
+export function isTicketRecibido(t: RecepcionCdeTicket): boolean {
+  if ((t as any).desmarcadoManual) return false;
+  if (t.recibidoEnDeposito) return true;
+  const displayStatus = getTicketDisplayStatus(t).toLowerCase();
+  if (displayStatus.includes("entregada") || displayStatus.includes("reparada")) {
+    return true;
+  }
+  const estAsu = (t.estadoAsu || "").toLowerCase();
+  const est = (t.estado || "").toLowerCase();
+  return (
+    estAsu.includes("entregada") ||
+    estAsu.includes("reparada") ||
+    est.includes("entregada") ||
+    est.includes("reparada")
+  );
 }
 
 /**
@@ -289,7 +313,7 @@ export default function RecepcionCdeDashboardPage() {
 
     // Tránsito por transportadora (aplica primordialmente a envíos de Danesa SA)
     // Solo cuando CDE ya despachó y en ASU aún NO está recibida, ni entregada, ni reparada
-    const danesaRecibidos = danesaTickets.filter((t) => t.recibidoEnDeposito);
+    const danesaRecibidos = danesaTickets.filter((t) => isTicketRecibido(t));
     const danesaEnTransito = danesaTickets.filter((t) => {
       const estAsu = (t.estadoAsu || "").toLowerCase();
       const est = (t.estado || "").toLowerCase();
@@ -308,7 +332,7 @@ export default function RecepcionCdeDashboardPage() {
         isFechaValida(t.fechaEntregada) && isDespachoCoherente(t.fechaIngreso, t.fechaEntregada);
 
       return (
-        !t.recibidoEnDeposito &&
+        !isTicketRecibido(t) &&
         !yaEntregadaEnAsu &&
         !resueltaReparada &&
         tieneDespachoValido
@@ -439,9 +463,11 @@ export default function RecepcionCdeDashboardPage() {
 
     // 4. Filtro de Tránsito / Recibidos en Depósito
     if (transitFilter === "EN_TRANSITO") {
-      result = result.filter((t) => getTicketDisplayStatus(t).includes("Tránsito"));
+      result = result.filter(
+        (t) => !isTicketRecibido(t) && getTicketDisplayStatus(t).includes("Tránsito")
+      );
     } else if (transitFilter === "RECIBIDOS") {
-      result = result.filter((t) => t.recibidoEnDeposito);
+      result = result.filter((t) => isTicketRecibido(t));
       if (recibidosDateFilter !== "TODAS") {
         result = result.filter((t) => matchesRecibidosDate(t, recibidosDateFilter));
       }
@@ -470,11 +496,13 @@ export default function RecepcionCdeDashboardPage() {
 
   // Conteo dinámico según el ámbito para las pestañas de tránsito y recepción
   const scopeEnTransito = useMemo(() => {
-    return scopeTickets.filter((t) => getTicketDisplayStatus(t).includes("Tránsito")).length;
+    return scopeTickets.filter(
+      (t) => !isTicketRecibido(t) && getTicketDisplayStatus(t).includes("Tránsito")
+    ).length;
   }, [scopeTickets]);
 
   const scopeRecibidosList = useMemo(() => {
-    return scopeTickets.filter((t) => t.recibidoEnDeposito);
+    return scopeTickets.filter((t) => isTicketRecibido(t));
   }, [scopeTickets]);
 
   const scopeRecibidosCount = scopeRecibidosList.length;
@@ -508,11 +536,28 @@ export default function RecepcionCdeDashboardPage() {
   const handleToggleCheckin = (ticketOrKey: RecepcionCdeTicket | string) => {
     const t = typeof ticketOrKey === "string" ? tickets.find((x) => x.rowKey === ticketOrKey) : ticketOrKey;
     const rowKey = typeof ticketOrKey === "string" ? ticketOrKey : ticketOrKey.rowKey || ticketOrKey.idOrden;
-    const res = toggleCheckinDeposito(rowKey, {
-      idOrden: t?.idOrden,
-      idOrdenAsu: t?.idOrdenAsu,
-      idOrdenCde: t?.idOrdenCde,
-    });
+    const isCurrentlyRecibido = t ? isTicketRecibido(t) : false;
+    const targetState = !isCurrentlyRecibido;
+    const dateUsed =
+      t?.fechaEntregada ||
+      t?.fechaRecibidoDeposito ||
+      new Date().toLocaleDateString("es-PY", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+
+    const res = toggleCheckinDeposito(
+      rowKey,
+      {
+        idOrden: t?.idOrden,
+        idOrdenAsu: t?.idOrdenAsu,
+        idOrdenCde: t?.idOrdenCde,
+      },
+      targetState,
+      targetState ? dateUsed : ""
+    );
+
     setTickets((prev) =>
       prev.map((item) => {
         if (item.rowKey === rowKey || (t?.idOrden && item.idOrden === t.idOrden)) {
@@ -520,6 +565,7 @@ export default function RecepcionCdeDashboardPage() {
             ...item,
             recibidoEnDeposito: res.recibido,
             fechaRecibidoDeposito: res.fecha,
+            desmarcadoManual: !res.recibido,
           };
         }
         return item;
@@ -527,7 +573,14 @@ export default function RecepcionCdeDashboardPage() {
     );
     if (selectedTicket && (selectedTicket.rowKey === rowKey || selectedTicket.idOrden === t?.idOrden)) {
       setSelectedTicket((prev) =>
-        prev ? { ...prev, recibidoEnDeposito: res.recibido, fechaRecibidoDeposito: res.fecha } : null
+        prev
+          ? {
+              ...prev,
+              recibidoEnDeposito: res.recibido,
+              fechaRecibidoDeposito: res.fecha,
+              desmarcadoManual: !res.recibido,
+            }
+          : null
       );
     }
     showToast(res.recibido ? "Orden confirmada como recibida en sucursal." : "Recepción desmarcada.");
@@ -1555,39 +1608,48 @@ export default function RecepcionCdeDashboardPage() {
                         {/* Llegada a Depósito / Confirmación en Sucursal */}
                         <td className="py-3 px-3 text-center whitespace-nowrap">
                           {viewScope !== "CLIENTES_CDE" ? (
-                            <div className="flex flex-col items-center gap-0.5">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleCheckin(ticket)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
-                                  ticket.recibidoEnDeposito
-                                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                                    : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
-                                }`}
-                                title={
-                                  ticket.recibidoEnDeposito
-                                    ? "Caja física recibida y confirmada en depósito (Click para desmarcar)"
-                                    : "Haga click para confirmar llegada de esta unidad a depósito"
-                                }
-                              >
-                                {ticket.recibidoEnDeposito ? (
-                                  <>
-                                    <Check className="w-3 h-3 stroke-[3]" />
-                                    <span>Recibido</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Box className="w-3 h-3" />
-                                    <span>Confirmar</span>
-                                  </>
-                                )}
-                              </button>
-                              {ticket.recibidoEnDeposito && ticket.fechaRecibidoDeposito && (
-                                <span className="text-[10px] font-mono text-zinc-500 block">
-                                  {ticket.fechaRecibidoDeposito}
-                                </span>
-                              )}
-                            </div>
+                            (() => {
+                              const isRecibido = isTicketRecibido(ticket);
+                              const fechaMostrar = ticket.fechaEntregada || ticket.fechaRecibidoDeposito || "";
+                              return (
+                                <div className="flex flex-col items-center gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCheckin(ticket)}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
+                                      isRecibido
+                                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                        : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
+                                    }`}
+                                    title={
+                                      isRecibido
+                                        ? "Equipo en estado Recibido (Click para desmarcar llegada)"
+                                        : "Haga click para confirmar llegada de esta unidad a depósito"
+                                    }
+                                  >
+                                    {isRecibido ? (
+                                      <>
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                        <span>Recibido</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Box className="w-3 h-3" />
+                                        <span>Confirmar</span>
+                                      </>
+                                    )}
+                                  </button>
+                                  {isRecibido && fechaMostrar && (
+                                    <span
+                                      className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
+                                      title={`Fecha de entrega / despacho para seguimiento: ${fechaMostrar}`}
+                                    >
+                                      {fechaMostrar}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()
                           ) : (
                             <span className="text-zinc-400 font-mono text-[10px]">
                               Cliente CDE
@@ -1919,59 +1981,65 @@ export default function RecepcionCdeDashboardPage() {
               </div>
 
               {/* Botón y Estado Directo de Recepción en Sucursal ("y un boton solo para recibido") */}
-              <div
-                className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
-                  selectedTicket.recibidoEnDeposito
-                    ? "bg-emerald-50 border-emerald-200"
-                    : "bg-amber-50/50 border-amber-200"
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  {selectedTicket.recibidoEnDeposito ? (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  ) : (
-                    <Truck className="w-5 h-5 text-amber-600 shrink-0" />
-                  )}
-                  <div>
-                    <strong className="block text-zinc-900 text-xs font-bold">
-                      {selectedTicket.recibidoEnDeposito
-                        ? "Equipo Físico Recibido en Sucursal ASU"
-                        : "Pendiente de Recepción Física en Sucursal"}
-                    </strong>
-                    <span className="text-[11px] text-zinc-600 block">
-                      {selectedTicket.recibidoEnDeposito
-                        ? `Confirmado en sucursal${
-                            selectedTicket.fechaRecibidoDeposito
-                              ? ` el ${selectedTicket.fechaRecibidoDeposito}`
-                              : ""
-                          }. Listo para entrega o taller.`
-                        : "Haga clic en el botón para registrar la llegada física del equipo a la sucursal."}
-                    </span>
-                  </div>
-                </div>
+              {(() => {
+                const isRecibidoModal = isTicketRecibido(selectedTicket);
+                const fechaModalMostrar = selectedTicket.fechaEntregada || selectedTicket.fechaRecibidoDeposito || "";
+                return (
+                  <div
+                    className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
+                      isRecibidoModal
+                        ? "bg-emerald-50 border-emerald-200"
+                        : "bg-amber-50/50 border-amber-200"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2.5">
+                      {isRecibidoModal ? (
+                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                      ) : (
+                        <Truck className="w-5 h-5 text-amber-600 shrink-0" />
+                      )}
+                      <div>
+                        <strong className="block text-zinc-900 text-xs font-bold">
+                          {isRecibidoModal
+                            ? "Equipo Físico Recibido en Sucursal ASU"
+                            : "Pendiente de Recepción Física en Sucursal"}
+                        </strong>
+                        <span className="text-[11px] text-zinc-600 block">
+                          {isRecibidoModal
+                            ? `Confirmado en sucursal${
+                                fechaModalMostrar
+                                  ? ` (Fecha de entrega / despacho: ${fechaModalMostrar})`
+                                  : ""
+                              }. Listo para entrega o taller.`
+                            : "Haga clic en el botón para registrar la llegada física del equipo a la sucursal."}
+                        </span>
+                      </div>
+                    </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleToggleCheckin(selectedTicket)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 flex items-center gap-1.5 ${
-                    selectedTicket.recibidoEnDeposito
-                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                      : "bg-zinc-900 text-white hover:bg-black"
-                  }`}
-                >
-                  {selectedTicket.recibidoEnDeposito ? (
-                    <>
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      <span>Recibido (Click para desmarcar)</span>
-                    </>
-                  ) : (
-                    <>
-                      <Box className="w-3.5 h-3.5" />
-                      <span>Marcar como Recibido</span>
-                    </>
-                  )}
-                </button>
-              </div>
+                    <button
+                      type="button"
+                      onClick={() => handleToggleCheckin(selectedTicket)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                        isRecibidoModal
+                          ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                          : "bg-zinc-900 text-white hover:bg-black"
+                      }`}
+                    >
+                      {isRecibidoModal ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                          <span>Recibido (Click para desmarcar)</span>
+                        </>
+                      ) : (
+                        <>
+                          <Box className="w-3.5 h-3.5" />
+                          <span>Marcar como Recibido</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
