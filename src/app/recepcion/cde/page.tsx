@@ -34,6 +34,7 @@ import {
   saveCdeTickets,
   toggleCheckinDeposito,
   procesarActualizacionCdeCSV,
+  sincronizarCdeCsvOnline,
   ResultadoCargaCdeCSV,
   isFechaValida,
   fetchCdeTicketsFromMySQL,
@@ -95,8 +96,9 @@ export default function RecepcionCdeDashboardPage() {
     setIsUploadingCSV(true);
     try {
       const text = await file.text();
-      const resultado = procesarActualizacionCdeCSV(text, tickets);
-      const asuTickets = getStoredTickets();
+      // Sincronización obligatoria directa a MySQL en la nube (Railway)
+      const resultado = await sincronizarCdeCsvOnline(text, tickets);
+      const asuTickets = await fetchTicketsFromMySQL().catch(() => getStoredTickets());
       const crossed = crossMatchCdeWithAsu(resultado.updatedTickets, asuTickets);
       setTickets(crossed);
 
@@ -421,10 +423,10 @@ export default function RecepcionCdeDashboardPage() {
               </span>
               <div className="text-left leading-tight">
                 <strong className="block text-xs font-bold text-zinc-900">
-                  {isUploadingCSV ? "Procesando CSV..." : "Subir CSV · Estados"}
+                  {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV · Estados"}
                 </strong>
                 <span className="text-[11px] text-zinc-500 font-normal">
-                  Actualizar órdenes SATI
+                  {isUploadingCSV ? "Sincronizando online" : "Actualizar órdenes SATI"}
                 </span>
               </div>
             </button>

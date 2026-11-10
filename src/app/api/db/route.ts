@@ -314,7 +314,52 @@ export async function POST(req: NextRequest) {
 
     // 5b. Actualización masiva desde CSV en Recepción Post-Venta
     if (action === "BULK_UPDATE_RECEPCION_CSV") {
-      const { cambios = [], nuevasOrdenes = [] } = body;
+      const { tickets = [], cambios = [], nuevasOrdenes = [] } = body;
+
+      // Sincronización completa de todos los tickets del CSV en la nube MySQL
+      if (Array.isArray(tickets) && tickets.length > 0) {
+        const CHUNK_SIZE = 150;
+        for (let i = 0; i < tickets.length; i += CHUNK_SIZE) {
+          const chunk = tickets.slice(i, i + CHUNK_SIZE);
+          for (const t of chunk) {
+            const isDelivered = String(t.estado || "").trim().toLowerCase() === "entregada";
+            await pool.query(
+              `INSERT INTO recepcion_tickets
+               (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, accesorios, origen)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+               ON DUPLICATE KEY UPDATE
+                 codigo_producto = VALUES(codigo_producto),
+                 cliente = VALUES(cliente),
+                 mensaje = VALUES(mensaje),
+                 fecha_ingreso = VALUES(fecha_ingreso),
+                 fecha_entregada = COALESCE(VALUES(fecha_entregada), fecha_entregada),
+                 fecha_venta = VALUES(fecha_venta),
+                 estado = VALUES(estado),
+                 tipo_componente = VALUES(tipo_componente),
+                 marca = VALUES(marca),
+                 modelo = VALUES(modelo),
+                 serial = VALUES(serial),
+                 accesorios = COALESCE(VALUES(accesorios), accesorios)`,
+              [
+                t.idOrden,
+                t.codigoProducto || "",
+                t.cliente,
+                t.mensaje || "",
+                t.fechaIngreso || "",
+                t.fechaEntregada || null,
+                t.fechaVenta || null,
+                t.estado,
+                t.tipoComponente || "GENERAL",
+                t.marca || "",
+                t.modelo || "",
+                t.serial || "S/N",
+                t.accesorios || null,
+                t.origen || (isDelivered ? "RECIEN_ENTREGADO" : "CSV"),
+              ]
+            );
+          }
+        }
+      }
 
       for (const c of cambios) {
         const isDelivered = String(c.estadoNuevo || "").trim().toLowerCase() === "entregada";

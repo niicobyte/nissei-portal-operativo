@@ -413,6 +413,44 @@ export function procesarActualizacionCdeCSV(
   };
 }
 
+/**
+ * Sube y sincroniza obligatoriamente el CSV de CDE en la base de datos MySQL en la nube (Railway).
+ * Asegura que todos los técnicos y encargados vean los mismos datos en tiempo real.
+ */
+export async function sincronizarCdeCsvOnline(
+  csvText: string,
+  currentTickets?: RecepcionCdeTicket[]
+): Promise<ResultadoCargaCdeCSV> {
+  const base = currentTickets && currentTickets.length > 0 ? currentTickets : getStoredCdeTickets();
+  const resCalculo = procesarActualizacionCdeCSV(csvText, base);
+
+  if (typeof window !== "undefined") {
+    const resp = await fetch("/api/db", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "BULK_UPDATE_CDE_CSV",
+        tickets: resCalculo.updatedTickets,
+      }),
+    });
+
+    const json = await resp.json();
+    if (!resp.ok || !json.ok) {
+      throw new Error(json.error || "No se pudo sincronizar el CSV en la base de datos MySQL en la nube.");
+    }
+
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      saveCdeTickets(json.data);
+      return {
+        ...resCalculo,
+        updatedTickets: json.data,
+      };
+    }
+  }
+
+  return resCalculo;
+}
+
 export const INITIAL_RECEPCION_CDE_DATA: RecepcionCdeTicket[] = [
   {
     "idOrden": "125652",

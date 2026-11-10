@@ -27936,3 +27936,44 @@ export function procesarActualizacionCSV(
     cambios,
   };
 }
+
+/**
+ * Sube y sincroniza obligatoriamente el CSV en la base de datos MySQL en la nube (Railway).
+ * Espera la confirmación del servidor para garantizar que todos los usuarios vean exactamente
+ * los mismos datos sin depender de estados locales divergentes.
+ */
+export async function sincronizarRecepcionCsvOnline(
+  csvText: string,
+  currentTickets?: RecepcionTicket[]
+): Promise<ResultadoCargaCSV> {
+  const baseTickets = currentTickets && currentTickets.length > 0 ? currentTickets : getStoredTickets();
+  const resCalculo = procesarActualizacionCSV(csvText, baseTickets);
+
+  if (typeof window !== "undefined") {
+    const resp = await fetch("/api/db", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "BULK_UPDATE_RECEPCION_CSV",
+        tickets: resCalculo.updatedTickets,
+        cambios: resCalculo.cambios,
+        nuevasOrdenes: resCalculo.cambios.filter((c) => c.estadoAnterior === "NO ESTABA EN RECEPCIÓN (NUEVA)"),
+      }),
+    });
+
+    const json = await resp.json();
+    if (!resp.ok || !json.ok) {
+      throw new Error(json.error || "No se pudo sincronizar el CSV en la base de datos MySQL en la nube.");
+    }
+
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      saveTickets(json.data);
+      return {
+        ...resCalculo,
+        updatedTickets: json.data,
+      };
+    }
+  }
+
+  return resCalculo;
+}

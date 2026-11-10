@@ -45,6 +45,7 @@ import {
   resetTickets,
   procesarActualizacionCSV,
   ResultadoCargaCSV,
+  sincronizarRecepcionCsvOnline,
   isTicketNuevoIngreso,
   isTicketEstadoCambiadoReciente,
   isTicketEntregadoReciente,
@@ -170,16 +171,19 @@ export default function RecepcionDashboardPage() {
     if (!active) return;
 
     const stored = getStoredTickets();
-    if (stored && stored.length > 0) {
-      setTickets(stored);
-    } else {
-      setTickets(INITIAL_RECEPCION_DATA);
-    }
-    fetchTicketsFromMySQL().then((dbData) => {
-      if (dbData && dbData.length > 0) {
-        setTickets(dbData);
-      }
-    });
+    fetchTicketsFromMySQL()
+      .then((dbData) => {
+        if (dbData && dbData.length > 0) {
+          setTickets(dbData);
+        } else if (stored && stored.length > 0) {
+          setTickets(stored);
+        } else {
+          setTickets(INITIAL_RECEPCION_DATA);
+        }
+      })
+      .catch(() => {
+        setTickets(stored && stored.length > 0 ? stored : INITIAL_RECEPCION_DATA);
+      });
   }, []);
 
   const showToast = (msg: string) => {
@@ -195,7 +199,8 @@ export default function RecepcionDashboardPage() {
     setIsUploadingCSV(true);
     try {
       const text = await file.text();
-      const resultado = procesarActualizacionCSV(text, tickets);
+      // Sincronización obligatoria directa a MySQL en la nube (Railway)
+      const resultado = await sincronizarRecepcionCsvOnline(text, tickets);
       setTickets(resultado.updatedTickets);
 
       const nowStr = new Date().toLocaleTimeString("es-PY", {
@@ -680,10 +685,10 @@ ${accText}`;
               </span>
               <div className="text-left leading-tight">
                 <strong className="block text-xs font-bold text-zinc-900">
-                  {isUploadingCSV ? "Procesando CSV..." : "Subir CSV · Estados"}
+                  {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV · Estados"}
                 </strong>
                 <span className="text-[11px] text-zinc-500 font-normal">
-                  Actualizar órdenes SATI
+                  {isUploadingCSV ? "Sincronizando online" : "Actualizar órdenes SATI"}
                 </span>
               </div>
             </button>
