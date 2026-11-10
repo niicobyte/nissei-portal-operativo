@@ -374,9 +374,15 @@ export function procesarActualizacionCdeCSV(
     const existing = currentMap.get(inc.idOrden);
     const isEntregada = inc.estado.toLowerCase().includes('entregada');
     const esDanesa = inc.esDanesa || isTicketDanesa(inc.cliente);
-    // "Entregada" en CDE = En tránsito por transportadora solo para envíos de Danesa SA;
-    // para clientes directos de CDE significa entregado al cliente final.
-    const enTransito = isEntregada && esDanesa;
+    const esReparada = (existing?.estadoAsu || '').toLowerCase().includes('reparada') || inc.estado.toLowerCase().includes('reparada');
+    const tieneDetalleRep = Boolean(
+      (inc.mensaje || existing?.mensaje || '').toLowerCase().includes('repar') ||
+      (inc.mensaje || existing?.mensaje || '').toLowerCase().includes('cambio') ||
+      (inc.mensaje || existing?.mensaje || '').toLowerCase().includes('ok')
+    );
+    // "Entregada" en CDE = En tránsito por transportadora solo para envíos de Danesa SA
+    // que aún no estén entregadas ni reparadas en ASU ni recibidas en depósito.
+    const enTransito = isEntregada && esDanesa && !esReparada && !tieneDetalleRep && !existing?.recibidoEnDeposito;
 
     if (existing) {
       const cambioEstado = existing.estado.trim() !== inc.estado.trim();

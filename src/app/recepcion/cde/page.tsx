@@ -186,14 +186,27 @@ export default function RecepcionCdeDashboardPage() {
     };
 
     // Tránsito por transportadora (aplica primordialmente a envíos de Danesa SA)
+    // Solo cuando CDE ya despachó y en ASU aún NO está recibida, ni entregada, ni reparada
     const danesaRecibidos = danesaTickets.filter((t) => t.recibidoEnDeposito);
     const danesaEnTransito = danesaTickets.filter((t) => {
       const estAsu = (t.estadoAsu || "").toLowerCase();
+      const est = (t.estado || "").toLowerCase();
       const yaEntregadaEnAsu = estAsu.includes("entregada");
+      const esReparada = estAsu.includes("reparada") || est.includes("reparada");
+      const tieneDetalleRep = Boolean(
+        (t.mensaje || "").toLowerCase().includes("repar") ||
+        (t.mensaje || "").toLowerCase().includes("cambio") ||
+        (t.mensaje || "").toLowerCase().includes("ok") ||
+        (t.mensaje || "").toLowerCase().includes("pieza") ||
+        (t.mensaje || "").toLowerCase().includes("funcional")
+      );
+      const resueltaReparada = esReparada || (tieneDetalleRep && !est.includes("sin reparo") && !estAsu.includes("sin reparo"));
+
       return (
         !t.recibidoEnDeposito &&
         !yaEntregadaEnAsu &&
-        (isFechaValida(t.fechaEntregada) || (t.estado || "").toLowerCase().includes("entregada"))
+        !resueltaReparada &&
+        (isFechaValida(t.fechaEntregada) || est.includes("entregada"))
       );
     });
 
@@ -300,10 +313,22 @@ export default function RecepcionCdeDashboardPage() {
     if (transitFilter === "EN_TRANSITO") {
       result = result.filter((t) => {
         const estAsu = (t.estadoAsu || "").toLowerCase();
+        const est = (t.estado || "").toLowerCase();
+        const esReparada = estAsu.includes("reparada") || est.includes("reparada");
+        const tieneDetalleRep = Boolean(
+          (t.mensaje || "").toLowerCase().includes("repar") ||
+          (t.mensaje || "").toLowerCase().includes("cambio") ||
+          (t.mensaje || "").toLowerCase().includes("ok") ||
+          (t.mensaje || "").toLowerCase().includes("pieza") ||
+          (t.mensaje || "").toLowerCase().includes("funcional")
+        );
+        const resueltaReparada = esReparada || (tieneDetalleRep && !est.includes("sin reparo") && !estAsu.includes("sin reparo"));
+
         return (
           !t.recibidoEnDeposito &&
           !estAsu.includes("entregada") &&
-          (isFechaValida(t.fechaEntregada) || (t.estado || "").toLowerCase().includes("entregada"))
+          !resueltaReparada &&
+          (isFechaValida(t.fechaEntregada) || est.includes("entregada"))
         );
       });
     } else if (transitFilter === "RECIBIDOS") {
@@ -382,7 +407,26 @@ export default function RecepcionCdeDashboardPage() {
       );
     }
 
-    // 3. Si CDE despachó pero en ASU aún NO está entregada ni recibida en depósito
+    // 3. Si ya se despachó y la orden de ASU está en estado de Reparada o tiene detalle de reparación
+    const esReparada = estAsu.includes("reparada") || est.includes("reparada");
+    const tieneDetalleReparacion = Boolean(
+      (ticket.mensaje || "").toLowerCase().includes("repar") ||
+      (ticket.mensaje || "").toLowerCase().includes("cambio") ||
+      (ticket.mensaje || "").toLowerCase().includes("ok") ||
+      (ticket.mensaje || "").toLowerCase().includes("pieza") ||
+      (ticket.mensaje || "").toLowerCase().includes("funcional")
+    );
+
+    if (esReparada || (isFechaValida(ticket.fechaEntregada) && tieneDetalleReparacion && !est.includes("sin reparo") && !estAsu.includes("sin reparo"))) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
+          <CheckCircle2 className="w-3 h-3 text-sky-600" />
+          <span>Reparada</span>
+        </span>
+      );
+    }
+
+    // 4. Si CDE despachó pero en ASU aún NO está entregada, ni recibida en depósito, ni reparada
     if (ticket.esDanesa && (isFechaValida(ticket.fechaEntregada) || est.includes("entregada"))) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
