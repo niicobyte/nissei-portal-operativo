@@ -671,12 +671,28 @@ export default function TecnicosDashboardPage() {
                       {/* Técnico Responsable */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         {order.tecnico && order.tecnico !== "Sin Asignar" ? (
-                          <div>
-                            <div className="font-semibold text-zinc-900 flex items-center gap-1.5">
-                              <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
-                              <span>{order.tecnico}</span>
+                          <div className="flex items-center gap-2">
+                            <div>
+                              <div className="font-semibold text-zinc-900 flex items-center gap-1.5">
+                                <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
+                                <span>{order.tecnico}</span>
+                              </div>
+                              <span className="text-[10px] text-zinc-500 font-mono">Técnico Asignado</span>
                             </div>
-                            <span className="text-[10px] text-zinc-500 font-mono">Técnico Asignado</span>
+                            <CleanSelect
+                              value={order.tecnico}
+                              onChange={(val) => {
+                                if (val) handleAssignTecnico(order.id, val);
+                              }}
+                              options={LISTA_TECNICOS_MONTAJE.map((t) => ({
+                                value: t,
+                                label: t,
+                              }))}
+                              size="sm"
+                              dropdownWidth="w-48"
+                              align="right"
+                              className="text-[11px] py-1 px-2 border-zinc-200 hover:border-zinc-400"
+                            />
                           </div>
                         ) : (
                           <div className="space-y-1">
@@ -684,18 +700,20 @@ export default function TecnicosDashboardPage() {
                               Sin Asignar (Histórico)
                             </span>
                             <div>
-                              <select
-                                defaultValue=""
-                                onChange={(e) => {
-                                  if (e.target.value) handleAssignTecnico(order.id, e.target.value);
+                              <CleanSelect
+                                value=""
+                                onChange={(val) => {
+                                  if (val) handleAssignTecnico(order.id, val);
                                 }}
-                                className="text-[11px] bg-zinc-50 border border-zinc-200 hover:border-zinc-400 rounded px-1.5 py-0.5 text-zinc-700 outline-none"
-                              >
-                                <option value="" disabled>Asignar técnico...</option>
-                                <option value="Nicolas Solis">Nicolas Solis</option>
-                                <option value="Magaly Yegros">Magaly Yegros</option>
-                                <option value="Juan Ronnebeck">Juan Ronnebeck</option>
-                              </select>
+                                placeholder="Asignar técnico..."
+                                options={LISTA_TECNICOS_MONTAJE.map((t) => ({
+                                  value: t,
+                                  label: t,
+                                }))}
+                                size="sm"
+                                dropdownWidth="w-48"
+                                className="bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400 text-[11px] py-1 px-2"
+                              />
                             </div>
                           </div>
                         )}

@@ -24,6 +24,7 @@ import {
   CategoryFamily
 } from "@/data/recepcionCategories";
 import { AuthBadge } from "@/components/common/AuthBadge";
+import { CleanDatePicker } from "@/components/common/CleanDatePicker";
 
 function findFamilyForComponent(tipo: string): CategoryFamily | undefined {
   if (!tipo) return undefined;
@@ -659,12 +660,11 @@ ${accText}`;
                     <Calendar className="w-3.5 h-3.5 text-zinc-400" />
                     FECHA VENTA / FACTURA (OPCIONAL)
                   </label>
-                  <input
-                    type="text"
+                  <CleanDatePicker
                     value={fechaVenta}
-                    onChange={(e) => setFechaVenta(e.target.value)}
-                    placeholder="DD/MM/AAAA (Ej. 15/02/2025)"
-                    className="w-full text-xs sm:text-sm font-mono border border-zinc-200 rounded-xl px-3 py-2 focus:border-zinc-900 outline-none"
+                    onChange={(val) => setFechaVenta(val)}
+                    format="DD/MM/YYYY"
+                    placeholder="DD / MM / AAAA"
                   />
                 </div>
               </div>

@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
+import { CleanDatePicker } from "@/components/common/CleanDatePicker";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -425,11 +426,10 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Fecha de Facturación
                   </label>
-                  <input
-                    type="date"
+                  <CleanDatePicker
                     value={invoiceDate}
-                    onChange={(e) => setInvoiceDate(e.target.value)}
-                    className="w-full text-xs sm:text-sm font-mono border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none text-zinc-900"
+                    onChange={(val) => setInvoiceDate(val)}
+                    placeholder="DD / MM / AAAA"
                   />
                 </div>
               </div>
@@ -784,11 +784,11 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Fecha Prometida de Entrega
                   </label>
-                  <input
-                    type="date"
+                  <CleanDatePicker
                     value={assemblyDate}
-                    onChange={(e) => setAssemblyDate(e.target.value)}
-                    className="w-full text-xs sm:text-sm font-mono border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none text-zinc-900"
+                    onChange={(val) => setAssemblyDate(val)}
+                    placeholder="DD / MM / AAAA"
+                    align="right"
                   />
                 </div>
               </div>
