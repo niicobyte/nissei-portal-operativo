@@ -16,6 +16,8 @@ export interface RecepcionCdeTicket {
   diasResolucion?: number | null;
   esDanesa?: boolean;
   recibidoEnDeposito?: boolean;
+  esEstadoCambiadoReciente?: boolean;
+  esNuevoIngreso?: boolean;
 }
 
 export function parseFechaDMY(str?: string): Date | null {
