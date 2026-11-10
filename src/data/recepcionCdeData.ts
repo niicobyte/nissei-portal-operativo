@@ -18,6 +18,12 @@ export interface RecepcionCdeTicket {
   recibidoEnDeposito?: boolean;
   esEstadoCambiadoReciente?: boolean;
   esNuevoIngreso?: boolean;
+  // Cruce de datos con Recepción ASU
+  idOrdenAsu?: string;
+  clienteAsu?: string;
+  fechaIngresoAsu?: string;
+  estadoAsu?: string;
+  matchReason?: string;
 }
 
 export function parseFechaDMY(str?: string): Date | null {
@@ -68,14 +74,22 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
   if (cur) lines.push(cur.replace(/\r$/, ''));
 
   const result: RecepcionCdeTicket[] = [];
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-    // Omitir cabecera
-    if (i === 0 && (line.toLowerCase().includes('idorden') || line.toLowerCase().includes('codigo'))) {
-      continue;
-    }
+  let colMap: Record<string, number> = {
+    idOrden: 0,
+    codigoProducto: 1,
+    cliente: 2,
+    mensaje: 3,
+    fechaIngreso: 4,
+    fechaEntregada: 5,
+    fechaVenta: 6,
+    estado: 7,
+    tipoComponente: 8,
+    marca: 9,
+    modelo: 10,
+    serial: 11,
+  };
 
+  function parseLine(line: string): string[] {
     const cells: string[] = [];
     let cell = '';
     let cellQuotes = false;
@@ -96,21 +110,59 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
       }
     }
     cells.push(cell);
+    return cells;
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const cells = parseLine(line);
+
+    // Detección dinámica y robusta de cabecera
+    if (i === 0 && (line.toLowerCase().includes('idorden') || line.toLowerCase().includes('codigo'))) {
+      const headerIndex: Record<string, number> = {};
+      cells.forEach((header, idx) => {
+        const h = header.toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (h.includes('idorden') || h === 'orden' || h === 'id') headerIndex.idOrden = idx;
+        else if (h.includes('codigo') || h === 'cod') headerIndex.codigoProducto = idx;
+        else if (h.includes('cliente')) headerIndex.cliente = idx;
+        else if (h.includes('mensaje') || h.includes('obs')) headerIndex.mensaje = idx;
+        else if (h.includes('fechaingreso') || h === 'ingreso') headerIndex.fechaIngreso = idx;
+        else if (h.includes('fechaentreg') || h === 'entrega' || h === 'entregada') headerIndex.fechaEntregada = idx;
+        else if (h.includes('fechaventa') || h === 'venta') headerIndex.fechaVenta = idx;
+        else if (h.includes('estado')) headerIndex.estado = idx;
+        else if (h.includes('componente') || h.includes('categoria')) headerIndex.tipoComponente = idx;
+        else if (h.includes('marca')) headerIndex.marca = idx;
+        else if (h.includes('modelo')) headerIndex.modelo = idx;
+        else if (h.includes('serial') || h === 'serie' || h === 'sn') headerIndex.serial = idx;
+      });
+
+      if (Object.keys(headerIndex).length >= 5) {
+        colMap = { ...colMap, ...headerIndex };
+        continue;
+      }
+    }
 
     if (cells.length < 5) continue;
 
-    const idOrden = (cells[0] || '').trim();
-    const codigoProducto = (cells[1] || '').trim();
-    const cliente = (cells[2] || '').trim();
-    const mensaje = (cells[3] || '').trim();
-    const fechaIngreso = (cells[4] || '').trim();
-    const fechaEntregada = (cells[5] || '').trim();
-    const fechaVenta = (cells[6] || '').trim();
-    const estado = (cells[7] || '').trim() || 'En Asignacion';
-    const tipoComponente = (cells[8] || '').trim();
-    const modelo = (cells[9] || '').trim();
-    const marca = (cells[10] || '').trim();
-    const serial = (cells[11] || '').trim();
+    const getVal = (field: keyof typeof colMap) => {
+      const idx = colMap[field];
+      return (idx !== undefined && cells[idx] !== undefined ? cells[idx] : '').trim();
+    };
+
+    const idOrden = getVal('idOrden');
+    const codigoProducto = getVal('codigoProducto');
+    const cliente = getVal('cliente');
+    const mensaje = getVal('mensaje');
+    const fechaIngreso = getVal('fechaIngreso');
+    const fechaEntregada = getVal('fechaEntregada');
+    const fechaVenta = getVal('fechaVenta');
+    const estado = getVal('estado') || 'En Asignacion';
+    const tipoComponente = getVal('tipoComponente');
+    const marca = getVal('marca');
+    const modelo = getVal('modelo');
+    const serial = getVal('serial');
 
     result.push({
       idOrden,

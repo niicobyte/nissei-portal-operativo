@@ -24,6 +24,7 @@ import {
   X,
   Check,
   Info,
+  Link2,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import {
@@ -37,6 +38,8 @@ import {
   isFechaValida,
   fetchCdeTicketsFromMySQL,
 } from "@/data/recepcionCdeData";
+import { getStoredTickets } from "@/data/recepcionData";
+import { crossMatchCdeWithAsu } from "@/lib/crossMatch";
 
 const ITEMS_PER_PAGE = 25;
 
@@ -65,12 +68,16 @@ export default function RecepcionCdeDashboardPage() {
 
   useEffect(() => {
     setIsClient(true);
+    const asuTickets = getStoredTickets();
     const loaded = getStoredCdeTickets();
-    setTickets(loaded);
+    const crossed = crossMatchCdeWithAsu(loaded, asuTickets);
+    setTickets(crossed);
+
     // Sincronizar en tiempo real directamente con MySQL
     fetchCdeTicketsFromMySQL().then((dbData) => {
       if (Array.isArray(dbData) && dbData.length > 0) {
-        setTickets(dbData);
+        const enrichedDb = crossMatchCdeWithAsu(dbData, asuTickets);
+        setTickets(enrichedDb);
       }
     });
   }, []);
@@ -80,7 +87,7 @@ export default function RecepcionCdeDashboardPage() {
     setTimeout(() => setNotification(null), 4500);
   };
 
-  // Manejar carga de archivo CSV para actualizar órdenes CDE y detectar cambios de estado
+  // Manejar carga de archivo CSV para actualizar órdenes CDE y cruzar con ASU
   const handleCSVFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -89,7 +96,9 @@ export default function RecepcionCdeDashboardPage() {
     try {
       const text = await file.text();
       const resultado = procesarActualizacionCdeCSV(text, tickets);
-      setTickets(resultado.updatedTickets);
+      const asuTickets = getStoredTickets();
+      const crossed = crossMatchCdeWithAsu(resultado.updatedTickets, asuTickets);
+      setTickets(crossed);
 
       const nowStr = new Date().toLocaleTimeString("es-PY", {
         hour: "2-digit",
@@ -246,12 +255,14 @@ export default function RecepcionCdeDashboardPage() {
       result = result.filter((t) => t.recibidoEnDeposito);
     }
 
-    // 5. Búsqueda por texto libre
+    // 5. Búsqueda por texto libre (incluyendo Orden ASU y Cliente final)
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase().trim();
       result = result.filter(
         (t) =>
           t.idOrden.toLowerCase().includes(q) ||
+          (t.idOrdenAsu && t.idOrdenAsu.toLowerCase().includes(q)) ||
+          (t.clienteAsu && t.clienteAsu.toLowerCase().includes(q)) ||
           t.codigoProducto.toLowerCase().includes(q) ||
           t.cliente.toLowerCase().includes(q) ||
           t.modelo.toLowerCase().includes(q) ||
@@ -914,20 +925,44 @@ export default function RecepcionCdeDashboardPage() {
                           ticket.recibidoEnDeposito ? "bg-emerald-50/20" : ""
                         }`}
                       >
-                        {/* Nº Orden */}
+                        {/* Nº Orden (CDE cruzado con ASU) */}
                         <td className="py-3 px-3.5 font-mono font-bold text-zinc-900 whitespace-nowrap">
-                          <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
-                            #{ticket.idOrden}
-                          </span>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
+                                #{ticket.idOrden}
+                              </span>
+                              <span className="text-[9px] font-sans font-bold text-zinc-400">CDE</span>
+                            </div>
+                            {ticket.idOrdenAsu && (
+                              <div
+                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
+                                title={`Vinculado a Orden ASU #${ticket.idOrdenAsu} (${ticket.matchReason || 'Match'})`}
+                              >
+                                <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
+                                <span>ASU: #{ticket.idOrdenAsu}</span>
+                              </div>
+                            )}
+                          </div>
                         </td>
 
                         {/* Cliente */}
-                        <td className="py-3 px-3 max-w-[170px] truncate">
+                        <td className="py-3 px-3 max-w-[190px]">
                           {isDanesa ? (
-                            <span className="inline-flex items-center gap-1 font-bold text-zinc-900 bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200">
-                              <Building2 className="w-3 h-3 text-amber-700" />
-                              <span>{ticket.cliente}</span>
-                            </span>
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 font-bold text-zinc-900 bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 text-xs">
+                                <Building2 className="w-3 h-3 text-amber-700 shrink-0" />
+                                <span>{ticket.cliente}</span>
+                              </span>
+                              {ticket.clienteAsu && ticket.clienteAsu.toLowerCase() !== "danesa sa" && (
+                                <span
+                                  className="text-[11px] text-zinc-600 block truncate font-sans font-medium"
+                                  title={`Cliente final registrado en ASU: ${ticket.clienteAsu}`}
+                                >
+                                  👤 {ticket.clienteAsu}
+                                </span>
+                              )}
+                            </div>
                           ) : (
                             <span className="font-medium text-zinc-700">{ticket.cliente}</span>
                           )}
@@ -1137,6 +1172,35 @@ export default function RecepcionCdeDashboardPage() {
             </div>
 
             <div className="space-y-4 text-xs">
+              {/* Cruce Inteligente con Orden de ASU */}
+              {selectedTicket.idOrdenAsu && (
+                <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono font-bold text-indigo-900 flex items-center gap-1.5">
+                      <Link2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                      CRUCE DE DATOS: ORDEN ASU VINCULADA #{selectedTicket.idOrdenAsu}
+                    </span>
+                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-indigo-200/60 text-indigo-800">
+                      Match: {selectedTicket.matchReason || "Serial Físico"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-white p-2.5 rounded-lg border border-indigo-100">
+                    <div>
+                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Cliente en ASU:</span>
+                      <strong className="text-zinc-900 truncate block">{selectedTicket.clienteAsu || "Danesa SA"}</strong>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Ingreso en ASU:</span>
+                      <span className="font-mono text-zinc-800">{selectedTicket.fechaIngresoAsu || "---"}</span>
+                    </div>
+                    <div>
+                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Estado en ASU:</span>
+                      <span className="font-mono font-bold text-zinc-800">{selectedTicket.estadoAsu || "---"}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Cuadrícula de Datos Principales */}
               <div className="grid grid-cols-2 gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
                 <div>

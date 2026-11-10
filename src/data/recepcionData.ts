@@ -16,6 +16,10 @@ export interface RecepcionTicket {
   esNuevoIngreso?: boolean;
   esEstadoCambiadoReciente?: boolean;
   esEntregadoReciente?: boolean;
+  // Cruce de datos con Casa Matriz CDE
+  idOrdenCde?: string;
+  estadoCde?: string;
+  fechaDespachoCde?: string;
 }
 
 export const INITIAL_RECEPCION_DATA: RecepcionTicket[] = [
