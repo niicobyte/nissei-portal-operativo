@@ -1,0 +1,13 @@
+#!/bin/sh
+# NISSEI - Hook Pre-Commit de Seguridad (0 Tokens de IA consumidos)
+echo "🛡️ Ejecutando auditoría de seguridad pre-commit local..."
+node scripts/security-audit.mjs
+RESULT=$?
+
+if [ $RESULT -ne 0 ]; then
+  echo "❌ [BLOQUEADO] El commit fue cancelado porque contiene fallas o fugas de seguridad."
+  echo "Revisa el reporte anterior y corrige antes de confirmar el commit."
+  exit 1
+fi
+
+exit 0

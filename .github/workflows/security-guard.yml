@@ -1,0 +1,24 @@
+name: Security Guard & Zero-Leak Audit
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  security-audit:
+    name: 🛡️ Auditoría Defensiva Automática
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Ejecutar Auditor de Seguridad NISSEI
+        run: node scripts/security-audit.mjs
