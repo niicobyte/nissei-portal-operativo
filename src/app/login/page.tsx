@@ -32,12 +32,12 @@ import DatabaseViewerModal from "@/components/common/DatabaseViewerModal";
 export default function LoginPage() {
   const router = useRouter();
 
-  // Sector principal seleccionado: "MONTAJES" | "RECEPCION" | "DEPOSITO"
-  const [activeSector, setActiveSector] = useState<"MONTAJES" | "RECEPCION" | "DEPOSITO">("MONTAJES");
+  // Sector principal seleccionado: "RECEPCION" | "DEPOSITO" | "MONTAJES"
+  const [activeSector, setActiveSector] = useState<"RECEPCION" | "DEPOSITO" | "MONTAJES">("RECEPCION");
 
   // Perfil seleccionado para ingresar contraseña
   const [selectedProfile, setSelectedProfile] = useState<UserProfile>(
-    USER_PROFILES.find((p) => p.id === "montajes") || USER_PROFILES[0]
+    USER_PROFILES.find((p) => p.id === "recepcion") || USER_PROFILES[0]
   );
 
   const [password, setPassword] = useState("");
@@ -174,31 +174,7 @@ export default function LoginPage() {
             {/* Los 2 Sectores Operativos */}
             <div className="space-y-3">
               
-              {/* Opción 1: Taller de Montajes de PC */}
-              <button
-                type="button"
-                onClick={() => handleSelectSector("MONTAJES")}
-                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
-                  activeSector === "MONTAJES"
-                    ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
-                }`}
-              >
-                <div className="flex items-center gap-3.5">
-                  <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeSector === "MONTAJES" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
-                    <Cpu className="w-5 h-5" />
-                  </span>
-                  <div>
-                    <strong className="block text-sm font-bold">Taller de Montajes de PC</strong>
-                    <span className={`text-xs block ${activeSector === "MONTAJES" ? "text-zinc-300" : "text-zinc-500"}`}>
-                      Ensamble de computadoras, pruebas y control de calidad
-                    </span>
-                  </div>
-                </div>
-                <ChevronRight className={`w-4 h-4 ${activeSector === "MONTAJES" ? "text-white" : "text-zinc-400"}`} />
-              </button>
-
-              {/* Opción 2: Recepción Post-Venta */}
+              {/* Opción 1: Recepción Post-Venta */}
               <button
                 type="button"
                 onClick={() => handleSelectSector("RECEPCION")}
@@ -222,7 +198,7 @@ export default function LoginPage() {
                 <ChevronRight className={`w-4 h-4 ${activeSector === "RECEPCION" ? "text-white" : "text-zinc-400"}`} />
               </button>
 
-              {/* Opción 3: SATI ASU - CDE & Taller Central CDE */}
+              {/* Opción 2: SATI ASU - CDE & Taller Central CDE */}
               <button
                 type="button"
                 onClick={() => handleSelectSector("DEPOSITO")}
@@ -244,6 +220,30 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <ChevronRight className={`w-4 h-4 ${activeSector === "DEPOSITO" ? "text-white" : "text-zinc-400"}`} />
+              </button>
+
+              {/* Opción 3: Taller de Montajes de PC */}
+              <button
+                type="button"
+                onClick={() => handleSelectSector("MONTAJES")}
+                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
+                  activeSector === "MONTAJES"
+                    ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
+                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
+                }`}
+              >
+                <div className="flex items-center gap-3.5">
+                  <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeSector === "MONTAJES" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
+                    <Cpu className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <strong className="block text-sm font-bold">Taller de Montajes de PC</strong>
+                    <span className={`text-xs block ${activeSector === "MONTAJES" ? "text-zinc-300" : "text-zinc-500"}`}>
+                      Ensamble de computadoras, pruebas y control de calidad
+                    </span>
+                  </div>
+                </div>
+                <ChevronRight className={`w-4 h-4 ${activeSector === "MONTAJES" ? "text-white" : "text-zinc-400"}`} />
               </button>
 
             </div>

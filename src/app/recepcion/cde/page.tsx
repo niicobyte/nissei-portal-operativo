@@ -387,17 +387,7 @@ export default function RecepcionCdeDashboardPage() {
     const est = (ticket.estado || "").toLowerCase();
     const estAsu = (ticket.estadoAsu || "").toLowerCase();
 
-    // 1. Si ya se confirmó recibido en depósito físico
-    if (ticket.recibidoEnDeposito) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-          <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
-          <span>Recibido en Depósito</span>
-        </span>
-      );
-    }
-
-    // 2. Si la orden en ASU ya fue entregada al cliente final
+    // 1. Si la orden en ASU ya fue entregada al cliente final o en CDE figura Entregada
     if (estAsu.includes("entregada") || (!ticket.esDanesa && est.includes("entregada"))) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
@@ -407,7 +397,7 @@ export default function RecepcionCdeDashboardPage() {
       );
     }
 
-    // 3. Si ya se despachó y la orden de ASU está en estado de Reparada o tiene detalle de reparación
+    // 2. Si ya se despachó y la orden de ASU está en estado de Reparada o tiene detalle de reparación
     const esReparada = estAsu.includes("reparada") || est.includes("reparada");
     const tieneDetalleReparacion = Boolean(
       (ticket.mensaje || "").toLowerCase().includes("repar") ||
@@ -426,7 +416,7 @@ export default function RecepcionCdeDashboardPage() {
       );
     }
 
-    // 4. Si CDE despachó pero en ASU aún NO está entregada, ni recibida en depósito, ni reparada
+    // 3. Si CDE despachó pero en ASU aún NO está entregada, ni reparada
     if (ticket.esDanesa && (isFechaValida(ticket.fechaEntregada) || est.includes("entregada"))) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
@@ -1079,9 +1069,7 @@ export default function RecepcionCdeDashboardPage() {
                     return (
                       <tr
                         key={rowKey}
-                        className={`hover:bg-zinc-50/80 transition-colors ${
-                          ticket.recibidoEnDeposito ? "bg-emerald-50/20" : ""
-                        }`}
+                        className="hover:bg-zinc-50/80 transition-colors"
                       >
                         {/* Nº Orden según el ámbito */}
                         <td className="py-3 px-3.5 font-mono font-bold text-zinc-900 whitespace-nowrap">
