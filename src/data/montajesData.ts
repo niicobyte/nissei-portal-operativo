@@ -55,6 +55,43 @@ export const LISTA_VENDEDORES_REALES = [
   "Patricia Martinez"
 ];
 
+export const VENDEDORES_STORAGE_KEY = "nissei_vendedores_montajes_v1";
+
+export function getStoredVendedores(): string[] {
+  if (typeof window === "undefined") return LISTA_VENDEDORES_REALES;
+  try {
+    const raw = localStorage.getItem(VENDEDORES_STORAGE_KEY);
+    if (!raw) return LISTA_VENDEDORES_REALES;
+    const list = JSON.parse(raw);
+    if (Array.isArray(list) && list.length > 0) {
+      const merged = Array.from(new Set([...LISTA_VENDEDORES_REALES, ...list]));
+      return merged;
+    }
+  } catch (e) {
+    console.warn("Error leyendo vendedores de localStorage:", e);
+  }
+  return LISTA_VENDEDORES_REALES;
+}
+
+export function addCustomVendedor(nuevoVendedor: string): string[] {
+  const clean = nuevoVendedor.trim();
+  if (!clean || clean.toUpperCase() === "OTRO") return getStoredVendedores();
+  const current = getStoredVendedores();
+  const exists = current.some((v) => v.toLowerCase() === clean.toLowerCase());
+  if (!exists) {
+    const updated = [...current, clean];
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(VENDEDORES_STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn("Error guardando nuevo vendedor:", e);
+      }
+    }
+    return updated;
+  }
+  return current;
+}
+
 // Técnicos responsables oficiales (solo nombres sin bancos)
 export const LISTA_TECNICOS_MONTAJE = [
   "Nicolas Solis",

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import { CleanDatePicker } from "@/components/common/CleanDatePicker";
 import Link from "next/link";
@@ -16,7 +16,8 @@ import {
   Wrench,
   AlertCircle,
   Laptop,
-  Search
+  Search,
+  Check
 } from "lucide-react";
 import {
   CATALOGO_MONTAJE_PC,
@@ -26,12 +27,21 @@ import {
   LISTA_TECNICOS_MONTAJE,
   ComponenteMontaje,
   OrdenMontajeReal,
-  addMontaje
+  addMontaje,
+  getStoredVendedores,
+  addCustomVendedor
 } from "@/data/montajesData";
 import { AuthBadge } from "@/components/common/AuthBadge";
 
 export default function NuevoIngresoMontajePage() {
   const router = useRouter();
+
+  // Lista dinámica de vendedores persistida en localStorage
+  const [listaVendedores, setListaVendedores] = useState<string[]>(LISTA_VENDEDORES_REALES);
+
+  useEffect(() => {
+    setListaVendedores(getStoredVendedores());
+  }, []);
 
   // Fecha actual en formato YYYY-MM-DD
   const todayStr = new Date().toISOString().split("T")[0];
@@ -73,10 +83,10 @@ export default function NuevoIngresoMontajePage() {
   // Opciones con estilo CleanSelect
   const vendedorOptions = useMemo<CleanSelectOption[]>(
     () => [
-      ...LISTA_VENDEDORES_REALES.map((v) => ({ value: v, label: v })),
+      ...listaVendedores.map((v) => ({ value: v, label: v })),
       { value: "OTRO", label: "+ Otro vendedor (especificar)" },
     ],
-    []
+    [listaVendedores]
   );
 
   const canalOptions: CleanSelectOption[] = [
@@ -199,6 +209,98 @@ export default function NuevoIngresoMontajePage() {
     setComponents((prev) => prev.filter((_, idx) => idx !== indexToRemove));
   };
 
+  // Confirmar y registrar nuevo vendedor comercial en la lista permanente
+  const handleConfirmCustomSalesAgent = () => {
+    const clean = customSalesAgent.trim();
+    if (clean) {
+      const updated = addCustomVendedor(clean);
+      setListaVendedores(updated);
+      setSalesAgent(clean);
+      setCustomSalesAgent("");
+    }
+  };
+
+  // Manejo de la tecla Enter para confirmar casilla y pasar a la siguiente sin bugear el formulario
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key !== "Enter") return;
+
+    const target = e.target as HTMLElement;
+
+    // Permitir salto de línea en textarea
+    if (target.tagName === "TEXTAREA") return;
+
+    // Permitir activación de botones con Enter
+    if (target.tagName === "BUTTON") return;
+
+    // Prevenir el submit accidental de HTML
+    e.preventDefault();
+
+    // 1. Campo de asesor personalizado
+    if (target.id === "input-custom-sales-agent") {
+      handleConfirmCustomSalesAgent();
+      document.getElementById("input-nro-registro")?.focus();
+      return;
+    }
+
+    // 2. Número de Registro Interno -> Salta a Cliente
+    if (target.id === "input-nro-registro") {
+      document.getElementById("input-client-name")?.focus();
+      return;
+    }
+
+    // 3. Cliente / Razón Social -> Salta a Teléfono
+    if (target.id === "input-client-name") {
+      document.getElementById("input-client-phone")?.focus();
+      return;
+    }
+
+    // 4. Teléfono del cliente -> Salta a SKU del componente
+    if (target.id === "input-client-phone") {
+      document.getElementById("component-sku")?.focus();
+      return;
+    }
+
+    // 5. SKU del componente -> Si autocompletó, pasa a serial; si no, a descripción
+    if (target.id === "component-sku") {
+      if (customDesc.trim()) {
+        document.getElementById("component-serial")?.focus();
+      } else {
+        document.getElementById("component-desc")?.focus();
+      }
+      return;
+    }
+
+    // 6. Descripción del componente -> Pasa a serial
+    if (target.id === "component-desc") {
+      document.getElementById("component-serial")?.focus();
+      return;
+    }
+
+    // 7. Serial del componente -> Si hay descripción, agrega el componente a la orden y vuelve a SKU
+    if (target.id === "component-serial") {
+      if (customDesc.trim()) {
+        handleAddComponent();
+        setTimeout(() => {
+          document.getElementById("component-sku")?.focus();
+        }, 40);
+      }
+      return;
+    }
+
+    // Fallback de navegación: encontrar el siguiente input enfocable
+    const form = e.currentTarget;
+    const focusable = Array.from(
+      form.querySelectorAll<HTMLElement>(
+        'input:not([type="hidden"]):not([disabled]), textarea:not([disabled]), button:not([disabled])'
+      )
+    ).filter((el) => el.offsetParent !== null);
+
+    const idx = focusable.indexOf(target);
+    if (idx >= 0 && idx < focusable.length - 1) {
+      focusable[idx + 1].focus();
+    }
+  };
+
   // Actualizar serial o campo de una fila en la tabla
   const handleUpdateComponentField = (
     index: number,
@@ -234,7 +336,16 @@ export default function NuevoIngresoMontajePage() {
 
     setIsSubmitting(true);
 
-    const effectiveVendedor = salesAgent === "OTRO" ? customSalesAgent.trim() || "Comercial Salón" : salesAgent;
+    let effectiveVendedor = salesAgent;
+    if (salesAgent === "OTRO") {
+      const cleanCustom = customSalesAgent.trim() || "Comercial Salón";
+      effectiveVendedor = cleanCustom;
+      if (customSalesAgent.trim()) {
+        const updatedVend = addCustomVendedor(cleanCustom);
+        setListaVendedores(updatedVend);
+      }
+    }
+
     const cleanReg = nroRegistroInterno.replace(/[^0-9]/g, "") || String(Math.floor(100000 + Math.random() * 900000));
     const prefix = tipoServicio === "Montaje" ? "MNT" : "EXP";
     const newId = `${prefix}-${cleanReg.slice(0, 7)}`;
@@ -334,7 +445,7 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           
           {/* COLUMNA PRINCIPAL DE FORMULARIO (8 cols) */}
           <div className="lg:col-span-8 space-y-6">
@@ -376,18 +487,35 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
 
                 {/* Vendedor personalizado si seleccionó OTRO */}
                 {salesAgent === "OTRO" && (
-                  <div>
-                    <label className="text-xs text-zinc-600 font-semibold block mb-1">
-                      Nombre del Asesor *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={customSalesAgent}
-                      onChange={(e) => setCustomSalesAgent(e.target.value)}
-                      placeholder="Ej: Laura Benítez"
-                      className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none text-zinc-900"
-                    />
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-zinc-600 font-semibold block">
+                        Nombre del Asesor *
+                      </label>
+                      <span className="text-[10px] text-zinc-400 font-mono">
+                        Enter confirma
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        id="input-custom-sales-agent"
+                        type="text"
+                        required
+                        value={customSalesAgent}
+                        onChange={(e) => setCustomSalesAgent(e.target.value)}
+                        onBlur={handleConfirmCustomSalesAgent}
+                        placeholder="Ej: Laura Benítez"
+                        className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none text-zinc-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleConfirmCustomSalesAgent}
+                        className="px-2.5 py-2 text-xs font-semibold bg-zinc-900 hover:bg-black text-white rounded-lg whitespace-nowrap shadow-xs"
+                        title="Guardar asesor en la lista"
+                      >
+                        Añadir
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -412,6 +540,7 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                     Nro. Registro / Interno *
                   </label>
                   <input
+                    id="input-nro-registro"
                     type="text"
                     required
                     value={nroRegistroInterno}
@@ -460,6 +589,7 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                     Cliente / Razón Social *
                   </label>
                   <input
+                    id="input-client-name"
                     type="text"
                     required
                     value={clientName}
@@ -474,6 +604,7 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                     Teléfono / WhatsApp de Contacto
                   </label>
                   <input
+                    id="input-client-phone"
                     type="tel"
                     value={clientPhone}
                     onChange={(e) => setClientPhone(e.target.value)}
@@ -573,6 +704,7 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                       SKU (Código) *
                     </label>
                     <input
+                      id="component-sku"
                       type="text"
                       list="skus-list"
                       value={customSku}
@@ -610,6 +742,7 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                       Descripción del Hardware *
                     </label>
                     <input
+                      id="component-desc"
                       type="text"
                       list="desc-list"
                       value={customDesc}
@@ -632,6 +765,7 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                       Serial Físico / IMEI (Opcional)
                     </label>
                     <input
+                      id="component-serial"
                       type="text"
                       value={customSerial}
                       onChange={(e) => setCustomSerial(e.target.value)}
