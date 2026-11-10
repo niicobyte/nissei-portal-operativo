@@ -15,3 +15,12 @@
   - **Email:** `niicobyte@users.noreply.github.com`
   - **Rama principal:** `main`
   - **Remoto:** `origin` (`https://github.com/niicobyte/nissei-portal-operativo.git`)
+
+## 3. Seguridad Defensiva y Prevención de Filtraciones (Zero-Leak Policy)
+- **Subagente dedicado:** `security-auditor` (Guardián de Seguridad).
+- **Script de auditoría:** `node scripts/security-audit.mjs` (o `npm run audit:security`).
+- **Reglas mandatorias:**
+  1. Ningún archivo con claves reales, tokens de WhaApi o credenciales de MySQL debe subirse a Git.
+  2. Todas las credenciales deben aislarse en `.env.local` (ignorado en `.gitignore`).
+  3. Todas las consultas a base de datos deben utilizar Prepared Statements con `?`.
+  4. Ejecutar la auditoría de seguridad preventiva antes de confirmar cambios críticos.
