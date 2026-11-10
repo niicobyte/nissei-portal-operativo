@@ -23,6 +23,7 @@ export interface RecepcionCdeTicket {
   idOrdenCde?: string;
   clienteAsu?: string;
   fechaIngresoAsu?: string;
+  fechaIngresoCde?: string;
   estadoAsu?: string;
   matchReason?: string;
   origen?: "ASU" | "CDE";

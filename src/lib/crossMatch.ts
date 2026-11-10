@@ -360,6 +360,8 @@ export function buildUnifiedSatiList(
       cliente: asu.cliente,
       mensaje: matchedCde?.mensaje || asu.mensaje || "",
       fechaIngreso,
+      fechaIngresoAsu: asu.fechaIngreso || "",
+      fechaIngresoCde: matchedCde?.fechaIngreso || "",
       fechaEntregada: fechaDespachoCde,         // Despacho CDE legítimo o vacío
       fechaVenta: asu.fechaVenta || matchedCde?.fechaVenta || "",
       estado: matchedCde?.estado || asu.estado || "En Asignacion",
@@ -393,6 +395,8 @@ export function buildUnifiedSatiList(
 
     unifiedList.push({
       ...cde,
+      fechaIngresoAsu: cde.fechaIngresoAsu || "",
+      fechaIngresoCde: cde.fechaIngreso || "",
       idOrdenCde: cde.idOrden,
       recibidoEnDeposito: estaRecibido,
       origen: "CDE",

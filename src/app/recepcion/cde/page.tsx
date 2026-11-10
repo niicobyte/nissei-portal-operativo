@@ -53,6 +53,62 @@ const ITEMS_PER_PAGE = 25;
 
 export type ViewScope = "DANESA" | "CLIENTES_ASU" | "CLIENTES_CDE" | "TODOS";
 
+/**
+ * Determina el estado exacto unificado que se muestra en pantalla.
+ * Permite que los filtros, los contadores de badges y las etiquetas en tabla
+ * coincidan al 100% sin que estados como "Entregada" se cuelen en otros filtros.
+ */
+export function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
+  const est = (t.estado || "").trim();
+  const estLower = est.toLowerCase();
+  const estAsu = (t.estadoAsu || "").toLowerCase();
+
+  // 1. Si en ASU ya fue entregada al cliente final, o en CDE figura Entregada
+  if (estAsu.includes("entregada") || (!t.esDanesa && estLower.includes("entregada"))) {
+    return "Entregada";
+  }
+
+  // Validación de despacho legítimo y coherente
+  const tieneDespachoValido =
+    isFechaValida(t.fechaEntregada) && isDespachoCoherente(t.fechaIngreso, t.fechaEntregada);
+
+  // 2. Si ya fue confirmada o resuelta como Reparada
+  const esReparada = estAsu.includes("reparada") || estLower.includes("reparada");
+  const tieneDetalleReparacion = Boolean(
+    (t.mensaje || "").toLowerCase().includes("repar") ||
+    (t.mensaje || "").toLowerCase().includes("cambio") ||
+    (t.mensaje || "").toLowerCase().includes("ok") ||
+    (t.mensaje || "").toLowerCase().includes("pieza") ||
+    (t.mensaje || "").toLowerCase().includes("funcional")
+  );
+
+  if (
+    esReparada ||
+    (tieneDespachoValido &&
+      tieneDetalleReparacion &&
+      !estLower.includes("sin reparo") &&
+      !estAsu.includes("sin reparo"))
+  ) {
+    return "Reparada";
+  }
+
+  // 3. En Tránsito (Transportadora) para Danesa SA si CDE despachó pero en ASU aún no se entregó
+  if (t.esDanesa && tieneDespachoValido) {
+    return "En Tránsito (Transportadora)";
+  }
+
+  if (estLower.includes("sin reparo")) {
+    return t.estado || "Sin Reparo";
+  }
+
+  if (estLower.includes("qc") || estLower.includes("control de calidad")) {
+    return "Control de Calidad (QC)";
+  }
+
+  // Si no, el estado real que corresponda
+  return t.estadoAsu || t.estado || "En Asignacion";
+}
+
 export default function RecepcionCdeDashboardPage() {
   const [tickets, setTickets] = useState<RecepcionCdeTicket[]>([]);
   const [isClient, setIsClient] = useState(false);
@@ -252,60 +308,83 @@ export default function RecepcionCdeDashboardPage() {
     };
   }, [tickets, viewScope]);
 
-  // Lista única de componentes para filtro
+  // Lista de tickets pertenecientes al ámbito actual (Danesa, Clientes ASU, Clientes CDE o Todos)
+  const scopeTickets = useMemo(() => {
+    if (viewScope === "DANESA") {
+      return tickets.filter((t) => t.esDanesa);
+    }
+    if (viewScope === "CLIENTES_ASU") {
+      return tickets.filter(
+        (t) => !t.esDanesa && (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000)
+      );
+    }
+    if (viewScope === "CLIENTES_CDE") {
+      return tickets.filter(
+        (t) => !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000)
+      );
+    }
+    return tickets;
+  }, [tickets, viewScope]);
+
+  // Lista única de componentes para filtro según el ámbito
   const componentOptions = useMemo<CleanSelectOption[]>(() => {
     const setComp = new Set<string>();
-    tickets.forEach((t) => {
+    scopeTickets.forEach((t) => {
       if (t.tipoComponente) setComp.add(t.tipoComponente);
     });
     const sorted = Array.from(setComp).sort();
     return [
-      { value: "TODOS", label: "Todas las categorías", count: tickets.length },
+      { value: "TODOS", label: "Todas las categorías", count: scopeTickets.length },
       ...sorted.map((c) => ({
         value: c,
         label: c,
-        count: tickets.filter((t) => t.tipoComponente === c).length,
+        count: scopeTickets.filter((t) => t.tipoComponente === c).length,
       })),
     ];
-  }, [tickets]);
+  }, [scopeTickets]);
 
-  // Lista única de estados
+  // Lista única de estados según el ámbito activo
+  // Cuando es clientes (ASU o CDE), se excluyen estados internos de Danesa SA como "Enviado..." o "Liquidación"
   const statusOptions = useMemo<CleanSelectOption[]>(() => {
     const counts: Record<string, number> = {};
-    tickets.forEach((t) => {
-      counts[t.estado] = (counts[t.estado] || 0) + 1;
+    const isClientes = viewScope === "CLIENTES_ASU" || viewScope === "CLIENTES_CDE";
+
+    scopeTickets.forEach((t) => {
+      const st = getTicketDisplayStatus(t);
+      const lower = st.toLowerCase();
+
+      // Si es ámbito de clientes, quitar estados exclusivos de Danesa SA
+      if (isClientes) {
+        if (
+          lower.startsWith("enviado") ||
+          lower.includes("liquidacion") ||
+          lower.includes("liquidación")
+        ) {
+          return;
+        }
+      }
+
+      counts[st] = (counts[st] || 0) + 1;
     });
-    const sorted = Object.keys(counts).sort();
+
+    const sorted = Object.keys(counts).sort((a, b) => a.localeCompare(b));
     return [
-      { value: "TODOS", label: "Todos los estados", count: tickets.length },
+      { value: "TODOS", label: "Todos los estados", count: scopeTickets.length },
       ...sorted.map((st) => ({
         value: st,
-        label: st === "Entregada" ? "Entregada / En Tránsito" : st,
+        label: st,
         count: counts[st],
       })),
     ];
-  }, [tickets]);
+  }, [scopeTickets, viewScope]);
 
   // Filtrado de tickets
   const filteredTickets = useMemo(() => {
-    let result = tickets;
+    let result = scopeTickets;
 
-    // 1. Ámbito de visualización
-    if (viewScope === "DANESA") {
-      result = result.filter((t) => t.esDanesa);
-    } else if (viewScope === "CLIENTES_ASU") {
-      result = result.filter(
-        (t) => !t.esDanesa && (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000)
-      );
-    } else if (viewScope === "CLIENTES_CDE") {
-      result = result.filter(
-        (t) => !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000)
-      );
-    }
-
-    // 2. Filtro de Estado
+    // 2. Filtro de Estado (alineado exactamente con el badge que se visualiza)
     if (statusFilter !== "TODOS") {
-      result = result.filter((t) => t.estado === statusFilter);
+      result = result.filter((t) => getTicketDisplayStatus(t) === statusFilter);
     }
 
     // 3. Filtro de Categoría de Componente
@@ -315,26 +394,7 @@ export default function RecepcionCdeDashboardPage() {
 
     // 4. Filtro de Tránsito / Recibidos en Depósito
     if (transitFilter === "EN_TRANSITO") {
-      result = result.filter((t) => {
-        const estAsu = (t.estadoAsu || "").toLowerCase();
-        const est = (t.estado || "").toLowerCase();
-        const esReparada = estAsu.includes("reparada") || est.includes("reparada");
-        const tieneDetalleRep = Boolean(
-          (t.mensaje || "").toLowerCase().includes("repar") ||
-          (t.mensaje || "").toLowerCase().includes("cambio") ||
-          (t.mensaje || "").toLowerCase().includes("ok") ||
-          (t.mensaje || "").toLowerCase().includes("pieza") ||
-          (t.mensaje || "").toLowerCase().includes("funcional")
-        );
-        const resueltaReparada = esReparada || (tieneDetalleRep && !est.includes("sin reparo") && !estAsu.includes("sin reparo"));
-
-        return (
-          !t.recibidoEnDeposito &&
-          !estAsu.includes("entregada") &&
-          !resueltaReparada &&
-          (isFechaValida(t.fechaEntregada) || est.includes("entregada"))
-        );
-      });
+      result = result.filter((t) => getTicketDisplayStatus(t).includes("Tránsito"));
     } else if (transitFilter === "RECIBIDOS") {
       result = result.filter((t) => t.recibidoEnDeposito);
     }
@@ -358,7 +418,7 @@ export default function RecepcionCdeDashboardPage() {
     }
 
     return result;
-  }, [tickets, viewScope, statusFilter, componentFilter, transitFilter, searchTerm]);
+  }, [scopeTickets, statusFilter, componentFilter, transitFilter, searchTerm]);
 
   // Paginación
   const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE) || 1;
@@ -384,11 +444,10 @@ export default function RecepcionCdeDashboardPage() {
   };
 
   const getStatusBadge = (ticket: RecepcionCdeTicket) => {
-    const est = (ticket.estado || "").toLowerCase();
-    const estAsu = (ticket.estadoAsu || "").toLowerCase();
+    const displayStatus = getTicketDisplayStatus(ticket);
+    const lower = displayStatus.toLowerCase();
 
-    // 1. Si la orden en ASU ya fue entregada al cliente final o en CDE figura Entregada
-    if (estAsu.includes("entregada") || (!ticket.esDanesa && est.includes("entregada"))) {
+    if (lower === "entregada") {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
           <CheckCircle2 className="w-3 h-3 text-emerald-700" />
@@ -397,28 +456,7 @@ export default function RecepcionCdeDashboardPage() {
       );
     }
 
-    // Validación de despacho legítimo y coherente
-    const tieneDespachoValido =
-      isFechaValida(ticket.fechaEntregada) &&
-      isDespachoCoherente(ticket.fechaIngreso, ticket.fechaEntregada);
-
-    // 2. Si ya se despachó y la orden de ASU está en estado de Reparada o tiene detalle de reparación
-    const esReparada = estAsu.includes("reparada") || est.includes("reparada");
-    const tieneDetalleReparacion = Boolean(
-      (ticket.mensaje || "").toLowerCase().includes("repar") ||
-      (ticket.mensaje || "").toLowerCase().includes("cambio") ||
-      (ticket.mensaje || "").toLowerCase().includes("ok") ||
-      (ticket.mensaje || "").toLowerCase().includes("pieza") ||
-      (ticket.mensaje || "").toLowerCase().includes("funcional")
-    );
-
-    if (
-      esReparada ||
-      (tieneDespachoValido &&
-        tieneDetalleReparacion &&
-        !est.includes("sin reparo") &&
-        !estAsu.includes("sin reparo"))
-    ) {
+    if (lower === "reparada") {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
           <CheckCircle2 className="w-3 h-3 text-sky-600" />
@@ -427,8 +465,7 @@ export default function RecepcionCdeDashboardPage() {
       );
     }
 
-    // 3. Si CDE despachó pero en ASU aún NO está entregada, ni reparada
-    if (ticket.esDanesa && tieneDespachoValido) {
+    if (lower.includes("tránsito") || lower.includes("transito")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
           <Truck className="w-3 h-3 text-amber-700" />
@@ -437,25 +474,16 @@ export default function RecepcionCdeDashboardPage() {
       );
     }
 
-    if (est.includes("reparada")) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
-          <CheckCircle2 className="w-3 h-3 text-sky-600" />
-          <span>{ticket.estado}</span>
-        </span>
-      );
-    }
-
-    if (est.includes("sin reparo")) {
+    if (lower.includes("sin reparo")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 border border-rose-200">
           <AlertCircle className="w-3 h-3 text-rose-600" />
-          <span>{ticket.estado}</span>
+          <span>{displayStatus}</span>
         </span>
       );
     }
 
-    if (est.includes("qc")) {
+    if (lower.includes("qc") || lower.includes("control de calidad")) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
           <ShieldCheck className="w-3 h-3 text-purple-600" />
@@ -465,11 +493,10 @@ export default function RecepcionCdeDashboardPage() {
     }
 
     // Estado real de la orden de ASU (ej. "En Asignación", "En Diagnóstico", "En Recepción", etc.)
-    const displayEstado = ticket.estadoAsu || ticket.estado || "En Asignación";
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
         <Clock className="w-3 h-3 text-zinc-500" />
-        <span>{displayEstado}</span>
+        <span>{displayStatus}</span>
       </span>
     );
   };
@@ -875,6 +902,8 @@ export default function RecepcionCdeDashboardPage() {
                   onClick={() => {
                     setViewScope(s.key);
                     setTransitFilter("TODOS");
+                    setStatusFilter("TODOS");
+                    setComponentFilter("TODOS");
                     setCurrentPage(1);
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -1041,6 +1070,7 @@ export default function RecepcionCdeDashboardPage() {
                   <th className="py-3 px-3">Equipo / Hardware</th>
                   <th className="py-3 px-3">Serial</th>
                   <th className="py-3 px-3">Ingreso ASU</th>
+                  <th className="py-3 px-3">Ingreso CDE</th>
                   <th className="py-3 px-3">Despacho CDE</th>
                   <th className="py-3 px-3 text-center">Días Taller</th>
                   <th className="py-3 px-3">Estado</th>
@@ -1052,7 +1082,7 @@ export default function RecepcionCdeDashboardPage() {
               <tbody className="divide-y divide-zinc-100">
                 {paginatedTickets.length === 0 ? (
                   <tr>
-                    <td colSpan={11} className="py-12 text-center text-zinc-500">
+                    <td colSpan={12} className="py-12 text-center text-zinc-500">
                       <Package className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
                       <p className="font-semibold text-sm text-zinc-700">No se encontraron órdenes con los filtros actuales.</p>
                       <p className="text-xs text-zinc-400 mt-0.5">Pruebe modificando los términos de búsqueda o el selector de ámbito.</p>
@@ -1140,7 +1170,7 @@ export default function RecepcionCdeDashboardPage() {
                                 </span>
                                 <span className="text-[9px] font-sans font-bold text-zinc-400">ASU</span>
                               </div>
-                              {ticket.idOrdenCde && (
+                              {esCdeValido(ticket.idOrdenCde) && ticket.idOrdenCde !== ticket.idOrden && (
                                 <div
                                   className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
                                   title={`Vinculado a Orden CDE #${ticket.idOrdenCde}`}
@@ -1192,7 +1222,22 @@ export default function RecepcionCdeDashboardPage() {
 
                         {/* Fecha de Ingreso ASU */}
                         <td className="py-3 px-3 whitespace-nowrap text-zinc-600 font-mono text-[11px]">
-                          {isFechaValida(ticket.fechaIngreso) ? ticket.fechaIngreso : "-"}
+                          {isFechaValida(ticket.fechaIngresoAsu || (ticket.origen === "ASU" ? ticket.fechaIngreso : "")) ? (
+                            ticket.fechaIngresoAsu || ticket.fechaIngreso
+                          ) : (
+                            <span className="text-zinc-400 italic">-</span>
+                          )}
+                        </td>
+
+                        {/* Fecha de Ingreso CDE (Columna en medio de Ingreso ASU y Despacho CDE) */}
+                        <td className="py-3 px-3 whitespace-nowrap text-zinc-600 font-mono text-[11px]">
+                          {isFechaValida(ticket.fechaIngresoCde || (ticket.origen === "CDE" ? ticket.fechaIngreso : "")) ? (
+                            <span className="font-semibold text-zinc-900">
+                              {ticket.fechaIngresoCde || ticket.fechaIngreso}
+                            </span>
+                          ) : (
+                            <span className="text-zinc-400 italic">Pendiente CDE</span>
+                          )}
                         </td>
 
                         {/* Despacho CDE: solo la fecha limpia de despacho si es cronológicamente coherente */}
@@ -1413,7 +1458,7 @@ export default function RecepcionCdeDashboardPage() {
               )}
 
               {/* Cuadrícula de Datos Principales */}
-              <div className="grid grid-cols-2 gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
                 <div>
                   <span className="text-zinc-500 block text-[11px]">Cliente</span>
                   <strong className="text-zinc-900 text-sm">{selectedTicket.cliente}</strong>
@@ -1429,7 +1474,15 @@ export default function RecepcionCdeDashboardPage() {
                 </div>
                 <div>
                   <span className="text-zinc-500 block text-[11px]">Fecha de Ingreso ASU</span>
-                  <span className="text-zinc-800 font-mono font-semibold">{selectedTicket.fechaIngreso || "-"}</span>
+                  <span className="text-zinc-800 font-mono font-semibold">
+                    {selectedTicket.fechaIngresoAsu || (selectedTicket.origen === "ASU" ? selectedTicket.fechaIngreso : "-") || "-"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[11px]">Fecha de Ingreso CDE</span>
+                  <span className="text-zinc-800 font-mono font-semibold">
+                    {selectedTicket.fechaIngresoCde || (selectedTicket.origen === "CDE" ? selectedTicket.fechaIngreso : "") || "Pendiente CDE"}
+                  </span>
                 </div>
                 <div>
                   <span className="text-zinc-500 block text-[11px]">Fecha de Despacho CDE</span>
