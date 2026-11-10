@@ -558,7 +558,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
-    // 11. Alternar confirmación de llegada en Depósito Danesa (CDE)
+    // 11. Alternar confirmación de llegada en Depósito Danesa (CDE / ASU)
     if (action === "TOGGLE_CDE_CHECKIN") {
       const { idOrden, recibidoEnDeposito, fechaRecibido } = body;
       const fecha = fechaRecibido || new Date().toLocaleDateString("es-PY", {
@@ -567,13 +567,24 @@ export async function POST(req: NextRequest) {
         year: "numeric",
       });
 
-      await pool.query(
-        `UPDATE recepcion_cde_tickets
-         SET recibido_en_deposito = ?,
-             fecha_recibido_deposito = ?
-         WHERE id_orden = ?`,
-        [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fecha : null, idOrden]
-      );
+      if (idOrden) {
+        await pool.query(
+          `UPDATE recepcion_cde_tickets
+           SET recibido_en_deposito = ?,
+               fecha_recibido_deposito = ?
+           WHERE id_orden = ?`,
+          [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fecha : null, idOrden]
+        ).catch((err) => console.warn("[DB Warning CDE Toggle]", err));
+
+        await pool.query(
+          `UPDATE recepcion_tickets
+           SET recibido_en_deposito = ?,
+               fecha_recibido_deposito = ?
+           WHERE id_orden = ?`,
+          [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fecha : null, idOrden]
+        ).catch((err) => console.warn("[DB Warning ASU Toggle]", err));
+      }
+
       const data = await dbGetCdeTickets();
       return NextResponse.json({ ok: true, data });
     }

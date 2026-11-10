@@ -20,10 +20,13 @@ export interface RecepcionCdeTicket {
   esNuevoIngreso?: boolean;
   // Cruce de datos con Recepción ASU
   idOrdenAsu?: string;
+  idOrdenCde?: string;
   clienteAsu?: string;
   fechaIngresoAsu?: string;
   estadoAsu?: string;
   matchReason?: string;
+  origen?: "ASU" | "CDE";
+  rowKey?: string;
 }
 
 export function parseFechaDMY(str?: string): Date | null {
@@ -194,20 +197,33 @@ export function isFechaValida(str?: string): boolean {
 }
 export const CDE_CHECKINS_KEY = 'nissei_deposito_cde_checkins_v1';
 
+export function getStoredCdeCheckins(): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(CDE_CHECKINS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
 export function getStoredCdeTickets(): RecepcionCdeTicket[] {
   if (typeof window === 'undefined') return INITIAL_RECEPCION_CDE_DATA;
   try {
     const raw = localStorage.getItem(CDE_STORAGE_KEY);
-    const checkinsRaw = localStorage.getItem(CDE_CHECKINS_KEY);
-    const checkins: Record<string, boolean> = checkinsRaw ? JSON.parse(checkinsRaw) : {};
+    const checkins = getStoredCdeCheckins();
 
     const base = raw ? JSON.parse(raw) : INITIAL_RECEPCION_CDE_DATA;
-    return base.map((t: RecepcionCdeTicket) => ({
-      ...t,
-      diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
-      esDanesa: isTicketDanesa(t.cliente),
-      recibidoEnDeposito: Boolean(checkins[t.idOrden] || t.recibidoEnDeposito),
-    }));
+    return base.map((t: RecepcionCdeTicket, idx: number) => {
+      const rowKey = t.rowKey || `${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
+      return {
+        ...t,
+        rowKey,
+        diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
+        esDanesa: isTicketDanesa(t.cliente),
+        recibidoEnDeposito: Boolean(checkins[rowKey] || checkins[t.idOrden] || t.recibidoEnDeposito),
+      };
+    });
   } catch (e) {
     console.error('Error al leer tickets CDE de localStorage:', e);
     return INITIAL_RECEPCION_CDE_DATA;
@@ -228,15 +244,18 @@ export async function fetchCdeTicketsFromMySQL(): Promise<RecepcionCdeTicket[]> 
     const res = await fetch("/api/db?module=cde", { cache: "no-store" });
     const json = await res.json();
     if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
-      const checkinsRaw = typeof window !== "undefined" ? localStorage.getItem(CDE_CHECKINS_KEY) : null;
-      const checkins: Record<string, boolean> = checkinsRaw ? JSON.parse(checkinsRaw) : {};
+      const checkins = getStoredCdeCheckins();
 
-      const enriched: RecepcionCdeTicket[] = json.data.map((t: RecepcionCdeTicket) => ({
-        ...t,
-        diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
-        esDanesa: isTicketDanesa(t.cliente),
-        recibidoEnDeposito: Boolean(t.recibidoEnDeposito || checkins[t.idOrden]),
-      }));
+      const enriched: RecepcionCdeTicket[] = json.data.map((t: RecepcionCdeTicket, idx: number) => {
+        const rowKey = t.rowKey || `${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
+        return {
+          ...t,
+          rowKey,
+          diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
+          esDanesa: isTicketDanesa(t.cliente),
+          recibidoEnDeposito: Boolean(t.recibidoEnDeposito || checkins[rowKey] || checkins[t.idOrden]),
+        };
+      });
       saveCdeTickets(enriched);
       return enriched;
     }
@@ -246,13 +265,17 @@ export async function fetchCdeTicketsFromMySQL(): Promise<RecepcionCdeTicket[]> 
   return getStoredCdeTickets();
 }
 
-export function toggleCheckinDeposito(idOrden: string): boolean {
+export function toggleCheckinDeposito(targetKey: string, idOrden?: string): boolean {
   if (typeof window === 'undefined') return false;
   try {
-    const checkinsRaw = localStorage.getItem(CDE_CHECKINS_KEY);
-    const checkins: Record<string, boolean> = checkinsRaw ? JSON.parse(checkinsRaw) : {};
-    const newState = !checkins[idOrden];
-    checkins[idOrden] = newState;
+    const checkins = getStoredCdeCheckins();
+    // Alternar basándose primordialmente en targetKey para no alterar otras filas
+    const current = Boolean(checkins[targetKey] ?? (idOrden ? checkins[idOrden] : false));
+    const newState = !current;
+    checkins[targetKey] = newState;
+    if (idOrden) {
+      checkins[idOrden] = newState;
+    }
     localStorage.setItem(CDE_CHECKINS_KEY, JSON.stringify(checkins));
 
     // Sincronizar directamente con MySQL
@@ -261,7 +284,8 @@ export function toggleCheckinDeposito(idOrden: string): boolean {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'TOGGLE_CDE_CHECKIN',
-        idOrden,
+        idOrden: idOrden || targetKey,
+        targetKey,
         recibidoEnDeposito: newState,
       }),
     }).catch((err) => console.error('[MySQL Error Toggle CDE Checkin]', err));

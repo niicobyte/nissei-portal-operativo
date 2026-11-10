@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Box,
   Building2,
+  UserCheck,
   X,
   Check,
   Info,
@@ -31,6 +32,7 @@ import {
   RecepcionCdeTicket,
   INITIAL_RECEPCION_CDE_DATA,
   getStoredCdeTickets,
+  getStoredCdeCheckins,
   saveCdeTickets,
   toggleCheckinDeposito,
   procesarActualizacionCdeCSV,
@@ -39,18 +41,24 @@ import {
   isFechaValida,
   fetchCdeTicketsFromMySQL,
 } from "@/data/recepcionCdeData";
-import { getStoredTickets } from "@/data/recepcionData";
-import { crossMatchCdeWithAsu } from "@/lib/crossMatch";
+import { getStoredTickets, fetchTicketsFromMySQL } from "@/data/recepcionData";
+import {
+  crossMatchCdeWithAsu,
+  buildUnifiedSatiList,
+  getTicketRowKey,
+} from "@/lib/crossMatch";
 
 const ITEMS_PER_PAGE = 25;
+
+export type ViewScope = "DANESA" | "CLIENTES_ASU" | "CLIENTES_CDE" | "TODOS";
 
 export default function RecepcionCdeDashboardPage() {
   const [tickets, setTickets] = useState<RecepcionCdeTicket[]>([]);
   const [isClient, setIsClient] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Filtros
-  const [viewScope, setViewScope] = useState<"DANESA" | "CLIENTES" | "TODOS">("DANESA");
+  // Filtros de Ámbito
+  const [viewScope, setViewScope] = useState<ViewScope>("DANESA");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("TODOS");
   const [componentFilter, setComponentFilter] = useState("TODOS");
@@ -60,7 +68,7 @@ export default function RecepcionCdeDashboardPage() {
   // Modal de Detalle
   const [selectedTicket, setSelectedTicket] = useState<RecepcionCdeTicket | null>(null);
 
-  // Subida y procesamiento de CSV (idéntico a Recepción)
+  // Subida y procesamiento de CSV
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingCSV, setIsUploadingCSV] = useState(false);
   const [csvReport, setCsvReport] = useState<
@@ -70,15 +78,20 @@ export default function RecepcionCdeDashboardPage() {
   useEffect(() => {
     setIsClient(true);
     const asuTickets = getStoredTickets();
-    const loaded = getStoredCdeTickets();
-    const crossed = crossMatchCdeWithAsu(loaded, asuTickets);
-    setTickets(crossed);
+    const cdeTickets = getStoredCdeTickets();
+    const checkins = getStoredCdeCheckins();
+    const initialUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins);
+    setTickets(initialUnified);
 
-    // Sincronizar en tiempo real directamente con MySQL
-    fetchCdeTicketsFromMySQL().then((dbData) => {
-      if (Array.isArray(dbData) && dbData.length > 0) {
-        const enrichedDb = crossMatchCdeWithAsu(dbData, asuTickets);
-        setTickets(enrichedDb);
+    // Sincronizar en tiempo real directamente con MySQL en la nube (Railway)
+    Promise.all([
+      fetchCdeTicketsFromMySQL().catch(() => cdeTickets),
+      fetchTicketsFromMySQL().catch(() => asuTickets),
+    ]).then(([dbCde, dbAsu]) => {
+      if (Array.isArray(dbCde) && Array.isArray(dbAsu)) {
+        const liveCheckins = getStoredCdeCheckins();
+        const liveUnified = buildUnifiedSatiList(dbCde, dbAsu, liveCheckins);
+        setTickets(liveUnified);
       }
     });
   }, []);
@@ -88,7 +101,7 @@ export default function RecepcionCdeDashboardPage() {
     setTimeout(() => setNotification(null), 4500);
   };
 
-  // Manejar carga de archivo CSV para actualizar órdenes CDE y cruzar con ASU
+  // Manejar carga de archivo CSV para actualizar órdenes CDE y sincronizar a MySQL
   const handleCSVFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -96,11 +109,12 @@ export default function RecepcionCdeDashboardPage() {
     setIsUploadingCSV(true);
     try {
       const text = await file.text();
-      // Sincronización obligatoria directa a MySQL en la nube (Railway)
+      // Sincronización obligatoria directa a MySQL en Railway
       const resultado = await sincronizarCdeCsvOnline(text, tickets);
       const asuTickets = await fetchTicketsFromMySQL().catch(() => getStoredTickets());
-      const crossed = crossMatchCdeWithAsu(resultado.updatedTickets, asuTickets);
-      setTickets(crossed);
+      const checkins = getStoredCdeCheckins();
+      const unified = buildUnifiedSatiList(resultado.updatedTickets, asuTickets, checkins);
+      setTickets(unified);
 
       const nowStr = new Date().toLocaleTimeString("es-PY", {
         hour: "2-digit",
@@ -117,7 +131,7 @@ export default function RecepcionCdeDashboardPage() {
       const totalModificadas = resultado.totalActualizadas + resultado.totalNuevas;
       if (totalModificadas > 0) {
         showToast(
-          `CSV CDE procesado: ${resultado.totalActualizadas} orden(es) actualizaron su estado${
+          `CSV SATI CDE procesado: ${resultado.totalActualizadas} orden(es) actualizaron su estado${
             resultado.totalNuevas > 0 ? ` y ${resultado.totalNuevas} nueva(s)` : ""
           } (${resultado.totalEnTransitoNuevos} pasaron a En Tránsito por transportadora).`
         );
@@ -137,13 +151,25 @@ export default function RecepcionCdeDashboardPage() {
     }
   };
 
-  // Recalcular métricas de rendimiento según el ámbito seleccionado (Danesa SA / Clientes CDE / Todos)
+  // Recalcular métricas de rendimiento según el ámbito seleccionado
   const metrics = useMemo(() => {
-    const totalCde = tickets.length;
+    const totalUniversal = tickets.length;
     const danesaTickets = tickets.filter((t) => t.esDanesa);
-    const cdeDirectosTickets = tickets.filter((t) => !t.esDanesa);
+    const clientesAsuTickets = tickets.filter(
+      (t) => !t.esDanesa && (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000)
+    );
+    const clientesCdeTickets = tickets.filter(
+      (t) => !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000)
+    );
+
     const scopeTickets =
-      viewScope === "DANESA" ? danesaTickets : viewScope === "CLIENTES" ? cdeDirectosTickets : tickets;
+      viewScope === "DANESA"
+        ? danesaTickets
+        : viewScope === "CLIENTES_ASU"
+        ? clientesAsuTickets
+        : viewScope === "CLIENTES_CDE"
+        ? clientesCdeTickets
+        : tickets;
 
     const conDias = (list: RecepcionCdeTicket[]) =>
       list.filter((t) => t.diasResolucion !== null && t.diasResolucion !== undefined && t.diasResolucion >= 0);
@@ -152,11 +178,23 @@ export default function RecepcionCdeDashboardPage() {
       return c.length > 0 ? c.reduce((acc, t) => acc + (t.diasResolucion || 0), 0) / c.length : 0;
     };
 
-    const esEntregada = (t: RecepcionCdeTicket) => t.estado.toLowerCase().includes("entregada");
+    const esEntregada = (t: RecepcionCdeTicket) => {
+      const est = (t.estado || "").toLowerCase();
+      const estAsu = (t.estadoAsu || "").toLowerCase();
+      return t.recibidoEnDeposito || estAsu.includes("entregada") || est.includes("entregada");
+    };
 
-    // Tránsito por transportadora: solo aplica a envíos de Danesa SA
+    // Tránsito por transportadora (aplica primordialmente a envíos de Danesa SA)
     const danesaRecibidos = danesaTickets.filter((t) => t.recibidoEnDeposito);
-    const danesaEnTransito = danesaTickets.filter((t) => esEntregada(t) && !t.recibidoEnDeposito);
+    const danesaEnTransito = danesaTickets.filter((t) => {
+      const estAsu = (t.estadoAsu || "").toLowerCase();
+      const yaEntregadaEnAsu = estAsu.includes("entregada");
+      return (
+        !t.recibidoEnDeposito &&
+        !yaEntregadaEnAsu &&
+        (isFechaValida(t.fechaEntregada) || (t.estado || "").toLowerCase().includes("entregada"))
+      );
+    });
 
     // Equipos del ámbito aún en laboratorio CDE / ya cerrados
     const scopeEnLaboratorio = scopeTickets.filter((t) => !esEntregada(t));
@@ -166,26 +204,27 @@ export default function RecepcionCdeDashboardPage() {
     const reparados = scopeTickets.filter(
       (t) =>
         t.estado === "Reparada" ||
-        t.mensaje.toLowerCase().includes("cambio") ||
-        t.mensaje.toLowerCase().includes("ok") ||
-        t.mensaje.toLowerCase().includes("reparacion") ||
-        t.mensaje.toLowerCase().includes("reemplazo")
+        (t.mensaje || "").toLowerCase().includes("cambio") ||
+        (t.mensaje || "").toLowerCase().includes("ok") ||
+        (t.mensaje || "").toLowerCase().includes("reparacion") ||
+        (t.mensaje || "").toLowerCase().includes("reemplazo")
     ).length;
 
     const sinReparo = scopeTickets.filter(
       (t) =>
-        t.estado.toLowerCase().includes("sin reparo") ||
-        t.mensaje.toLowerCase().includes("sin reparo") ||
-        t.mensaje.toLowerCase().includes("sem reparo")
+        (t.estado || "").toLowerCase().includes("sin reparo") ||
+        (t.mensaje || "").toLowerCase().includes("sin reparo") ||
+        (t.mensaje || "").toLowerCase().includes("sem reparo")
     ).length;
 
     return {
-      totalCde,
+      totalUniversal,
       totalDanesa: danesaTickets.length,
-      totalCdeDirectos: cdeDirectosTickets.length,
+      totalClientesAsu: clientesAsuTickets.length,
+      totalClientesCde: clientesCdeTickets.length,
       totalScope: scopeTickets.length,
       avgDiasScope: promedio(scopeTickets).toFixed(1),
-      avgDiasCdeTotal: promedio(tickets).toFixed(1),
+      avgDiasTotal: promedio(tickets).toFixed(1),
       danesaRecibidos: danesaRecibidos.length,
       danesaEnTransito: danesaEnTransito.length,
       scopeEnLaboratorio: scopeEnLaboratorio.length,
@@ -233,11 +272,17 @@ export default function RecepcionCdeDashboardPage() {
   const filteredTickets = useMemo(() => {
     let result = tickets;
 
-    // 1. Ámbito: Danesa SA / Clientes directos CDE / Todos
+    // 1. Ámbito de visualización
     if (viewScope === "DANESA") {
       result = result.filter((t) => t.esDanesa);
-    } else if (viewScope === "CLIENTES") {
-      result = result.filter((t) => !t.esDanesa);
+    } else if (viewScope === "CLIENTES_ASU") {
+      result = result.filter(
+        (t) => !t.esDanesa && (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000)
+      );
+    } else if (viewScope === "CLIENTES_CDE") {
+      result = result.filter(
+        (t) => !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000)
+      );
     }
 
     // 2. Filtro de Estado
@@ -252,25 +297,33 @@ export default function RecepcionCdeDashboardPage() {
 
     // 4. Filtro de Tránsito / Recibidos en Depósito
     if (transitFilter === "EN_TRANSITO") {
-      result = result.filter((t) => t.estado.toLowerCase().includes("entregada") && !t.recibidoEnDeposito);
+      result = result.filter((t) => {
+        const estAsu = (t.estadoAsu || "").toLowerCase();
+        return (
+          !t.recibidoEnDeposito &&
+          !estAsu.includes("entregada") &&
+          (isFechaValida(t.fechaEntregada) || (t.estado || "").toLowerCase().includes("entregada"))
+        );
+      });
     } else if (transitFilter === "RECIBIDOS") {
       result = result.filter((t) => t.recibidoEnDeposito);
     }
 
-    // 5. Búsqueda por texto libre (incluyendo Orden ASU y Cliente final)
+    // 5. Búsqueda por texto libre
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase().trim();
       result = result.filter(
         (t) =>
           t.idOrden.toLowerCase().includes(q) ||
           (t.idOrdenAsu && t.idOrdenAsu.toLowerCase().includes(q)) ||
+          (t.idOrdenCde && t.idOrdenCde.toLowerCase().includes(q)) ||
           (t.clienteAsu && t.clienteAsu.toLowerCase().includes(q)) ||
-          t.codigoProducto.toLowerCase().includes(q) ||
-          t.cliente.toLowerCase().includes(q) ||
-          t.modelo.toLowerCase().includes(q) ||
-          t.marca.toLowerCase().includes(q) ||
-          t.serial.toLowerCase().includes(q) ||
-          t.mensaje.toLowerCase().includes(q)
+          (t.codigoProducto && t.codigoProducto.toLowerCase().includes(q)) ||
+          (t.cliente && t.cliente.toLowerCase().includes(q)) ||
+          (t.modelo && t.modelo.toLowerCase().includes(q)) ||
+          (t.marca && t.marca.toLowerCase().includes(q)) ||
+          (t.serial && t.serial.toLowerCase().includes(q)) ||
+          (t.mensaje && t.mensaje.toLowerCase().includes(q))
       );
     }
 
@@ -284,37 +337,52 @@ export default function RecepcionCdeDashboardPage() {
     return filteredTickets.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredTickets, currentPage]);
 
-  const handleToggleCheckin = (idOrden: string) => {
-    const updatedState = toggleCheckinDeposito(idOrden);
+  // Manejo de Checkin individual por rowKey única para evitar activar otras filas
+  const handleToggleCheckin = (rowKey: string, ticket: RecepcionCdeTicket) => {
+    const updatedState = toggleCheckinDeposito(rowKey, ticket.idOrden);
     setTickets((prev) =>
-      prev.map((t) => (t.idOrden === idOrden ? { ...t, recibidoEnDeposito: updatedState } : t))
+      prev.map((t, idx) => {
+        const currentKey = getTicketRowKey(t, idx);
+        if (currentKey === rowKey || t.rowKey === rowKey) {
+          return { ...t, recibidoEnDeposito: updatedState };
+        }
+        return t;
+      })
     );
-    if (selectedTicket && selectedTicket.idOrden === idOrden) {
-      setSelectedTicket((prev) => (prev ? { ...prev, recibidoEnDeposito: updatedState } : null));
+    if (selectedTicket) {
+      const selKey = getTicketRowKey(selectedTicket);
+      if (selKey === rowKey || selectedTicket.rowKey === rowKey) {
+        setSelectedTicket((prev) => (prev ? { ...prev, recibidoEnDeposito: updatedState } : null));
+      }
     }
   };
 
   const getStatusBadge = (ticket: RecepcionCdeTicket) => {
-    const est = ticket.estado.toLowerCase();
+    const est = (ticket.estado || "").toLowerCase();
+    const estAsu = (ticket.estadoAsu || "").toLowerCase();
 
-    // Si dice Entregada en un envío de Danesa SA: CDE cerró la orden y la despachó por transportadora
-    if (est.includes("entregada") && !ticket.esDanesa) {
+    // 1. Si ya se confirmó recibido en depósito físico
+    if (ticket.recibidoEnDeposito) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-          <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-          <span>Entregada al cliente</span>
+          <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
+          <span>Recibido en Depósito</span>
         </span>
       );
     }
-    if (est.includes("entregada")) {
-      if (ticket.recibidoEnDeposito) {
-        return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <Check className="w-3 h-3 text-emerald-700 stroke-[3]" />
-            <span>Recibido en Depósito</span>
-          </span>
-        );
-      }
+
+    // 2. Si la orden en ASU ya fue entregada al cliente final
+    if (estAsu.includes("entregada") || (!ticket.esDanesa && est.includes("entregada"))) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+          <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+          <span>Entregada</span>
+        </span>
+      );
+    }
+
+    // 3. Si CDE despachó pero en ASU aún NO está entregada ni recibida en depósito
+    if (ticket.esDanesa && (isFechaValida(ticket.fechaEntregada) || est.includes("entregada"))) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
           <Truck className="w-3 h-3 text-amber-700" />
@@ -353,7 +421,7 @@ export default function RecepcionCdeDashboardPage() {
     return (
       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
         <Clock className="w-3 h-3 text-zinc-600" />
-        <span>{ticket.estado}</span>
+        <span>{ticket.estado || "En Asignacion"}</span>
       </span>
     );
   };
@@ -436,7 +504,7 @@ export default function RecepcionCdeDashboardPage() {
           </div>
         </div>
 
-        {/* Panel de Notificación y Recuento de Actualización por CSV (idéntico a Recepción) */}
+        {/* Panel de Notificación y Recuento de Actualización por CSV */}
         {csvReport && (
           <section
             className={`rounded-xl border p-4 sm:p-5 shadow-sm space-y-4 ${
@@ -477,7 +545,7 @@ export default function RecepcionCdeDashboardPage() {
                           csvReport.totalEnTransitoNuevos > 0
                             ? ` (${csvReport.totalEnTransitoNuevos} pasaron a En Tránsito por transportadora)`
                             : ""
-                        } y se integraron ${csvReport.totalNuevas} orden(es) nuevas.`
+                        } y se integraron ${csvReport.totalNuevas} orden(es) nuevas en MySQL.`
                       : `Se compararon las ${csvReport.totalFilasLeidas.toLocaleString()} órdenes del archivo y todas coinciden con los registros actuales.`}
                   </p>
                 </div>
@@ -588,149 +656,178 @@ export default function RecepcionCdeDashboardPage() {
 
         {/* Tarjetas KPI de Rendimiento (según el ámbito seleccionado) */}
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-                {viewScope === "DANESA" ? "Envíos Danesa SA" : viewScope === "CLIENTES" ? "Clientes CDE" : "Todos CDE"}
+          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+              {viewScope === "DANESA"
+                ? "Envíos Danesa SA"
+                : viewScope === "CLIENTES_ASU"
+                ? "Clientes ASU"
+                : viewScope === "CLIENTES_CDE"
+                ? "Clientes CDE"
+                : "Total Registros"}
+            </span>
+            <div className="flex items-baseline justify-between">
+              <strong className="text-2xl font-black text-zinc-900">
+                {metrics.totalScope.toLocaleString()}
+              </strong>
+              <span className="text-[11px] font-semibold text-zinc-500">
+                de {metrics.totalUniversal.toLocaleString()} tot.
               </span>
-              <div className="flex items-baseline justify-between">
-                <strong className="text-2xl font-black text-zinc-900">
-                  {metrics.totalScope.toLocaleString()}
-                </strong>
-                <span className="text-[11px] font-semibold text-zinc-500">
-                  de {metrics.totalCde.toLocaleString()} tot.
-                </span>
-              </div>
-              <p className="text-[11px] text-zinc-500 leading-tight">
-                Órdenes del ámbito registradas en CDE
-              </p>
             </div>
+            <p className="text-[11px] text-zinc-500 leading-tight">
+              Órdenes del ámbito registradas en el portal
+            </p>
+          </div>
+
           {viewScope === "DANESA" ? (
             <>
-            <div className="p-4 bg-white rounded-2xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-1">
-              <span className="text-[11px] font-mono font-bold text-amber-800 uppercase tracking-wider block">
-                En Transportadora
-              </span>
-              <div className="flex items-baseline justify-between">
-                <strong className="text-2xl font-black text-amber-700">
-                  {metrics.danesaEnTransito}
-                </strong>
-                <span className="text-[11px] font-semibold text-amber-800">
-                  En camino
+              <div className="p-4 bg-white rounded-2xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-1">
+                <span className="text-[11px] font-mono font-bold text-amber-800 uppercase tracking-wider block">
+                  En Transportadora
                 </span>
+                <div className="flex items-baseline justify-between">
+                  <strong className="text-2xl font-black text-amber-700">
+                    {metrics.danesaEnTransito}
+                  </strong>
+                  <span className="text-[11px] font-semibold text-amber-800">
+                    En camino
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-900/80 leading-tight">
+                  Despachadas por CDE, pendientes de entrega final en ASU
+                </p>
               </div>
-              <p className="text-[11px] text-amber-900/80 leading-tight">
-                Entregadas por CDE, pendientes de confirmar en caja
-              </p>
-            </div>
-            <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
-              <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
-                Recibidos en Depósito
-              </span>
-              <div className="flex items-baseline justify-between">
-                <strong className="text-2xl font-black text-emerald-700">
-                  {metrics.danesaRecibidos}
-                </strong>
-                <span className="text-[11px] font-semibold text-emerald-700">
-                  Verificados
+              <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
+                <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
+                  Recibidos en Depósito
                 </span>
+                <div className="flex items-baseline justify-between">
+                  <strong className="text-2xl font-black text-emerald-700">
+                    {metrics.danesaRecibidos}
+                  </strong>
+                  <span className="text-[11px] font-semibold text-emerald-700">
+                    Verificados
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-900/80 leading-tight">
+                  Cajas físicas recibidas en ASU
+                </p>
               </div>
-              <p className="text-[11px] text-emerald-900/80 leading-tight">
-                Cajas físicas recibidas en ASU
-              </p>
-            </div>
             </>
           ) : (
             <>
-            <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
-              <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
-                Entregadas
-              </span>
-              <div className="flex items-baseline justify-between">
-                <strong className="text-2xl font-black text-emerald-700">
-                  {metrics.scopeEntregadas}
-                </strong>
-                <span className="text-[11px] font-semibold text-emerald-700">
-                  Cerradas
+              <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
+                <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
+                  Entregadas
                 </span>
+                <div className="flex items-baseline justify-between">
+                  <strong className="text-2xl font-black text-emerald-700">
+                    {metrics.scopeEntregadas}
+                  </strong>
+                  <span className="text-[11px] font-semibold text-emerald-700">
+                    Cerradas
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-900/80 leading-tight">
+                  Órdenes cerradas y entregadas
+                </p>
               </div>
-              <p className="text-[11px] text-emerald-900/80 leading-tight">
-                Órdenes cerradas y entregadas por CDE
-              </p>
-            </div>
-            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-                Envíos Danesa SA
-              </span>
-              <div className="flex items-baseline justify-between">
-                <strong className="text-2xl font-black text-zinc-900">
-                  {metrics.totalDanesa}
-                </strong>
-                <span className="text-[11px] font-semibold text-zinc-500">
-                  Nuestra sucursal
+              <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+                <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+                  Envíos Danesa SA
                 </span>
+                <div className="flex items-baseline justify-between">
+                  <strong className="text-2xl font-black text-zinc-900">
+                    {metrics.totalDanesa}
+                  </strong>
+                  <span className="text-[11px] font-semibold text-zinc-500">
+                    Nuestra sucursal
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-500 leading-tight">
+                  Para comparar contra los clientes
+                </p>
               </div>
-              <p className="text-[11px] text-zinc-500 leading-tight">
-                Para comparar contra los clientes de CDE
-              </p>
-            </div>
             </>
           )}
-            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-                Tiempo Prom. Retorno
+
+          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+              Tiempo Prom. Retorno
+            </span>
+            <div className="flex items-baseline justify-between">
+              <strong className="text-2xl font-black text-zinc-900">
+                {metrics.avgDiasScope} <span className="text-sm font-normal text-zinc-500">días</span>
+              </strong>
+              <span className="text-[11px] font-semibold text-zinc-500">
+                Total: {metrics.avgDiasTotal}d
               </span>
-              <div className="flex items-baseline justify-between">
-                <strong className="text-2xl font-black text-zinc-900">
-                  {metrics.avgDiasScope} <span className="text-sm font-normal text-zinc-500">días</span>
-                </strong>
-                <span className="text-[11px] font-semibold text-zinc-500">
-                  CDE: {metrics.avgDiasCdeTotal}d
-                </span>
-              </div>
-              <p className="text-[11px] text-zinc-500 leading-tight">
-                Lapso entre ingreso y fecha de entrega CDE
-              </p>
             </div>
-            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-                En Laboratorio CDE
+            <p className="text-[11px] text-zinc-500 leading-tight">
+              Lapso entre ingreso y fecha de entrega
+            </p>
+          </div>
+          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+              En Laboratorio
+            </span>
+            <div className="flex items-baseline justify-between">
+              <strong className="text-2xl font-black text-zinc-900">
+                {metrics.scopeEnLaboratorio}
+              </strong>
+              <span className="text-[11px] font-semibold text-zinc-500">
+                En proceso
               </span>
-              <div className="flex items-baseline justify-between">
-                <strong className="text-2xl font-black text-zinc-900">
-                  {metrics.scopeEnLaboratorio}
-                </strong>
-                <span className="text-[11px] font-semibold text-zinc-500">
-                  En proceso
-                </span>
-              </div>
-              <p className="text-[11px] text-zinc-500 leading-tight">
-                Equipos aún en diagnóstico o reparación
-              </p>
             </div>
-            <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-              <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
-                Resolución
-              </span>
-              <div className="flex items-baseline justify-between">
-                <strong className="text-2xl font-black text-emerald-600">{metrics.reparados}</strong>
-                <span className="text-[11px] font-semibold text-rose-600">{metrics.sinReparo} Sin Rep.</span>
-              </div>
-              <p className="text-[11px] text-zinc-500 leading-tight">Reparados / Nuevos vs Sin Reparo / RMA</p>
+            <p className="text-[11px] text-zinc-500 leading-tight">
+              Equipos aún en diagnóstico o reparación
+            </p>
+          </div>
+          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
+            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+              Resolución
+            </span>
+            <div className="flex items-baseline justify-between">
+              <strong className="text-2xl font-black text-emerald-600">{metrics.reparados}</strong>
+              <span className="text-[11px] font-semibold text-rose-600">{metrics.sinReparo} Sin Rep.</span>
             </div>
+            <p className="text-[11px] text-zinc-500 leading-tight">Reparados / Nuevos vs Sin Reparo / RMA</p>
+          </div>
         </section>
 
-        {/* Barra de Filtros, Selector de Ámbito y Búsqueda */}
+        {/* Barra de Filtros, Selector de Ámbito Reestructurado y Búsqueda */}
         <section className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
 
-            {/* Selector de Ámbito: Danesa SA / Clientes CDE / Todos */}
+            {/* Selector de Ámbito con las 4 pestañas solicitadas */}
             <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 flex-wrap">
               {(
                 [
-                  { key: "DANESA", label: "Danesa SA (Nuestra Sucursal)", count: metrics.totalDanesa, icon: <Package className="w-3.5 h-3.5" /> },
-                  { key: "CLIENTES", label: "Clientes CDE", count: metrics.totalCdeDirectos, icon: <Building2 className="w-3.5 h-3.5" /> },
-                  { key: "TODOS", label: "Todos", count: metrics.totalCde, icon: <Layers className="w-3.5 h-3.5" /> },
-                ] as const
+                  {
+                    key: "DANESA" as ViewScope,
+                    label: "Danesa SA (Nuestra Sucursal)",
+                    count: metrics.totalDanesa,
+                    icon: <Package className="w-3.5 h-3.5" />,
+                  },
+                  {
+                    key: "CLIENTES_ASU" as ViewScope,
+                    label: "Clientes ASU",
+                    count: metrics.totalClientesAsu,
+                    icon: <UserCheck className="w-3.5 h-3.5" />,
+                  },
+                  {
+                    key: "CLIENTES_CDE" as ViewScope,
+                    label: "Clientes CDE",
+                    count: metrics.totalClientesCde,
+                    icon: <Building2 className="w-3.5 h-3.5" />,
+                  },
+                  {
+                    key: "TODOS" as ViewScope,
+                    label: "Todos",
+                    count: metrics.totalUniversal,
+                    icon: <Layers className="w-3.5 h-3.5" />,
+                  },
+                ]
               ).map((s) => (
                 <button
                   key={s.key}
@@ -767,7 +864,7 @@ export default function RecepcionCdeDashboardPage() {
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="Buscar por ID Orden, Serial, Modelo, Cliente o Mensaje..."
+                placeholder="Buscar por ID Orden (ASU o CDE), Serial, Modelo, Cliente..."
                 className="w-full pl-9 pr-8 py-2 bg-zinc-50 hover:bg-zinc-100/70 focus:bg-white border border-zinc-200 focus:border-zinc-900 rounded-xl text-xs outline-none transition-all placeholder:text-zinc-400"
               />
               {searchTerm && (
@@ -785,52 +882,52 @@ export default function RecepcionCdeDashboardPage() {
           <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
             {/* Filtro de Tránsito / Caja */}
             {viewScope === "DANESA" && (
-            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setTransitFilter("TODOS");
-                  setCurrentPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                  transitFilter === "TODOS"
-                    ? "bg-white font-bold text-zinc-900 shadow-xs"
-                    : "text-zinc-500 hover:text-zinc-900"
-                }`}
-              >
-                Todos los envíos
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTransitFilter("EN_TRANSITO");
-                  setCurrentPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  transitFilter === "EN_TRANSITO"
-                    ? "bg-amber-500 text-white font-bold shadow-xs"
-                    : "text-amber-700 hover:bg-amber-100/60"
-                }`}
-              >
-                <Truck className="w-3 h-3" />
-                <span>En camino ({metrics.danesaEnTransito})</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTransitFilter("RECIBIDOS");
-                  setCurrentPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  transitFilter === "RECIBIDOS"
-                    ? "bg-emerald-600 text-white font-bold shadow-xs"
-                    : "text-emerald-700 hover:bg-emerald-100/60"
-                }`}
-              >
-                <Check className="w-3 h-3" />
-                <span>Recibidos en caja ({metrics.danesaRecibidos})</span>
-              </button>
-            </div>
+              <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransitFilter("TODOS");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    transitFilter === "TODOS"
+                      ? "bg-white font-bold text-zinc-900 shadow-xs"
+                      : "text-zinc-500 hover:text-zinc-900"
+                  }`}
+                >
+                  Todos los envíos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransitFilter("EN_TRANSITO");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    transitFilter === "EN_TRANSITO"
+                      ? "bg-amber-500 text-white font-bold shadow-xs"
+                      : "text-amber-700 hover:bg-amber-100/60"
+                  }`}
+                >
+                  <Truck className="w-3 h-3" />
+                  <span>En camino ({metrics.danesaEnTransito})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransitFilter("RECIBIDOS");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    transitFilter === "RECIBIDOS"
+                      ? "bg-emerald-600 text-white font-bold shadow-xs"
+                      : "text-emerald-700 hover:bg-emerald-100/60"
+                  }`}
+                >
+                  <Check className="w-3 h-3" />
+                  <span>Recibidos en caja ({metrics.danesaRecibidos})</span>
+                </button>
+              </div>
             )}
 
             {/* Filtro de Estado con CleanSelect */}
@@ -874,13 +971,20 @@ export default function RecepcionCdeDashboardPage() {
           </div>
         </section>
 
-        {/* Tabla de Órdenes SATI Casa Matriz CDE */}
+        {/* Tabla de Órdenes SATI ASU - CDE */}
         <section className="bg-white rounded-2xl border border-zinc-200 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-zinc-100 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Layers className="w-4 h-4 text-zinc-500" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">
-                Órdenes SATI CDE · Rendimiento &amp; Retornos de Laboratorio ({filteredTickets.length.toLocaleString()})
+                {viewScope === "DANESA"
+                  ? "Envíos Danesa SA (Nuestra Sucursal ASU ↔ Laboratorio CDE)"
+                  : viewScope === "CLIENTES_ASU"
+                  ? "Órdenes de Clientes Particulares ASU"
+                  : viewScope === "CLIENTES_CDE"
+                  ? "Órdenes de Clientes SATI CDE"
+                  : "Consolidado General de Órdenes SATI"}{" "}
+                ({filteredTickets.length.toLocaleString()})
               </h2>
             </div>
             <span className="text-xs text-zinc-400 font-mono">
@@ -899,7 +1003,7 @@ export default function RecepcionCdeDashboardPage() {
                   <th className="py-3 px-3">Ingreso ASU</th>
                   <th className="py-3 px-3">Despacho CDE</th>
                   <th className="py-3 px-3 text-center">Días Taller</th>
-                  <th className="py-3 px-3">Estado CDE</th>
+                  <th className="py-3 px-3">Estado</th>
                   <th className="py-3 px-3">Dictamen / Informe Técnico</th>
                   <th className="py-3 px-3 text-center">Llegada Depósito</th>
                   <th className="py-3 px-3 text-right">Acción</th>
@@ -915,37 +1019,91 @@ export default function RecepcionCdeDashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedTickets.map((ticket) => {
+                  paginatedTickets.map((ticket, idx) => {
+                    const rowKey = getTicketRowKey(ticket, (currentPage - 1) * ITEMS_PER_PAGE + idx);
                     const isDanesa = ticket.esDanesa;
-                    const isDelivered = ticket.estado.toLowerCase().includes("entregada");
                     const days = ticket.diasResolucion;
+
+                    // Determinación del N° de Orden principal y del cruce
+                    // Danesa SA: Orden ASU arriba (29403+), CDE abajo (125000+)
+                    const esOrdenCdeNativa = parseInt(ticket.idOrden, 10) >= 125000;
+                    const idAsuPrincipal = isDanesa
+                      ? ticket.idOrdenAsu || (!esOrdenCdeNativa ? ticket.idOrden : null)
+                      : ticket.origen === "ASU" || !esOrdenCdeNativa
+                      ? ticket.idOrden
+                      : ticket.idOrdenAsu;
+
+                    const idCdeVinculado = isDanesa
+                      ? ticket.idOrdenCde || (esOrdenCdeNativa ? ticket.idOrden : null)
+                      : esOrdenCdeNativa
+                      ? ticket.idOrden
+                      : ticket.idOrdenCde;
 
                     return (
                       <tr
-                        key={ticket.idOrden}
+                        key={rowKey}
                         className={`hover:bg-zinc-50/80 transition-colors ${
                           ticket.recibidoEnDeposito ? "bg-emerald-50/20" : ""
                         }`}
                       >
-                        {/* Nº Orden (CDE cruzado con ASU) */}
+                        {/* Nº Orden según el ámbito */}
                         <td className="py-3 px-3.5 font-mono font-bold text-zinc-900 whitespace-nowrap">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
-                                #{ticket.idOrden}
-                              </span>
-                              <span className="text-[9px] font-sans font-bold text-zinc-400">CDE</span>
-                            </div>
-                            {ticket.idOrdenAsu && (
-                              <div
-                                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
-                                title={`Vinculado a Orden ASU #${ticket.idOrdenAsu} (${ticket.matchReason || 'Match'})`}
-                              >
-                                <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
-                                <span>ASU: #{ticket.idOrdenAsu}</span>
+                          {isDanesa ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded bg-zinc-900 text-white font-extrabold text-xs">
+                                  #{idAsuPrincipal || ticket.idOrden}
+                                </span>
+                                <span className="text-[9px] font-sans font-bold text-zinc-500">ASU</span>
                               </div>
-                            )}
-                          </div>
+                              <div className="text-[10px] font-mono text-zinc-600 flex items-center gap-1">
+                                <span className="text-zinc-400">CDE:</span>
+                                {idCdeVinculado ? (
+                                  <span className="font-bold text-indigo-700 bg-indigo-50 px-1 rounded border border-indigo-200">
+                                    #{idCdeVinculado}
+                                  </span>
+                                ) : (
+                                  <span className="text-zinc-400 italic">Pendiente</span>
+                                )}
+                              </div>
+                            </div>
+                          ) : viewScope === "CLIENTES_CDE" || esOrdenCdeNativa ? (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
+                                  #{ticket.idOrden}
+                                </span>
+                                <span className="text-[9px] font-sans font-bold text-zinc-400">CDE</span>
+                              </div>
+                              {ticket.idOrdenAsu && (
+                                <div
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
+                                  title={`Vinculado a Orden ASU #${ticket.idOrdenAsu}`}
+                                >
+                                  <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
+                                  <span>ASU: #{ticket.idOrdenAsu}</span>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
+                                  #{ticket.idOrden}
+                                </span>
+                                <span className="text-[9px] font-sans font-bold text-zinc-400">ASU</span>
+                              </div>
+                              {ticket.idOrdenCde && (
+                                <div
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
+                                  title={`Vinculado a Orden CDE #${ticket.idOrdenCde}`}
+                                >
+                                  <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
+                                  <span>CDE: #{ticket.idOrdenCde}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </td>
 
                         {/* Cliente */}
@@ -966,7 +1124,7 @@ export default function RecepcionCdeDashboardPage() {
                               )}
                             </div>
                           ) : (
-                            <span className="font-medium text-zinc-700">{ticket.cliente}</span>
+                            <span className="font-medium text-zinc-800">{ticket.cliente}</span>
                           )}
                         </td>
 
@@ -985,12 +1143,12 @@ export default function RecepcionCdeDashboardPage() {
                           {ticket.serial || "SIN SERIAL"}
                         </td>
 
-                        {/* Fecha de Ingreso (nuestra recepción ASU) */}
+                        {/* Fecha de Ingreso ASU */}
                         <td className="py-3 px-3 whitespace-nowrap text-zinc-600 font-mono text-[11px]">
                           {isFechaValida(ticket.fechaIngreso) ? ticket.fechaIngreso : "-"}
                         </td>
 
-                        {/* Despacho CDE: solo se muestra la fecha */}
+                        {/* Despacho CDE: solo la fecha limpia de despacho */}
                         <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px]">
                           {isFechaValida(ticket.fechaEntregada) ? (
                             <div className="flex flex-col">
@@ -1018,7 +1176,7 @@ export default function RecepcionCdeDashboardPage() {
                                   ? "bg-amber-100 text-amber-800"
                                   : "bg-rose-100 text-rose-800"
                               }`}
-                              title={`Tiempo total en taller CDE: ${days} días`}
+                              title={`Tiempo total en taller: ${days} días`}
                             >
                               {days} d
                             </span>
@@ -1027,7 +1185,7 @@ export default function RecepcionCdeDashboardPage() {
                           )}
                         </td>
 
-                        {/* Estado CDE con indicación de En Tránsito si dice Entregada */}
+                        {/* Estado: Entregada si ya cerró en ASU o Confirmada, En Tránsito solo si despachó y está en camino */}
                         <td className="py-3 px-3 whitespace-nowrap">
                           {getStatusBadge(ticket)}
                         </td>
@@ -1039,25 +1197,21 @@ export default function RecepcionCdeDashboardPage() {
                           </p>
                         </td>
 
-                        {/* Llegada a Depósito Danesa (Checkbox de confirmación física) */}
+                        {/* Llegada a Depósito Danesa (Acción individual e independiente) */}
                         <td className="py-3 px-3 text-center whitespace-nowrap">
                           {isDanesa ? (
                             <button
                               type="button"
-                              onClick={() => handleToggleCheckin(ticket.idOrden)}
+                              onClick={() => handleToggleCheckin(rowKey, ticket)}
                               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
                                 ticket.recibidoEnDeposito
                                   ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                                  : isDelivered
-                                  ? "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
-                                  : "bg-zinc-100 text-zinc-400 cursor-not-allowed"
+                                  : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
                               }`}
                               title={
                                 ticket.recibidoEnDeposito
                                   ? "Caja física recibida y confirmada en depósito"
-                                  : isDelivered
-                                  ? "Haga click para confirmar llegada de la caja en transportadora"
-                                  : "Aún en laboratorio CDE"
+                                  : "Haga click para confirmar llegada de esta unidad a depósito"
                               }
                             >
                               {ticket.recibidoEnDeposito ? (
@@ -1073,7 +1227,9 @@ export default function RecepcionCdeDashboardPage() {
                               )}
                             </button>
                           ) : (
-                            <span className="text-zinc-300 font-mono text-[10px]">Cliente CDE</span>
+                            <span className="text-zinc-400 font-mono text-[10px]">
+                              {ticket.origen === "ASU" || !esOrdenCdeNativa ? "Cliente ASU" : "Cliente CDE"}
+                            </span>
                           )}
                         </td>
 
@@ -1107,7 +1263,7 @@ export default function RecepcionCdeDashboardPage() {
               <strong className="text-zinc-900">
                 {Math.min(currentPage * ITEMS_PER_PAGE, filteredTickets.length)}
               </strong>{" "}
-              de <strong className="text-zinc-900">{filteredTickets.length.toLocaleString()}</strong> órdenes CDE
+              de <strong className="text-zinc-900">{filteredTickets.length.toLocaleString()}</strong> órdenes
             </span>
 
             <div className="flex items-center gap-1">
@@ -1152,17 +1308,17 @@ export default function RecepcionCdeDashboardPage() {
 
       </div>
 
-      {/* Modal de Detalle de Orden SATI CDE */}
+      {/* Modal de Detalle de Orden SATI */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 border border-zinc-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
               <div>
                 <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
-                  DETALLE DE ORDEN SATI · CASA MATRIZ CDE
+                  DETALLE DE ORDEN SATI · MONITOREO SUCURSAL
                 </span>
                 <h3 className="text-lg font-black text-zinc-900">
-                  Orden #{selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
+                  Orden #{selectedTicket.idOrdenAsu || selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
                 </h3>
               </div>
               <button
@@ -1174,13 +1330,13 @@ export default function RecepcionCdeDashboardPage() {
             </div>
 
             <div className="space-y-4 text-xs">
-              {/* Cruce Inteligente con Orden de ASU */}
-              {selectedTicket.idOrdenAsu && (
+              {/* Cruce Inteligente de Órdenes */}
+              {(selectedTicket.idOrdenAsu || selectedTicket.idOrdenCde) && (
                 <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-mono font-bold text-indigo-900 flex items-center gap-1.5">
                       <Link2 className="w-4 h-4 text-indigo-600 shrink-0" />
-                      CRUCE DE DATOS: ORDEN ASU VINCULADA #{selectedTicket.idOrdenAsu}
+                      CRUCE DE DATOS SATI: ASU ↔ CDE
                     </span>
                     <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-indigo-200/60 text-indigo-800">
                       Match: {selectedTicket.matchReason || "Serial Físico"}
@@ -1188,16 +1344,20 @@ export default function RecepcionCdeDashboardPage() {
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-white p-2.5 rounded-lg border border-indigo-100">
                     <div>
-                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Cliente en ASU:</span>
-                      <strong className="text-zinc-900 truncate block">{selectedTicket.clienteAsu || "Danesa SA"}</strong>
+                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Orden ASU:</span>
+                      <strong className="text-zinc-900 truncate block">
+                        #{selectedTicket.idOrdenAsu || selectedTicket.idOrden}
+                      </strong>
                     </div>
                     <div>
-                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Ingreso en ASU:</span>
-                      <span className="font-mono text-zinc-800">{selectedTicket.fechaIngresoAsu || "---"}</span>
+                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Orden CDE:</span>
+                      <strong className="text-indigo-700 truncate block">
+                        #{selectedTicket.idOrdenCde || "---"}
+                      </strong>
                     </div>
                     <div>
                       <span className="text-zinc-500 text-[10px] block uppercase font-mono">Estado en ASU:</span>
-                      <span className="font-mono font-bold text-zinc-800">{selectedTicket.estadoAsu || "---"}</span>
+                      <span className="font-mono font-bold text-zinc-800">{selectedTicket.estadoAsu || selectedTicket.estado}</span>
                     </div>
                   </div>
                 </div>
@@ -1220,10 +1380,10 @@ export default function RecepcionCdeDashboardPage() {
                 </div>
                 <div>
                   <span className="text-zinc-500 block text-[11px]">Fecha de Ingreso ASU</span>
-                  <span className="text-zinc-800 font-mono font-semibold">{selectedTicket.fechaIngreso}</span>
+                  <span className="text-zinc-800 font-mono font-semibold">{selectedTicket.fechaIngreso || "-"}</span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Fecha de Despacho CDE (Transportadora)</span>
+                  <span className="text-zinc-500 block text-[11px]">Fecha de Despacho CDE</span>
                   <span className="text-zinc-800 font-mono font-semibold">
                     {selectedTicket.fechaEntregada || "Pendiente de cierre en CDE"}
                   </span>
@@ -1233,9 +1393,11 @@ export default function RecepcionCdeDashboardPage() {
                   <span className="text-zinc-800 font-mono">{selectedTicket.fechaVenta || "No registrada"}</span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Días en Taller CDE</span>
+                  <span className="text-zinc-500 block text-[11px]">Días en Taller</span>
                   <span className="text-zinc-900 font-mono font-bold">
-                    {selectedTicket.diasResolucion !== null ? `${selectedTicket.diasResolucion} días` : "En proceso"}
+                    {selectedTicket.diasResolucion !== null && selectedTicket.diasResolucion !== undefined
+                      ? `${selectedTicket.diasResolucion} días`
+                      : "En proceso"}
                   </span>
                 </div>
               </div>
@@ -1255,10 +1417,10 @@ export default function RecepcionCdeDashboardPage() {
               {/* Dictamen / Informe Técnico */}
               <div>
                 <span className="text-zinc-500 font-bold text-[11px] uppercase tracking-wider block mb-1">
-                  Dictamen Técnico &amp; Mensaje de Servicio de CDE
+                  Dictamen Técnico &amp; Mensaje de Servicio
                 </span>
                 <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-800 text-xs font-sans leading-relaxed whitespace-pre-wrap">
-                  {selectedTicket.mensaje || "Sin observaciones técnicas cargadas en CDE."}
+                  {selectedTicket.mensaje || "Sin observaciones técnicas cargadas."}
                 </div>
               </div>
 
@@ -1276,14 +1438,14 @@ export default function RecepcionCdeDashboardPage() {
                       <span className="text-[11px] text-zinc-600 block">
                         {selectedTicket.recibidoEnDeposito
                           ? "El equipo ya se encuentra físicamente en nuestra sucursal listo para post-venta."
-                          : "Cerrado por CDE. Llegada física estimada en las cajas del día siguiente."}
+                          : "Cerrado por CDE. Llegada física estimada en las cajas de transportadora."}
                       </span>
                     </div>
                   </div>
 
                   <button
                     type="button"
-                    onClick={() => handleToggleCheckin(selectedTicket.idOrden)}
+                    onClick={() => handleToggleCheckin(getTicketRowKey(selectedTicket), selectedTicket)}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer ${
                       selectedTicket.recibidoEnDeposito
                         ? "bg-emerald-600 text-white hover:bg-emerald-700"
