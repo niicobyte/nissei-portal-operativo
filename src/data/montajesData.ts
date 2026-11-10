@@ -766,6 +766,35 @@ export function updateMontajeStage(
   return updated;
 }
 
+export function updateMontajeEstado(
+  id: string,
+  estado: "Entregado" | "Rev. Cerrado" | "En Proceso" | "Pendiente"
+): OrdenMontajeReal[] {
+  const current = getStoredMontajes();
+  const isDelivered = estado === "Entregado";
+  const updated = current.map((ord) =>
+    ord.id === id
+      ? {
+          ...ord,
+          estado,
+          etapa: isDelivered ? ("LISTO_ENTREGA" as const) : ord.etapa,
+          progreso: isDelivered ? 100 : ord.progreso,
+        }
+      : ord
+  );
+  saveMontajes(updated);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/db", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "UPDATE_MONTAJE_ESTADO", id, estado }),
+    }).catch((err) => console.error("[MySQL Error Update Montaje Estado]", err));
+  }
+
+  return updated;
+}
+
 export function resetMontajes(): OrdenMontajeReal[] {
   if (typeof window !== "undefined") {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MONTAJES_REALES));

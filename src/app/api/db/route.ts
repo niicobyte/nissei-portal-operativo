@@ -491,6 +491,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
+    // 9.b Actualizar estado de orden de Montaje (ej. Entregar)
+    if (action === "UPDATE_MONTAJE_ESTADO") {
+      const { id, estado } = body;
+      const isDelivered = estado === "Entregado";
+      const etapa = isDelivered ? "LISTO_ENTREGA" : "ARMADO_MECANICO";
+      const progreso = isDelivered ? 100 : 80;
+      await pool.query(
+        `UPDATE ordenes_montaje SET estado = ?, etapa = ?, progreso = ? WHERE id = ?`,
+        [estado, etapa, progreso, id]
+      );
+      const data = await dbGetMontajes();
+      return NextResponse.json({ ok: true, data });
+    }
+
     // 10. Restablecer órdenes de Montaje
     if (action === "RESET_MONTAJES") {
       await pool.query("TRUNCATE TABLE ordenes_montaje");

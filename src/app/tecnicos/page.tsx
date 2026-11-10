@@ -6,6 +6,7 @@ import { HeaderActions } from "@/components/common/HeaderActions";
 import {
   Award,
   Printer,
+  Eye,
   RotateCcw,
   Cpu,
   Laptop,
@@ -25,6 +26,7 @@ import {
   fetchMontajesFromMySQL,
   updateMontajeStage,
   updateMontajeTecnico,
+  updateMontajeEstado,
   resetMontajes,
   LISTA_TECNICOS_MONTAJE,
   OrdenMontajeReal
@@ -34,6 +36,7 @@ import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect"
 
 export default function TecnicosDashboardPage() {
   const [montajes, setMontajes] = useState<OrdenMontajeReal[]>([]);
+  const [selectedOrderForDetail, setSelectedOrderForDetail] = useState<OrdenMontajeReal | null>(null);
   const [selectedOrderForCert, setSelectedOrderForCert] = useState<OrdenMontajeReal | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -82,6 +85,24 @@ export default function TecnicosDashboardPage() {
     const updated = updateMontajeStage(id, nextEtapa, nextProgreso);
     setMontajes(updated);
     showToast(`Orden ${id} avanzada a etapa: ${nextEtapa}`);
+  };
+
+  const handleEntregar = (id: string) => {
+    const updated = updateMontajeEstado(id, "Entregado");
+    setMontajes(updated);
+    if (selectedOrderForDetail && selectedOrderForDetail.id === id) {
+      setSelectedOrderForDetail((prev) =>
+        prev
+          ? {
+              ...prev,
+              estado: "Entregado",
+              etapa: "LISTO_ENTREGA",
+              progreso: 100,
+            }
+          : null
+      );
+    }
+    showToast(`Orden #${id} entregada al cliente con éxito.`);
   };
 
   const handleResetData = () => {
@@ -591,7 +612,7 @@ export default function TecnicosDashboardPage() {
                   <th className="py-3 px-4 font-semibold">Hardware Verificado</th>
                   <th className="py-3 px-4 font-semibold">Técnico Responsable</th>
                   <th className="py-3 px-4 font-semibold">Progreso</th>
-                  <th className="py-3 px-4 font-semibold text-right">Acción</th>
+                  <th className="py-3 px-4 font-semibold text-right">ACCIONES</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 text-zinc-900">
@@ -735,20 +756,34 @@ export default function TecnicosDashboardPage() {
                       </td>
 
                       {/* Acciones */}
-                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
                           <button
-                            onClick={() => setSelectedOrderForCert(order)}
-                            className="px-2.5 py-1 rounded text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors"
+                            onClick={() => setSelectedOrderForDetail(order)}
+                            className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors flex items-center justify-center cursor-pointer"
+                            title="Ver Detalle Completo"
                           >
-                            Certificado QA
+                            <Eye className="w-4 h-4" />
                           </button>
-                          {order.progreso < 100 && (
+                          
+                          <button
+                            onClick={() => setSelectedOrderForCert(order)}
+                            className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors flex items-center justify-center cursor-pointer"
+                            title="Imprimir Boleta / Certificado QA"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+
+                          {order.estado.toLowerCase() === "entregado" || order.estado.toLowerCase() === "entregada" ? (
+                            <span className="px-2 py-0.5 bg-zinc-100 text-zinc-500 rounded font-mono text-xs">
+                              Entregado
+                            </span>
+                          ) : (
                             <button
-                              onClick={() => handleAdvanceStage(order.id)}
-                              className="px-2.5 py-1 bg-zinc-900 hover:bg-black text-white rounded text-xs font-semibold transition-colors"
+                              onClick={() => handleEntregar(order.id)}
+                              className="px-2.5 py-1 bg-zinc-900 hover:bg-black text-white rounded font-medium text-xs transition-colors shadow-sm cursor-pointer"
                             >
-                              Avanzar →
+                              Entregar
                             </button>
                           )}
                         </div>
@@ -761,6 +796,160 @@ export default function TecnicosDashboardPage() {
             </table>
           </div>
         </section>
+
+        {/* Modal de Detalle Completo de Orden de Montaje */}
+        {selectedOrderForDetail && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
+            <div className="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 border border-zinc-200 max-h-[90vh] overflow-y-auto">
+              
+              <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+                <div>
+                  <span className="text-[11px] font-mono text-zinc-500 uppercase font-semibold">
+                    DETALLE DE ORDEN DE MONTAJE &amp; TALLER
+                  </span>
+                  <h3 className="text-lg font-bold text-zinc-900">
+                    Orden #{selectedOrderForDetail.id} · {selectedOrderForDetail.cliente}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setSelectedOrderForDetail(null)}
+                  className="text-zinc-400 hover:text-zinc-900 text-xl font-bold p-1 cursor-pointer transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Ficha Resumen */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs bg-zinc-50 p-3.5 rounded-xl border border-zinc-200">
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Nº Registro Interno:</span>
+                  <strong className="text-zinc-900 font-mono">{selectedOrderForDetail.nro_reg}</strong>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Vendedor:</span>
+                  <span className="text-zinc-900 font-semibold truncate block">{selectedOrderForDetail.vendedor}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Canal:</span>
+                  <span className="text-zinc-700 font-mono text-[11px]">{selectedOrderForDetail.canal}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Modalidad:</span>
+                  <span className="font-semibold text-zinc-900">
+                    {selectedOrderForDetail.tipo_servicio === "Montaje" ? "Montaje de PC" : "Expansión Notebook"}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Técnico Asignado:</span>
+                  <strong className="text-zinc-900 font-semibold">{selectedOrderForDetail.tecnico}</strong>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Prioridad:</span>
+                  <span className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                    selectedOrderForDetail.prioridad === "URGENTE"
+                      ? "bg-rose-100 text-rose-800"
+                      : selectedOrderForDetail.prioridad === "EXPRESS"
+                      ? "bg-sky-100 text-sky-800"
+                      : "bg-zinc-200 text-zinc-800"
+                  }`}>
+                    {selectedOrderForDetail.prioridad}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Fecha de Montaje:</span>
+                  <span className="text-zinc-700 font-mono">{selectedOrderForDetail.fecha_montaje}</span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Estado:</span>
+                  <span className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                    selectedOrderForDetail.estado === "Entregado"
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}>
+                    {selectedOrderForDetail.estado}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Progreso QA:</span>
+                  <strong className="text-zinc-900 font-mono">{selectedOrderForDetail.progreso}%</strong>
+                </div>
+              </div>
+
+              {/* Componentes Verificados */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-zinc-900">
+                    Componentes de Hardware ({selectedOrderForDetail.componentes.length} ítems):
+                  </span>
+                </div>
+                <div className="max-h-48 overflow-y-auto divide-y divide-zinc-100 border border-zinc-200 rounded-xl p-2 bg-zinc-50/50 space-y-1">
+                  {selectedOrderForDetail.componentes.map((c, i) => (
+                    <div key={i} className="text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-1.5">
+                      <div className="truncate pr-2">
+                        <span className="inline-block text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-zinc-200 text-zinc-700 mr-1.5">
+                          {c.categoria}
+                        </span>
+                        <span className="font-semibold text-zinc-900">{c.descripcion}</span>
+                      </div>
+                      <div className="font-mono text-[11px] text-zinc-500 shrink-0">
+                        SKU: {c.sku} {c.seriales ? `· S/N: ${c.seriales}` : ""}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Observaciones */}
+              {selectedOrderForDetail.observaciones && (
+                <div className="text-xs space-y-1 bg-amber-50/70 border border-amber-200/80 p-2.5 rounded-xl">
+                  <span className="font-bold text-amber-900 block font-mono text-[10px] uppercase">
+                    Instrucciones &amp; Observaciones:
+                  </span>
+                  <p className="text-amber-950 text-[11px] leading-relaxed">
+                    {selectedOrderForDetail.observaciones}
+                  </p>
+                </div>
+              )}
+
+              {/* Botones de acción */}
+              <div className="pt-3 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <button
+                  onClick={() => setSelectedOrderForDetail(null)}
+                  className="w-full sm:w-auto px-4 py-2 border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 cursor-pointer transition-colors"
+                >
+                  Cerrar
+                </button>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    onClick={() => {
+                      const ord = selectedOrderForDetail;
+                      setSelectedOrderForDetail(null);
+                      setSelectedOrderForCert(ord);
+                    }}
+                    className="px-3.5 py-2 border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                  >
+                    <Printer className="w-3.5 h-3.5 text-zinc-600" />
+                    <span>Imprimir Certificado</span>
+                  </button>
+
+                  {selectedOrderForDetail.estado.toLowerCase() !== "entregado" &&
+                    selectedOrderForDetail.estado.toLowerCase() !== "entregada" && (
+                      <button
+                        onClick={() => {
+                          handleEntregar(selectedOrderForDetail.id);
+                        }}
+                        className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-xl shadow-sm cursor-pointer transition-colors"
+                      >
+                        Entregar al Cliente
+                      </button>
+                    )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        )}
 
         {/* Modal Certificado QA */}
         {selectedOrderForCert && (
