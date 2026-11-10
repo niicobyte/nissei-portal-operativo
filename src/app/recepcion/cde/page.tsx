@@ -140,9 +140,10 @@ export default function RecepcionCdeDashboardPage() {
           `CSV verificado (${resultado.totalFilasLeidas.toLocaleString()} órdenes): No se detectaron cambios de estado.`
         );
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error al procesar el archivo CSV CDE:", err);
-      showToast("Error al procesar el archivo CSV. Verifique que sea el formato oficial de SATI.");
+      const msg = err instanceof Error ? err.message : "Error al procesar el archivo CSV.";
+      showToast(`${msg} Asegúrese de que sea un archivo de texto .csv con formato SATI.`);
     } finally {
       setIsUploadingCSV(false);
       if (fileInputRef.current) {

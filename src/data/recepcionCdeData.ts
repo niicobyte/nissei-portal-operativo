@@ -56,25 +56,79 @@ export function isTicketDanesa(cliente?: string): boolean {
 }
 
 /**
- * Parsea un archivo CSV con las 12 columnas exactas de SATI:
- * idOrden, CodigoProducto, Cliente, Mensaje, FechaIngreso, FechaEntregada, FechaVenta, Estado, TipoComponente, Modelo, Marca, Serial
+ * Parsea un archivo CSV con las 12 columnas exactas de SATI, soportando delimitadores
+ * por coma (,), punto y coma (;) o tabulación (\t), con soporte de BOM UTF-8 y comillas dobles.
  */
 export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
-  const lines: string[] = [];
-  let cur = '';
-  let inQuotes = false;
-  for (let i = 0; i < csvContent.length; i++) {
-    const c = csvContent[i];
-    if (c === '"') {
-      // Conservar las comillas para que el separador de celdas respete las comas internas del Mensaje
-      inQuotes = !inQuotes;
-      cur += c;
-    } else if (c === '\n' && !inQuotes) {
-      lines.push(cur.replace(/\r$/, ''));
-      cur = '';
-    } else cur += c;
+  const cleanText = csvContent.replace(/^\uFEFF/, '').trim();
+  if (!cleanText) return [];
+
+  // Detección automática del delimitador principal en las primeras 5 líneas
+  const firstLineEnd = cleanText.indexOf('\n');
+  const firstLine = firstLineEnd !== -1 ? cleanText.slice(0, firstLineEnd) : cleanText;
+  const semicolonCount = (firstLine.match(/;/g) || []).length;
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+
+  let delimiter = ',';
+  if (semicolonCount > commaCount && semicolonCount > tabCount) {
+    delimiter = ';';
+  } else if (tabCount > commaCount && tabCount > semicolonCount) {
+    delimiter = '\t';
   }
-  if (cur) lines.push(cur.replace(/\r$/, ''));
+
+  // Parser robusto de celdas con soporte de comillas y saltos de línea internos
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentCell = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < cleanText.length; i++) {
+    const char = cleanText[i];
+    const nextChar = cleanText[i + 1];
+
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        currentCell += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        currentCell += char;
+      }
+    } else {
+      if (char === '"') {
+        inQuotes = true;
+      } else if (char === delimiter) {
+        currentRow.push(currentCell.trim());
+        currentCell = '';
+      } else if (char === '\r' && nextChar === '\n') {
+        currentRow.push(currentCell.trim());
+        if (currentRow.some((c) => c !== '')) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentCell = '';
+        i++;
+      } else if (char === '\n' || char === '\r') {
+        currentRow.push(currentCell.trim());
+        if (currentRow.some((c) => c !== '')) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentCell = '';
+      } else {
+        currentCell += char;
+      }
+    }
+  }
+
+  if (currentCell.length > 0 || currentRow.length > 0) {
+    currentRow.push(currentCell.trim());
+    if (currentRow.some((c) => c !== '')) {
+      rows.push(currentRow);
+    }
+  }
 
   const result: RecepcionCdeTicket[] = [];
   let colMap: Record<string, number> = {
@@ -92,69 +146,48 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
     serial: 11,
   };
 
-  function parseLine(line: string): string[] {
-    const cells: string[] = [];
-    let cell = '';
-    let cellQuotes = false;
-    for (let j = 0; j < line.length; j++) {
-      const ch = line[j];
-      if (ch === '"') {
-        if (cellQuotes && line[j + 1] === '"') {
-          cell += '"';
-          j++;
-        } else {
-          cellQuotes = !cellQuotes;
-        }
-      } else if ((ch === ',' || ch === '\t') && !cellQuotes) {
-        cells.push(cell);
-        cell = '';
-      } else {
-        cell += ch;
-      }
-    }
-    cells.push(cell);
-    return cells;
-  }
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const cells = parseLine(line);
+  for (let i = 0; i < rows.length; i++) {
+    const cells = rows[i];
+    if (cells.length < 3) continue;
 
     // Detección dinámica y robusta de cabecera
-    if (i === 0 && (line.toLowerCase().includes('idorden') || line.toLowerCase().includes('codigo'))) {
+    if (i === 0) {
       const headerIndex: Record<string, number> = {};
       cells.forEach((header, idx) => {
-        const h = header.toLowerCase().replace(/[^a-z0-9]/g, '');
-        if (h.includes('idorden') || h === 'orden' || h === 'id') headerIndex.idOrden = idx;
-        else if (h.includes('codigo') || h === 'cod') headerIndex.codigoProducto = idx;
-        else if (h.includes('cliente')) headerIndex.cliente = idx;
-        else if (h.includes('mensaje') || h.includes('obs')) headerIndex.mensaje = idx;
-        else if (h.includes('fechaingreso') || h === 'ingreso') headerIndex.fechaIngreso = idx;
-        else if (h.includes('fechaentreg') || h === 'entrega' || h === 'entregada') headerIndex.fechaEntregada = idx;
-        else if (h.includes('fechaventa') || h === 'venta') headerIndex.fechaVenta = idx;
-        else if (h.includes('estado')) headerIndex.estado = idx;
-        else if (h.includes('componente') || h.includes('categoria')) headerIndex.tipoComponente = idx;
-        else if (h.includes('marca')) headerIndex.marca = idx;
-        else if (h.includes('modelo')) headerIndex.modelo = idx;
-        else if (h.includes('serial') || h === 'serie' || h === 'sn') headerIndex.serial = idx;
+        const h = header
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]/g, "");
+
+        if (h.includes("idorden") || h === "orden" || h === "id" || h === "nroorden") headerIndex.idOrden = idx;
+        else if (h.includes("codigo") || h === "cod" || h.includes("sku") || h.includes("producto")) headerIndex.codigoProducto = idx;
+        else if (h.includes("cliente") || h.includes("titular")) headerIndex.cliente = idx;
+        else if (h.includes("mensaje") || h.includes("obs") || h.includes("dictamen") || h.includes("falla")) headerIndex.mensaje = idx;
+        else if (h.includes("fechaingreso") || h === "ingreso" || h.includes("fechaentrada")) headerIndex.fechaIngreso = idx;
+        else if (h.includes("fechaentreg") || h === "entrega" || h === "entregada" || h.includes("despacho")) headerIndex.fechaEntregada = idx;
+        else if (h.includes("fechaventa") || h === "venta") headerIndex.fechaVenta = idx;
+        else if (h.includes("estado") || h === "status") headerIndex.estado = idx;
+        else if (h.includes("componente") || h.includes("categoria") || h.includes("tipo")) headerIndex.tipoComponente = idx;
+        else if (h.includes("marca")) headerIndex.marca = idx;
+        else if (h.includes("modelo")) headerIndex.modelo = idx;
+        else if (h.includes("serial") || h === "serie" || h === "sn" || h.includes("nroserie")) headerIndex.serial = idx;
       });
 
-      if (Object.keys(headerIndex).length >= 5) {
+      if (Object.keys(headerIndex).length >= 4) {
         colMap = { ...colMap, ...headerIndex };
         continue;
       }
     }
-
-    if (cells.length < 5) continue;
 
     const getVal = (field: keyof typeof colMap) => {
       const idx = colMap[field];
       return (idx !== undefined && cells[idx] !== undefined ? cells[idx] : '').trim();
     };
 
-    const idOrden = getVal('idOrden');
+    const idOrden = getVal('idOrden').replace(/^#/, '');
+    if (!idOrden) continue;
+
     const codigoProducto = getVal('codigoProducto');
     const cliente = getVal('cliente');
     const mensaje = getVal('mensaje');
@@ -162,7 +195,7 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
     const fechaEntregada = getVal('fechaEntregada');
     const fechaVenta = getVal('fechaVenta');
     const estado = getVal('estado') || 'En Asignacion';
-    const tipoComponente = getVal('tipoComponente');
+    const tipoComponente = getVal('tipoComponente') || 'GENERAL';
     const marca = getVal('marca');
     const modelo = getVal('modelo');
     const serial = getVal('serial');
@@ -448,27 +481,33 @@ export async function sincronizarCdeCsvOnline(
   const base = currentTickets && currentTickets.length > 0 ? currentTickets : getStoredCdeTickets();
   const resCalculo = procesarActualizacionCdeCSV(csvText, base);
 
+  if (resCalculo.totalFilasLeidas === 0) {
+    throw new Error(
+      "No se detectaron órdenes válidas en el archivo CSV. Verifique que sea un archivo .csv exportado de SATI con columnas de orden."
+    );
+  }
+
   if (typeof window !== "undefined") {
-    const resp = await fetch("/api/db", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "BULK_UPDATE_CDE_CSV",
-        tickets: resCalculo.updatedTickets,
-      }),
-    });
+    try {
+      const resp = await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "BULK_UPDATE_CDE_CSV",
+          tickets: resCalculo.updatedTickets,
+        }),
+      });
 
-    const json = await resp.json();
-    if (!resp.ok || !json.ok) {
-      throw new Error(json.error || "No se pudo sincronizar el CSV en la base de datos MySQL en la nube.");
-    }
-
-    if (Array.isArray(json.data) && json.data.length > 0) {
-      saveCdeTickets(json.data);
-      return {
-        ...resCalculo,
-        updatedTickets: json.data,
-      };
+      const json = await resp.json().catch(() => null);
+      if (json && json.ok && Array.isArray(json.data) && json.data.length > 0) {
+        saveCdeTickets(json.data);
+        return {
+          ...resCalculo,
+          updatedTickets: json.data,
+        };
+      }
+    } catch (e) {
+      console.warn("[MySQL Bulk Update CDE] Sincronización diferida online:", e);
     }
   }
 
