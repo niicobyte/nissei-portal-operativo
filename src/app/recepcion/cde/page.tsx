@@ -506,14 +506,6 @@ export default function RecepcionCdeDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
-            <Link
-              href="/recepcion"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-700 hover:text-zinc-900 rounded-lg shadow-2xs transition-colors"
-            >
-              <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-              <span>Volver a Recepción</span>
-            </Link>
-
             {/* Input oculto para carga de CSV */}
             <input
               ref={fileInputRef}

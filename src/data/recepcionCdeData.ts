@@ -494,26 +494,26 @@ export async function sincronizarCdeCsvOnline(
   }
 
   if (typeof window !== "undefined") {
-    try {
-      const resp = await fetch("/api/db", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "BULK_UPDATE_CDE_CSV",
-          tickets: resCalculo.updatedTickets,
-        }),
-      });
+    const resp = await fetch("/api/db", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "BULK_UPDATE_CDE_CSV",
+        tickets: resCalculo.updatedTickets,
+      }),
+    });
 
-      const json = await resp.json().catch(() => null);
-      if (json && json.ok && Array.isArray(json.data) && json.data.length > 0) {
-        saveCdeTickets(json.data);
-        return {
-          ...resCalculo,
-          updatedTickets: json.data,
-        };
-      }
-    } catch (e) {
-      console.warn("[MySQL Bulk Update CDE] Sincronización diferida online:", e);
+    const json = await resp.json().catch(() => null);
+    if (!resp.ok || !json?.ok) {
+      throw new Error(json?.error || "Error al sincronizar con la base de datos MySQL en la nube (Railway).");
+    }
+
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      saveCdeTickets(json.data);
+      return {
+        ...resCalculo,
+        updatedTickets: json.data,
+      };
     }
   }
 

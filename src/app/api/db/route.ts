@@ -589,18 +589,40 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
-    // 12. Actualización masiva desde CSV en SATI CDE / Depósito Danesa
+    // 12. Actualización masiva desde CSV en SATI CDE / Depósito Danesa (Full MySQL)
     if (action === "BULK_UPDATE_CDE_CSV") {
       const { tickets = [] } = body;
-      const CHUNK_SIZE = 150;
-      for (let i = 0; i < tickets.length; i += CHUNK_SIZE) {
-        const chunk = tickets.slice(i, i + CHUNK_SIZE);
-        for (const t of chunk) {
+      if (Array.isArray(tickets) && tickets.length > 0) {
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < tickets.length; i += BATCH_SIZE) {
+          const batch = tickets.slice(i, i + BATCH_SIZE);
+          const values: any[] = [];
+          const placeholders = batch.map((t: any) => {
+            values.push(
+              t.idOrden,
+              t.codigoProducto || "",
+              t.cliente,
+              t.mensaje || "",
+              t.fechaIngreso || "",
+              t.fechaEntregada || null,
+              t.fechaVenta || null,
+              t.estado || "En Asignacion",
+              t.tipoComponente || "GENERAL",
+              t.modelo || "",
+              t.marca || "",
+              t.serial || "S/N",
+              t.diasResolucion ?? null,
+              t.esDanesa ? 1 : 0,
+              t.recibidoEnDeposito ? 1 : 0
+            );
+            return "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+          }).join(", ");
+
           await pool.query(
             `INSERT INTO recepcion_cde_tickets
              (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta,
               estado, tipo_componente, modelo, marca, serial, dias_resolucion, es_danesa, recibido_en_deposito)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             VALUES ${placeholders}
              ON DUPLICATE KEY UPDATE
                cliente = VALUES(cliente),
                mensaje = VALUES(mensaje),
@@ -614,23 +636,7 @@ export async function POST(req: NextRequest) {
                dias_resolucion = VALUES(dias_resolucion),
                es_danesa = VALUES(es_danesa),
                recibido_en_deposito = COALESCE(VALUES(recibido_en_deposito), recibido_en_deposito)`,
-            [
-              t.idOrden,
-              t.codigoProducto || "",
-              t.cliente,
-              t.mensaje || "",
-              t.fechaIngreso || "",
-              t.fechaEntregada || null,
-              t.fechaVenta || null,
-              t.estado,
-              t.tipoComponente || "GENERAL",
-              t.modelo || "",
-              t.marca || "",
-              t.serial || "S/N",
-              t.diasResolucion ?? null,
-              t.esDanesa ? 1 : 0,
-              t.recibidoEnDeposito ? 1 : 0,
-            ]
+            values
           );
         }
       }
