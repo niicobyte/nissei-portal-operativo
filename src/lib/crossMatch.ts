@@ -304,7 +304,7 @@ export function crossMatchAsuWithCde(
 export function buildUnifiedSatiList(
   cdeTickets: RecepcionCdeTicket[],
   asuTickets: RecepcionTicket[],
-  checkins: Record<string, boolean> = {}
+  checkins: Record<string, any> = {}
 ): RecepcionCdeTicket[] {
   // Asegurar que solo participen órdenes reales de CDE (>= 100000)
   const cleanCdeTickets = (cdeTickets || []).filter((c) => {
@@ -328,6 +328,24 @@ export function buildUnifiedSatiList(
 
   const unifiedList: RecepcionCdeTicket[] = [];
 
+  // Helper para extraer estado y fecha de checkin
+  const getCheckinInfo = (rowKey: string, fallbackRecibido?: boolean, fallbackFecha?: string) => {
+    const val = checkins[rowKey];
+    if (typeof val === 'boolean') {
+      return { recibido: val, fecha: fallbackFecha || '' };
+    }
+    if (val && typeof val === 'object') {
+      return {
+        recibido: Boolean(val.recibido),
+        fecha: val.fecha || fallbackFecha || '',
+      };
+    }
+    return {
+      recibido: Boolean(fallbackRecibido),
+      fecha: fallbackFecha || '',
+    };
+  };
+
   // 2. Procesar las órdenes de ASU:
   // - Danesa SA (envíos de nuestra sucursal): Nº Orden ASU arriba, CDE abajo (o Pendiente si no tiene cruce).
   // - Clientes ASU: clientes directos de Asunción.
@@ -343,7 +361,7 @@ export function buildUnifiedSatiList(
     const matchedCde = esCronologicamenteCoherente ? rawMatchedCde : undefined;
 
     const rowKey = asu.rowKey || `ASU_${asu.idOrden}_${asu.codigoProducto || ""}_${asu.serial || ""}_${idx}`;
-    const estaRecibido = Boolean(checkins[rowKey] || asu.recibidoEnDeposito);
+    const checkin = getCheckinInfo(rowKey, asu.recibidoEnDeposito, (asu as any).fechaRecibidoDeposito);
 
     // Fecha de despacho CDE (solo si el cruce es legítimo y cronológicamente coherente)
     const fechaDespachoCde = matchedCde?.fechaEntregada || "";
@@ -371,7 +389,8 @@ export function buildUnifiedSatiList(
       serial: asu.serial || matchedCde?.serial || "",
       diasResolucion: dias,
       esDanesa,
-      recibidoEnDeposito: estaRecibido,
+      recibidoEnDeposito: checkin.recibido,
+      fechaRecibidoDeposito: checkin.fecha,
       idOrdenAsu: asu.idOrden,
       idOrdenCde: matchedCde?.idOrden,           // Nº Orden CDE vinculado (solo si >= 125000 y coherente)
       clienteAsu: asu.cliente,
@@ -391,14 +410,15 @@ export function buildUnifiedSatiList(
     }
 
     const rowKey = cde.rowKey || `CDE_${cde.idOrden}_${cde.codigoProducto || ""}_${cde.serial || ""}_${idx}`;
-    const estaRecibido = Boolean(checkins[rowKey] || cde.recibidoEnDeposito);
+    const checkin = getCheckinInfo(rowKey, cde.recibidoEnDeposito, cde.fechaRecibidoDeposito);
 
     unifiedList.push({
       ...cde,
       fechaIngresoAsu: cde.fechaIngresoAsu || "",
       fechaIngresoCde: cde.fechaIngreso || "",
       idOrdenCde: cde.idOrden,
-      recibidoEnDeposito: estaRecibido,
+      recibidoEnDeposito: checkin.recibido,
+      fechaRecibidoDeposito: checkin.fecha,
       origen: "CDE",
       rowKey,
     });

@@ -26,6 +26,8 @@ import {
   Check,
   Info,
   Link2,
+  Calendar,
+  Edit3,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import {
@@ -41,6 +43,9 @@ import {
   isFechaValida,
   isDespachoCoherente,
   fetchCdeTicketsFromMySQL,
+  parseFechaDMY,
+  calcularDiasResolucion,
+  saveSatiTicketOverride,
 } from "@/data/recepcionCdeData";
 import { getStoredTickets, fetchTicketsFromMySQL } from "@/data/recepcionData";
 import {
@@ -52,6 +57,36 @@ import {
 const ITEMS_PER_PAGE = 25;
 
 export type ViewScope = "DANESA" | "CLIENTES_ASU" | "CLIENTES_CDE" | "TODOS";
+export type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
+
+export function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: RecibidosDateFilter): boolean {
+  if (filter === "TODAS") return true;
+
+  const dateStr = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || ticket.fechaIngreso;
+  if (!dateStr) return false;
+
+  const d = parseFechaDMY(dateStr);
+  if (!d) return false;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const itemDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((today.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (filter === "HOY") {
+    return diffDays === 0;
+  }
+  if (filter === "AYER") {
+    return diffDays === 1;
+  }
+  if (filter === "ULTIMOS_7") {
+    return diffDays >= 0 && diffDays <= 7;
+  }
+  if (filter === "ESTE_MES") {
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }
+  return true;
+}
 
 /**
  * Determina el estado exacto unificado que se muestra en pantalla.
@@ -120,10 +155,20 @@ export default function RecepcionCdeDashboardPage() {
   const [statusFilter, setStatusFilter] = useState("TODOS");
   const [componentFilter, setComponentFilter] = useState("TODOS");
   const [transitFilter, setTransitFilter] = useState<"TODOS" | "EN_TRANSITO" | "RECIBIDOS">("TODOS");
+  const [recibidosDateFilter, setRecibidosDateFilter] = useState<RecibidosDateFilter>("TODAS");
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Modal de Detalle
+  // Modal de Detalle y Edición
   const [selectedTicket, setSelectedTicket] = useState<RecepcionCdeTicket | null>(null);
+  const [isEditingModal, setIsEditingModal] = useState(false);
+  const [isSavingEdits, setIsSavingEdits] = useState(false);
+  const [editForm, setEditForm] = useState({
+    idOrdenAsu: "",
+    idOrdenCde: "",
+    fechaIngresoAsu: "",
+    fechaIngresoCde: "",
+    fechaDespachoCde: "",
+  });
 
   // Subida y procesamiento de CSV
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -397,6 +442,9 @@ export default function RecepcionCdeDashboardPage() {
       result = result.filter((t) => getTicketDisplayStatus(t).includes("Tránsito"));
     } else if (transitFilter === "RECIBIDOS") {
       result = result.filter((t) => t.recibidoEnDeposito);
+      if (recibidosDateFilter !== "TODAS") {
+        result = result.filter((t) => matchesRecibidosDate(t, recibidosDateFilter));
+      }
     }
 
     // 5. Búsqueda por texto libre
@@ -418,7 +466,36 @@ export default function RecepcionCdeDashboardPage() {
     }
 
     return result;
-  }, [scopeTickets, statusFilter, componentFilter, transitFilter, searchTerm]);
+  }, [scopeTickets, statusFilter, componentFilter, transitFilter, recibidosDateFilter, searchTerm]);
+
+  // Conteo dinámico según el ámbito para las pestañas de tránsito y recepción
+  const scopeEnTransito = useMemo(() => {
+    return scopeTickets.filter((t) => getTicketDisplayStatus(t).includes("Tránsito")).length;
+  }, [scopeTickets]);
+
+  const scopeRecibidosList = useMemo(() => {
+    return scopeTickets.filter((t) => t.recibidoEnDeposito);
+  }, [scopeTickets]);
+
+  const scopeRecibidosCount = scopeRecibidosList.length;
+
+  const countRecibidosTodas = scopeRecibidosCount;
+  const countRecibidosHoy = useMemo(
+    () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "HOY")).length,
+    [scopeRecibidosList]
+  );
+  const countRecibidosAyer = useMemo(
+    () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "AYER")).length,
+    [scopeRecibidosList]
+  );
+  const countRecibidos7d = useMemo(
+    () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "ULTIMOS_7")).length,
+    [scopeRecibidosList]
+  );
+  const countRecibidosMes = useMemo(
+    () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "ESTE_MES")).length,
+    [scopeRecibidosList]
+  );
 
   // Paginación
   const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE) || 1;
@@ -427,19 +504,123 @@ export default function RecepcionCdeDashboardPage() {
     return filteredTickets.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredTickets, currentPage]);
 
-  // Manejo de Checkin individual por rowKey única para aislar cada fila sin afectar otras
-  const handleToggleCheckin = (rowKey: string) => {
-    const updatedState = toggleCheckinDeposito(rowKey);
+  // Manejo de Checkin individual por fila única para aislar cada fila sin afectar otras
+  const handleToggleCheckin = (ticketOrKey: RecepcionCdeTicket | string) => {
+    const t = typeof ticketOrKey === "string" ? tickets.find((x) => x.rowKey === ticketOrKey) : ticketOrKey;
+    const rowKey = typeof ticketOrKey === "string" ? ticketOrKey : ticketOrKey.rowKey || ticketOrKey.idOrden;
+    const res = toggleCheckinDeposito(rowKey, {
+      idOrden: t?.idOrden,
+      idOrdenAsu: t?.idOrdenAsu,
+      idOrdenCde: t?.idOrdenCde,
+    });
     setTickets((prev) =>
-      prev.map((t) => {
-        if (t.rowKey === rowKey) {
-          return { ...t, recibidoEnDeposito: updatedState };
+      prev.map((item) => {
+        if (item.rowKey === rowKey || (t?.idOrden && item.idOrden === t.idOrden)) {
+          return {
+            ...item,
+            recibidoEnDeposito: res.recibido,
+            fechaRecibidoDeposito: res.fecha,
+          };
         }
-        return t;
+        return item;
       })
     );
-    if (selectedTicket && selectedTicket.rowKey === rowKey) {
-      setSelectedTicket((prev) => (prev ? { ...prev, recibidoEnDeposito: updatedState } : null));
+    if (selectedTicket && (selectedTicket.rowKey === rowKey || selectedTicket.idOrden === t?.idOrden)) {
+      setSelectedTicket((prev) =>
+        prev ? { ...prev, recibidoEnDeposito: res.recibido, fechaRecibidoDeposito: res.fecha } : null
+      );
+    }
+    showToast(res.recibido ? "Orden confirmada como recibida en sucursal." : "Recepción desmarcada.");
+  };
+
+  // Abrir Modal de Detalle y cargar formulario de edición
+  const handleOpenTicketModal = (ticket: RecepcionCdeTicket) => {
+    setSelectedTicket(ticket);
+    setIsEditingModal(false);
+    setEditForm({
+      idOrdenAsu: ticket.idOrdenAsu || (ticket.origen === "ASU" ? ticket.idOrden : ""),
+      idOrdenCde: ticket.idOrdenCde || (ticket.origen === "CDE" ? ticket.idOrden : ""),
+      fechaIngresoAsu: ticket.fechaIngresoAsu || (ticket.origen === "ASU" ? ticket.fechaIngreso : ""),
+      fechaIngresoCde: ticket.fechaIngresoCde || (ticket.origen === "CDE" ? ticket.fechaIngreso : ""),
+      fechaDespachoCde: ticket.fechaEntregada || "",
+    });
+  };
+
+  // Guardar modificaciones manuales de fechas y números de orden
+  const handleSaveTicketEdits = async () => {
+    if (!selectedTicket) return;
+    setIsSavingEdits(true);
+    try {
+      const rowKey = selectedTicket.rowKey || selectedTicket.idOrden;
+      const newIngreso = editForm.fechaIngresoAsu || editForm.fechaIngresoCde || selectedTicket.fechaIngreso;
+      const newDespacho = editForm.fechaDespachoCde;
+      const newDias = newDespacho ? calcularDiasResolucion(newIngreso, newDespacho) : null;
+
+      // Guardar override persistente en localStorage
+      saveSatiTicketOverride(rowKey, {
+        idOrdenAsu: editForm.idOrdenAsu,
+        idOrdenCde: editForm.idOrdenCde,
+        fechaIngresoAsu: editForm.fechaIngresoAsu,
+        fechaIngresoCde: editForm.fechaIngresoCde,
+        fechaDespachoCde: editForm.fechaDespachoCde,
+      });
+
+      // Persistir a MySQL
+      await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'UPDATE_SATI_TICKET',
+          idOrden: selectedTicket.idOrden,
+          idOrdenAsu: editForm.idOrdenAsu,
+          idOrdenCde: editForm.idOrdenCde,
+          fechaIngresoAsu: editForm.fechaIngresoAsu,
+          fechaIngresoCde: editForm.fechaIngresoCde,
+          fechaDespachoCde: editForm.fechaDespachoCde,
+        }),
+      }).catch((e) => console.warn('[MySQL Save Error]', e));
+
+      // Actualizar en el estado de React
+      setTickets((prev) =>
+        prev.map((t) => {
+          if (t.rowKey === rowKey || t.idOrden === selectedTicket.idOrden) {
+            return {
+              ...t,
+              idOrdenAsu: editForm.idOrdenAsu || t.idOrdenAsu,
+              idOrdenCde: editForm.idOrdenCde || t.idOrdenCde,
+              fechaIngresoAsu: editForm.fechaIngresoAsu || t.fechaIngresoAsu,
+              fechaIngresoCde: editForm.fechaIngresoCde || t.fechaIngresoCde,
+              fechaEntregada: editForm.fechaDespachoCde,
+              fechaIngreso: newIngreso,
+              diasResolucion: newDias,
+            };
+          }
+          return t;
+        })
+      );
+
+      setSelectedTicket((prev) =>
+        prev
+          ? {
+              ...prev,
+              idOrdenAsu: editForm.idOrdenAsu || prev.idOrdenAsu,
+              idOrdenCde: editForm.idOrdenCde || prev.idOrdenCde,
+              fechaIngresoAsu: editForm.fechaIngresoAsu || prev.fechaIngresoAsu,
+              fechaIngresoCde: editForm.fechaIngresoCde || prev.fechaIngresoCde,
+              fechaEntregada: editForm.fechaDespachoCde,
+              fechaIngreso: newIngreso,
+              diasResolucion: newDias,
+            }
+          : null
+      );
+
+      setIsEditingModal(false);
+      showToast("Datos y fechas de la orden actualizados correctamente en MySQL.");
+    } catch (err) {
+      console.error("Error al guardar cambios de orden:", err);
+      showToast("Error al guardar los cambios.");
+    } finally {
+      setIsSavingEdits(false);
     }
   };
 
@@ -902,6 +1083,7 @@ export default function RecepcionCdeDashboardPage() {
                   onClick={() => {
                     setViewScope(s.key);
                     setTransitFilter("TODOS");
+                    setRecibidosDateFilter("TODAS");
                     setStatusFilter("TODOS");
                     setComponentFilter("TODOS");
                     setCurrentPage(1);
@@ -949,8 +1131,8 @@ export default function RecepcionCdeDashboardPage() {
 
           {/* Filtros Secundarios con CleanSelect */}
           <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
-            {/* Filtro de Tránsito / Caja */}
-            {viewScope === "DANESA" && (
+            {/* Filtro de Tránsito / Recibidos (visible para Danesa, Clientes ASU y Todos; no para Clientes CDE) */}
+            {viewScope !== "CLIENTES_CDE" && (
               <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs">
                 <button
                   type="button"
@@ -979,7 +1161,7 @@ export default function RecepcionCdeDashboardPage() {
                   }`}
                 >
                   <Truck className="w-3 h-3" />
-                  <span>En camino ({metrics.danesaEnTransito})</span>
+                  <span>En camino ({scopeEnTransito})</span>
                 </button>
                 <button
                   type="button"
@@ -994,7 +1176,87 @@ export default function RecepcionCdeDashboardPage() {
                   }`}
                 >
                   <Check className="w-3 h-3" />
-                  <span>Recibidos en caja ({metrics.danesaRecibidos})</span>
+                  <span>Recibidos ({scopeRecibidosCount})</span>
+                </button>
+              </div>
+            )}
+
+            {/* Filtro de Fecha de Recepción (Hoy / Ayer / etc.) cuando se selecciona Recibidos */}
+            {transitFilter === "RECIBIDOS" && viewScope !== "CLIENTES_CDE" && (
+              <div className="flex items-center gap-1 bg-emerald-50/80 p-1 rounded-xl border border-emerald-200 text-xs flex-wrap">
+                <span className="text-[11px] font-bold text-emerald-900 px-2 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Fecha:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("TODAS");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "TODAS"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Todas ({countRecibidosTodas})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("HOY");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "HOY"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Hoy ({countRecibidosHoy})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("AYER");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "AYER"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Ayer ({countRecibidosAyer})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("ULTIMOS_7");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "ULTIMOS_7"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Últimos 7 días ({countRecibidos7d})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("ESTE_MES");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "ESTE_MES"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Este mes ({countRecibidosMes})
                 </button>
               </div>
             )}
@@ -1022,13 +1284,14 @@ export default function RecepcionCdeDashboardPage() {
             />
 
             {/* Resetear Filtros */}
-            {(statusFilter !== "TODOS" || componentFilter !== "TODOS" || transitFilter !== "TODOS" || searchTerm) && (
+            {(statusFilter !== "TODOS" || componentFilter !== "TODOS" || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
               <button
                 type="button"
                 onClick={() => {
                   setStatusFilter("TODOS");
                   setComponentFilter("TODOS");
                   setTransitFilter("TODOS");
+                  setRecibidosDateFilter("TODAS");
                   setSearchTerm("");
                   setCurrentPage(1);
                 }}
@@ -1289,38 +1552,45 @@ export default function RecepcionCdeDashboardPage() {
                           </p>
                         </td>
 
-                        {/* Llegada a Depósito Danesa (Acción individual e independiente) */}
+                        {/* Llegada a Depósito / Confirmación en Sucursal */}
                         <td className="py-3 px-3 text-center whitespace-nowrap">
-                          {isDanesa ? (
-                            <button
-                              type="button"
-                              onClick={() => handleToggleCheckin(rowKey)}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
-                                ticket.recibidoEnDeposito
-                                  ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                                  : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
-                              }`}
-                              title={
-                                ticket.recibidoEnDeposito
-                                  ? "Caja física recibida y confirmada en depósito"
-                                  : "Haga click para confirmar llegada de esta unidad a depósito"
-                              }
-                            >
-                              {ticket.recibidoEnDeposito ? (
-                                <>
-                                  <Check className="w-3 h-3 stroke-[3]" />
-                                  <span>Recibido</span>
-                                </>
-                              ) : (
-                                <>
-                                  <Box className="w-3 h-3" />
-                                  <span>Confirmar</span>
-                                </>
+                          {viewScope !== "CLIENTES_CDE" ? (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleCheckin(ticket)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
+                                  ticket.recibidoEnDeposito
+                                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                    : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
+                                }`}
+                                title={
+                                  ticket.recibidoEnDeposito
+                                    ? "Caja física recibida y confirmada en depósito (Click para desmarcar)"
+                                    : "Haga click para confirmar llegada de esta unidad a depósito"
+                                }
+                              >
+                                {ticket.recibidoEnDeposito ? (
+                                  <>
+                                    <Check className="w-3 h-3 stroke-[3]" />
+                                    <span>Recibido</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Box className="w-3 h-3" />
+                                    <span>Confirmar</span>
+                                  </>
+                                )}
+                              </button>
+                              {ticket.recibidoEnDeposito && ticket.fechaRecibidoDeposito && (
+                                <span className="text-[10px] font-mono text-zinc-500 block">
+                                  {ticket.fechaRecibidoDeposito}
+                                </span>
                               )}
-                            </button>
+                            </div>
                           ) : (
                             <span className="text-zinc-400 font-mono text-[10px]">
-                              {ticket.origen === "ASU" || !esOrdenCdeNativa ? "Cliente ASU" : "Cliente CDE"}
+                              Cliente CDE
                             </span>
                           )}
                         </td>
@@ -1329,7 +1599,7 @@ export default function RecepcionCdeDashboardPage() {
                         <td className="py-3 px-3 text-right whitespace-nowrap">
                           <button
                             type="button"
-                            onClick={() => setSelectedTicket(ticket)}
+                            onClick={() => handleOpenTicketModal(ticket)}
                             className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer"
                             title="Ver detalles completos de la orden SATI"
                           >
@@ -1400,7 +1670,7 @@ export default function RecepcionCdeDashboardPage() {
 
       </div>
 
-      {/* Modal de Detalle de Orden SATI */}
+      {/* Modal de Detalle y Edición de Orden SATI */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in">
           <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 border border-zinc-200 max-h-[90vh] overflow-y-auto">
@@ -1413,13 +1683,135 @@ export default function RecepcionCdeDashboardPage() {
                   Orden #{selectedTicket.idOrdenAsu || selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
                 </h3>
               </div>
-              <button
-                onClick={() => setSelectedTicket(null)}
-                className="text-zinc-400 hover:text-zinc-900 text-lg font-bold p-1 cursor-pointer"
-              >
-                ✕
-              </button>
+              <div className="flex items-center gap-2">
+                {!isEditingModal ? (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingModal(true)}
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors cursor-pointer border border-zinc-200 flex items-center gap-1.5"
+                    title="Editar fechas y números de orden"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-zinc-600" />
+                    <span>Editar</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingModal(false)}
+                    className="px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-600 transition-colors cursor-pointer"
+                  >
+                    Ver Detalle
+                  </button>
+                )}
+                <button
+                  onClick={() => setSelectedTicket(null)}
+                  className="text-zinc-400 hover:text-zinc-900 text-lg font-bold p-1 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
+
+            {/* Formulario de Edición Manual */}
+            {isEditingModal ? (
+              <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-zinc-200">
+                  <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                    <Edit3 className="w-4 h-4 text-zinc-700" />
+                    <span>Edición Manual de Fechas y Números de Orden SATI</span>
+                  </span>
+                  <span className="text-[10px] text-zinc-500 font-mono">
+                    Guardado directo en MySQL
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                      Nº Orden ASU:
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.idOrdenAsu}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, idOrdenAsu: e.target.value }))}
+                      placeholder="Ej: 29409"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono font-bold focus:border-zinc-900 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                      Nº Orden CDE (Casa Matriz):
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.idOrdenCde}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, idOrdenCde: e.target.value }))}
+                      placeholder="Ej: 125683 (dejar vacío si está pendiente)"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono font-bold focus:border-zinc-900 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                      Fecha de Ingreso ASU:
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.fechaIngresoAsu}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, fechaIngresoAsu: e.target.value }))}
+                      placeholder="DD/MM/AAAA o DD/MM/AAAA HH:mm"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                      Fecha de Ingreso CDE:
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.fechaIngresoCde}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, fechaIngresoCde: e.target.value }))}
+                      placeholder="DD/MM/AAAA o DD/MM/AAAA HH:mm"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                      Fecha de Despacho CDE (Transportadora):
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.fechaDespachoCde}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, fechaDespachoCde: e.target.value }))}
+                      placeholder="DD/MM/AAAA HH:mm (vacío si sigue en taller CDE)"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-200">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingModal(false)}
+                    className="px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-700 hover:bg-zinc-100 text-xs font-medium cursor-pointer"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveTicketEdits}
+                    disabled={isSavingEdits}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5 stroke-[3]" />
+                    <span>{isSavingEdits ? "Guardando en MySQL..." : "Guardar Cambios"}</span>
+                  </button>
+                </div>
+              </div>
+            ) : null}
 
             <div className="space-y-4 text-xs">
               {/* Cruce Inteligente de Órdenes */}
@@ -1526,41 +1918,75 @@ export default function RecepcionCdeDashboardPage() {
                 </div>
               </div>
 
-              {/* Estado de Llegada a Depósito */}
-              {selectedTicket.esDanesa && (
-                <div className="p-3.5 bg-amber-50/40 border border-amber-200 rounded-xl flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <Truck className="w-5 h-5 text-amber-600" />
-                    <div>
-                      <strong className="block text-zinc-900 text-xs">
-                        {selectedTicket.recibidoEnDeposito
-                          ? "Caja Física Recibida en Sucursal ASU"
-                          : "En Tránsito por Transportadora hacia ASU"}
-                      </strong>
-                      <span className="text-[11px] text-zinc-600 block">
-                        {selectedTicket.recibidoEnDeposito
-                          ? "El equipo ya se encuentra físicamente en nuestra sucursal listo para post-venta."
-                          : "Cerrado por CDE. Llegada física estimada en las cajas de transportadora."}
-                      </span>
-                    </div>
+              {/* Botón y Estado Directo de Recepción en Sucursal ("y un boton solo para recibido") */}
+              <div
+                className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
+                  selectedTicket.recibidoEnDeposito
+                    ? "bg-emerald-50 border-emerald-200"
+                    : "bg-amber-50/50 border-amber-200"
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  {selectedTicket.recibidoEnDeposito ? (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  ) : (
+                    <Truck className="w-5 h-5 text-amber-600 shrink-0" />
+                  )}
+                  <div>
+                    <strong className="block text-zinc-900 text-xs font-bold">
+                      {selectedTicket.recibidoEnDeposito
+                        ? "Equipo Físico Recibido en Sucursal ASU"
+                        : "Pendiente de Recepción Física en Sucursal"}
+                    </strong>
+                    <span className="text-[11px] text-zinc-600 block">
+                      {selectedTicket.recibidoEnDeposito
+                        ? `Confirmado en sucursal${
+                            selectedTicket.fechaRecibidoDeposito
+                              ? ` el ${selectedTicket.fechaRecibidoDeposito}`
+                              : ""
+                          }. Listo para entrega o taller.`
+                        : "Haga clic en el botón para registrar la llegada física del equipo a la sucursal."}
+                    </span>
                   </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleToggleCheckin(getTicketRowKey(selectedTicket))}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer ${
-                      selectedTicket.recibidoEnDeposito
-                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                        : "bg-zinc-900 text-white hover:bg-black"
-                    }`}
-                  >
-                    {selectedTicket.recibidoEnDeposito ? "✓ Recibido en Caja" : "Confirmar Recepción"}
-                  </button>
                 </div>
-              )}
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleCheckin(selectedTicket)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                    selectedTicket.recibidoEnDeposito
+                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                      : "bg-zinc-900 text-white hover:bg-black"
+                  }`}
+                >
+                  {selectedTicket.recibidoEnDeposito ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>Recibido (Click para desmarcar)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Box className="w-3.5 h-3.5" />
+                      <span>Marcar como Recibido</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
 
-            <div className="pt-3 border-t border-zinc-200 flex justify-end">
+            <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
+              {!isEditingModal ? (
+                <button
+                  type="button"
+                  onClick={() => setIsEditingModal(true)}
+                  className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-zinc-200"
+                >
+                  <Edit3 className="w-3.5 h-3.5 text-zinc-600" />
+                  <span>Editar Fechas y Órdenes</span>
+                </button>
+              ) : (
+                <div />
+              )}
               <button
                 type="button"
                 onClick={() => setSelectedTicket(null)}

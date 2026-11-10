@@ -199,6 +199,22 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         // La columna accesorios ya existe en la tabla
       }
 
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN recibido_en_deposito TINYINT(1) DEFAULT 0"
+        );
+      } catch {
+        // La columna ya existe
+      }
+
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN fecha_recibido_deposito VARCHAR(50) DEFAULT NULL"
+        );
+      } catch {
+        // La columna ya existe
+      }
+
       await pool.query(`
         CREATE TABLE IF NOT EXISTS taller_reparaciones (
           id_orden VARCHAR(50) PRIMARY KEY,
@@ -616,6 +632,8 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
       r.origen === "RECIEN_ENTREGADO" ||
       (r.origen === "NUEVO_INGRESO" &&
         String(r.estado || "").toLowerCase() === "entregada"),
+    recibidoEnDeposito: Boolean(r.recibido_en_deposito),
+    fechaRecibidoDeposito: r.fecha_recibido_deposito || undefined,
   }));
 }
 
@@ -695,6 +713,7 @@ export async function dbGetCdeTickets(): Promise<RecepcionCdeTicket[]> {
     diasResolucion: r.dias_resolucion,
     esDanesa: Boolean(r.es_danesa),
     recibidoEnDeposito: Boolean(r.recibido_en_deposito),
+    fechaRecibidoDeposito: r.fecha_recibido_deposito || undefined,
   }));
 }
 

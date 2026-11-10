@@ -560,20 +560,21 @@ export async function POST(req: NextRequest) {
 
     // 11. Alternar confirmación de llegada en Depósito Danesa (CDE / ASU)
     if (action === "TOGGLE_CDE_CHECKIN") {
-      const { idOrden, recibidoEnDeposito, fechaRecibido } = body;
+      const { idOrden, idOrdenAsu, idOrdenCde, recibidoEnDeposito, fechaRecibido } = body;
       const fecha = fechaRecibido || new Date().toLocaleDateString("es-PY", {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
       });
 
-      if (idOrden) {
+      const targetIds = [idOrden, idOrdenAsu, idOrdenCde].filter(Boolean);
+      for (const tid of targetIds) {
         await pool.query(
           `UPDATE recepcion_cde_tickets
            SET recibido_en_deposito = ?,
                fecha_recibido_deposito = ?
            WHERE id_orden = ?`,
-          [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fecha : null, idOrden]
+          [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fecha : null, tid]
         ).catch((err) => console.warn("[DB Warning CDE Toggle]", err));
 
         await pool.query(
@@ -581,12 +582,55 @@ export async function POST(req: NextRequest) {
            SET recibido_en_deposito = ?,
                fecha_recibido_deposito = ?
            WHERE id_orden = ?`,
-          [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fecha : null, idOrden]
+          [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fecha : null, tid]
         ).catch((err) => console.warn("[DB Warning ASU Toggle]", err));
       }
 
       const data = await dbGetCdeTickets();
       return NextResponse.json({ ok: true, data });
+    }
+
+    // 11b. Actualizar fechas y números de orden SATI desde el modal
+    if (action === "UPDATE_SATI_TICKET") {
+      const {
+        idOrden,
+        idOrdenAsu,
+        idOrdenCde,
+        fechaIngresoAsu,
+        fechaIngresoCde,
+        fechaDespachoCde,
+      } = body;
+
+      if (idOrdenCde) {
+        await pool.query(
+          `UPDATE recepcion_cde_tickets
+           SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso),
+               fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada)
+           WHERE id_orden = ?`,
+          [fechaIngresoCde || null, fechaDespachoCde || null, idOrdenCde]
+        ).catch(() => {});
+      }
+
+      if (idOrdenAsu) {
+        await pool.query(
+          `UPDATE recepcion_tickets
+           SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso)
+           WHERE id_orden = ?`,
+          [fechaIngresoAsu || null, idOrdenAsu]
+        ).catch(() => {});
+      }
+
+      if (idOrden && idOrden !== idOrdenCde && idOrden !== idOrdenAsu) {
+        await pool.query(
+          `UPDATE recepcion_cde_tickets
+           SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso),
+               fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada)
+           WHERE id_orden = ?`,
+          [fechaIngresoCde || null, fechaDespachoCde || null, idOrden]
+        ).catch(() => {});
+      }
+
+      return NextResponse.json({ ok: true, message: "Ticket actualizado correctamente en MySQL." });
     }
 
     // 12. Actualización masiva desde CSV en SATI CDE / Depósito Danesa (Full MySQL)

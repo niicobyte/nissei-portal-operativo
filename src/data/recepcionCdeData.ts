@@ -16,6 +16,7 @@ export interface RecepcionCdeTicket {
   diasResolucion?: number | null;
   esDanesa?: boolean;
   recibidoEnDeposito?: boolean;
+  fechaRecibidoDeposito?: string;
   esEstadoCambiadoReciente?: boolean;
   esNuevoIngreso?: boolean;
   // Cruce de datos con Recepción ASU
@@ -33,6 +34,24 @@ export interface RecepcionCdeTicket {
 export function parseFechaDMY(str?: string): Date | null {
   if (!str) return null;
   const clean = str.trim().split(' ')[0];
+  if (clean.includes('-')) {
+    const parts = clean.split('-');
+    if (parts.length === 3) {
+      if (parts[0].length === 4) {
+        // YYYY-MM-DD
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const d = parseInt(parts[2], 10);
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
+      } else {
+        // DD-MM-YYYY
+        const d = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10) - 1;
+        const y = parseInt(parts[2], 10);
+        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
+      }
+    }
+  }
   const parts = clean.split('/');
   if (parts.length !== 3) return null;
   const d = parseInt(parts[0], 10);
@@ -245,17 +264,66 @@ export const CDE_STORAGE_KEY = 'nissei_recepcion_cde_data_v3';
 
 export function isFechaValida(str?: string): boolean {
   if (!str) return false;
-  return /^\d{1,2}\/\d{1,2}\/\d{4}/.test(str.trim());
+  const t = str.trim();
+  return /^\d{1,2}\/\d{1,2}\/\d{4}/.test(t) || /^\d{4}-\d{2}-\d{2}/.test(t) || /^\d{1,2}-\d{1,2}-\d{4}/.test(t);
 }
 export const CDE_CHECKINS_KEY = 'nissei_deposito_cde_checkins_v1';
+export const SATI_OVERRIDES_KEY = 'nissei_sati_ticket_overrides_v1';
 
-export function getStoredCdeCheckins(): Record<string, boolean> {
+export interface SatiCheckinData {
+  recibido: boolean;
+  fecha: string;
+}
+
+export function getStoredCdeCheckins(): Record<string, SatiCheckinData> {
   if (typeof window === 'undefined') return {};
   try {
     const raw = localStorage.getItem(CDE_CHECKINS_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw);
+    const result: Record<string, SatiCheckinData> = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (typeof v === 'boolean') {
+        result[k] = { recibido: v, fecha: "" };
+      } else if (v && typeof v === 'object') {
+        result[k] = {
+          recibido: Boolean((v as any).recibido),
+          fecha: (v as any).fecha || "",
+        };
+      }
+    }
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+export interface SatiTicketOverride {
+  idOrdenAsu?: string;
+  idOrdenCde?: string;
+  fechaIngresoAsu?: string;
+  fechaIngresoCde?: string;
+  fechaDespachoCde?: string;
+}
+
+export function getStoredSatiOverrides(): Record<string, SatiTicketOverride> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = localStorage.getItem(SATI_OVERRIDES_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};
+  }
+}
+
+export function saveSatiTicketOverride(key: string, override: SatiTicketOverride): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const overrides = getStoredSatiOverrides();
+    overrides[key] = { ...(overrides[key] || {}), ...override };
+    localStorage.setItem(SATI_OVERRIDES_KEY, JSON.stringify(overrides));
+  } catch (e) {
+    console.error('Error al guardar override SATI:', e);
   }
 }
 
@@ -273,12 +341,15 @@ export function getStoredCdeTickets(): RecepcionCdeTicket[] {
       })
       .map((t: RecepcionCdeTicket, idx: number) => {
         const rowKey = t.rowKey || `CDE_${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
+        const checkinInfo = checkins[rowKey];
+        const isRecibido = checkinInfo ? checkinInfo.recibido : Boolean(t.recibidoEnDeposito);
         return {
           ...t,
           rowKey,
           diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
           esDanesa: isTicketDanesa(t.cliente),
-          recibidoEnDeposito: Boolean(checkins[rowKey] || t.recibidoEnDeposito),
+          recibidoEnDeposito: isRecibido,
+          fechaRecibidoDeposito: checkinInfo?.fecha || t.fechaRecibidoDeposito,
         };
       });
   } catch (e) {
@@ -315,12 +386,15 @@ export async function fetchCdeTicketsFromMySQL(): Promise<RecepcionCdeTicket[]> 
         })
         .map((t: RecepcionCdeTicket, idx: number) => {
           const rowKey = t.rowKey || `CDE_${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
+          const checkinInfo = checkins[rowKey];
+          const isRecibido = checkinInfo ? checkinInfo.recibido : Boolean(t.recibidoEnDeposito);
           return {
             ...t,
             rowKey,
             diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
             esDanesa: isTicketDanesa(t.cliente),
-            recibidoEnDeposito: Boolean(t.recibidoEnDeposito || checkins[rowKey]),
+            recibidoEnDeposito: isRecibido,
+            fechaRecibidoDeposito: checkinInfo?.fecha || t.fechaRecibidoDeposito,
           };
         });
       saveCdeTickets(enriched);
@@ -332,15 +406,36 @@ export async function fetchCdeTicketsFromMySQL(): Promise<RecepcionCdeTicket[]> 
   return getStoredCdeTickets();
 }
 
-export function toggleCheckinDeposito(targetKey: string, idOrden?: string): boolean {
-  if (typeof window === 'undefined') return false;
+export function toggleCheckinDeposito(
+  targetKey: string,
+  extraIds?: { idOrden?: string; idOrdenAsu?: string; idOrdenCde?: string } | string,
+  explicitState?: boolean,
+  explicitFecha?: string
+): { recibido: boolean; fecha: string } {
+  if (typeof window === 'undefined') return { recibido: false, fecha: '' };
   try {
     const checkins = getStoredCdeCheckins();
-    // Alternar basándose estrictamente en targetKey única para aislar cada fila sin afectar otras
-    const current = Boolean(checkins[targetKey]);
-    const newState = !current;
-    checkins[targetKey] = newState;
+    const current = checkins[targetKey] ? checkins[targetKey].recibido : false;
+    const newState = explicitState !== undefined ? explicitState : !current;
+    const todayStr =
+      explicitFecha ||
+      new Date().toLocaleDateString("es-PY", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+
+    const checkinData: SatiCheckinData = {
+      recibido: newState,
+      fecha: newState ? todayStr : "",
+    };
+    checkins[targetKey] = checkinData;
     localStorage.setItem(CDE_CHECKINS_KEY, JSON.stringify(checkins));
+
+    const idParams =
+      typeof extraIds === "string"
+        ? { idOrden: extraIds }
+        : extraIds || { idOrden: targetKey };
 
     // Sincronizar directamente con MySQL
     fetch('/api/db', {
@@ -348,16 +443,19 @@ export function toggleCheckinDeposito(targetKey: string, idOrden?: string): bool
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'TOGGLE_CDE_CHECKIN',
-        idOrden: idOrden || targetKey,
+        idOrden: idParams.idOrden || targetKey,
+        idOrdenAsu: idParams.idOrdenAsu,
+        idOrdenCde: idParams.idOrdenCde,
         targetKey,
         recibidoEnDeposito: newState,
+        fechaRecibido: checkinData.fecha,
       }),
     }).catch((err) => console.error('[MySQL Error Toggle CDE Checkin]', err));
 
-    return newState;
+    return checkinData;
   } catch (e) {
     console.error('Error al actualizar checkin en depósito:', e);
-    return false;
+    return { recibido: false, fecha: '' };
   }
 }
 

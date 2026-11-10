@@ -20,6 +20,8 @@ export interface RecepcionTicket {
   idOrdenCde?: string;
   estadoCde?: string;
   fechaDespachoCde?: string;
+  recibidoEnDeposito?: boolean;
+  fechaRecibidoDeposito?: string;
 }
 
 export const INITIAL_RECEPCION_DATA: RecepcionTicket[] = [
