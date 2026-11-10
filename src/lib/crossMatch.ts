@@ -9,24 +9,40 @@
  */
 
 import { RecepcionTicket } from "@/data/recepcionData";
-import { RecepcionCdeTicket, calcularDiasResolucion, isTicketDanesa } from "@/data/recepcionCdeData";
+import {
+  RecepcionCdeTicket,
+  calcularDiasResolucion,
+  isTicketDanesa,
+  isDespachoCoherente,
+} from "@/data/recepcionCdeData";
 
 /**
- * Normaliza un número de serie físico descartando valores genéricos
+ * Normaliza un número de serie físico descartando valores genéricos o ausentes
  */
 export function normalizeSerial(serial?: string): string {
   if (!serial) return "";
-  const s = serial.trim().toUpperCase().replace(/[\s\-_/\\.:']/g, "");
+  const s = serial.trim().toUpperCase().replace(/[\s\-_/\\.:,;']/g, "");
   if (
     !s ||
     s === "0" ||
-    s === "SINSERIAL" ||
+    s.startsWith("SINSERIAL") ||
+    s.startsWith("SINNUMERO") ||
+    s.startsWith("SSERIAL") ||
+    s.startsWith("NOSERIAL") ||
+    s.startsWith("NOTIENE") ||
+    s.startsWith("NOPOSEE") ||
+    s.startsWith("SINSERIE") ||
+    s.startsWith("SINNRO") ||
+    s.startsWith("NONUMERO") ||
+    s.startsWith("NOSERIE") ||
+    s.includes("SINSERIAL") ||
+    s.includes("NOSERIAL") ||
+    s.includes("NOTIENESERIAL") ||
     s === "SN" ||
     s === "NA" ||
-    s === "NOTIENE" ||
-    s === "SINNUMERO" ||
-    s === "SSERIAL" ||
-    s === "NOPOSEE" ||
+    s === "NONE" ||
+    s === "NULL" ||
+    s === "NULO" ||
     s === "DEFAULT" ||
     s.length < 4
   ) {
@@ -94,8 +110,14 @@ export function crossMatchCdeWithAsu(
   if (!cdeTickets || cdeTickets.length === 0) return [];
   if (!asuTickets || asuTickets.length === 0) return cdeTickets;
 
+  // Filtrar estrictamente solo órdenes de CDE (>= 100000)
+  const realCdeTickets = cdeTickets.filter((c) => {
+    const num = parseInt(c.idOrden, 10);
+    return isNaN(num) || num >= 100000;
+  });
+
   // Índices de ASU
-  const asuBySerial = new Map<string, RecepcionTicket>();
+  const asuBySerial = new Map<string, RecepcionTicket[]>();
   const asuById = new Map<string, RecepcionTicket>();
   const asuByProdModel = new Map<string, RecepcionTicket[]>();
 
@@ -104,8 +126,9 @@ export function crossMatchCdeWithAsu(
       asuById.set(a.idOrden.trim(), a);
     }
     const s = normalizeSerial(a.serial);
-    if (s && !asuBySerial.has(s)) {
-      asuBySerial.set(s, a);
+    if (s) {
+      if (!asuBySerial.has(s)) asuBySerial.set(s, []);
+      asuBySerial.get(s)!.push(a);
     }
     const cod = (a.codigoProducto || "").trim();
     const mod = normalizeText(a.modelo);
@@ -119,18 +142,22 @@ export function crossMatchCdeWithAsu(
   // Rastrear órdenes de ASU ya asignadas para evitar que múltiples tickets apunten al mismo
   const matchedAsuIds = new Set<string>();
 
-  return cdeTickets.map((cde, idx) => {
+  return realCdeTickets.map((cde, idx) => {
     let match: RecepcionTicket | null = null;
     let matchReason = "";
 
     const cdeSerial = normalizeSerial(cde.serial);
 
-    // CRITERIO 1: Serial Físico exacto
+    // CRITERIO 1: Serial Físico exacto (con validación de coherencia cronológica)
     if (cdeSerial && asuBySerial.has(cdeSerial)) {
-      const candidate = asuBySerial.get(cdeSerial)!;
-      if (!matchedAsuIds.has(candidate.idOrden)) {
-        match = candidate;
-        matchReason = "Serial Físico";
+      const candidates = asuBySerial.get(cdeSerial)!;
+      for (const cand of candidates) {
+        if (matchedAsuIds.has(cand.idOrden)) continue;
+        if (isDespachoCoherente(cand.fechaIngreso, cde.fechaEntregada)) {
+          match = cand;
+          matchReason = "Serial Físico";
+          break;
+        }
       }
     }
 
@@ -141,9 +168,11 @@ export function crossMatchCdeWithAsu(
         if (asuById.has(id)) {
           const candidate = asuById.get(id)!;
           if (!matchedAsuIds.has(candidate.idOrden)) {
-            match = candidate;
-            matchReason = `Ref. en Mensaje (#${id})`;
-            break;
+            if (isDespachoCoherente(candidate.fechaIngreso, cde.fechaEntregada)) {
+              match = candidate;
+              matchReason = `Ref. en Mensaje (#${id})`;
+              break;
+            }
           }
         }
       }
@@ -154,14 +183,16 @@ export function crossMatchCdeWithAsu(
       for (const a of asuTickets) {
         if (matchedAsuIds.has(a.idOrden)) continue;
         if (a.mensaje && a.mensaje.toUpperCase().includes(cdeSerial)) {
-          match = a;
-          matchReason = "Serial en Informe";
-          break;
+          if (isDespachoCoherente(a.fechaIngreso, cde.fechaEntregada)) {
+            match = a;
+            matchReason = "Serial en Informe";
+            break;
+          }
         }
       }
     }
 
-    // CRITERIO 4: Mismo Código + Modelo SOLO si cliente es Danesa y fechas dentro de 25 días
+    // CRITERIO 4: Mismo Código + Modelo SOLO si cliente es Danesa, fechas dentro de 25 días y coherente
     if (!match && (cde.esDanesa || isTicketDanesa(cde.cliente))) {
       const cod = (cde.codigoProducto || "").trim();
       const mod = normalizeText(cde.modelo);
@@ -171,7 +202,7 @@ export function crossMatchCdeWithAsu(
         for (const cand of candidates) {
           if (matchedAsuIds.has(cand.idOrden)) continue;
           const diffDias = getDiasDiferenciaFechas(cde.fechaIngreso, cand.fechaIngreso);
-          if (diffDias <= 25) {
+          if (diffDias <= 25 && isDespachoCoherente(cand.fechaIngreso, cde.fechaEntregada)) {
             match = cand;
             matchReason = "Código & Modelo";
             break;
@@ -275,8 +306,14 @@ export function buildUnifiedSatiList(
   asuTickets: RecepcionTicket[],
   checkins: Record<string, boolean> = {}
 ): RecepcionCdeTicket[] {
+  // Asegurar que solo participen órdenes reales de CDE (>= 100000)
+  const cleanCdeTickets = (cdeTickets || []).filter((c) => {
+    const num = parseInt(c.idOrden, 10);
+    return isNaN(num) || num >= 100000;
+  });
+
   // 1. Cruzar CDE con ASU
-  const enrichedCde = crossMatchCdeWithAsu(cdeTickets, asuTickets);
+  const enrichedCde = crossMatchCdeWithAsu(cleanCdeTickets, asuTickets);
 
   // Mapa de CDE indexado por ID de Orden de ASU emparejada
   const cdeByAsuId = new Map<string, RecepcionCdeTicket>();
@@ -292,27 +329,30 @@ export function buildUnifiedSatiList(
   const unifiedList: RecepcionCdeTicket[] = [];
 
   // 2. Procesar las órdenes de ASU:
-  // - Danesa SA (envíos de nuestra sucursal): Nº Orden ASU arriba, CDE abajo.
-  // - Clientes ASU: clientes particulares de ASU.
+  // - Danesa SA (envíos de nuestra sucursal): Nº Orden ASU arriba, CDE abajo (o Pendiente si no tiene cruce).
+  // - Clientes ASU: clientes directos de Asunción.
   asuTickets.forEach((asu, idx) => {
     const esDanesa = isTicketDanesa(asu.cliente);
-    const matchedCde = cdeByAsuId.get(asu.idOrden);
+    const rawMatchedCde = cdeByAsuId.get(asu.idOrden);
 
-    const rowKey = `ASU_${asu.idOrden}_${asu.codigoProducto || ""}_${asu.serial || ""}_${idx}`;
-    const estaRecibido = Boolean(
-      checkins[rowKey] ||
-      checkins[asu.idOrden] ||
-      (matchedCde && (checkins[matchedCde.idOrden] || matchedCde.recibidoEnDeposito))
-    );
+    // Validación de coherencia cronológica y rango de CDE:
+    // La orden de CDE debe ser >= 125000 y el despacho debe ser posterior o igual al ingreso en ASU.
+    const esCdeValido = rawMatchedCde && parseInt(rawMatchedCde.idOrden, 10) >= 125000;
+    const esCronologicamenteCoherente =
+      Boolean(esCdeValido && isDespachoCoherente(asu.fechaIngreso, rawMatchedCde?.fechaEntregada));
+    const matchedCde = esCronologicamenteCoherente ? rawMatchedCde : undefined;
 
-    // Fecha de despacho CDE (si CDE ya la procesó y entregó)
-    const fechaDespachoCde = matchedCde?.fechaEntregada || asu.fechaDespachoCde || "";
+    const rowKey = asu.rowKey || `ASU_${asu.idOrden}_${asu.codigoProducto || ""}_${asu.serial || ""}_${idx}`;
+    const estaRecibido = Boolean(checkins[rowKey] || asu.recibidoEnDeposito);
+
+    // Fecha de despacho CDE (solo si el cruce es legítimo y cronológicamente coherente)
+    const fechaDespachoCde = matchedCde?.fechaEntregada || "";
 
     // Fecha de ingreso en ASU (nuestra recepción)
-    const fechaIngreso = asu.fechaIngreso || matchedCde?.fechaIngreso || "";
+    const fechaIngreso = asu.fechaIngreso || "";
 
-    // Días de taller
-    const dias = matchedCde?.diasResolucion ?? calcularDiasResolucion(fechaIngreso, fechaDespachoCde);
+    // Días de taller (solo si hay fecha de despacho legítima)
+    const dias = fechaDespachoCde ? calcularDiasResolucion(fechaIngreso, fechaDespachoCde) : null;
 
     unifiedList.push({
       idOrden: asu.idOrden,                     // Nº Orden ASU principal (29403 en adelante)
@@ -320,7 +360,7 @@ export function buildUnifiedSatiList(
       cliente: asu.cliente,
       mensaje: matchedCde?.mensaje || asu.mensaje || "",
       fechaIngreso,
-      fechaEntregada: fechaDespachoCde,         // Despacho CDE
+      fechaEntregada: fechaDespachoCde,         // Despacho CDE legítimo o vacío
       fechaVenta: asu.fechaVenta || matchedCde?.fechaVenta || "",
       estado: matchedCde?.estado || asu.estado || "En Asignacion",
       tipoComponente: asu.tipoComponente || matchedCde?.tipoComponente || "",
@@ -331,7 +371,7 @@ export function buildUnifiedSatiList(
       esDanesa,
       recibidoEnDeposito: estaRecibido,
       idOrdenAsu: asu.idOrden,
-      idOrdenCde: matchedCde?.idOrden,           // Nº Orden CDE vinculado
+      idOrdenCde: matchedCde?.idOrden,           // Nº Orden CDE vinculado (solo si >= 125000 y coherente)
       clienteAsu: asu.cliente,
       estadoAsu: asu.estado,
       matchReason: matchedCde?.matchReason,
@@ -349,7 +389,7 @@ export function buildUnifiedSatiList(
     }
 
     const rowKey = cde.rowKey || `CDE_${cde.idOrden}_${cde.codigoProducto || ""}_${cde.serial || ""}_${idx}`;
-    const estaRecibido = Boolean(checkins[rowKey] || checkins[cde.idOrden] || cde.recibidoEnDeposito);
+    const estaRecibido = Boolean(checkins[rowKey] || cde.recibidoEnDeposito);
 
     unifiedList.push({
       ...cde,

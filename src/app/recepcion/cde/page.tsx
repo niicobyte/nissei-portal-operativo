@@ -39,6 +39,7 @@ import {
   sincronizarCdeCsvOnline,
   ResultadoCargaCdeCSV,
   isFechaValida,
+  isDespachoCoherente,
   fetchCdeTicketsFromMySQL,
 } from "@/data/recepcionCdeData";
 import { getStoredTickets, fetchTicketsFromMySQL } from "@/data/recepcionData";
@@ -109,8 +110,8 @@ export default function RecepcionCdeDashboardPage() {
     setIsUploadingCSV(true);
     try {
       const text = await file.text();
-      // Sincronización obligatoria directa a MySQL en Railway
-      const resultado = await sincronizarCdeCsvOnline(text, tickets);
+      // Sincronización obligatoria directa a MySQL en Railway (procesa solo CDE >= 100000)
+      const resultado = await sincronizarCdeCsvOnline(text);
       const asuTickets = await fetchTicketsFromMySQL().catch(() => getStoredTickets());
       const checkins = getStoredCdeCheckins();
       const unified = buildUnifiedSatiList(resultado.updatedTickets, asuTickets, checkins);
@@ -202,11 +203,14 @@ export default function RecepcionCdeDashboardPage() {
       );
       const resueltaReparada = esReparada || (tieneDetalleRep && !est.includes("sin reparo") && !estAsu.includes("sin reparo"));
 
+      const tieneDespachoValido =
+        isFechaValida(t.fechaEntregada) && isDespachoCoherente(t.fechaIngreso, t.fechaEntregada);
+
       return (
         !t.recibidoEnDeposito &&
         !yaEntregadaEnAsu &&
         !resueltaReparada &&
-        (isFechaValida(t.fechaEntregada) || est.includes("entregada"))
+        tieneDespachoValido
       );
     });
 
@@ -363,23 +367,19 @@ export default function RecepcionCdeDashboardPage() {
     return filteredTickets.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredTickets, currentPage]);
 
-  // Manejo de Checkin individual por rowKey única para evitar activar otras filas
-  const handleToggleCheckin = (rowKey: string, ticket: RecepcionCdeTicket) => {
-    const updatedState = toggleCheckinDeposito(rowKey, ticket.idOrden);
+  // Manejo de Checkin individual por rowKey única para aislar cada fila sin afectar otras
+  const handleToggleCheckin = (rowKey: string) => {
+    const updatedState = toggleCheckinDeposito(rowKey);
     setTickets((prev) =>
-      prev.map((t, idx) => {
-        const currentKey = getTicketRowKey(t, idx);
-        if (currentKey === rowKey || t.rowKey === rowKey) {
+      prev.map((t) => {
+        if (t.rowKey === rowKey) {
           return { ...t, recibidoEnDeposito: updatedState };
         }
         return t;
       })
     );
-    if (selectedTicket) {
-      const selKey = getTicketRowKey(selectedTicket);
-      if (selKey === rowKey || selectedTicket.rowKey === rowKey) {
-        setSelectedTicket((prev) => (prev ? { ...prev, recibidoEnDeposito: updatedState } : null));
-      }
+    if (selectedTicket && selectedTicket.rowKey === rowKey) {
+      setSelectedTicket((prev) => (prev ? { ...prev, recibidoEnDeposito: updatedState } : null));
     }
   };
 
@@ -397,6 +397,11 @@ export default function RecepcionCdeDashboardPage() {
       );
     }
 
+    // Validación de despacho legítimo y coherente
+    const tieneDespachoValido =
+      isFechaValida(ticket.fechaEntregada) &&
+      isDespachoCoherente(ticket.fechaIngreso, ticket.fechaEntregada);
+
     // 2. Si ya se despachó y la orden de ASU está en estado de Reparada o tiene detalle de reparación
     const esReparada = estAsu.includes("reparada") || est.includes("reparada");
     const tieneDetalleReparacion = Boolean(
@@ -407,7 +412,13 @@ export default function RecepcionCdeDashboardPage() {
       (ticket.mensaje || "").toLowerCase().includes("funcional")
     );
 
-    if (esReparada || (isFechaValida(ticket.fechaEntregada) && tieneDetalleReparacion && !est.includes("sin reparo") && !estAsu.includes("sin reparo"))) {
+    if (
+      esReparada ||
+      (tieneDespachoValido &&
+        tieneDetalleReparacion &&
+        !est.includes("sin reparo") &&
+        !estAsu.includes("sin reparo"))
+    ) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
           <CheckCircle2 className="w-3 h-3 text-sky-600" />
@@ -417,7 +428,7 @@ export default function RecepcionCdeDashboardPage() {
     }
 
     // 3. Si CDE despachó pero en ASU aún NO está entregada, ni reparada
-    if (ticket.esDanesa && (isFechaValida(ticket.fechaEntregada) || est.includes("entregada"))) {
+    if (ticket.esDanesa && tieneDespachoValido) {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
           <Truck className="w-3 h-3 text-amber-700" />
@@ -448,15 +459,17 @@ export default function RecepcionCdeDashboardPage() {
       return (
         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
           <ShieldCheck className="w-3 h-3 text-purple-600" />
-          <span>{ticket.estado}</span>
+          <span>Control de Calidad (QC)</span>
         </span>
       );
     }
 
+    // Estado real de la orden de ASU (ej. "En Asignación", "En Diagnóstico", "En Recepción", etc.)
+    const displayEstado = ticket.estadoAsu || ticket.estado || "En Asignación";
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
-        <Clock className="w-3 h-3 text-zinc-600" />
-        <span>{ticket.estado || "En Asignacion"}</span>
+      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
+        <Clock className="w-3 h-3 text-zinc-500" />
+        <span>{displayEstado}</span>
       </span>
     );
   };
@@ -1060,11 +1073,20 @@ export default function RecepcionCdeDashboardPage() {
                       ? ticket.idOrden
                       : ticket.idOrdenAsu;
 
-                    const idCdeVinculado = isDanesa
+                    // Validación estricta: Una orden de CDE DEBE ser >= 125000 y distinta a la orden de ASU
+                    const esCdeValido = (id?: string | null): boolean => {
+                      if (!id) return false;
+                      const num = parseInt(id.trim(), 10);
+                      return !isNaN(num) && num >= 125000;
+                    };
+
+                    const rawCdeId = isDanesa
                       ? ticket.idOrdenCde || (esOrdenCdeNativa ? ticket.idOrden : null)
                       : esOrdenCdeNativa
                       ? ticket.idOrden
                       : ticket.idOrdenCde;
+
+                    const idCdeVinculado = esCdeValido(rawCdeId) && rawCdeId !== idAsuPrincipal ? rawCdeId : null;
 
                     return (
                       <tr
@@ -1173,9 +1195,9 @@ export default function RecepcionCdeDashboardPage() {
                           {isFechaValida(ticket.fechaIngreso) ? ticket.fechaIngreso : "-"}
                         </td>
 
-                        {/* Despacho CDE: solo la fecha limpia de despacho */}
+                        {/* Despacho CDE: solo la fecha limpia de despacho si es cronológicamente coherente */}
                         <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px]">
-                          {isFechaValida(ticket.fechaEntregada) ? (
+                          {isFechaValida(ticket.fechaEntregada) && isDespachoCoherente(ticket.fechaIngreso, ticket.fechaEntregada) ? (
                             <div className="flex flex-col">
                               <span className="font-bold text-zinc-900">{ticket.fechaEntregada}</span>
                               {isDanesa && (
@@ -1192,7 +1214,7 @@ export default function RecepcionCdeDashboardPage() {
 
                         {/* Días en Taller CDE */}
                         <td className="py-3 px-3 text-center whitespace-nowrap">
-                          {days !== null && days !== undefined && days >= 0 ? (
+                          {isDespachoCoherente(ticket.fechaIngreso, ticket.fechaEntregada) && days !== null && days !== undefined && days >= 0 ? (
                             <span
                               className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
                                 days <= 7
@@ -1227,7 +1249,7 @@ export default function RecepcionCdeDashboardPage() {
                           {isDanesa ? (
                             <button
                               type="button"
-                              onClick={() => handleToggleCheckin(rowKey, ticket)}
+                              onClick={() => handleToggleCheckin(rowKey)}
                               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
                                 ticket.recibidoEnDeposito
                                   ? "bg-emerald-600 text-white hover:bg-emerald-700"
@@ -1377,7 +1399,9 @@ export default function RecepcionCdeDashboardPage() {
                     <div>
                       <span className="text-zinc-500 text-[10px] block uppercase font-mono">Orden CDE:</span>
                       <strong className="text-indigo-700 truncate block">
-                        #{selectedTicket.idOrdenCde || "---"}
+                        {selectedTicket.idOrdenCde && parseInt(selectedTicket.idOrdenCde, 10) >= 125000
+                          ? `#${selectedTicket.idOrdenCde}`
+                          : "Pendiente"}
                       </strong>
                     </div>
                     <div>
@@ -1470,7 +1494,7 @@ export default function RecepcionCdeDashboardPage() {
 
                   <button
                     type="button"
-                    onClick={() => handleToggleCheckin(getTicketRowKey(selectedTicket), selectedTicket)}
+                    onClick={() => handleToggleCheckin(getTicketRowKey(selectedTicket))}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer ${
                       selectedTicket.recibidoEnDeposito
                         ? "bg-emerald-600 text-white hover:bg-emerald-700"

@@ -277,6 +277,11 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
 
+      // Limpieza preventiva: recepcion_cde_tickets solo debe contener órdenes reales de CDE (>= 100000)
+      await pool.query(
+        "DELETE FROM recepcion_cde_tickets WHERE CAST(id_orden AS UNSIGNED) < 100000"
+      ).catch(() => {});
+
       // 3. Seed de Usuarios (almacena únicamente hash SHA-256, nunca texto plano)
       for (const u of USER_PROFILES) {
         await pool.query(
@@ -672,7 +677,7 @@ export async function dbGetCdeTickets(): Promise<RecepcionCdeTicket[]> {
   await ensureDatabaseInitialized();
   const pool = getPool();
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    "SELECT * FROM recepcion_cde_tickets ORDER BY CAST(id_orden AS UNSIGNED) DESC"
+    "SELECT * FROM recepcion_cde_tickets WHERE CAST(id_orden AS UNSIGNED) >= 100000 ORDER BY CAST(id_orden AS UNSIGNED) DESC"
   );
   return rows.map((r) => ({
     idOrden: r.id_orden,

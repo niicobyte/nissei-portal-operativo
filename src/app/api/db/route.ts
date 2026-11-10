@@ -592,10 +592,15 @@ export async function POST(req: NextRequest) {
     // 12. Actualización masiva desde CSV en SATI CDE / Depósito Danesa (Full MySQL)
     if (action === "BULK_UPDATE_CDE_CSV") {
       const { tickets = [] } = body;
-      if (Array.isArray(tickets) && tickets.length > 0) {
+      const cdeOnlyTickets = (Array.isArray(tickets) ? tickets : []).filter((t: any) => {
+        const num = parseInt(t?.idOrden, 10);
+        return isNaN(num) || num >= 100000;
+      });
+
+      if (cdeOnlyTickets.length > 0) {
         const BATCH_SIZE = 100;
-        for (let i = 0; i < tickets.length; i += BATCH_SIZE) {
-          const batch = tickets.slice(i, i + BATCH_SIZE);
+        for (let i = 0; i < cdeOnlyTickets.length; i += BATCH_SIZE) {
+          const batch = cdeOnlyTickets.slice(i, i + BATCH_SIZE);
           const values: any[] = [];
           const placeholders = batch.map((t: any) => {
             values.push(

@@ -47,7 +47,22 @@ export function calcularDiasResolucion(fechaIngreso?: string, fechaEntregada?: s
   if (!fi || !fe) return null;
   const diffTime = fe.getTime() - fi.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays >= 0 ? diffDays : 0;
+  return diffDays >= 0 ? diffDays : null;
+}
+
+/**
+ * Valida si un despacho en CDE es cronológicamente coherente con el ingreso en ASU.
+ * Un equipo jamás puede haber sido despachado en CDE antes de ingresar a ASU.
+ * Se permite una tolerancia máxima de 1 día por diferencias horarias o registros al cierre de jornada.
+ */
+export function isDespachoCoherente(fechaIngreso?: string, fechaDespacho?: string): boolean {
+  if (!fechaIngreso || !fechaDespacho) return true;
+  const fi = parseFechaDMY(fechaIngreso);
+  const fd = parseFechaDMY(fechaDespacho);
+  if (!fi || !fd) return true;
+  const diffMs = fd.getTime() - fi.getTime();
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+  return diffDays >= -1;
 }
 
 export function isTicketDanesa(cliente?: string): boolean {
@@ -187,6 +202,9 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
 
     const idOrden = getVal('idOrden').replace(/^#/, '');
     if (!idOrden) continue;
+    // CDE maneja órdenes a partir de 125000 (o >= 100000). Descartar órdenes de sucursal que vengan en el CSV.
+    const numOrden = parseInt(idOrden, 10);
+    if (!isNaN(numOrden) && numOrden < 100000) continue;
 
     const codigoProducto = getVal('codigoProducto');
     const cliente = getVal('cliente');
@@ -247,16 +265,21 @@ export function getStoredCdeTickets(): RecepcionCdeTicket[] {
     const checkins = getStoredCdeCheckins();
 
     const base = raw ? JSON.parse(raw) : INITIAL_RECEPCION_CDE_DATA;
-    return base.map((t: RecepcionCdeTicket, idx: number) => {
-      const rowKey = t.rowKey || `${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
-      return {
-        ...t,
-        rowKey,
-        diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
-        esDanesa: isTicketDanesa(t.cliente),
-        recibidoEnDeposito: Boolean(checkins[rowKey] || checkins[t.idOrden] || t.recibidoEnDeposito),
-      };
-    });
+    return base
+      .filter((t: RecepcionCdeTicket) => {
+        const num = parseInt(t.idOrden, 10);
+        return isNaN(num) || num >= 100000;
+      })
+      .map((t: RecepcionCdeTicket, idx: number) => {
+        const rowKey = t.rowKey || `CDE_${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
+        return {
+          ...t,
+          rowKey,
+          diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
+          esDanesa: isTicketDanesa(t.cliente),
+          recibidoEnDeposito: Boolean(checkins[rowKey] || t.recibidoEnDeposito),
+        };
+      });
   } catch (e) {
     console.error('Error al leer tickets CDE de localStorage:', e);
     return INITIAL_RECEPCION_CDE_DATA;
@@ -266,7 +289,12 @@ export function getStoredCdeTickets(): RecepcionCdeTicket[] {
 export function saveCdeTickets(tickets: RecepcionCdeTicket[]): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.setItem(CDE_STORAGE_KEY, JSON.stringify(tickets));
+    // Asegurar que solo órdenes de CDE (>= 100000) se guarden
+    const filtered = tickets.filter((t) => {
+      const num = parseInt(t.idOrden, 10);
+      return isNaN(num) || num >= 100000;
+    });
+    localStorage.setItem(CDE_STORAGE_KEY, JSON.stringify(filtered));
   } catch (e) {
     console.error('Error al guardar tickets CDE:', e);
   }
@@ -279,16 +307,21 @@ export async function fetchCdeTicketsFromMySQL(): Promise<RecepcionCdeTicket[]> 
     if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
       const checkins = getStoredCdeCheckins();
 
-      const enriched: RecepcionCdeTicket[] = json.data.map((t: RecepcionCdeTicket, idx: number) => {
-        const rowKey = t.rowKey || `${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
-        return {
-          ...t,
-          rowKey,
-          diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
-          esDanesa: isTicketDanesa(t.cliente),
-          recibidoEnDeposito: Boolean(t.recibidoEnDeposito || checkins[rowKey] || checkins[t.idOrden]),
-        };
-      });
+      const enriched: RecepcionCdeTicket[] = json.data
+        .filter((t: RecepcionCdeTicket) => {
+          const num = parseInt(t.idOrden, 10);
+          return isNaN(num) || num >= 100000;
+        })
+        .map((t: RecepcionCdeTicket, idx: number) => {
+          const rowKey = t.rowKey || `CDE_${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
+          return {
+            ...t,
+            rowKey,
+            diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
+            esDanesa: isTicketDanesa(t.cliente),
+            recibidoEnDeposito: Boolean(t.recibidoEnDeposito || checkins[rowKey]),
+          };
+        });
       saveCdeTickets(enriched);
       return enriched;
     }
@@ -302,13 +335,10 @@ export function toggleCheckinDeposito(targetKey: string, idOrden?: string): bool
   if (typeof window === 'undefined') return false;
   try {
     const checkins = getStoredCdeCheckins();
-    // Alternar basándose primordialmente en targetKey para no alterar otras filas
-    const current = Boolean(checkins[targetKey] ?? (idOrden ? checkins[idOrden] : false));
+    // Alternar basándose estrictamente en targetKey única para aislar cada fila sin afectar otras
+    const current = Boolean(checkins[targetKey]);
     const newState = !current;
     checkins[targetKey] = newState;
-    if (idOrden) {
-      checkins[idOrden] = newState;
-    }
     localStorage.setItem(CDE_CHECKINS_KEY, JSON.stringify(checkins));
 
     // Sincronizar directamente con MySQL
@@ -357,7 +387,12 @@ export function procesarActualizacionCdeCSV(
 ): ResultadoCargaCdeCSV {
   const incoming = parseRecepcionCdeCSV(csvContent);
   const currentMap = new Map<string, RecepcionCdeTicket>();
-  currentTickets.forEach((t) => currentMap.set(t.idOrden, t));
+  currentTickets
+    .filter((t) => {
+      const num = parseInt(t.idOrden, 10);
+      return isNaN(num) || num >= 100000;
+    })
+    .forEach((t) => currentMap.set(t.idOrden, t));
 
   const checkinsRaw = typeof window !== 'undefined' ? localStorage.getItem(CDE_CHECKINS_KEY) : null;
   const checkins: Record<string, boolean> = checkinsRaw ? JSON.parse(checkinsRaw) : {};
@@ -410,7 +445,7 @@ export function procesarActualizacionCdeCSV(
           ...inc,
           diasResolucion: calcularDiasResolucion(inc.fechaIngreso, inc.fechaEntregada),
           esDanesa,
-          recibidoEnDeposito: Boolean(checkins[inc.idOrden] || existing.recibidoEnDeposito),
+          recibidoEnDeposito: Boolean(existing.rowKey && checkins[existing.rowKey] || existing.recibidoEnDeposito),
           esEstadoCambiadoReciente: true,
         });
       } else {
@@ -437,14 +472,15 @@ export function procesarActualizacionCdeCSV(
         ...inc,
         diasResolucion: calcularDiasResolucion(inc.fechaIngreso, inc.fechaEntregada),
         esDanesa,
-        recibidoEnDeposito: Boolean(checkins[inc.idOrden]),
+        recibidoEnDeposito: false,
         esNuevoIngreso: true,
       });
     }
   }
 
   currentTickets.forEach((t) => {
-    if (!seenIds.has(t.idOrden)) {
+    const num = parseInt(t.idOrden, 10);
+    if ((isNaN(num) || num >= 100000) && !seenIds.has(t.idOrden)) {
       updatedList.push(t);
     }
   });
@@ -484,7 +520,12 @@ export async function sincronizarCdeCsvOnline(
   csvText: string,
   currentTickets?: RecepcionCdeTicket[]
 ): Promise<ResultadoCargaCdeCSV> {
-  const base = currentTickets && currentTickets.length > 0 ? currentTickets : getStoredCdeTickets();
+  const base = currentTickets && currentTickets.length > 0
+    ? currentTickets.filter((t) => {
+        const n = parseInt(t.idOrden, 10);
+        return isNaN(n) || n >= 100000;
+      })
+    : getStoredCdeTickets();
   const resCalculo = procesarActualizacionCdeCSV(csvText, base);
 
   if (resCalculo.totalFilasLeidas === 0) {
