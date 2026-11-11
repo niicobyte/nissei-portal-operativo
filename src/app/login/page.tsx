@@ -52,6 +52,7 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const isRedirectingRef = React.useRef(false);
 
   // Estados para el acceso directo al Visor de Base de Datos MySQL
   const [showDbAuthBox, setShowDbAuthBox] = useState(false);
@@ -98,9 +99,41 @@ function LoginForm() {
     }
   };
 
+  // Validación automática en tiempo real al escribir la contraseña (sin necesidad de pulsar Enter)
+  const attemptAutoLogin = (entered: string): boolean => {
+    if (isRedirectingRef.current) return true;
+    const clean = entered.trim();
+    if (!clean) return false;
+
+    let profileToAuth = selectedProfile.id;
+    const cleanLower = clean.toLowerCase();
+    if (cleanLower === "deposito.danesa" || cleanLower === "danesa") {
+      profileToAuth = "deposito.danesa";
+    }
+
+    const result = authenticate(profileToAuth, clean);
+    if (result.success) {
+      isRedirectingRef.current = true;
+      const authUser = result.user || selectedProfile;
+      fetch("/api/db", { cache: "no-store" }).catch(() => {});
+      setError(null);
+      setSuccess(`Autenticado como ${authUser.nombre}. Redirigiendo a su panel...`);
+      setTimeout(() => {
+        router.push(authUser.defaultRoute);
+      }, 300);
+      return true;
+    }
+
+    return false;
+  };
+
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (attemptAutoLogin(password)) {
+      return;
+    }
 
     let profileToAuth = selectedProfile.id;
     if (password.trim() === "deposito.danesa" || password.trim() === "danesa") {
@@ -320,7 +353,12 @@ function LoginForm() {
                     type={showPassword ? "text" : "password"}
                     required
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setPassword(val);
+                      setError(null);
+                      attemptAutoLogin(val);
+                    }}
                     placeholder={`Clave de ${selectedProfile.nombre}...`}
                     className="w-full text-sm bg-white border border-zinc-200 rounded-lg px-3.5 py-2.5 pr-10 focus:border-zinc-900 outline-none transition-colors"
                   />
@@ -332,6 +370,10 @@ function LoginForm() {
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium pt-0.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Validación automática en tiempo real al escribir (sin dar Enter)</span>
                 </div>
               </div>
 
@@ -386,7 +428,17 @@ function LoginForm() {
                     <input
                       type={showDbPassword ? "text" : "password"}
                       value={dbPassword}
-                      onChange={(e) => setDbPassword(e.target.value)}
+                      autoFocus
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDbPassword(val);
+                        setDbError(null);
+                        if (verifyAdminPassword(val)) {
+                          setDbPassword("");
+                          setShowDbAuthBox(false);
+                          setIsDbModalOpen(true);
+                        }
+                      }}
                       placeholder="Ingrese clave de Admin..."
                       className="w-full text-xs bg-white border border-zinc-300 rounded px-2.5 py-1.5 pr-8 outline-none focus:border-zinc-900"
                     />
@@ -397,6 +449,10 @@ function LoginForm() {
                     >
                       {showDbPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                     </button>
+                  </div>
+                  <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <span>Se valida automáticamente al escribir (sin dar Enter)</span>
                   </div>
                   {dbError && (
                     <div className="text-[11px] text-rose-600 font-medium">

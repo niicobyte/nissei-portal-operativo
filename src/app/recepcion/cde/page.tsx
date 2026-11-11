@@ -39,6 +39,7 @@ import {
   INITIAL_RECEPCION_CDE_DATA,
   getStoredCdeTickets,
   getStoredCdeCheckins,
+  CDE_CHECKINS_KEY,
   saveCdeTickets,
   toggleCheckinDeposito,
   procesarActualizacionCdeCSV,

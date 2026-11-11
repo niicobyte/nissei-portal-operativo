@@ -22,11 +22,17 @@ import {
   Check,
   Trash2,
   AlertTriangle,
+  Lock,
+  Clock,
+  Eye,
+  EyeOff,
+  Key,
+  ShieldAlert,
 } from "lucide-react";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { AnimatedReceptionBox } from "@/components/common/AnimatedReceptionBox";
 import { AnimatedCpu } from "@/components/common/AnimatedCpu";
-import { getSafeUserProfiles, getAdminAuthHeaders, UserProfile } from "@/data/authData";
+import { getSafeUserProfiles, getAdminAuthHeaders, verifyAdminPassword, UserProfile } from "@/data/authData";
 import { getStoredTickets, saveTickets, RecepcionTicket } from "@/data/recepcionData";
 import { getStoredReparaciones, saveReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
 import { getStoredMontajes, saveMontajes, OrdenMontajeReal } from "@/data/montajesData";
@@ -191,6 +197,79 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
   } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Temporizador estricto de seguridad de 30 segundos para MySQL
+  const MYSQL_SESSION_TIMEOUT = 30;
+  const [secondsRemaining, setSecondsRemaining] = useState<number>(MYSQL_SESSION_TIMEOUT);
+  const [isSessionLocked, setIsSessionLocked] = useState<boolean>(false);
+  const [reauthPassword, setReauthPassword] = useState<string>("");
+  const [reauthError, setReauthError] = useState<string | null>(null);
+  const [showReauthPass, setShowReauthPass] = useState<boolean>(false);
+  const reauthInputRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Iniciar o reiniciar cuenta regresiva cuando el modal está abierto y no bloqueado
+  useEffect(() => {
+    if (!isOpen) {
+      setSecondsRemaining(MYSQL_SESSION_TIMEOUT);
+      setIsSessionLocked(false);
+      setReauthPassword("");
+      setReauthError(null);
+      return;
+    }
+
+    if (isSessionLocked) return;
+
+    const timer = setInterval(() => {
+      setSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          setIsSessionLocked(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isOpen, isSessionLocked]);
+
+  // Enfocar automáticamente el input al bloquearse la sesión
+  useEffect(() => {
+    if (isSessionLocked) {
+      setTimeout(() => {
+        reauthInputRef.current?.focus();
+      }, 100);
+    }
+  }, [isSessionLocked]);
+
+  // Validación en tiempo real al escribir contraseña (sin necesidad de dar a enter)
+  const handleReauthPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const entered = e.target.value;
+    setReauthPassword(entered);
+    setReauthError(null);
+
+    if (verifyAdminPassword(entered)) {
+      setReauthPassword("");
+      setReauthError(null);
+      setSecondsRemaining(MYSQL_SESSION_TIMEOUT);
+      setIsSessionLocked(false);
+      setToastMessage("✅ Acceso a MySQL renovado por 30 segundos.");
+      setTimeout(() => setToastMessage(null), 3000);
+    }
+  };
+
+  const handleReauthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (verifyAdminPassword(reauthPassword)) {
+      setReauthPassword("");
+      setReauthError(null);
+      setSecondsRemaining(MYSQL_SESSION_TIMEOUT);
+      setIsSessionLocked(false);
+      setToastMessage("✅ Acceso a MySQL renovado por 30 segundos.");
+      setTimeout(() => setToastMessage(null), 3000);
+    } else {
+      setReauthError("Contraseña incorrecta. Acceso denegado a MySQL.");
+    }
+  };
 
   const executeDelete = async (table: TableTab, id: string) => {
     setIsDeleting(true);
@@ -460,7 +539,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6">
-      <div className="bg-white w-full max-w-7xl h-[92vh] rounded-2xl border border-zinc-200 shadow-2xl flex flex-col overflow-hidden">
+      <div className={`bg-white w-full max-w-7xl h-[92vh] rounded-2xl border border-zinc-200 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${isSessionLocked ? "blur-md pointer-events-none select-none opacity-25" : ""}`}>
         {/* Cabecera del Visor de Base de Datos */}
         <div className="bg-zinc-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-800">
           <div className="flex items-center gap-3">
@@ -486,6 +565,18 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                     MySQL en la Nube (Conectando...)
                   </span>
                 )}
+                {/* Temporizador de Seguridad de 30 Segundos */}
+                <span
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border transition-colors ${
+                    secondsRemaining <= 10
+                      ? "bg-rose-500/25 text-rose-300 border-rose-500/50 animate-pulse"
+                      : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                  }`}
+                  title="Sesión protegida en MySQL: Expira automáticamente a los 30 segundos y requiere re-autenticación"
+                >
+                  <Clock className="w-3 h-3 text-amber-400" />
+                  <span>Sesión: {secondsRemaining}s</span>
+                </span>
               </div>
               <p className="text-xs text-zinc-400 mt-0.5 font-mono">
                 Host: {displayHost} · Motor: InnoDB utf8mb4 · Última lectura: {lastSyncTime || "--:--"}
@@ -1192,6 +1283,98 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pantalla de Re-autenticación de Seguridad (30 segundos expirados) */}
+      {isSessionLocked && (
+        <div className="fixed inset-0 z-[75] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-zinc-200 overflow-hidden">
+            <div className="bg-zinc-900 text-white px-5 py-4 flex items-center justify-between border-b border-zinc-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold tracking-tight">Sesión MySQL Expirada (30s)</h3>
+                  <p className="text-[11px] text-zinc-400 font-mono">Límite de seguridad alcanzado</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-rose-600 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                title="Cerrar visor MySQL"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleReauthSubmit} className="p-6 space-y-4">
+              <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs leading-relaxed flex items-start gap-2.5">
+                <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <strong className="block font-bold">Tiempo de visualización agotado</strong>
+                  <span>
+                    Por seguridad, el visor de MySQL se bloquea automáticamente cada 30 segundos. Escriba la contraseña de Administrador para renovar el acceso.
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-zinc-700 block">
+                  Contraseña de Administrador
+                </label>
+                <div className="relative">
+                  <input
+                    ref={reauthInputRef}
+                    type={showReauthPass ? "text" : "password"}
+                    value={reauthPassword}
+                    onChange={handleReauthPasswordChange}
+                    placeholder="Escriba la clave de Admin..."
+                    autoFocus
+                    className="w-full text-sm bg-zinc-50 border border-zinc-300 rounded-lg px-3.5 py-2.5 pr-10 focus:border-zinc-900 focus:bg-white outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowReauthPass(!showReauthPass)}
+                    className="absolute right-3 top-3 text-zinc-400 hover:text-zinc-700 transition-colors cursor-pointer"
+                    title={showReauthPass ? "Ocultar" : "Mostrar"}
+                  >
+                    {showReauthPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium pt-0.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Validación automática en tiempo real al escribir (sin dar Enter)</span>
+                </div>
+              </div>
+
+              {reauthError && (
+                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                  <span>{reauthError}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-end gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer"
+                >
+                  Cerrar Visor
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-zinc-900 hover:bg-black rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <Lock className="w-3.5 h-3.5" />
+                  <span>Desbloquear MySQL</span>
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

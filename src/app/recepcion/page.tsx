@@ -71,7 +71,7 @@ import {
 import { crossMatchAsuWithCde } from "@/lib/crossMatch";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
-import { getActiveUser, verifyDepositoPassword, authenticate } from "@/data/authData";
+import { getActiveUser, verifyDepositoPassword, verifyAdminPassword, authenticate } from "@/data/authData";
 import { useRouter } from "next/navigation";
 
 const ITEMS_PER_PAGE = 25;
@@ -172,7 +172,11 @@ export default function RecepcionDashboardPage() {
       setDepositoAuthError("Contraseña incorrecta para SATI ASU - CDE.");
       return;
     }
-    authenticate("deposito.danesa", depositoPassword);
+    if (verifyAdminPassword(depositoPassword)) {
+      authenticate("admin", depositoPassword);
+    } else {
+      authenticate("deposito.danesa", depositoPassword);
+    }
     setShowDepositoAuthModal(false);
     router.push("/recepcion/cde");
   };
@@ -2008,7 +2012,20 @@ ${accText}`;
                     <input
                       type={showDepPass ? "text" : "password"}
                       value={depositoPassword}
-                      onChange={(e) => setDepositoPassword(e.target.value)}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDepositoPassword(val);
+                        setDepositoAuthError(null);
+                        if (verifyDepositoPassword(val)) {
+                          if (verifyAdminPassword(val)) {
+                            authenticate("admin", val);
+                          } else {
+                            authenticate("deposito.danesa", val);
+                          }
+                          setShowDepositoAuthModal(false);
+                          router.push("/recepcion/cde");
+                        }
+                      }}
                       placeholder="Ingrese contraseña de acceso..."
                       autoFocus
                       className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 pr-8 focus:border-zinc-900 focus:bg-white outline-none"
@@ -2020,6 +2037,10 @@ ${accText}`;
                     >
                       {showDepPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium pt-1">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Validación automática en tiempo real al escribir (sin dar Enter)</span>
                   </div>
                 </div>
 
