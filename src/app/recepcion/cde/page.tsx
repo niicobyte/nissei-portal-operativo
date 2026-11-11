@@ -154,8 +154,8 @@ function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
     return "Reparada";
   }
 
-  // 3. En Tránsito (Transportadora) para Danesa SA si CDE despachó pero en ASU aún no se entregó
-  if (t.esDanesa && tieneDespachoValido) {
+  // 3. En Tránsito (Transportadora) si CDE despachó y aún no está recibido en destino
+  if (tieneDespachoValido && !isTicketRecibido(t)) {
     return "En Tránsito (Transportadora)";
   }
 
@@ -566,7 +566,11 @@ export default function RecepcionCdeDashboardPage() {
     // 4. Filtro de Tránsito / Recibidos en Depósito
     if (transitFilter === "EN_TRANSITO") {
       result = result.filter(
-        (t) => !isTicketRecibido(t) && getTicketDisplayStatus(t).includes("Tránsito")
+        (t) =>
+          !isTicketRecibido(t) &&
+          (getTicketDisplayStatus(t).toLowerCase().includes("tránsito") ||
+            getTicketDisplayStatus(t).toLowerCase().includes("transito") ||
+            isFechaValida(t.fechaEntregada))
       );
     } else if (transitFilter === "RECIBIDOS") {
       result = result.filter((t) => isTicketRecibido(t));
@@ -599,7 +603,11 @@ export default function RecepcionCdeDashboardPage() {
   // Conteo dinámico según el ámbito para las pestañas de tránsito y recepción
   const scopeEnTransito = useMemo(() => {
     return scopeTickets.filter(
-      (t) => !isTicketRecibido(t) && getTicketDisplayStatus(t).includes("Tránsito")
+      (t) =>
+        !isTicketRecibido(t) &&
+        (getTicketDisplayStatus(t).toLowerCase().includes("tránsito") ||
+          getTicketDisplayStatus(t).toLowerCase().includes("transito") ||
+          isFechaValida(t.fechaEntregada))
     ).length;
   }, [scopeTickets]);
 
@@ -1346,61 +1354,59 @@ export default function RecepcionCdeDashboardPage() {
 
           {/* Filtros Secundarios con CleanSelect */}
           <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
-            {/* Filtro de Tránsito / Recibidos (visible para Danesa, Clientes ASU y Todos; no para Clientes CDE) */}
-            {viewScope !== "CLIENTES_CDE" && (
-              <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTransitFilter("TODOS");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
-                    transitFilter === "TODOS"
-                      ? "bg-white font-bold text-zinc-900 shadow-xs"
-                      : "text-zinc-500 hover:text-zinc-900"
-                  }`}
-                >
-                  Todos los envíos
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTransitFilter("EN_TRANSITO");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                    transitFilter === "EN_TRANSITO"
-                      ? "bg-amber-500 text-white font-bold shadow-xs"
-                      : "text-amber-700 hover:bg-amber-100/60"
-                  }`}
-                >
-                  <SpeedTruck
-                    className={`w-3.5 h-3.5 ${transitFilter === "EN_TRANSITO" ? "text-white" : "text-amber-700"}`}
-                    smokeColor={transitFilter === "EN_TRANSITO" ? "bg-white/80" : "bg-amber-400"}
-                  />
-                  <span>En camino ({scopeEnTransito})</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTransitFilter("RECIBIDOS");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                    transitFilter === "RECIBIDOS"
-                      ? "bg-emerald-600 text-white font-bold shadow-xs"
-                      : "text-emerald-700 hover:bg-emerald-100/60"
-                  }`}
-                >
-                  <Check className="w-3 h-3" />
-                  <span>Recibidos ({scopeRecibidosCount})</span>
-                </button>
-              </div>
-            )}
+            {/* Filtro de Tránsito / Recibidos (visible para todos los ámbitos: Danesa, Clientes ASU, Clientes CDE y Todos) */}
+            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs">
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("TODOS");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  transitFilter === "TODOS"
+                    ? "bg-white font-bold text-zinc-900 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-900"
+                }`}
+              >
+                Todos los envíos
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("EN_TRANSITO");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  transitFilter === "EN_TRANSITO"
+                    ? "bg-amber-500 text-white font-bold shadow-xs"
+                    : "text-amber-700 hover:bg-amber-100/60"
+                }`}
+              >
+                <SpeedTruck
+                  className={`w-3.5 h-3.5 ${transitFilter === "EN_TRANSITO" ? "text-white" : "text-amber-700"}`}
+                  smokeColor={transitFilter === "EN_TRANSITO" ? "bg-white/80" : "bg-amber-400"}
+                />
+                <span>En camino ({scopeEnTransito})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("RECIBIDOS");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  transitFilter === "RECIBIDOS"
+                    ? "bg-emerald-600 text-white font-bold shadow-xs"
+                    : "text-emerald-700 hover:bg-emerald-100/60"
+                }`}
+              >
+                <Check className="w-3 h-3" />
+                <span>Recibidos ({scopeRecibidosCount})</span>
+              </button>
+            </div>
 
             {/* Filtro de Fecha de Recepción (Hoy / Ayer / etc.) cuando se selecciona Recibidos */}
-            {transitFilter === "RECIBIDOS" && viewScope !== "CLIENTES_CDE" && (
+            {transitFilter === "RECIBIDOS" && (
               <div className="flex items-center gap-1 bg-emerald-50/80 p-1 rounded-xl border border-emerald-200 text-xs flex-wrap">
                 <span className="text-[11px] font-bold text-emerald-900 px-2 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-emerald-700" />
@@ -1741,17 +1747,15 @@ export default function RecepcionCdeDashboardPage() {
                           )}
                         </td>
 
-                        {/* Despacho CDE: solo la fecha limpia de despacho si es cronológicamente coherente */}
+                        {/* Despacho CDE: fecha de despacho con camioncito de transportadora */}
                         <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px]">
                           {isFechaValida(ticket.fechaEntregada) && isDespachoCoherente(ticket.fechaIngreso, ticket.fechaEntregada) ? (
                             <div className="flex flex-col">
                               <span className="font-bold text-zinc-900">{ticket.fechaEntregada}</span>
-                              {isDanesa && (
-                                <span className="text-[10px] text-amber-700 font-sans flex items-center gap-1 font-semibold">
-                                  <SpeedTruck className="w-2.5 h-2.5 text-amber-700" smokeColor="bg-amber-400" />
-                                  <span>Despacho transportadora</span>
-                                </span>
-                              )}
+                              <span className="text-[10px] text-amber-700 font-sans flex items-center gap-1 font-semibold">
+                                <SpeedTruck className="w-2.5 h-2.5 text-amber-700" smokeColor="bg-amber-400" />
+                                <span>Despacho transportadora</span>
+                              </span>
                             </div>
                           ) : (
                             <span className="text-zinc-400 italic">En taller CDE</span>
@@ -1792,54 +1796,48 @@ export default function RecepcionCdeDashboardPage() {
 
                         {/* Llegada a Depósito / Confirmación en Sucursal */}
                         <td className="py-3 px-3 text-center whitespace-nowrap">
-                          {viewScope !== "CLIENTES_CDE" ? (
-                            (() => {
-                              const isRecibido = isTicketRecibido(ticket);
-                              const fechaMostrar = ticket.fechaEntregada || ticket.fechaRecibidoDeposito || "";
-                              return (
-                                <div className="flex flex-col items-center gap-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleToggleCheckin(ticket)}
-                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
-                                      isRecibido
-                                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                                        : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
-                                    }`}
-                                    title={
-                                      isRecibido
-                                        ? "Equipo en estado Recibido (Click para desmarcar llegada)"
-                                        : "Haga click para confirmar llegada de esta unidad a depósito"
-                                    }
-                                  >
-                                    {isRecibido ? (
-                                      <>
-                                        <Check className="w-3 h-3 stroke-[3]" />
-                                        <span>Recibido</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Box className="w-3 h-3" />
-                                        <span>Confirmar</span>
-                                      </>
-                                    )}
-                                  </button>
-                                  {isRecibido && fechaMostrar && (
-                                    <span
-                                      className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
-                                      title={`Fecha de entrega / despacho para seguimiento: ${fechaMostrar}`}
-                                    >
-                                      {fechaMostrar}
-                                    </span>
+                          {(() => {
+                            const isRecibido = isTicketRecibido(ticket);
+                            const fechaMostrar = ticket.fechaEntregada || ticket.fechaRecibidoDeposito || "";
+                            return (
+                              <div className="flex flex-col items-center gap-0.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleCheckin(ticket)}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
+                                    isRecibido
+                                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                      : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
+                                  }`}
+                                  title={
+                                    isRecibido
+                                      ? "Equipo en estado Recibido (Click para desmarcar llegada)"
+                                      : "Haga click para confirmar llegada de esta unidad a depósito"
+                                  }
+                                >
+                                  {isRecibido ? (
+                                    <>
+                                      <Check className="w-3 h-3 stroke-[3]" />
+                                      <span>Recibido</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Box className="w-3 h-3" />
+                                      <span>Confirmar</span>
+                                    </>
                                   )}
-                                </div>
-                              );
-                            })()
-                          ) : (
-                            <span className="text-zinc-400 font-mono text-[10px]">
-                              Cliente CDE
-                            </span>
-                          )}
+                                </button>
+                                {isRecibido && fechaMostrar && (
+                                  <span
+                                    className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
+                                    title={`Fecha de entrega / despacho para seguimiento: ${fechaMostrar}`}
+                                  >
+                                    {fechaMostrar}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
 
                         {/* Acción / Ver Detalle */}
