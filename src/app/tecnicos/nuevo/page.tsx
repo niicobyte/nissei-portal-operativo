@@ -27,7 +27,7 @@ import {
   LISTA_TECNICOS_MONTAJE,
   ComponenteMontaje,
   OrdenMontajeReal,
-  addMontaje,
+  addMontajeAsync,
   getStoredVendedores,
   addCustomVendedor
 } from "@/data/montajesData";
@@ -314,7 +314,7 @@ export default function NuevoIngresoMontajePage() {
   };
 
   // Enviar formulario
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -375,7 +375,8 @@ export default function NuevoIngresoMontajePage() {
       componentes: components
     };
 
-    addMontaje(newOrder);
+    // Guardar en almacenamiento local y confirmar persistencia en MySQL en la nube
+    await addMontajeAsync(newOrder);
 
     // Envío automático al Grupo de Montajes vía WhaApi (Canal MONTAJES -> Grupo 120363428540171277@g.us)
     const msg = generateWhatsAppMessage();
@@ -389,9 +390,7 @@ export default function NuevoIngresoMontajePage() {
       })
     }).catch((err) => console.error("[WHAPI ERROR]", err));
 
-    setTimeout(() => {
-      router.push("/tecnicos");
-    }, 700);
+    router.push("/tecnicos");
   };
 
   // Mensaje para notificación de WhatsApp

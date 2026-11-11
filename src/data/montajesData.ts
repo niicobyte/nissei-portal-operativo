@@ -674,7 +674,50 @@ export const INITIAL_MONTAJES_REALES: OrdenMontajeReal[] = [
   }
 ];
 
-const STORAGE_KEY = "nissei_taller_montajes_v4_real";
+export const MONTAJES_STORAGE_KEY = "nissei_taller_montajes_v4_real";
+const STORAGE_KEY = MONTAJES_STORAGE_KEY;
+const MONTAJES_DIRTY_KEY = "nissei_taller_montajes_dirty_ids_v1";
+
+function getDirtyMontajeIds(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(MONTAJES_DIRTY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function markDirtyMontajeId(id: string): void {
+  if (typeof window === "undefined" || !id) return;
+  try {
+    const next = Array.from(new Set([...getDirtyMontajeIds(), id]));
+    localStorage.setItem(MONTAJES_DIRTY_KEY, JSON.stringify(next));
+  } catch {
+    // Ignore storage quota issues
+  }
+}
+
+function clearDirtyMontajeIds(ids?: string[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (!ids) {
+      localStorage.removeItem(MONTAJES_DIRTY_KEY);
+      return;
+    }
+    const removeSet = new Set(ids);
+    const next = getDirtyMontajeIds().filter((d) => !removeSet.has(d));
+    if (next.length === 0) {
+      localStorage.removeItem(MONTAJES_DIRTY_KEY);
+    } else {
+      localStorage.setItem(MONTAJES_DIRTY_KEY, JSON.stringify(next));
+    }
+  } catch {
+    // Ignore
+  }
+}
 
 export function getStoredMontajes(): OrdenMontajeReal[] {
   if (typeof window === "undefined") return INITIAL_MONTAJES_REALES;
@@ -705,8 +748,28 @@ export async function fetchMontajesFromMySQL(): Promise<OrdenMontajeReal[]> {
     const res = await fetch("/api/db?module=montajes", { cache: "no-store" });
     const json = await res.json();
     if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
-      saveMontajes(json.data);
-      return json.data;
+      const localList = getStoredMontajes();
+      const dirtySet = new Set(getDirtyMontajeIds());
+      const localMap = new Map<string, OrdenMontajeReal>(localList.map((m) => [m.id, m]));
+
+      const mergedMap = new Map<string, OrdenMontajeReal>();
+      for (const cloudOrd of json.data as OrdenMontajeReal[]) {
+        if (dirtySet.has(cloudOrd.id) && localMap.has(cloudOrd.id)) {
+          mergedMap.set(cloudOrd.id, localMap.get(cloudOrd.id)!);
+        } else {
+          mergedMap.set(cloudOrd.id, cloudOrd);
+        }
+      }
+      // Mantener órdenes nuevas locales aún no confirmadas en MySQL
+      for (const localOrd of localList) {
+        if (!mergedMap.has(localOrd.id) && dirtySet.has(localOrd.id)) {
+          mergedMap.set(localOrd.id, localOrd);
+        }
+      }
+
+      const merged = Array.from(mergedMap.values());
+      saveMontajes(merged);
+      return merged;
     }
   } catch (err) {
     console.warn("[MySQL Sync Montajes] Usando caché local:", err);
@@ -716,15 +779,49 @@ export async function fetchMontajesFromMySQL(): Promise<OrdenMontajeReal[]> {
 
 export function addMontaje(newOrden: OrdenMontajeReal): OrdenMontajeReal[] {
   const current = getStoredMontajes();
-  const updated = [newOrden, ...current];
+  const updated = [newOrden, ...current.filter((m) => m.id !== newOrden.id)];
   saveMontajes(updated);
+  markDirtyMontajeId(newOrden.id);
 
   if (typeof window !== "undefined") {
     fetch("/api/db", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "ADD_MONTAJE", orden: newOrden }),
-    }).catch((err) => console.error("[MySQL Error Add Montaje]", err));
+    })
+      .then((res) => {
+        if (res.ok) clearDirtyMontajeIds([newOrden.id]);
+      })
+      .catch((err) => console.error("[MySQL Error Add Montaje]", err));
+  }
+
+  return updated;
+}
+
+export async function addMontajeAsync(newOrden: OrdenMontajeReal): Promise<OrdenMontajeReal[]> {
+  const current = getStoredMontajes();
+  const updated = [newOrden, ...current.filter((m) => m.id !== newOrden.id)];
+  saveMontajes(updated);
+  markDirtyMontajeId(newOrden.id);
+
+  if (typeof window !== "undefined") {
+    try {
+      const res = await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "ADD_MONTAJE", orden: newOrden }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.ok) {
+        clearDirtyMontajeIds([newOrden.id]);
+        if (Array.isArray(json.data) && json.data.length > 0) {
+          saveMontajes(json.data);
+          return json.data;
+        }
+      }
+    } catch (err) {
+      console.error("[MySQL Error Add Montaje]", err);
+    }
   }
 
   return updated;
@@ -734,13 +831,18 @@ export function updateMontajeTecnico(id: string, tecnico: string): OrdenMontajeR
   const current = getStoredMontajes();
   const updated = current.map((ord) => (ord.id === id ? { ...ord, tecnico: tecnico as any } : ord));
   saveMontajes(updated);
+  markDirtyMontajeId(id);
 
   if (typeof window !== "undefined") {
     fetch("/api/db", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "UPDATE_MONTAJE_TECNICO", id, tecnico }),
-    }).catch((err) => console.error("[MySQL Error Update Montaje Tecnico]", err));
+    })
+      .then((res) => {
+        if (res.ok) clearDirtyMontajeIds([id]);
+      })
+      .catch((err) => console.error("[MySQL Error Update Montaje Tecnico]", err));
   }
 
   return updated;
@@ -752,15 +854,23 @@ export function updateMontajeStage(
   progreso: number
 ): OrdenMontajeReal[] {
   const current = getStoredMontajes();
-  const updated = current.map((ord) => (ord.id === id ? { ...ord, etapa, progreso } : ord));
+  const nextEstado: OrdenMontajeReal["estado"] = etapa === "LISTO_ENTREGA" ? "Rev. Cerrado" : "En Proceso";
+  const updated: OrdenMontajeReal[] = current.map((ord): OrdenMontajeReal =>
+    ord.id === id ? { ...ord, etapa, progreso, estado: ord.estado === "Entregado" ? "Entregado" : nextEstado } : ord
+  );
   saveMontajes(updated);
+  markDirtyMontajeId(id);
 
   if (typeof window !== "undefined") {
     fetch("/api/db", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "UPDATE_MONTAJE_STAGE", id, etapa, progreso }),
-    }).catch((err) => console.error("[MySQL Error Update Montaje Stage]", err));
+    })
+      .then((res) => {
+        if (res.ok) clearDirtyMontajeIds([id]);
+      })
+      .catch((err) => console.error("[MySQL Error Update Montaje Stage]", err));
   }
 
   return updated;
@@ -783,13 +893,18 @@ export function updateMontajeEstado(
       : ord
   );
   saveMontajes(updated);
+  markDirtyMontajeId(id);
 
   if (typeof window !== "undefined") {
     fetch("/api/db", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "UPDATE_MONTAJE_ESTADO", id, estado }),
-    }).catch((err) => console.error("[MySQL Error Update Montaje Estado]", err));
+    })
+      .then((res) => {
+        if (res.ok) clearDirtyMontajeIds([id]);
+      })
+      .catch((err) => console.error("[MySQL Error Update Montaje Estado]", err));
   }
 
   return updated;
@@ -797,6 +912,7 @@ export function updateMontajeEstado(
 
 export function resetMontajes(): OrdenMontajeReal[] {
   if (typeof window !== "undefined") {
+    clearDirtyMontajeIds();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MONTAJES_REALES));
     fetch("/api/db", {
       method: "POST",
@@ -805,4 +921,445 @@ export function resetMontajes(): OrdenMontajeReal[] {
     }).catch((err) => console.error("[MySQL Error Reset Montajes]", err));
   }
   return INITIAL_MONTAJES_REALES;
+}
+
+export async function syncMontajesToCloud(
+  currentList?: OrdenMontajeReal[]
+): Promise<{ data: OrdenMontajeReal[]; totalSubidos: number }> {
+  const localList = currentList && currentList.length > 0 ? currentList : getStoredMontajes();
+  const dirtyIds = new Set(getDirtyMontajeIds());
+
+  // 1. Consultar estado actual en la nube para detectar faltantes o cambios pendientes
+  const getRes = await fetch("/api/db?module=montajes", { cache: "no-store" });
+  const getJson = await getRes.json().catch(() => null);
+  const cloudList: OrdenMontajeReal[] =
+    getRes.ok && getJson?.ok && Array.isArray(getJson.data) ? getJson.data : [];
+  const cloudIds = new Set(cloudList.map((m) => m.id));
+
+  // Subir órdenes nuevas locales, órdenes modificadas (dirty) o todas si la nube aún no tiene registros
+  const toUpload =
+    cloudList.length === 0
+      ? localList
+      : localList.filter((m) => dirtyIds.has(m.id) || !cloudIds.has(m.id));
+
+  if (toUpload.length > 0) {
+    const postRes = await fetch("/api/db", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "SYNC_ALL_MONTAJES_TO_MYSQL",
+        ordenes: toUpload,
+      }),
+    });
+    const postJson = await postRes.json().catch(() => null);
+    if (!postRes.ok || !postJson?.ok) {
+      throw new Error(postJson?.error || "Error al guardar órdenes de montaje en MySQL.");
+    }
+    clearDirtyMontajeIds();
+    const syncedData: OrdenMontajeReal[] = Array.isArray(postJson.data) && postJson.data.length > 0
+      ? postJson.data
+      : localList;
+    saveMontajes(syncedData);
+    return { data: syncedData, totalSubidos: toUpload.length };
+  }
+
+  // Sin cambios locales pendientes: consolidar con lo último descargado desde MySQL
+  clearDirtyMontajeIds();
+  if (cloudList.length > 0) {
+    saveMontajes(cloudList);
+    return { data: cloudList, totalSubidos: 0 };
+  }
+
+  return { data: localList, totalSubidos: 0 };
+}
+
+export interface CambioEstadoMontaje {
+  id: string;
+  nro_reg: string;
+  cliente: string;
+  accion: "ACTUALIZADA" | "NUEVA";
+  estadoAnterior?: string;
+  estadoNuevo: string;
+  tecnico?: string;
+}
+
+export interface ResultadoCargaMontajesCSV {
+  updatedList: OrdenMontajeReal[];
+  totalFilasLeidas: number;
+  totalActualizadas: number;
+  totalNuevas: number;
+  totalSinCambios: number;
+  cambios: CambioEstadoMontaje[];
+  toSyncToCloud: OrdenMontajeReal[];
+}
+
+function parseMontajesCSVText(csvText: string): string[][] {
+  const cleanText = csvText.replace(/^\uFEFF/, "");
+  const firstLineEnd = cleanText.indexOf("\n");
+  const firstLine = firstLineEnd !== -1 ? cleanText.slice(0, firstLineEnd) : cleanText;
+  const semicolonCount = (firstLine.match(/;/g) || []).length;
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const delimiter = semicolonCount > commaCount ? ";" : ",";
+
+  const rows: string[][] = [];
+  let currentRow: string[] = [];
+  let currentCell = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < cleanText.length; i++) {
+    const char = cleanText[i];
+    const nextChar = cleanText[i + 1];
+
+    if (inQuotes) {
+      if (char === '"' && nextChar === '"') {
+        currentCell += '"';
+        i++;
+      } else if (char === '"') {
+        inQuotes = false;
+      } else {
+        currentCell += char;
+      }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === delimiter) {
+      currentRow.push(currentCell.trim());
+      currentCell = "";
+    } else if (char === "\r" && nextChar === "\n") {
+      currentRow.push(currentCell.trim());
+      if (currentRow.some((cell) => cell !== "")) rows.push(currentRow);
+      currentRow = [];
+      currentCell = "";
+      i++;
+    } else if (char === "\n" || char === "\r") {
+      currentRow.push(currentCell.trim());
+      if (currentRow.some((cell) => cell !== "")) rows.push(currentRow);
+      currentRow = [];
+      currentCell = "";
+    } else {
+      currentCell += char;
+    }
+  }
+
+  if (currentCell !== "" || currentRow.length > 0) {
+    currentRow.push(currentCell.trim());
+    if (currentRow.some((cell) => cell !== "")) rows.push(currentRow);
+  }
+
+  return rows;
+}
+
+function normalizeMontajeHeader(raw: string): string {
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function inferCategoriaComponente(desc: string, tipoServicio: "Montaje" | "Expansion"): ComponenteMontaje["categoria"] {
+  const up = desc.toUpperCase();
+  if (up.includes("NOTEBOOK") || up.startsWith("NB ")) return "NOTEBOOK";
+  if (up.includes("CPU") || up.includes("RYZEN") || up.includes("CORE I") || up.includes("ULTRA ")) return "PROCESADOR";
+  if (up.includes("MB ") || up.includes("PLACA") || up.includes("MOTHER")) return "PLACA_MADRE";
+  if (up.includes("VGA") || up.includes("RTX") || up.includes("RADEON") || up.includes("GTX")) return "GPU";
+  if (up.includes("MEM ") || up.includes("DDR4") || up.includes("DDR5") || up.includes("SODIMM") || up.includes("RAM")) return "RAM";
+  if (up.includes("SSD") || up.includes("NVME") || up.includes("HDD") || up.includes("M.2")) return "ALMACENAMIENTO";
+  if (up.includes("FUENTE") || up.includes("PSU")) return "FUENTE";
+  if (up.includes("GABINETE") || up.includes("CASE")) return "GABINETE";
+  if (up.includes("COOLER") || up.includes("LIQUID") || up.includes("FAN")) return "REFRIGERACION";
+  return tipoServicio === "Expansion" ? "NOTEBOOK" : "OTROS";
+}
+
+function normalizeEstadoMontaje(raw: string): OrdenMontajeReal["estado"] {
+  const low = raw.trim().toLowerCase();
+  if (low.includes("entregad") || low.includes("retirad")) return "Entregado";
+  if (low.includes("cerrad") || low.includes("terminad") || low.includes("finalizad") || low.includes("listo")) {
+    return "Rev. Cerrado";
+  }
+  if (low.includes("pendiente") || low.includes("asignacion")) return "Pendiente";
+  return "En Proceso";
+}
+
+function normalizeTecnicoMontaje(raw: string): OrdenMontajeReal["tecnico"] {
+  const low = raw.trim().toLowerCase();
+  if (low.includes("nicolas") || low.includes("solis")) return "Nicolas Solis";
+  if (low.includes("magaly") || low.includes("yegros")) return "Magaly Yegros";
+  if (low.includes("juan") || low.includes("ronnebeck")) return "Juan Ronnebeck";
+  return "Sin Asignar";
+}
+
+function normalizeCanalMontaje(raw: string): OrdenMontajeReal["canal"] {
+  const low = raw.trim().toLowerCase();
+  if (low.includes("web") || low.includes("ecom")) return "Ecommerce - Web";
+  if (low.includes("empres") || low.includes("corp")) return "Empresas / Coorporativo";
+  return "Tienda";
+}
+
+export function procesarActualizacionMontajesCSV(
+  csvText: string,
+  currentList?: OrdenMontajeReal[]
+): ResultadoCargaMontajesCSV {
+  const baseList = currentList ? [...currentList] : [...getStoredMontajes()];
+  const rows = parseMontajesCSVText(csvText);
+
+  if (rows.length < 2) {
+    return {
+      updatedList: baseList,
+      totalFilasLeidas: 0,
+      totalActualizadas: 0,
+      totalNuevas: 0,
+      totalSinCambios: 0,
+      cambios: [],
+      toSyncToCloud: [],
+    };
+  }
+
+  const headers = rows[0].map(normalizeMontajeHeader);
+  const findCol = (aliases: string[]) =>
+    headers.findIndex((h) => aliases.some((a) => h === a || h.includes(a)));
+
+  const idxReg = findCol(["nroreg", "registro", "reginterno", "nroorden", "orden", "id"]);
+  const idxIdExplicit = findCol(["idorden", "idmontaje"]);
+  const idxCliente = findCol(["cliente", "razonsocial", "nombrecliente"]);
+  const idxFechaFact = findCol(["fechafacturacion", "facturacion", "fechafact"]);
+  const idxFechaMontaje = findCol(["fechamontaje", "fechaingreso", "fecha"]);
+  const idxVendedor = findCol(["vendedor", "asesor", "comercial"]);
+  const idxCanal = findCol(["canal", "origen"]);
+  const idxEstado = findCol(["estado", "status", "situacion"]);
+  const idxTipo = findCol(["tiposervicio", "modalidad", "servicio", "tipo"]);
+  const idxCantidad = findCol(["cantidadequipos", "equipos", "cantidad"]);
+  const idxTecnico = findCol(["tecnicoasignado", "tecnico", "responsable"]);
+  const idxObs = findCol(["observaciones", "observacion", "detalle", "mensaje"]);
+  const idxSku = findCol(["sku", "codigoproducto", "codigo"]);
+  const idxDesc = findCol(["descripcion", "componente", "hardware", "producto", "equipo"]);
+  const idxSerial = findCol(["seriales", "serial", "nroserie", "serie"]);
+
+  // Agrupar filas CSV por registro u orden
+  const grouped = new Map<
+    string,
+    {
+      explicitId?: string;
+      nro_reg: string;
+      cliente: string;
+      fecha_facturacion: string;
+      fecha_montaje: string;
+      vendedor: string;
+      canalRaw: string;
+      estadoRaw: string;
+      tipoRaw: string;
+      cantidadRaw: string;
+      tecnicoRaw: string;
+      observaciones: string;
+      componentes: ComponenteMontaje[];
+    }
+  >();
+
+  let totalFilasLeidas = 0;
+
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const regVal = (idxReg >= 0 ? r[idxReg] : idxIdExplicit >= 0 ? r[idxIdExplicit] : "").trim();
+    const idExp = idxIdExplicit >= 0 ? (r[idxIdExplicit] || "").trim() : "";
+    const clienteVal = idxCliente >= 0 ? (r[idxCliente] || "").trim() : "";
+
+    if (!regVal && !idExp && !clienteVal) continue;
+    totalFilasLeidas++;
+
+    const cleanNum = (idExp || regVal).replace(/[^0-9A-Za-z-]/g, "") || `ROW${i}`;
+    const groupKey = idExp || cleanNum;
+
+    const descVal = idxDesc >= 0 ? (r[idxDesc] || "").trim() : "";
+    const skuVal = idxSku >= 0 ? (r[idxSku] || "").trim() : "";
+    const serialVal = idxSerial >= 0 ? (r[idxSerial] || "").trim() : "";
+
+    if (!grouped.has(groupKey)) {
+      grouped.set(groupKey, {
+        explicitId: idExp || undefined,
+        nro_reg: regVal || cleanNum,
+        cliente: clienteVal || "Cliente NISSEI",
+        fecha_facturacion: idxFechaFact >= 0 ? (r[idxFechaFact] || "").trim() : "",
+        fecha_montaje: idxFechaMontaje >= 0 ? (r[idxFechaMontaje] || "").trim() : "",
+        vendedor: idxVendedor >= 0 ? (r[idxVendedor] || "").trim() : "",
+        canalRaw: idxCanal >= 0 ? (r[idxCanal] || "").trim() : "",
+        estadoRaw: idxEstado >= 0 ? (r[idxEstado] || "").trim() : "",
+        tipoRaw: idxTipo >= 0 ? (r[idxTipo] || "").trim() : "",
+        cantidadRaw: idxCantidad >= 0 ? (r[idxCantidad] || "").trim() : "",
+        tecnicoRaw: idxTecnico >= 0 ? (r[idxTecnico] || "").trim() : "",
+        observaciones: idxObs >= 0 ? (r[idxObs] || "").trim() : "",
+        componentes: [],
+      });
+    }
+
+    const entry = grouped.get(groupKey)!;
+    if (descVal) {
+      const inferredTipo: "Montaje" | "Expansion" = entry.tipoRaw.toLowerCase().includes("expan")
+        ? "Expansion"
+        : "Montaje";
+      entry.componentes.push({
+        sku: skuVal || `SKU-${cleanNum}`,
+        descripcion: descVal,
+        seriales: serialVal || "Sin serial visible",
+        categoria: inferCategoriaComponente(descVal, inferredTipo),
+      });
+    }
+  }
+
+  const byId = new Map<string, OrdenMontajeReal>(baseList.map((m) => [m.id, m]));
+  const byCleanReg = new Map<string, OrdenMontajeReal>();
+  baseList.forEach((m) => {
+    const cr = (m.nro_reg || "").replace(/\D/g, "");
+    if (cr) byCleanReg.set(cr, m);
+  });
+
+  const cambios: CambioEstadoMontaje[] = [];
+  const updatedMap = new Map<string, OrdenMontajeReal>(baseList.map((m) => [m.id, m]));
+  const toSyncToCloud: OrdenMontajeReal[] = [];
+  let totalActualizadas = 0;
+  let totalNuevas = 0;
+  let totalSinCambios = 0;
+
+  const todayDisplay = new Date().toLocaleDateString("es-PY", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+
+  for (const [, g] of grouped.entries()) {
+    const cleanDigits = (g.nro_reg || "").replace(/\D/g, "");
+    const tipoServicio: "Montaje" | "Expansion" = g.tipoRaw.toLowerCase().includes("expan")
+      ? "Expansion"
+      : "Montaje";
+    const generatedId =
+      g.explicitId || `${tipoServicio === "Expansion" ? "EXP" : "MNT"}-${cleanDigits || g.nro_reg}`;
+
+    const existing =
+      byId.get(generatedId) ||
+      (cleanDigits ? byCleanReg.get(cleanDigits) : undefined);
+
+    if (existing) {
+      const newEstado = g.estadoRaw ? normalizeEstadoMontaje(g.estadoRaw) : existing.estado;
+      const newTecnico = g.tecnicoRaw ? normalizeTecnicoMontaje(g.tecnicoRaw) : existing.tecnico;
+      const isDelivered = newEstado === "Entregado";
+      const isClosed = newEstado === "Rev. Cerrado";
+      const nextEtapa: OrdenMontajeReal["etapa"] =
+        isDelivered || isClosed ? "LISTO_ENTREGA" : existing.etapa;
+      const nextProgreso = isDelivered || isClosed ? 100 : existing.progreso;
+
+      const changedEstado = newEstado !== existing.estado;
+      const changedTecnico = Boolean(g.tecnicoRaw && newTecnico !== existing.tecnico && newTecnico !== "Sin Asignar");
+      const changedComps = g.componentes.length > existing.componentes.length;
+      const changedObs = Boolean(g.observaciones && g.observaciones !== existing.observaciones);
+
+      if (changedEstado || changedTecnico || changedComps || changedObs) {
+        const mergedOrder: OrdenMontajeReal = {
+          ...existing,
+          cliente: g.cliente && g.cliente !== "Cliente NISSEI" ? g.cliente : existing.cliente,
+          vendedor: g.vendedor || existing.vendedor,
+          canal: g.canalRaw ? normalizeCanalMontaje(g.canalRaw) : existing.canal,
+          estado: newEstado,
+          tecnico: changedTecnico ? newTecnico : existing.tecnico,
+          etapa: nextEtapa,
+          progreso: nextProgreso,
+          observaciones: g.observaciones || existing.observaciones,
+          componentes: changedComps ? g.componentes : existing.componentes,
+        };
+        updatedMap.set(existing.id, mergedOrder);
+        toSyncToCloud.push(mergedOrder);
+        totalActualizadas++;
+        cambios.push({
+          id: existing.id,
+          nro_reg: existing.nro_reg,
+          cliente: mergedOrder.cliente,
+          accion: "ACTUALIZADA",
+          estadoAnterior: existing.estado,
+          estadoNuevo: mergedOrder.estado,
+          tecnico: mergedOrder.tecnico,
+        });
+      } else {
+        totalSinCambios++;
+      }
+    } else {
+      const estadoNuevo = g.estadoRaw ? normalizeEstadoMontaje(g.estadoRaw) : "En Proceso";
+      const tecnicoNuevo = g.tecnicoRaw ? normalizeTecnicoMontaje(g.tecnicoRaw) : "Sin Asignar";
+      const isDone = estadoNuevo === "Entregado" || estadoNuevo === "Rev. Cerrado";
+      const newOrder: OrdenMontajeReal = {
+        id: generatedId,
+        nro_reg: g.nro_reg,
+        cliente: g.cliente,
+        fecha_facturacion: g.fecha_facturacion || todayDisplay,
+        fecha_montaje: g.fecha_montaje || todayDisplay,
+        vendedor: g.vendedor || "Salón CDE",
+        canal: g.canalRaw ? normalizeCanalMontaje(g.canalRaw) : "Tienda",
+        estado: estadoNuevo,
+        tipo_servicio: tipoServicio,
+        cantidadEquipos: Math.max(1, parseInt(g.cantidadRaw, 10) || 1),
+        tecnico: tecnicoNuevo,
+        etapa: isDone ? "LISTO_ENTREGA" : "ARMADO_MECANICO",
+        progreso: isDone ? 100 : 35,
+        prioridad: "NORMAL",
+        consumoEstimado: tipoServicio === "Montaje" ? "450W" : undefined,
+        observaciones: g.observaciones || `Orden ${tipoServicio} cargada desde archivo CSV.`,
+        componentes: g.componentes,
+      };
+      updatedMap.set(newOrder.id, newOrder);
+      toSyncToCloud.push(newOrder);
+      totalNuevas++;
+      cambios.push({
+        id: newOrder.id,
+        nro_reg: newOrder.nro_reg,
+        cliente: newOrder.cliente,
+        accion: "NUEVA",
+        estadoNuevo: newOrder.estado,
+        tecnico: newOrder.tecnico,
+      });
+    }
+  }
+
+  return {
+    updatedList: Array.from(updatedMap.values()),
+    totalFilasLeidas,
+    totalActualizadas,
+    totalNuevas,
+    totalSinCambios,
+    cambios,
+    toSyncToCloud,
+  };
+}
+
+export async function sincronizarMontajesCsvOnline(
+  csvText: string,
+  currentList?: OrdenMontajeReal[]
+): Promise<ResultadoCargaMontajesCSV> {
+  const base = currentList && currentList.length > 0 ? currentList : getStoredMontajes();
+  const resultado = procesarActualizacionMontajesCSV(csvText, base);
+
+  if (resultado.totalFilasLeidas === 0) {
+    throw new Error(
+      "No se detectaron órdenes válidas en el archivo CSV. Verifique que contenga columnas de Registro / Cliente."
+    );
+  }
+
+  saveMontajes(resultado.updatedList);
+
+  if (resultado.toSyncToCloud.length > 0 && typeof window !== "undefined") {
+    const resp = await fetch("/api/db", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "BULK_UPDATE_MONTAJES_CSV",
+        ordenes: resultado.toSyncToCloud,
+      }),
+    });
+    const json = await resp.json().catch(() => null);
+    if (!resp.ok || !json?.ok) {
+      throw new Error(json?.error || "Error al subir el CSV de montajes a MySQL en la nube.");
+    }
+    clearDirtyMontajeIds();
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      saveMontajes(json.data);
+      return { ...resultado, updatedList: json.data };
+    }
+  }
+
+  return resultado;
 }

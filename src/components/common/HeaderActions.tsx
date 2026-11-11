@@ -10,6 +10,9 @@ interface HeaderActionsProps {
   logoutHref?: string;
   activeModule?: "recepcion" | "tecnicos" | "reparaciones" | "montajes";
   hideBadge?: boolean;
+  onSyncMysql?: () => void;
+  isSyncingMysql?: boolean;
+  extraActions?: React.ReactNode;
 }
 
 export function HeaderActions({
@@ -19,6 +22,9 @@ export function HeaderActions({
   newActionHref,
   activeModule,
   hideBadge,
+  onSyncMysql,
+  isSyncingMysql,
+  extraActions,
 }: HeaderActionsProps) {
   return (
     <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-6 border-b border-zinc-200">
@@ -47,8 +53,13 @@ export function HeaderActions({
         </p>
       </div>
 
-      <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
-        <AuthBadge requiredModule={activeModule} />
+      <div className="flex items-center gap-2.5 flex-wrap">
+        {extraActions}
+        <AuthBadge
+          requiredModule={activeModule}
+          onSyncMysql={onSyncMysql}
+          isSyncingMysql={isSyncingMysql}
+        />
         
         {newActionLabel && newActionHref && (
           <Link

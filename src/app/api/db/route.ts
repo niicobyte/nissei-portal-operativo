@@ -575,6 +575,70 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
+    // 10b. Sincronizar y guardar masivamente órdenes de Montaje / CSV hacia MySQL en la nube
+    if (action === "SYNC_ALL_MONTAJES_TO_MYSQL" || action === "BULK_UPDATE_MONTAJES_CSV") {
+      const { ordenes = [] } = body;
+      let totalSincronizados = 0;
+
+      if (Array.isArray(ordenes) && ordenes.length > 0) {
+        for (const orden of ordenes) {
+          if (!orden || !orden.id) continue;
+          await pool.query(
+            `INSERT INTO ordenes_montaje
+             (id, nro_reg, cliente, fecha_facturacion, fecha_montaje, vendedor, canal, estado,
+              tipo_servicio, cantidad_equipos, tecnico, etapa, progreso, prioridad,
+              consumo_estimado, observaciones, componentes_json)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+               nro_reg = VALUES(nro_reg),
+               cliente = VALUES(cliente),
+               fecha_facturacion = VALUES(fecha_facturacion),
+               fecha_montaje = VALUES(fecha_montaje),
+               vendedor = VALUES(vendedor),
+               canal = VALUES(canal),
+               estado = VALUES(estado),
+               tipo_servicio = VALUES(tipo_servicio),
+               cantidad_equipos = VALUES(cantidad_equipos),
+               tecnico = VALUES(tecnico),
+               etapa = VALUES(etapa),
+               progreso = VALUES(progreso),
+               prioridad = VALUES(prioridad),
+               consumo_estimado = VALUES(consumo_estimado),
+               observaciones = VALUES(observaciones),
+               componentes_json = VALUES(componentes_json)`,
+            [
+              String(orden.id),
+              String(orden.nro_reg || ""),
+              String(orden.cliente || "Cliente"),
+              String(orden.fecha_facturacion || ""),
+              String(orden.fecha_montaje || ""),
+              String(orden.vendedor || "Salón CDE"),
+              String(orden.canal || "Tienda"),
+              String(orden.estado || "En Proceso"),
+              String(orden.tipo_servicio || "Montaje"),
+              Number(orden.cantidadEquipos || 1),
+              String(orden.tecnico || "Sin Asignar"),
+              String(orden.etapa || "PENDIENTE_PIEZAS"),
+              Number(orden.progreso ?? 15),
+              String(orden.prioridad || "NORMAL"),
+              String(orden.consumoEstimado || "450W"),
+              String(orden.observaciones || ""),
+              JSON.stringify(Array.isArray(orden.componentes) ? orden.componentes : []),
+            ]
+          );
+          totalSincronizados++;
+        }
+      }
+
+      const data = await dbGetMontajes();
+      return NextResponse.json({
+        ok: true,
+        data,
+        totalSincronizados,
+        message: `Sincronización de montajes con MySQL completada (${totalSincronizados} registro(s) guardados).`,
+      });
+    }
+
     // 11. Alternar confirmación de llegada en Depósito Danesa (CDE / ASU)
     if (action === "TOGGLE_CDE_CHECKIN") {
       const { idOrden, idOrdenAsu, idOrdenCde, recibidoEnDeposito, fechaRecibido } = body;
