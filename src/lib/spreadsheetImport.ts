@@ -111,10 +111,10 @@ function hasHeaderCandidate(rows: SpreadsheetRows): boolean {
 }
 
 /**
- * Lee un archivo CSV, XLSX o XLS (HTML/XML) y lo normaliza a texto CSV estándar
- * para que todos los importadores SATI funcionen de forma uniforme.
+ * Lee un archivo CSV, XLSX o XLS (HTML/XML) y devuelve un arreglo de textos CSV estándar
+ * (si un libro Excel tiene múltiples hojas SATI válidas, por ejemplo ASU + CDE, lee todas).
  */
-export async function readSpreadsheetAsCsvText(file: File): Promise<string> {
+export async function readSpreadsheetAllTexts(file: File): Promise<string[]> {
   const ext = file.name.split(".").pop()?.toLowerCase() || "";
   const headerBytes = new Uint8Array(await file.slice(0, 8).arrayBuffer());
   const isZipXlsx = headerBytes[0] === 0x50 && headerBytes[1] === 0x4b;
@@ -126,32 +126,74 @@ export async function readSpreadsheetAsCsvText(file: File): Promise<string> {
 
   if (isBinaryLegacyXls) {
     throw new Error(
-      "El archivo .xls está en formato binario antiguo (Excel 97-2003). Abrilo en Excel y guardalo como 'Libro de Excel (.xlsx)' o 'CSV (.csv)' para importarlo."
+      `El archivo "${file.name}" está en formato binario antiguo (.xls Excel 97-2003). Abrilo en Excel y guardalo como 'Libro de Excel (.xlsx)' o 'CSV (.csv)' para importarlo.`
     );
   }
 
   if (ext === "xlsx" || ext === "xlsm" || isZipXlsx) {
     const sheets = await readXlsxFile(file);
     if (!sheets || sheets.length === 0) {
-      throw new Error("El archivo Excel no contiene hojas con datos.");
+      throw new Error(`El archivo Excel "${file.name}" no contiene hojas con datos.`);
     }
-    const matchingSheet = sheets.find((s) => hasHeaderCandidate(s.data));
-    const largestSheet = [...sheets].sort((a, b) => b.data.length - a.data.length)[0];
-    const targetSheet = matchingSheet || largestSheet;
-    const csvText = rowsToCsvText(targetSheet.data);
-    if (!csvText.trim()) {
-      throw new Error("La hoja seleccionada del archivo Excel está vacía.");
+
+    const candidateSheets = sheets.filter((s) => hasHeaderCandidate(s.data));
+    const sheetsToRead =
+      candidateSheets.length > 0
+        ? candidateSheets
+        : [[...sheets].sort((a, b) => b.data.length - a.data.length)[0]];
+
+    const texts = sheetsToRead
+      .map((s) => rowsToCsvText(s.data))
+      .filter((t) => t.trim().length > 0);
+
+    if (texts.length === 0) {
+      throw new Error(`Las hojas seleccionadas de "${file.name}" están vacías.`);
     }
-    return csvText;
+    return texts;
   }
 
   const rawText = await file.text();
   if (ext === "xls" || rawText.trimStart().startsWith("<")) {
     const converted = parseHtmlOrXmlSpreadsheetText(rawText);
     if (converted !== null) {
-      return converted;
+      return [converted];
     }
   }
 
-  return rawText;
+  return [rawText];
+}
+
+/**
+ * Lee un archivo CSV, XLSX o XLS (HTML/XML) y lo normaliza a texto CSV estándar
+ * para que todos los importadores SATI funcionen de forma uniforme.
+ */
+export async function readSpreadsheetAsCsvText(file: File): Promise<string> {
+  const texts = await readSpreadsheetAllTexts(file);
+  return texts[0] || "";
+}
+
+/**
+ * Lee uno o múltiples archivos CSV/Excel seleccionados simultáneamente y devuelve
+ * todas sus hojas/archivos convertidos a textos CSV listos para consolidar.
+ */
+export async function readMultipleSpreadsheetsAsCsvTexts(
+  files: FileList | File[]
+): Promise<{ texts: string[]; fileNamesLabel: string; fileCount: number }> {
+  const list = Array.from(files);
+  if (list.length === 0) {
+    return { texts: [], fileNamesLabel: "", fileCount: 0 };
+  }
+
+  const nested = await Promise.all(list.map((f) => readSpreadsheetAllTexts(f)));
+  const texts = nested.flat();
+  const fileNamesLabel =
+    list.length <= 2
+      ? list.map((f) => f.name).join(" + ")
+      : `${list[0].name} + ${list.length - 1} archivo(s) más`;
+
+  return {
+    texts,
+    fileNamesLabel,
+    fileCount: list.length,
+  };
 }

@@ -4,6 +4,7 @@ import {
   createEmptyDepurationStats,
   evaluateRawSatiRow,
   isSameNormalizedText,
+  mergeDepurationStats,
   mergeSatiDuplicateFields,
   normalizeSatiRowFields,
   SATI_MIN_ID_CDE,
@@ -431,6 +432,74 @@ export function classifyAndParseSatiCsv(csvContent: string): SatiCsvClassificati
   };
 }
 
+/**
+ * Consolida y depura múltiples archivos u hojas Excel/CSV SATI cargados a la vez
+ * (por ejemplo, ASU.xlsx + CDE.xlsx en una sola selección), unificando estadísticas
+ * y fusionando posibles órdenes repetidas entre archivos.
+ */
+export function classifyAndParseMultiSatiCsv(csvContents: string[]): SatiCsvClassification {
+  if (csvContents.length === 0) {
+    return {
+      asuRows: [],
+      cdeRows: [],
+      totalRows: 0,
+      depurationStats: createEmptyDepurationStats(),
+    };
+  }
+  if (csvContents.length === 1) {
+    return classifyAndParseSatiCsv(csvContents[0]);
+  }
+
+  const asuMap = new Map<string, RecepcionCdeTicket>();
+  const cdeMap = new Map<string, RecepcionCdeTicket>();
+  let stats = createEmptyDepurationStats();
+
+  for (const content of csvContents) {
+    if (!content || !content.trim()) continue;
+    const part = classifyAndParseSatiCsv(content);
+    stats = mergeDepurationStats(stats, part.depurationStats);
+
+    for (const row of part.asuRows) {
+      const prev = asuMap.get(row.idOrden);
+      if (prev) {
+        const merged = mergeSatiDuplicateFields(prev, row);
+        merged.diasResolucion = calcularDiasResolucion(merged.fechaIngreso, merged.fechaEntregada);
+        merged.esDanesa = isTicketDanesa(merged.cliente);
+        merged.origen = 'ASU';
+        asuMap.set(row.idOrden, merged);
+        stats.duplicadosFusionados++;
+      } else {
+        asuMap.set(row.idOrden, row);
+      }
+    }
+
+    for (const row of part.cdeRows) {
+      const prev = cdeMap.get(row.idOrden);
+      if (prev) {
+        const merged = mergeSatiDuplicateFields(prev, row);
+        merged.diasResolucion = calcularDiasResolucion(merged.fechaIngreso, merged.fechaEntregada);
+        merged.esDanesa = isTicketDanesa(merged.cliente);
+        merged.origen = 'CDE';
+        cdeMap.set(row.idOrden, merged);
+        stats.duplicadosFusionados++;
+      } else {
+        cdeMap.set(row.idOrden, row);
+      }
+    }
+  }
+
+  const asuRows = Array.from(asuMap.values());
+  const cdeRows = Array.from(cdeMap.values());
+  stats.totalValidas = asuRows.length + cdeRows.length;
+
+  return {
+    asuRows,
+    cdeRows,
+    totalRows: stats.totalValidas,
+    depurationStats: stats,
+  };
+}
+
 export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
   return classifyAndParseSatiCsv(csvContent).cdeRows;
 }
@@ -770,11 +839,12 @@ export interface ResultadoCargaCdeCSV {
 }
 
 export function procesarActualizacionCdeCSV(
-  csvContent: string,
+  csvContent: string | SatiCsvClassification,
   currentTickets: RecepcionCdeTicket[],
   options?: { skipBackgroundSync?: boolean }
 ): ResultadoCargaCdeCSV {
-  const classified = classifyAndParseSatiCsv(csvContent);
+  const classified =
+    typeof csvContent === 'string' ? classifyAndParseSatiCsv(csvContent) : csvContent;
   const incoming = classified.cdeRows;
   const currentMap = new Map<string, RecepcionCdeTicket>();
   currentTickets
@@ -959,7 +1029,7 @@ export function procesarActualizacionCdeCSV(
  * Asegura que todos los técnicos y encargados vean los mismos datos en tiempo real.
  */
 export async function sincronizarCdeCsvOnline(
-  csvText: string,
+  csvText: string | SatiCsvClassification,
   currentTickets?: RecepcionCdeTicket[]
 ): Promise<ResultadoCargaCdeCSV> {
   let base = currentTickets && currentTickets.length > 0

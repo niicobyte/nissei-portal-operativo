@@ -126,6 +126,22 @@ export function createEmptyDepurationStats(): SatiDepurationStats {
   };
 }
 
+export function mergeDepurationStats(
+  a: SatiDepurationStats,
+  b: SatiDepurationStats
+): SatiDepurationStats {
+  return {
+    totalRawFilas: a.totalRawFilas + b.totalRawFilas,
+    totalValidas: a.totalValidas + b.totalValidas,
+    descartadasHistoricasAsu: a.descartadasHistoricasAsu + b.descartadasHistoricasAsu,
+    descartadasHistoricasCde: a.descartadasHistoricasCde + b.descartadasHistoricasCde,
+    descartadasFiltroCliente: a.descartadasFiltroCliente + b.descartadasFiltroCliente,
+    descartadasParentesis: a.descartadasParentesis + b.descartadasParentesis,
+    duplicadosFusionados: a.duplicadosFusionados + b.duplicadosFusionados,
+    camposNormalizados: a.camposNormalizados + b.camposNormalizados,
+  };
+}
+
 // Cachés en memoria acotadas para procesar archivos de 32k-130k+ filas en milisegundos
 const CACHE_LIMIT = 20000;
 const clienteCache = new Map<string, string>();

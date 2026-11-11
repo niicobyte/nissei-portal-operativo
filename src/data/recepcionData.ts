@@ -8,6 +8,7 @@ import {
   normalizeSatiRowFields,
   type SatiDepurationStats,
 } from '../lib/satiRawDepurator';
+import type { SatiCsvClassification } from './recepcionCdeData';
 
 export interface RecepcionTicket {
   idOrden: string;
@@ -27752,11 +27753,48 @@ function pickBestDateCell(
  * actualiza automáticamente los estados que hayan cambiado y devuelve el resumen completo.
  */
 export function procesarActualizacionCSV(
-  csvText: string,
+  csvText: string | SatiCsvClassification,
   currentTickets?: RecepcionTicket[],
   options?: { skipBackgroundSync?: boolean }
 ): ResultadoCargaCSV {
   const baseTickets = currentTickets ? [...currentTickets] : [...getStoredTickets()];
+
+  type RawCleanAsuEntry = {
+    idOrden: string;
+    estado: string;
+    codigoProducto: string;
+    cliente: string;
+    mensaje: string;
+    fechaIngreso: string;
+    fechaEntregada?: string;
+    fechaVenta?: string;
+    tipoComponente: string;
+    marca: string;
+    modelo: string;
+    serial: string;
+  };
+  const cleanIncomingMap = new Map<string, RawCleanAsuEntry>();
+  let depurationStats = createEmptyDepurationStats();
+
+  if (typeof csvText !== 'string') {
+    depurationStats = { ...csvText.depurationStats };
+    for (const row of csvText.asuRows) {
+      cleanIncomingMap.set(row.idOrden, {
+        idOrden: row.idOrden,
+        estado: collapseSpacesTrim(row.estado) || 'En Asignacion',
+        codigoProducto: collapseSpacesTrim(row.codigoProducto),
+        cliente: row.cliente,
+        mensaje: row.mensaje,
+        fechaIngreso: row.fechaIngreso,
+        fechaEntregada: row.fechaEntregada || undefined,
+        fechaVenta: row.fechaVenta || undefined,
+        tipoComponente: row.tipoComponente || 'General',
+        marca: row.marca,
+        modelo: row.modelo,
+        serial: row.serial,
+      });
+    }
+  } else {
   const rows = parseCSVText(csvText);
 
   if (rows.length === 0) {
@@ -27862,8 +27900,6 @@ export function procesarActualizacionCSV(
   const hasExplicitHeader = headerRowIdx !== -1;
   const startRowIndex = hasExplicitHeader ? headerRowIdx + 1 : 0;
 
-  const depurationStats = createEmptyDepurationStats();
-
   if (rows.length <= startRowIndex) {
     return {
       updatedTickets: baseTickets,
@@ -27890,23 +27926,6 @@ export function procesarActualizacionCSV(
         : sampleRowLen >= 6
           ? 5
           : 1;
-
-  // Fase 1: Depuración, filtrado histórico (>= 29403), exclusión de palabras/paréntesis, normalización y deduplicación
-  type RawCleanAsuEntry = {
-    idOrden: string;
-    estado: string;
-    codigoProducto: string;
-    cliente: string;
-    mensaje: string;
-    fechaIngreso: string;
-    fechaEntregada?: string;
-    fechaVenta?: string;
-    tipoComponente: string;
-    marca: string;
-    modelo: string;
-    serial: string;
-  };
-  const cleanIncomingMap = new Map<string, RawCleanAsuEntry>();
 
   for (let r = startRowIndex; r < rows.length; r++) {
     const row = rows[r];
@@ -28037,6 +28056,7 @@ export function procesarActualizacionCSV(
   }
 
   depurationStats.totalValidas = cleanIncomingMap.size;
+  }
 
   // Mapa rápido por idOrden
   const ticketMap = new Map<string, number>();
@@ -28296,7 +28316,7 @@ export function procesarActualizacionCSV(
  * los mismos datos sin depender de estados locales divergentes.
  */
 export async function sincronizarRecepcionCsvOnline(
-  csvText: string,
+  csvText: string | SatiCsvClassification,
   currentTickets?: RecepcionTicket[]
 ): Promise<ResultadoCargaCSV> {
   let cloudBase = currentTickets && currentTickets.length > 0 ? currentTickets : getStoredTickets();

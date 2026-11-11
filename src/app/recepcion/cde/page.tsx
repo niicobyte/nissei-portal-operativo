@@ -36,7 +36,7 @@ import {
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
-import { readSpreadsheetAsCsvText, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
+import { readMultipleSpreadsheetsAsCsvTexts, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
 import {
   RecepcionCdeTicket,
   INITIAL_RECEPCION_CDE_DATA,
@@ -47,7 +47,7 @@ import {
   toggleCheckinDeposito,
   procesarActualizacionCdeCSV,
   sincronizarCdeCsvOnline,
-  classifyAndParseSatiCsv,
+  classifyAndParseMultiSatiCsv,
   isTicketDanesa,
   ResultadoCargaCdeCSV,
   CambioEstadoCde,
@@ -382,19 +382,19 @@ export default function RecepcionCdeDashboardPage() {
     }
   };
 
-  // Manejar carga de archivo CSV (detecta automáticamente órdenes de ASU, CDE o ambos) y sincronizar a MySQL
-  const handleCSVFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Manejar carga de uno o múltiples archivos CSV / Excel a la vez (ASU, CDE o ambos) y sincronizar a MySQL
+  const processUploadedFiles = async (fileList: FileList | File[]) => {
+    const selectedFiles = Array.from(fileList);
+    if (selectedFiles.length === 0) return;
 
     setIsUploadingCSV(true);
     try {
-      const text = await readSpreadsheetAsCsvText(file);
-      const parsed = classifyAndParseSatiCsv(text);
+      const { texts, fileNamesLabel } = await readMultipleSpreadsheetsAsCsvTexts(selectedFiles);
+      const parsed = classifyAndParseMultiSatiCsv(texts);
 
       if (parsed.totalRows === 0 && parsed.depurationStats.totalRawFilas === 0) {
         throw new Error(
-          "No se detectaron órdenes válidas en el archivo. Verifique que sea un archivo .csv o Excel (.xlsx) exportado de SATI con columnas de orden."
+          "No se detectaron órdenes válidas en los archivos seleccionados. Verifique que sean CSV o Excel (.xlsx) exportados de SATI con columnas de orden."
         );
       }
 
@@ -413,7 +413,7 @@ export default function RecepcionCdeDashboardPage() {
           totalEnTransitoNuevos: 0,
           cambios: [],
           depurationStats: parsed.depurationStats,
-          fileName: file.name,
+          fileName: fileNamesLabel,
           timestamp: nowStr,
           origenLabel: "SATI Crudo (Depurado)",
         });
@@ -427,8 +427,8 @@ export default function RecepcionCdeDashboardPage() {
       const hasCde = parsed.cdeRows.length > 0;
 
       const [resAsu, resCde] = await Promise.all([
-        hasAsu ? sincronizarRecepcionCsvOnline(text) : Promise.resolve(null),
-        hasCde ? sincronizarCdeCsvOnline(text) : Promise.resolve(null),
+        hasAsu ? sincronizarRecepcionCsvOnline(parsed) : Promise.resolve(null),
+        hasCde ? sincronizarCdeCsvOnline(parsed) : Promise.resolve(null),
       ]);
 
       const [asuTickets, cdeTickets] = await Promise.all([
@@ -500,7 +500,7 @@ export default function RecepcionCdeDashboardPage() {
         totalEnTransitoNuevos,
         depurationStats: parsed.depurationStats,
         cambios: combinedCambios,
-        fileName: file.name,
+        fileName: fileNamesLabel,
         timestamp: nowStr,
         origenLabel,
       });
@@ -508,7 +508,7 @@ export default function RecepcionCdeDashboardPage() {
       const totalModificadas = totalActualizadas + totalNuevas;
       if (totalModificadas > 0) {
         showToast(
-          `CSV ${origenLabel} procesado: ${totalActualizadas} orden(es) actualizaron su estado${
+          `Importación ${origenLabel} procesada: ${totalActualizadas} orden(es) actualizaron su estado${
             totalNuevas > 0 ? ` y ${totalNuevas} nueva(s)` : ""
           }${
             totalEnTransitoNuevos > 0
@@ -518,21 +518,27 @@ export default function RecepcionCdeDashboardPage() {
         );
       } else {
         showToast(
-          `CSV ${origenLabel} verificado (${totalFilasLeidas.toLocaleString()} órdenes): No se detectaron cambios de estado.`
+          `Importación ${origenLabel} verificada (${totalFilasLeidas.toLocaleString()} órdenes): No se detectaron cambios de estado.`
         );
       }
     } catch (err: unknown) {
-      console.error("Error al procesar o sincronizar el archivo CSV SATI:", err);
+      console.error("Error al procesar o sincronizar los archivos CSV/Excel SATI:", err);
       const msg =
         err instanceof Error
           ? err.message
-          : "Error al procesar o sincronizar el archivo CSV.";
+          : "Error al procesar o sincronizar los archivos SATI.";
       showToast(msg);
     } finally {
       setIsUploadingCSV(false);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  const handleCSVFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.length) {
+      await processUploadedFiles(e.target.files);
     }
   };
 
@@ -1209,10 +1215,11 @@ export default function RecepcionCdeDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Input oculto para carga de CSV o Excel (.xlsx) */}
+            {/* Input oculto para carga múltiple de CSV o Excel (.xlsx) */}
             <input
               ref={fileInputRef}
               type="file"
+              multiple
               accept={SPREADSHEET_FILE_ACCEPT}
               onChange={handleCSVFileChange}
               className="hidden"
@@ -1243,13 +1250,20 @@ export default function RecepcionCdeDashboardPage() {
               </div>
             </button>
 
-            {/* Botón idéntico al de Recepción con icono verde y dos líneas de texto */}
+            {/* Botón idéntico al de Recepción con icono verde y dos líneas de texto (soporta 1 o varios archivos a la vez) */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={(e) => {
+                e.preventDefault();
+                if (!isUploadingCSV && e.dataTransfer.files?.length) {
+                  void processUploadedFiles(e.dataTransfer.files);
+                }
+              }}
               disabled={isUploadingCSV}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer"
-              title="Subir archivo CSV o Excel (.xlsx) para actualizar órdenes de SATI (ASU o CDE) automáticamente"
+              title="Subir uno o varios archivos CSV o Excel (.xlsx) a la vez (ASU y/o CDE)"
             >
               <span className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center">
                 <Upload className="w-3.5 h-3.5" />
@@ -1259,7 +1273,7 @@ export default function RecepcionCdeDashboardPage() {
                   {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV / Excel"}
                 </strong>
                 <span className="text-[11px] text-zinc-500 font-normal">
-                  {isUploadingCSV ? "Sincronizando online" : "Actualizar órdenes SATI"}
+                  {isUploadingCSV ? "Sincronizando online" : "Uno o varios (ASU / CDE)"}
                 </span>
               </div>
             </button>
