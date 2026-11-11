@@ -1344,18 +1344,6 @@ export default function TecnicosDashboardPage() {
                 <div className="text-[11px] font-black tracking-wider uppercase text-black">
                   Montaje Finalizado
                 </div>
-                <div className="text-[10px] font-mono font-bold text-black mt-0.5 flex items-center justify-between gap-2">
-                  <span>
-                    {selectedOrderForCert.tipo_servicio === "Montaje"
-                      ? `MONTAJE PC${
-                          (selectedOrderForCert.cantidadEquipos || 1) > 1
-                            ? ` (${selectedOrderForCert.cantidadEquipos} EQ.)`
-                            : ""
-                        }`
-                      : "EXPANSIÓN NB"}
-                  </span>
-                  <span>#{selectedOrderForCert.id}</span>
-                </div>
               </div>
 
               {/* Datos del Cliente & Orden */}
