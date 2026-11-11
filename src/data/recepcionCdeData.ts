@@ -31,33 +31,43 @@ export interface RecepcionCdeTicket {
   rowKey?: string;
 }
 
+function normalizeDateYear(rawYear: string): number {
+  const y = parseInt(rawYear, 10);
+  if (isNaN(y)) return NaN;
+  if (rawYear.length <= 2) {
+    return y <= 70 ? 2000 + y : 1900 + y;
+  }
+  return y;
+}
+
 export function parseFechaDMY(str?: string): Date | null {
   if (!str) return null;
-  const clean = str.trim().split(' ')[0];
-  if (clean.includes('-')) {
-    const parts = clean.split('-');
-    if (parts.length === 3) {
-      if (parts[0].length === 4) {
-        // YYYY-MM-DD
-        const y = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10) - 1;
-        const d = parseInt(parts[2], 10);
-        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
-      } else {
-        // DD-MM-YYYY
-        const d = parseInt(parts[0], 10);
-        const m = parseInt(parts[1], 10) - 1;
-        const y = parseInt(parts[2], 10);
-        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) return new Date(y, m, d);
-      }
-    }
-  }
-  const parts = clean.split('/');
+  const clean = str.trim().split(/[\sT]/)[0];
+  if (!clean) return null;
+
+  const sep = clean.includes('-') ? '-' : clean.includes('/') ? '/' : clean.includes('.') ? '.' : null;
+  if (!sep) return null;
+
+  const parts = clean.split(sep);
   if (parts.length !== 3) return null;
-  const d = parseInt(parts[0], 10);
-  const m = parseInt(parts[1], 10) - 1;
-  const y = parseInt(parts[2], 10);
-  if (isNaN(d) || isNaN(m) || isNaN(y)) return null;
+
+  let d: number;
+  let m: number;
+  let y: number;
+
+  if (parts[0].length === 4) {
+    // YYYY-MM-DD o YYYY/MM/DD
+    y = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10) - 1;
+    d = parseInt(parts[2], 10);
+  } else {
+    // DD/MM/YYYY, DD/MM/YY, DD-MM-YYYY o DD.MM.YYYY
+    d = parseInt(parts[0], 10);
+    m = parseInt(parts[1], 10) - 1;
+    y = normalizeDateYear(parts[2]);
+  }
+
+  if (isNaN(d) || isNaN(m) || isNaN(y) || m < 0 || m > 11 || d < 1 || d > 31) return null;
   return new Date(y, m, d);
 }
 
@@ -179,6 +189,7 @@ function parseAllSatiCsvRows(csvContent: string): RecepcionCdeTicket[] {
     mensaje: 3,
     fechaIngreso: 4,
     fechaEntregada: 5,
+    fechaTransportadora: -1,
     fechaVenta: 6,
     estado: 7,
     tipoComponente: 8,
@@ -186,13 +197,14 @@ function parseAllSatiCsvRows(csvContent: string): RecepcionCdeTicket[] {
     modelo: 10,
     serial: 11,
   };
+  let headerDetected = false;
 
   for (let i = 0; i < rows.length; i++) {
     const cells = rows[i];
     if (cells.length < 2) continue;
 
-    // Detección dinámica y robusta de cabecera
-    if (i === 0) {
+    // Detección dinámica y robusta de cabecera (soporta filas de título previas en XLSX/CSV)
+    if (!headerDetected && i < 6 && result.length === 0) {
       const headerIndex: Record<string, number> = {};
       cells.forEach((header, idx) => {
         const h = header
@@ -209,41 +221,100 @@ function parseAllSatiCsvRows(csvContent: string): RecepcionCdeTicket[] {
           h === "norden" ||
           h === "nrodeorden" ||
           h === "ticket"
-        )
+        ) {
           headerIndex.idOrden = idx;
-        else if (h.includes("codigo") || h === "cod" || h.includes("sku") || h.includes("producto")) headerIndex.codigoProducto = idx;
-        else if (h.includes("cliente") || h.includes("titular")) headerIndex.cliente = idx;
-        else if (h.includes("mensaje") || h.includes("obs") || h.includes("dictamen") || h.includes("falla")) headerIndex.mensaje = idx;
-        else if (h.includes("fechaingreso") || h === "ingreso" || h.includes("fechaentrada")) headerIndex.fechaIngreso = idx;
-        else if (h.includes("fechaentreg") || h === "entrega" || h === "entregada" || h.includes("despacho")) headerIndex.fechaEntregada = idx;
-        else if (h.includes("fechaventa") || h === "venta") headerIndex.fechaVenta = idx;
-        else if (h.includes("estado") || h === "status" || h === "situacion") headerIndex.estado = idx;
-        else if (h.includes("componente") || h.includes("categoria") || h.includes("tipo")) headerIndex.tipoComponente = idx;
-        else if (h.includes("marca")) headerIndex.marca = idx;
-        else if (h.includes("modelo")) headerIndex.modelo = idx;
-        else if (h.includes("serial") || h === "serie" || h === "sn" || h.includes("nroserie")) headerIndex.serial = idx;
+        } else if (h.includes("codigo") || h === "cod" || h.includes("sku") || h === "codproducto" || h === "producto") {
+          if (headerIndex.codigoProducto === undefined) headerIndex.codigoProducto = idx;
+        } else if (h.includes("cliente") || h.includes("titular")) {
+          if (headerIndex.cliente === undefined) headerIndex.cliente = idx;
+        } else if (h.includes("mensaje") || h.includes("obs") || h.includes("dictamen") || h.includes("falla")) {
+          if (headerIndex.mensaje === undefined) headerIndex.mensaje = idx;
+        } else if (h.includes("fechaingreso") || h.includes("fechadeingreso") || h === "ingreso" || h.includes("fechaentrada") || h.includes("fecharecepcion")) {
+          if (headerIndex.fechaIngreso === undefined) headerIndex.fechaIngreso = idx;
+        } else if (
+          h.includes("fechatransport") ||
+          h.includes("ftransport") ||
+          h.includes("despachotransp") ||
+          h === "transportadora" ||
+          h.includes("enviotransp")
+        ) {
+          if (headerIndex.fechaTransportadora === undefined) headerIndex.fechaTransportadora = idx;
+        } else if (
+          h.includes("fechaentreg") ||
+          h.includes("fechadeentreg") ||
+          h.includes("fentreg") ||
+          h === "entrega" ||
+          h === "entregada" ||
+          h === "entregado" ||
+          h.includes("fechadespacho") ||
+          h === "despacho" ||
+          h.includes("fechasalida") ||
+          h.includes("fechaenvio") ||
+          h.includes("fecharetiro")
+        ) {
+          if (headerIndex.fechaEntregada === undefined) headerIndex.fechaEntregada = idx;
+        } else if (h.includes("fechaventa") || h.includes("fechadeventa") || h === "venta" || h.includes("fechafactura")) {
+          if (headerIndex.fechaVenta === undefined) headerIndex.fechaVenta = idx;
+        } else if (h.includes("estado") || h === "status" || h === "situacion") {
+          if (headerIndex.estado === undefined) headerIndex.estado = idx;
+        } else if (h.includes("componente") || h.includes("categoria") || h.includes("tipo")) {
+          if (headerIndex.tipoComponente === undefined) headerIndex.tipoComponente = idx;
+        } else if (h.includes("marca")) {
+          if (headerIndex.marca === undefined) headerIndex.marca = idx;
+        } else if (h.includes("modelo")) {
+          if (headerIndex.modelo === undefined) headerIndex.modelo = idx;
+        } else if (h.includes("serial") || h === "serie" || h === "sn" || h.includes("nroserie") || h.includes("numeroserie")) {
+          if (headerIndex.serial === undefined) headerIndex.serial = idx;
+        }
       });
 
-      if (Object.keys(headerIndex).length >= 2) {
-        colMap = { ...colMap, ...headerIndex };
+      const maybeOrderCell = (cells[headerIndex.idOrden ?? 0] || "").trim();
+      const hasSemanticHeader =
+        Object.keys(headerIndex).length >= 2 &&
+        (headerIndex.idOrden !== undefined || headerIndex.cliente !== undefined || headerIndex.estado !== undefined) &&
+        !/^#?\d+$/.test(maybeOrderCell);
+
+      if (hasSemanticHeader) {
+        headerDetected = true;
+        colMap = {
+          idOrden: headerIndex.idOrden ?? 0,
+          codigoProducto: headerIndex.codigoProducto ?? -1,
+          cliente: headerIndex.cliente ?? -1,
+          mensaje: headerIndex.mensaje ?? -1,
+          fechaIngreso: headerIndex.fechaIngreso ?? -1,
+          fechaEntregada: headerIndex.fechaEntregada ?? headerIndex.fechaTransportadora ?? -1,
+          fechaTransportadora: headerIndex.fechaTransportadora ?? -1,
+          fechaVenta: headerIndex.fechaVenta ?? -1,
+          estado: headerIndex.estado ?? -1,
+          tipoComponente: headerIndex.tipoComponente ?? -1,
+          marca: headerIndex.marca ?? -1,
+          modelo: headerIndex.modelo ?? -1,
+          serial: headerIndex.serial ?? -1,
+        };
         continue;
       }
     }
 
     const getVal = (field: keyof typeof colMap) => {
       const idx = colMap[field];
-      return (idx !== undefined && cells[idx] !== undefined ? cells[idx] : '').trim();
+      return idx !== undefined && idx >= 0 && cells[idx] !== undefined ? cells[idx].trim() : '';
     };
 
     const idOrden = getVal('idOrden').replace(/^#/, '');
     if (!idOrden) continue;
-    if (i === 0 && !/\d/.test(idOrden)) continue;
+    if (!headerDetected && i < 5 && !/\d/.test(idOrden)) continue;
 
     const codigoProducto = getVal('codigoProducto');
     const cliente = getVal('cliente');
     const mensaje = getVal('mensaje');
     const fechaIngreso = getVal('fechaIngreso');
-    const fechaEntregada = getVal('fechaEntregada');
+    const primaryFechaEntregada = getVal('fechaEntregada');
+    const fallbackFechaTransportadora = getVal('fechaTransportadora');
+    const fechaEntregada = isFechaValida(primaryFechaEntregada)
+      ? primaryFechaEntregada
+      : isFechaValida(fallbackFechaTransportadora)
+        ? fallbackFechaTransportadora
+        : primaryFechaEntregada;
     const fechaVenta = getVal('fechaVenta');
     const estado = getVal('estado') || 'En Asignacion';
     const tipoComponente = getVal('tipoComponente') || 'GENERAL';
@@ -304,7 +375,13 @@ export const CDE_STORAGE_KEY = 'nissei_recepcion_cde_data_v3';
 export function isFechaValida(str?: string): boolean {
   if (!str) return false;
   const t = str.trim();
-  return /^\d{1,2}\/\d{1,2}\/\d{4}/.test(t) || /^\d{4}-\d{2}-\d{2}/.test(t) || /^\d{1,2}-\d{1,2}-\d{4}/.test(t);
+  const hasDatePattern =
+    /^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(t) ||
+    /^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(t) ||
+    /^\d{1,2}[-.]\d{1,2}[-.]\d{2,4}/.test(t);
+  if (!hasDatePattern) return false;
+  const parsed = parseFechaDMY(t);
+  return parsed !== null && !Number.isNaN(parsed.getTime()) && parsed.getFullYear() >= 2000;
 }
 export const CDE_CHECKINS_KEY = 'nissei_deposito_cde_checkins_v1';
 export const SATI_OVERRIDES_KEY = 'nissei_sati_ticket_overrides_v1';
@@ -664,9 +741,15 @@ export function procesarActualizacionCdeCSV(
     const enTransito = isEntregada && esDanesa && !esReparada && !tieneDetalleRep && !existing?.recibidoEnDeposito;
 
     if (existing) {
+      const effectiveFechaEntregada = isFechaValida(inc.fechaEntregada)
+        ? (inc.fechaEntregada || '').trim()
+        : isFechaValida(existing.fechaEntregada)
+          ? (existing.fechaEntregada || '').trim()
+          : (inc.fechaEntregada || existing.fechaEntregada || '').trim();
+      const effectiveMensaje = (inc.mensaje || '').trim() || (existing.mensaje || '').trim();
       const cambioEstado = existing.estado.trim() !== inc.estado.trim();
-      const cambioEntrega = (existing.fechaEntregada || '').trim() !== (inc.fechaEntregada || '').trim();
-      const cambioMensaje = (existing.mensaje || '').trim() !== (inc.mensaje || '').trim();
+      const cambioEntrega = (existing.fechaEntregada || '').trim() !== effectiveFechaEntregada;
+      const cambioMensaje = (existing.mensaje || '').trim() !== effectiveMensaje;
 
       if (cambioEstado || cambioEntrega || cambioMensaje) {
         if (enTransito && !existing.estado.toLowerCase().includes('entregada')) {
@@ -675,11 +758,11 @@ export function procesarActualizacionCdeCSV(
 
         cambios.push({
           idOrden: inc.idOrden,
-          cliente: inc.cliente,
-          equipo: `${inc.marca} ${inc.modelo}`.trim() || inc.tipoComponente,
+          cliente: inc.cliente || existing.cliente,
+          equipo: `${inc.marca || existing.marca} ${inc.modelo || existing.modelo}`.trim() || inc.tipoComponente || existing.tipoComponente,
           estadoAnterior: existing.estado,
           estadoNuevo: inc.estado,
-          fechaEntregada: inc.fechaEntregada,
+          fechaEntregada: effectiveFechaEntregada,
           esDanesa,
           enTransito,
         });
@@ -687,7 +770,17 @@ export function procesarActualizacionCdeCSV(
         updatedList.push({
           ...existing,
           ...inc,
-          diasResolucion: calcularDiasResolucion(inc.fechaIngreso, inc.fechaEntregada),
+          codigoProducto: inc.codigoProducto || existing.codigoProducto,
+          cliente: inc.cliente || existing.cliente,
+          mensaje: effectiveMensaje,
+          fechaIngreso: inc.fechaIngreso || existing.fechaIngreso,
+          fechaEntregada: effectiveFechaEntregada,
+          fechaVenta: inc.fechaVenta || existing.fechaVenta,
+          tipoComponente: inc.tipoComponente && inc.tipoComponente !== 'GENERAL' ? inc.tipoComponente : existing.tipoComponente,
+          marca: inc.marca || existing.marca,
+          modelo: inc.modelo || existing.modelo,
+          serial: inc.serial || existing.serial,
+          diasResolucion: calcularDiasResolucion(inc.fechaIngreso || existing.fechaIngreso, effectiveFechaEntregada),
           esDanesa,
           recibidoEnDeposito: Boolean(existing.rowKey && checkins[existing.rowKey] || existing.recibidoEnDeposito),
           esEstadoCambiadoReciente: true,

@@ -27708,6 +27708,34 @@ function normalizeHeader(h: string): string {
     .replace(/[^a-z0-9]/g, '');
 }
 
+function isValidDateCell(str?: string): boolean {
+  if (!str) return false;
+  const t = str.trim();
+  return (
+    /^\d{1,2}\/\d{1,2}\/\d{2,4}/.test(t) ||
+    /^\d{4}[-/]\d{1,2}[-/]\d{1,2}/.test(t) ||
+    /^\d{1,2}[-.]\d{1,2}[-.]\d{2,4}/.test(t)
+  );
+}
+
+function pickBestDateCell(
+  row: string[],
+  idxPrimary: number,
+  idxFallback: number,
+  allowPositionalFallback: boolean,
+  positionalIdx: number
+): string | undefined {
+  const primary = idxPrimary !== -1 ? (row[idxPrimary] || '').trim() : '';
+  const fallback = idxFallback !== -1 ? (row[idxFallback] || '').trim() : '';
+  if (isValidDateCell(primary)) return primary;
+  if (isValidDateCell(fallback)) return fallback;
+  if (allowPositionalFallback && row[positionalIdx]) {
+    const pos = row[positionalIdx].trim();
+    if (pos) return pos;
+  }
+  return primary || undefined;
+}
+
 /**
  * Procesa un archivo CSV de Recepción SATI, compara cada orden con el estado actual del dashboard,
  * actualiza automáticamente los estados que hayan cambiado y devuelve el resumen completo.
@@ -27733,54 +27761,94 @@ export function procesarActualizacionCSV(
     };
   }
 
-  const headers = rows[0].map(normalizeHeader);
+  let headerRowIdx = -1;
+  let idxIdOrden = -1;
+  let idxEstado = -1;
+  let idxCliente = -1;
+  let idxFechaIngreso = -1;
+  let idxFechaEntregada = -1;
+  let idxFechaTransportadora = -1;
+  let idxFechaVenta = -1;
+  let idxTipoComponente = -1;
+  let idxMarca = -1;
+  let idxModelo = -1;
+  let idxSerial = -1;
+  let idxCodigo = -1;
+  let idxMensaje = -1;
 
-  const idxIdOrden = headers.findIndex((h) =>
-    ['idorden', 'orden', 'nroorden', 'id', 'ticket', 'nrodeorden'].includes(h) || h.includes('idorden')
-  );
-  const idxEstado = headers.findIndex((h) =>
-    ['estado', 'status', 'estadosati', 'situacion'].includes(h) || h.includes('estado')
-  );
-  const idxCliente = headers.findIndex((h) =>
-    ['cliente', 'nombrecliente', 'usuario', 'titular'].includes(h) || h.includes('cliente')
-  );
-  const idxFechaIngreso = headers.findIndex((h) =>
-    ['fechaingreso', 'ingreso', 'fecharecepcion', 'fechaentrada'].includes(h) || h.includes('fechaingreso')
-  );
-  const idxFechaEntregada = headers.findIndex((h) =>
-    ['fechaentregada', 'fechaentrega', 'entregada', 'entregado', 'despacho'].includes(h) || h.includes('fechaentreg')
-  );
-  const idxFechaVenta = headers.findIndex((h) =>
-    ['fechaventa', 'venta', 'fechafactura'].includes(h) || h.includes('fechaventa')
-  );
-  const idxTipoComponente = headers.findIndex((h) =>
-    ['tipocomponente', 'componente', 'categoria', 'tipo', 'producto'].includes(h) || h.includes('componente')
-  );
-  const idxMarca = headers.findIndex((h) => h === 'marca' || h === 'brand' || h.includes('marca'));
-  const idxModelo = headers.findIndex((h) => h === 'modelo' || h === 'model' || h === 'descripcion' || h.includes('modelo'));
-  const idxSerial = headers.findIndex((h) =>
-    ['serial', 'serie', 'nroserie', 'sn', 'numeroserie'].includes(h) || h.includes('serial')
-  );
-  const idxCodigo = headers.findIndex((h) =>
-    ['codigoproducto', 'codigo', 'sku', 'codproducto', 'cod'].includes(h) || h.includes('codigo')
-  );
-  const idxMensaje = headers.findIndex((h) =>
-    ['mensaje', 'observaciones', 'observacion', 'detalle', 'nota', 'dictamen', 'falla'].includes(h) || h.includes('mensaje')
-  );
+  const maxHeaderScan = Math.min(rows.length, 6);
+  for (let scan = 0; scan < maxHeaderScan; scan++) {
+    const candidateHeaders = rows[scan].map(normalizeHeader);
+    const candId = candidateHeaders.findIndex((h) =>
+      ['idorden', 'orden', 'nroorden', 'norden', 'id', 'ticket', 'nrodeorden'].includes(h) || h.includes('idorden')
+    );
+    const candEstado = candidateHeaders.findIndex((h) =>
+      ['estado', 'status', 'estadosati', 'situacion'].includes(h) || h.includes('estado')
+    );
+    const candCliente = candidateHeaders.findIndex((h) =>
+      ['cliente', 'nombrecliente', 'usuario', 'titular'].includes(h) || h.includes('cliente')
+    );
+    const candIngreso = candidateHeaders.findIndex((h) =>
+      ['fechaingreso', 'fechadeingreso', 'ingreso', 'fecharecepcion', 'fechaentrada'].includes(h) || h.includes('fechaingreso')
+    );
+    const candTransport = candidateHeaders.findIndex((h) =>
+      h.includes('fechatransport') ||
+      h.includes('ftransport') ||
+      h.includes('despachotransp') ||
+      h === 'transportadora' ||
+      h.includes('enviotransp')
+    );
+    const candEntregada = candidateHeaders.findIndex((h) =>
+      !h.includes('transport') &&
+      (['fechaentregada', 'fechaentrega', 'fechadeentrega', 'fentrega', 'entregada', 'entregado', 'despacho', 'fechadespacho', 'fechasalida', 'fechaenvio', 'fecharetiro'].includes(h) ||
+        h.includes('fechaentreg') ||
+        h.includes('fechadeentreg'))
+    );
+    const candVenta = candidateHeaders.findIndex((h) =>
+      ['fechaventa', 'fechadeventa', 'venta', 'fechafactura'].includes(h) || h.includes('fechaventa')
+    );
+    const candTipo = candidateHeaders.findIndex((h) =>
+      ['tipocomponente', 'componente', 'categoria', 'tipo', 'producto'].includes(h) || h.includes('componente')
+    );
+    const candMarca = candidateHeaders.findIndex((h) => h === 'marca' || h === 'brand' || h.includes('marca'));
+    const candModelo = candidateHeaders.findIndex((h) => h === 'modelo' || h === 'model' || h === 'descripcion' || h.includes('modelo'));
+    const candSerial = candidateHeaders.findIndex((h) =>
+      ['serial', 'serie', 'nroserie', 'sn', 'numeroserie'].includes(h) || h.includes('serial')
+    );
+    const candCodigo = candidateHeaders.findIndex((h) =>
+      ['codigoproducto', 'codigo', 'sku', 'codproducto', 'cod'].includes(h) || h.includes('codigo')
+    );
+    const candMensaje = candidateHeaders.findIndex((h) =>
+      ['mensaje', 'observaciones', 'observacion', 'detalle', 'nota', 'dictamen', 'falla'].includes(h) || h.includes('mensaje')
+    );
 
-  const firstCellCleaned = (rows[0][0] || '').replace(/^#/, '').trim();
-  const isFirstCellNumericOrder = /^\d+$/.test(firstCellCleaned);
-  const matchedHeadersCount = [
-    idxIdOrden,
-    idxEstado,
-    idxCliente,
-    idxFechaIngreso,
-    idxFechaEntregada,
-    idxCodigo,
-    idxMensaje,
-  ].filter((idx) => idx !== -1).length;
-  const hasExplicitHeader = !isFirstCellNumericOrder && matchedHeadersCount >= 2;
-  const startRowIndex = hasExplicitHeader ? 1 : 0;
+    const firstIdCell = (rows[scan][candId !== -1 ? candId : 0] || '').replace(/^#/, '').trim();
+    const isOrderNumber = /^\d+$/.test(firstIdCell);
+    const matches = [candId, candEstado, candCliente, candIngreso, candEntregada, candTransport, candCodigo, candMensaje].filter(
+      (i) => i !== -1
+    ).length;
+
+    if (!isOrderNumber && matches >= 2) {
+      headerRowIdx = scan;
+      idxIdOrden = candId;
+      idxEstado = candEstado;
+      idxCliente = candCliente;
+      idxFechaIngreso = candIngreso;
+      idxFechaEntregada = candEntregada !== -1 ? candEntregada : candTransport;
+      idxFechaTransportadora = candTransport;
+      idxFechaVenta = candVenta;
+      idxTipoComponente = candTipo;
+      idxMarca = candMarca;
+      idxModelo = candModelo;
+      idxSerial = candSerial;
+      idxCodigo = candCodigo;
+      idxMensaje = candMensaje;
+      break;
+    }
+  }
+
+  const hasExplicitHeader = headerRowIdx !== -1;
+  const startRowIndex = hasExplicitHeader ? headerRowIdx + 1 : 0;
 
   if (rows.length <= startRowIndex) {
     return {
@@ -27795,15 +27863,16 @@ export function procesarActualizacionCSV(
     };
   }
 
-  // Fallback exacto al formato SATI de 12 columnas cuando falta cabecera o alguna columna
-  const isSati12Cols = (rows[startRowIndex]?.length || rows[0].length) >= 8;
+  // Fallback exacto al formato SATI de 12 columnas cuando falta cabecera
+  const sampleRowLen = rows[startRowIndex]?.length || rows[0].length;
+  const isSati12Cols = !hasExplicitHeader && sampleRowLen >= 8;
   const effectiveIdxId = idxIdOrden !== -1 ? idxIdOrden : 0;
   const effectiveIdxEstado =
     idxEstado !== -1
       ? idxEstado
       : isSati12Cols
         ? 7
-        : rows[0].length >= 6
+        : sampleRowLen >= 6
           ? 5
           : 1;
 
@@ -27834,12 +27903,13 @@ export function procesarActualizacionCSV(
     if (existingIndex !== undefined) {
       const actual = baseTickets[existingIndex];
       const estadoAnterior = (actual.estado || '').trim();
-      const fechaEntregadaCSV =
-        idxFechaEntregada !== -1 && row[idxFechaEntregada]
-          ? row[idxFechaEntregada].trim()
-          : isSati12Cols && row[5]
-            ? row[5].trim()
-            : undefined;
+      const fechaEntregadaCSV = pickBestDateCell(
+        row,
+        idxFechaEntregada,
+        idxFechaTransportadora,
+        isSati12Cols,
+        5
+      );
       const mensajeCSV =
         idxMensaje !== -1 && row[idxMensaje]
           ? row[idxMensaje].trim()
@@ -27852,7 +27922,7 @@ export function procesarActualizacionCSV(
         estadoAnterior.toLowerCase() !== rawNuevoEstado.toLowerCase();
 
       if (cambioEstado) {
-        const isDelivered = rawNuevoEstado.toLowerCase() === 'entregada';
+        const isDelivered = rawNuevoEstado.toLowerCase().includes('entregada');
         recordStoredId(ESTADOS_CAMBIADOS_STORAGE_KEY, rawId);
         if (isDelivered) {
           recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, rawId);
@@ -27898,25 +27968,30 @@ export function procesarActualizacionCSV(
       const effCodigo =
         idxCodigo !== -1 ? row[idxCodigo] : isSati12Cols ? row[1] : '';
       const effCliente =
-        idxCliente !== -1 ? row[idxCliente] : isSati12Cols ? row[2] : row.length >= 2 ? row[1] : '';
+        idxCliente !== -1 ? row[idxCliente] : isSati12Cols ? row[2] : !hasExplicitHeader && row.length >= 2 ? row[1] : '';
       const effMensaje =
         idxMensaje !== -1 ? row[idxMensaje] : isSati12Cols ? row[3] : '';
       const effFechaIngreso =
-        idxFechaIngreso !== -1 ? row[idxFechaIngreso] : isSati12Cols ? row[4] : row.length >= 3 ? row[2] : '';
-      const effFechaEntregada =
-        idxFechaEntregada !== -1 ? row[idxFechaEntregada] : isSati12Cols ? row[5] : row.length >= 4 ? row[3] : '';
+        idxFechaIngreso !== -1 ? row[idxFechaIngreso] : isSati12Cols ? row[4] : !hasExplicitHeader && row.length >= 3 ? row[2] : '';
+      const effFechaEntregada = pickBestDateCell(
+        row,
+        idxFechaEntregada,
+        idxFechaTransportadora,
+        isSati12Cols || (!hasExplicitHeader && row.length >= 4),
+        isSati12Cols ? 5 : 3
+      );
       const effFechaVenta =
-        idxFechaVenta !== -1 ? row[idxFechaVenta] : isSati12Cols ? row[6] : row.length >= 5 ? row[4] : '';
+        idxFechaVenta !== -1 ? row[idxFechaVenta] : isSati12Cols ? row[6] : !hasExplicitHeader && row.length >= 5 ? row[4] : '';
       const effTipoComp =
-        idxTipoComponente !== -1 ? row[idxTipoComponente] : isSati12Cols ? row[8] : row.length >= 7 ? row[6] : 'GENERAL';
+        idxTipoComponente !== -1 ? row[idxTipoComponente] : isSati12Cols ? row[8] : !hasExplicitHeader && row.length >= 7 ? row[6] : 'GENERAL';
       const effMarca =
-        idxMarca !== -1 ? row[idxMarca] : isSati12Cols ? row[9] : row.length >= 8 ? row[7] : '';
+        idxMarca !== -1 ? row[idxMarca] : isSati12Cols ? row[9] : !hasExplicitHeader && row.length >= 8 ? row[7] : '';
       const effModelo =
-        idxModelo !== -1 ? row[idxModelo] : isSati12Cols ? row[10] : row.length >= 9 ? row[8] : '';
+        idxModelo !== -1 ? row[idxModelo] : isSati12Cols ? row[10] : !hasExplicitHeader && row.length >= 9 ? row[8] : '';
       const effSerial =
         idxSerial !== -1 ? row[idxSerial] : isSati12Cols ? row[11] : '';
 
-      const isDelivered = rawNuevoEstado.toLowerCase() === 'entregada';
+      const isDelivered = rawNuevoEstado.toLowerCase().includes('entregada');
       recordStoredId(NEW_INGRESOS_STORAGE_KEY, rawId);
       if (isDelivered) {
         recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, rawId);

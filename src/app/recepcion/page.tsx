@@ -42,6 +42,7 @@ import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect"
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
+import { readSpreadsheetAsCsvText, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
 import {
   RecepcionTicket,
   INITIAL_RECEPCION_DATA,
@@ -121,14 +122,14 @@ function isTicketRecibido(t: RecepcionTicket): boolean {
 function isTicketEnCamino(t: RecepcionTicket): boolean {
   if (isTicketRecibido(t)) return false;
   const est = (t.estado || "").toLowerCase();
-  if (est === "entregada") return false;
+  if (est.includes("entregada")) return false;
   return Boolean(t.enCamino);
 }
 
 function isTicketIngresadoEnCde(t: RecepcionTicket): boolean {
   if (isTicketRecibido(t)) return false;
   const est = (t.estado || "").toLowerCase();
-  if (est === "entregada") return false;
+  if (est.includes("entregada")) return false;
   if (t.enCamino) return false;
   return Boolean(t.ingresadoEnCde);
 }
@@ -136,7 +137,7 @@ function isTicketIngresadoEnCde(t: RecepcionTicket): boolean {
 function isTicketFaltaIngresar(t: RecepcionTicket): boolean {
   if (isTicketRecibido(t)) return false;
   const est = (t.estado || "").toLowerCase();
-  if (est === "entregada") return false;
+  if (est.includes("entregada")) return false;
   const rawMsg = (t.mensaje || "").trim().toLowerCase();
   const tieneMensaje = Boolean(
     rawMsg &&
@@ -344,12 +345,12 @@ export default function RecepcionDashboardPage() {
 
     setIsUploadingCSV(true);
     try {
-      const text = await file.text();
+      const text = await readSpreadsheetAsCsvText(file);
       const parsed = classifyAndParseSatiCsv(text);
 
       if (parsed.totalRows === 0) {
         throw new Error(
-          "No se detectaron órdenes válidas en el archivo CSV. Verifique que sea un archivo .csv exportado de SATI con columnas de orden."
+          "No se detectaron órdenes válidas en el archivo. Verifique que sea un archivo .csv o Excel (.xlsx) exportado de SATI con columnas de orden."
         );
       }
 
@@ -1024,6 +1025,14 @@ ${accText}`;
 
   const getStatusBadge = (estado: string) => {
     const e = (estado || "").toLowerCase();
+    if (e.includes("sin reparo")) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
+          <ShieldAlert className="w-3 h-3 text-rose-600" />
+          <span>{estado}</span>
+        </span>
+      );
+    }
     if (e === "entregada") {
       return (
         <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
@@ -1097,12 +1106,12 @@ ${accText}`;
             </p>
           </div>
 
-          {/* Al lado del cuadrito Recepción Post-Venta: Apartado para subir CSV y actualizar estados */}
+          {/* Al lado del cuadrito Recepción Post-Venta: Apartado para subir CSV / Excel y actualizar estados */}
           <div className="flex items-center gap-2.5 flex-wrap">
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,text/csv"
+              accept={SPREADSHEET_FILE_ACCEPT}
               onChange={handleCSVFileChange}
               className="hidden"
             />
@@ -1111,14 +1120,14 @@ ${accText}`;
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingCSV}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer"
-              title="Subir archivo CSV para actualizar estados de las órdenes automáticamente"
+              title="Subir archivo CSV o Excel (.xlsx) para actualizar estados de las órdenes automáticamente"
             >
               <span className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center">
                 <Upload className="w-3.5 h-3.5" />
               </span>
               <div className="text-left leading-tight">
                 <strong className="block text-xs font-bold text-zinc-900">
-                  {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV · Estados"}
+                  {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV / Excel"}
                 </strong>
                 <span className="text-[11px] text-zinc-500 font-normal">
                   {isUploadingCSV ? "Sincronizando online" : "Actualizar órdenes SATI"}

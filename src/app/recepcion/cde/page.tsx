@@ -36,6 +36,7 @@ import {
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
+import { readSpreadsheetAsCsvText, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
 import {
   RecepcionCdeTicket,
   INITIAL_RECEPCION_CDE_DATA,
@@ -148,7 +149,16 @@ function isTicketSinCruce(t: RecepcionCdeTicket): boolean {
 function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
   const est = (t.estado || "").trim();
   const estLower = est.toLowerCase();
-  const estAsu = (t.estadoAsu || "").toLowerCase();
+  const estAsuRaw = (t.estadoAsu || "").trim();
+  const estAsu = estAsuRaw.toLowerCase();
+
+  // 0. Preservar dictámenes "Sin Reparo" (ej. "Entregada Sin Reparo") antes de reglas genéricas de "Entregada"
+  if (estLower.includes("sin reparo")) {
+    return est || "Sin Reparo";
+  }
+  if (estAsu.includes("sin reparo")) {
+    return estAsuRaw || "Sin Reparo";
+  }
 
   // 1. Si en ASU ya fue entregada al cliente final
   if (estAsu.includes("entregada") || (!t.esDanesa && estLower.includes("entregada"))) {
@@ -169,22 +179,12 @@ function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
     (t.mensaje || "").toLowerCase().includes("funcional")
   );
 
-  if (
-    esReparada ||
-    (tieneDespachoValido &&
-      tieneDetalleReparacion &&
-      !estLower.includes("sin reparo") &&
-      !estAsu.includes("sin reparo"))
-  ) {
+  if (esReparada || (tieneDespachoValido && tieneDetalleReparacion)) {
     return "Reparada";
   }
 
   if (estLower.includes("entregada")) {
     return "Entregada";
-  }
-
-  if (estLower.includes("sin reparo")) {
-    return t.estado || "Sin Reparo";
   }
 
   if (estLower.includes("qc") || estLower.includes("control de calidad")) {
@@ -383,12 +383,12 @@ export default function RecepcionCdeDashboardPage() {
 
     setIsUploadingCSV(true);
     try {
-      const text = await file.text();
+      const text = await readSpreadsheetAsCsvText(file);
       const parsed = classifyAndParseSatiCsv(text);
 
       if (parsed.totalRows === 0) {
         throw new Error(
-          "No se detectaron órdenes válidas en el archivo CSV. Verifique que sea un archivo .csv exportado de SATI con columnas de orden."
+          "No se detectaron órdenes válidas en el archivo. Verifique que sea un archivo .csv o Excel (.xlsx) exportado de SATI con columnas de orden."
         );
       }
 
@@ -1178,11 +1178,11 @@ export default function RecepcionCdeDashboardPage() {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* Input oculto para carga de CSV */}
+            {/* Input oculto para carga de CSV o Excel (.xlsx) */}
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,text/csv"
+              accept={SPREADSHEET_FILE_ACCEPT}
               onChange={handleCSVFileChange}
               className="hidden"
             />
@@ -1218,14 +1218,14 @@ export default function RecepcionCdeDashboardPage() {
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingCSV}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer"
-              title="Subir archivo CSV para actualizar órdenes de SATI (ASU o CDE) automáticamente"
+              title="Subir archivo CSV o Excel (.xlsx) para actualizar órdenes de SATI (ASU o CDE) automáticamente"
             >
               <span className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center">
                 <Upload className="w-3.5 h-3.5" />
               </span>
               <div className="text-left leading-tight">
                 <strong className="block text-xs font-bold text-zinc-900">
-                  {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV · Estados"}
+                  {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV / Excel"}
                 </strong>
                 <span className="text-[11px] text-zinc-500 font-normal">
                   {isUploadingCSV ? "Sincronizando online" : "Actualizar órdenes SATI"}
