@@ -2027,34 +2027,42 @@ ${accText}`;
         </section>
 
         {/* Sección: Depósito Danesa · Monitoreo de Transportadora & Rendimiento Casa Matriz CDE */}
-        <section className="bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 text-white rounded-2xl p-5 sm:p-6 shadow-md border border-zinc-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="space-y-1.5 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-amber-400 text-zinc-900">
-                <SpeedTruck className="w-4 h-4 text-zinc-900" smokeColor="bg-amber-100" />
-              </span>
-              <span className="text-[11px] font-mono uppercase font-bold text-amber-300 tracking-wider">
-                Módulo Especial de Depósito Danesa
-              </span>
+        <section className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-zinc-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5 max-w-2xl">
+            <div className="w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-200 flex items-center justify-center shrink-0 mt-0.5">
+              <SpeedTruck className="w-5 h-5 text-zinc-800" smokeColor="bg-zinc-400" />
             </div>
-            <h2 className="text-base sm:text-lg font-black tracking-tight text-white flex items-center gap-2">
-              <span>Monitoreo de Transportadora & Rendimiento Taller Central CDE</span>
-            </h2>
-            <p className="text-xs text-zinc-300 leading-relaxed">
-              Consulte el estado de los equipos enviados a Casa Matriz CDE (<code className="text-amber-300 font-mono">recepcion-cde.csv</code>),
-              tiempos de resolución de laboratorio, veredictos técnicos y confirmación de llegada de cajas físicas al día siguiente en depósito.
-            </p>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-[10px] font-mono uppercase font-bold text-zinc-700 tracking-wider">
+                  Módulo Depósito Danesa
+                </span>
+                <span className="text-[11px] font-mono text-zinc-400">
+                  Casa Matriz CDE ↔ Sucursal ASU
+                </span>
+              </div>
+              <h2 className="text-base font-bold tracking-tight text-zinc-900">
+                Monitoreo de Transportadora &amp; Rendimiento Taller Central CDE
+              </h2>
+              <p className="text-xs text-zinc-500 leading-relaxed">
+                Consulte el estado de los equipos enviados a Casa Matriz CDE (
+                <code className="px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-700 font-mono text-[11px]">
+                  recepcion-cde.csv
+                </code>
+                ), tiempos de resolución de laboratorio, veredictos técnicos y confirmación de llegada de cajas físicas al día siguiente en depósito.
+              </p>
+            </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full md:w-auto shrink-0">
             <button
               type="button"
               onClick={handleOpenDeposito}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
             >
-              <Box className="w-4 h-4" />
+              <Box className="w-4 h-4 text-zinc-300" />
               <span>Acceder a SATI ASU - CDE</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 text-zinc-300" />
             </button>
           </div>
         </section>
