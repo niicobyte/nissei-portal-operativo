@@ -37,6 +37,7 @@ import {
   Admin
 } from "@/data/tallerReparacionesData";
 import { getActiveUser } from "@/data/authData";
+import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 import { CleanSelect } from "@/components/common/CleanSelect";
@@ -84,17 +85,46 @@ export default function TallerReparacionesPage() {
     detalleFalla: string;
   } | null>(null);
 
+  const syncReparacionesFromCloud = async (showFeedback = false) => {
+    try {
+      const dbData = await fetchReparacionesFromMySQL({ throwOnError: showFeedback });
+      if (dbData && dbData.length > 0) {
+        setOrdenes(dbData);
+      }
+      if (showFeedback) {
+        showToast(`Taller sincronizado con MySQL (${dbData.length} órdenes).`);
+      }
+    } catch (err) {
+      if (showFeedback) {
+        showToast(
+          err instanceof Error
+            ? err.message
+            : "No se pudo sincronizar Taller de Reparaciones con MySQL."
+        );
+      }
+    }
+  };
+
   // Carga inicial desde MySQL (/api/db?module=reparaciones) y sincronización con el perfil autenticado
   useEffect(() => {
     const active = getActiveUser();
     if (!active) return;
 
     setOrdenes(getStoredReparaciones());
-    fetchReparacionesFromMySQL().then((dbData) => {
-      if (dbData && dbData.length > 0) {
-        setOrdenes(dbData);
+
+    const pendingWarning = consumeCloudSyncWarning();
+    if (pendingWarning) {
+      showToast(pendingWarning);
+    }
+
+    void syncReparacionesFromCloud(false);
+
+    const handleWindowFocus = () => {
+      if (getActiveUser()) {
+        void syncReparacionesFromCloud(false);
       }
-    });
+    };
+    window.addEventListener("focus", handleWindowFocus);
 
     setActiveSessionRole(active.role);
     if (active.role === "ADMIN") {
@@ -106,6 +136,8 @@ export default function TallerReparacionesPage() {
       const foundTech = LISTA_TECNICOS.find((t) => t.nombre.toLowerCase() === active.nombre.toLowerCase());
       if (foundTech) setCurrentTecnico(foundTech);
     }
+
+    return () => window.removeEventListener("focus", handleWindowFocus);
   }, []);
 
   // Reset de página al buscar o cambiar pestañas
@@ -119,7 +151,7 @@ export default function TallerReparacionesPage() {
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 3500);
+    setTimeout(() => setToastMessage(null), 5000);
   };
 
   // Acción del botón "Avisar" (notifica el estado de la orden a WhatsApp / Recepción)
@@ -389,7 +421,10 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
           </div>
 
           <div className="flex items-center">
-            <AuthBadge requiredModule="reparaciones" />
+            <AuthBadge
+              requiredModule="reparaciones"
+              onSyncMysql={() => void syncReparacionesFromCloud(true)}
+            />
           </div>
         </header>
 

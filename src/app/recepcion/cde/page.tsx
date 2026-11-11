@@ -62,6 +62,7 @@ import {
   buildUnifiedSatiList,
   getTicketRowKey,
 } from "@/lib/crossMatch";
+import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 
 const ITEMS_PER_PAGE = 25;
 
@@ -224,6 +225,32 @@ export default function RecepcionCdeDashboardPage() {
     (ResultadoCargaCdeCSV & { fileName: string; timestamp: string }) | null
   >(null);
 
+  const refreshCdeAndAsuFromCloud = async () => {
+    const asuFallback = getStoredTickets();
+    const cdeFallback = getStoredCdeTickets();
+    try {
+      const [dbCde, dbAsu] = await Promise.all([
+        fetchCdeTicketsFromMySQL().catch(() => cdeFallback),
+        fetchTicketsFromMySQL().catch(() => asuFallback),
+      ]);
+      if (Array.isArray(dbCde) && Array.isArray(dbAsu)) {
+        const liveCheckins = getStoredCdeCheckins();
+        const liveOverrides = getStoredSatiOverrides();
+        const liveCross = getStoredSatiCrossMatches();
+        const liveUnified = buildUnifiedSatiList(
+          dbCde,
+          dbAsu,
+          liveCheckins,
+          liveOverrides,
+          liveCross
+        );
+        setTickets(liveUnified);
+      }
+    } catch {
+      // Caché local ya cargada
+    }
+  };
+
   useEffect(() => {
     setIsClient(true);
     const asuTickets = getStoredTickets();
@@ -234,46 +261,24 @@ export default function RecepcionCdeDashboardPage() {
     const initialUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins, overrides, manualCross);
     setTickets(initialUnified);
 
+    const pendingWarning = consumeCloudSyncWarning();
+    if (pendingWarning) {
+      showToast(pendingWarning);
+    }
+
     // Sincronizar en tiempo real directamente con MySQL en la nube (Railway)
-    Promise.all([
-      fetch("/api/db?module=cde")
-        .then((r) => r.json())
-        .then((json) => {
-          if (json.ok && Array.isArray(json.data)) {
-            if (Array.isArray(json.crossMatches)) {
-              json.crossMatches.forEach((m: any) => {
-                if (m.idOrdenAsu && m.idOrdenCde) {
-                  saveSatiCrossMatchLocal(m.idOrdenAsu, m.idOrdenCde);
-                }
-              });
-            }
-            if (json.checkins && typeof json.checkins === "object") {
-              const localCheckins = getStoredCdeCheckins();
-              const merged = { ...localCheckins, ...json.checkins };
-              try {
-                localStorage.setItem(CDE_CHECKINS_KEY, JSON.stringify(merged));
-              } catch {}
-            }
-            return json.data;
-          }
-          return cdeTickets;
-        })
-        .catch(() => cdeTickets),
-      fetchTicketsFromMySQL().catch(() => asuTickets),
-    ]).then(([dbCde, dbAsu]) => {
-      if (Array.isArray(dbCde) && Array.isArray(dbAsu)) {
-        const liveCheckins = getStoredCdeCheckins();
-        const liveOverrides = getStoredSatiOverrides();
-        const liveCross = getStoredSatiCrossMatches();
-        const liveUnified = buildUnifiedSatiList(dbCde, dbAsu, liveCheckins, liveOverrides, liveCross);
-        setTickets(liveUnified);
-      }
-    });
+    void refreshCdeAndAsuFromCloud();
+
+    const handleFocus = () => {
+      void refreshCdeAndAsuFromCloud();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const showToast = (msg: string) => {
     setNotification(msg);
-    setTimeout(() => setNotification(null), 4500);
+    setTimeout(() => setNotification(null), 5500);
   };
 
   // Sincronizar y consolidar todas las órdenes recibidas, checkins y overrides con MySQL en la nube
@@ -337,7 +342,14 @@ export default function RecepcionCdeDashboardPage() {
 
       const liveCheckins = getStoredCdeCheckins();
       const liveOverrides = getStoredSatiOverrides();
-      const freshUnified = buildUnifiedSatiList(dbCde, dbAsu, liveCheckins, liveOverrides);
+      const liveCross = getStoredSatiCrossMatches();
+      const freshUnified = buildUnifiedSatiList(
+        dbCde,
+        dbAsu,
+        liveCheckins,
+        liveOverrides,
+        liveCross
+      );
       setTickets(freshUnified);
 
       showToast(
@@ -366,7 +378,15 @@ export default function RecepcionCdeDashboardPage() {
       const resultado = await sincronizarCdeCsvOnline(text);
       const asuTickets = await fetchTicketsFromMySQL().catch(() => getStoredTickets());
       const checkins = getStoredCdeCheckins();
-      const unified = buildUnifiedSatiList(resultado.updatedTickets, asuTickets, checkins);
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const unified = buildUnifiedSatiList(
+        resultado.updatedTickets,
+        asuTickets,
+        checkins,
+        overrides,
+        cross
+      );
       setTickets(unified);
 
       const nowStr = new Date().toLocaleTimeString("es-PY", {
@@ -394,9 +414,9 @@ export default function RecepcionCdeDashboardPage() {
         );
       }
     } catch (err: unknown) {
-      console.error("Error al procesar el archivo CSV CDE:", err);
-      const msg = err instanceof Error ? err.message : "Error al procesar el archivo CSV.";
-      showToast(`${msg} Asegúrese de que sea un archivo de texto .csv con formato SATI.`);
+      console.error("Error al procesar o sincronizar el archivo CSV CDE:", err);
+      const msg = err instanceof Error ? err.message : "Error al procesar o sincronizar el archivo CSV.";
+      showToast(msg);
     } finally {
       setIsUploadingCSV(false);
       if (fileInputRef.current) {

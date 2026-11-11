@@ -743,36 +743,107 @@ export function saveMontajes(list: OrdenMontajeReal[]): void {
   }
 }
 
-export async function fetchMontajesFromMySQL(): Promise<OrdenMontajeReal[]> {
+export function getPendingDirtyMontajeIds(): string[] {
+  return getDirtyMontajeIds();
+}
+
+export function syncVendedoresFromMontajes(list: OrdenMontajeReal[]): void {
+  if (typeof window === "undefined" || !Array.isArray(list)) return;
+  for (const m of list) {
+    const vendor = String(m?.vendedor || "").trim();
+    if (!vendor || vendor === "Salón CDE" || vendor === "Sin Asignar" || vendor.toUpperCase() === "OTRO") {
+      continue;
+    }
+    addCustomVendedor(vendor);
+  }
+}
+
+export function mergeAndSaveCloudMontajes(cloudList: OrdenMontajeReal[]): OrdenMontajeReal[] {
+  const localList = getStoredMontajes();
+  const dirtySet = new Set(getDirtyMontajeIds());
+  const localMap = new Map<string, OrdenMontajeReal>(localList.map((m) => [m.id, m]));
+
+  const mergedMap = new Map<string, OrdenMontajeReal>();
+  for (const cloudOrd of cloudList) {
+    if (dirtySet.has(cloudOrd.id) && localMap.has(cloudOrd.id)) {
+      mergedMap.set(cloudOrd.id, localMap.get(cloudOrd.id)!);
+    } else {
+      mergedMap.set(cloudOrd.id, cloudOrd);
+    }
+  }
+  // Mantener órdenes nuevas locales aún no confirmadas en MySQL
+  for (const localOrd of localList) {
+    if (!mergedMap.has(localOrd.id) && dirtySet.has(localOrd.id)) {
+      mergedMap.set(localOrd.id, localOrd);
+    }
+  }
+
+  const merged = Array.from(mergedMap.values());
+  saveMontajes(merged);
+  syncVendedoresFromMontajes(merged);
+  return merged;
+}
+
+export async function pushPendingDirtyMontajes(): Promise<number> {
+  if (typeof window === "undefined") return 0;
+  const dirtyIds = getDirtyMontajeIds();
+  if (dirtyIds.length === 0) return 0;
+
+  const dirtySet = new Set(dirtyIds);
+  const localList = getStoredMontajes();
+  const toPush = localList.filter((m) => dirtySet.has(m.id));
+  if (toPush.length === 0) {
+    clearDirtyMontajeIds();
+    return 0;
+  }
+
+  const res = await fetch("/api/db", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "SYNC_ALL_MONTAJES_TO_MYSQL",
+      ordenes: toPush,
+    }),
+  });
+  const json = await res.json().catch(() => null);
+  if (!res.ok || !json?.ok) {
+    throw new Error(json?.error || "Error al subir montajes pendientes a MySQL.");
+  }
+
+  clearDirtyMontajeIds(dirtyIds);
+  if (Array.isArray(json.data) && json.data.length > 0) {
+    const merged = mergeAndSaveCloudMontajes(json.data as OrdenMontajeReal[]);
+    saveMontajes(merged);
+  }
+  return toPush.length;
+}
+
+export async function fetchMontajesFromMySQL(options?: {
+  throwOnError?: boolean;
+}): Promise<OrdenMontajeReal[]> {
   try {
     const res = await fetch("/api/db?module=montajes", { cache: "no-store" });
-    const json = await res.json();
-    if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
-      const localList = getStoredMontajes();
-      const dirtySet = new Set(getDirtyMontajeIds());
-      const localMap = new Map<string, OrdenMontajeReal>(localList.map((m) => [m.id, m]));
-
-      const mergedMap = new Map<string, OrdenMontajeReal>();
-      for (const cloudOrd of json.data as OrdenMontajeReal[]) {
-        if (dirtySet.has(cloudOrd.id) && localMap.has(cloudOrd.id)) {
-          mergedMap.set(cloudOrd.id, localMap.get(cloudOrd.id)!);
-        } else {
-          mergedMap.set(cloudOrd.id, cloudOrd);
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      throw new Error(json?.error || `Error MySQL (HTTP ${res.status})`);
+    }
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      const merged = mergeAndSaveCloudMontajes(json.data as OrdenMontajeReal[]);
+      if (getDirtyMontajeIds().length > 0) {
+        try {
+          await pushPendingDirtyMontajes();
+          return getStoredMontajes();
+        } catch {
+          return merged;
         }
       }
-      // Mantener órdenes nuevas locales aún no confirmadas en MySQL
-      for (const localOrd of localList) {
-        if (!mergedMap.has(localOrd.id) && dirtySet.has(localOrd.id)) {
-          mergedMap.set(localOrd.id, localOrd);
-        }
-      }
-
-      const merged = Array.from(mergedMap.values());
-      saveMontajes(merged);
       return merged;
     }
   } catch (err) {
     console.warn("[MySQL Sync Montajes] Usando caché local:", err);
+    if (options?.throwOnError) {
+      throw err instanceof Error ? err : new Error("Error al conectar con MySQL.");
+    }
   }
   return getStoredMontajes();
 }
@@ -932,8 +1003,11 @@ export async function syncMontajesToCloud(
   // 1. Consultar estado actual en la nube para detectar faltantes o cambios pendientes
   const getRes = await fetch("/api/db?module=montajes", { cache: "no-store" });
   const getJson = await getRes.json().catch(() => null);
-  const cloudList: OrdenMontajeReal[] =
-    getRes.ok && getJson?.ok && Array.isArray(getJson.data) ? getJson.data : [];
+  if (!getRes.ok || !getJson?.ok) {
+    throw new Error(getJson?.error || `No se pudo conectar con MySQL (HTTP ${getRes.status}).`);
+  }
+
+  const cloudList: OrdenMontajeReal[] = Array.isArray(getJson.data) ? getJson.data : [];
   const cloudIds = new Set(cloudList.map((m) => m.id));
 
   // Subir órdenes nuevas locales, órdenes modificadas (dirty) o todas si la nube aún no tiene registros
@@ -960,6 +1034,7 @@ export async function syncMontajesToCloud(
       ? postJson.data
       : localList;
     saveMontajes(syncedData);
+    syncVendedoresFromMontajes(syncedData);
     return { data: syncedData, totalSubidos: toUpload.length };
   }
 
@@ -967,6 +1042,7 @@ export async function syncMontajesToCloud(
   clearDirtyMontajeIds();
   if (cloudList.length > 0) {
     saveMontajes(cloudList);
+    syncVendedoresFromMontajes(cloudList);
     return { data: cloudList, totalSubidos: 0 };
   }
 
@@ -1330,8 +1406,24 @@ export async function sincronizarMontajesCsvOnline(
   csvText: string,
   currentList?: OrdenMontajeReal[]
 ): Promise<ResultadoCargaMontajesCSV> {
-  const base = currentList && currentList.length > 0 ? currentList : getStoredMontajes();
-  const resultado = procesarActualizacionMontajesCSV(csvText, base);
+  // 1. Obtener siempre primero la base viva en MySQL para cruzar contra la verdad de la nube en cualquier máquina
+  let cloudBase: OrdenMontajeReal[] = currentList && currentList.length > 0 ? currentList : getStoredMontajes();
+  const dirtyBefore = new Set(getDirtyMontajeIds());
+
+  if (typeof window !== "undefined") {
+    const getRes = await fetch("/api/db?module=montajes", { cache: "no-store" });
+    const getJson = await getRes.json().catch(() => null);
+    if (!getRes.ok || !getJson?.ok) {
+      throw new Error(
+        getJson?.error || "No se pudo conectar con MySQL en la nube antes de procesar el CSV."
+      );
+    }
+    if (Array.isArray(getJson.data) && getJson.data.length > 0) {
+      cloudBase = mergeAndSaveCloudMontajes(getJson.data as OrdenMontajeReal[]);
+    }
+  }
+
+  const resultado = procesarActualizacionMontajesCSV(csvText, cloudBase);
 
   if (resultado.totalFilasLeidas === 0) {
     throw new Error(
@@ -1340,24 +1432,33 @@ export async function sincronizarMontajesCsvOnline(
   }
 
   saveMontajes(resultado.updatedList);
+  syncVendedoresFromMontajes(resultado.updatedList);
 
-  if (resultado.toSyncToCloud.length > 0 && typeof window !== "undefined") {
-    const resp = await fetch("/api/db", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "BULK_UPDATE_MONTAJES_CSV",
-        ordenes: resultado.toSyncToCloud,
-      }),
-    });
-    const json = await resp.json().catch(() => null);
-    if (!resp.ok || !json?.ok) {
-      throw new Error(json?.error || "Error al subir el CSV de montajes a MySQL en la nube.");
-    }
-    clearDirtyMontajeIds();
-    if (Array.isArray(json.data) && json.data.length > 0) {
-      saveMontajes(json.data);
-      return { ...resultado, updatedList: json.data };
+  if (typeof window !== "undefined") {
+    const extraDirty = resultado.updatedList.filter(
+      (m) => dirtyBefore.has(m.id) && !resultado.toSyncToCloud.some((s) => s.id === m.id)
+    );
+    const ordenesParaSubir = [...resultado.toSyncToCloud, ...extraDirty];
+
+    if (ordenesParaSubir.length > 0) {
+      const resp = await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "BULK_UPDATE_MONTAJES_CSV",
+          ordenes: ordenesParaSubir,
+        }),
+      });
+      const json = await resp.json().catch(() => null);
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error al subir el CSV de montajes a MySQL en la nube.");
+      }
+      clearDirtyMontajeIds();
+      if (Array.isArray(json.data) && json.data.length > 0) {
+        saveMontajes(json.data);
+        syncVendedoresFromMontajes(json.data);
+        return { ...resultado, updatedList: json.data };
+      }
     }
   }
 

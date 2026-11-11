@@ -25,6 +25,7 @@ import {
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { AnimatedReceptionBox } from "@/components/common/AnimatedReceptionBox";
 import { AnimatedCpu } from "@/components/common/AnimatedCpu";
+import { syncAllModulesFromMySQL } from "@/lib/cloudSync";
 import {
   USER_PROFILES,
   UserProfile,
@@ -99,6 +100,13 @@ function LoginForm() {
     }
   };
 
+  const completeLoginAndSync = async (authUser: UserProfile) => {
+    setError(null);
+    setSuccess(`Autenticado como ${authUser.nombre}. Sincronizando con MySQL en la nube...`);
+    await syncAllModulesFromMySQL(7000).catch(() => {});
+    router.push(authUser.defaultRoute);
+  };
+
   // Validación automática en tiempo real al escribir la contraseña (sin necesidad de pulsar Enter)
   const attemptAutoLogin = (entered: string): boolean => {
     if (isRedirectingRef.current) return true;
@@ -115,12 +123,7 @@ function LoginForm() {
     if (result.success) {
       isRedirectingRef.current = true;
       const authUser = result.user || selectedProfile;
-      fetch("/api/db", { cache: "no-store" }).catch(() => {});
-      setError(null);
-      setSuccess(`Autenticado como ${authUser.nombre}. Redirigiendo a su panel...`);
-      setTimeout(() => {
-        router.push(authUser.defaultRoute);
-      }, 300);
+      void completeLoginAndSync(authUser);
       return true;
     }
 
@@ -146,14 +149,9 @@ function LoginForm() {
       return;
     }
 
+    isRedirectingRef.current = true;
     const authUser = result.user || selectedProfile;
-    // Calentar e inicializar conexión a MySQL inmediatamente en segundo plano
-    fetch("/api/db", { cache: "no-store" }).catch(() => {});
-
-    setSuccess(`Autenticado como ${authUser.nombre}. Redirigiendo a su panel...`);
-    setTimeout(() => {
-      router.push(authUser.defaultRoute);
-    }, 500);
+    void completeLoginAndSync(authUser);
   };
 
   const handleToggleDbAccess = () => {

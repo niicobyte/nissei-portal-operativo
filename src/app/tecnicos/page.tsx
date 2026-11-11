@@ -39,6 +39,7 @@ import {
   OrdenMontajeReal
 } from "@/data/montajesData";
 import { getActiveUser } from "@/data/authData";
+import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 
 const STICKER_CAT_LABELS: Record<string, string> = {
@@ -94,11 +95,27 @@ export default function TecnicosDashboardPage() {
     if (!active) return;
 
     setMontajes(getStoredMontajes());
-    fetchMontajesFromMySQL().then((dbData) => {
-      if (dbData && dbData.length > 0) {
-        setMontajes(dbData);
-      }
-    });
+
+    const pendingWarning = consumeCloudSyncWarning();
+    if (pendingWarning) {
+      showToast(pendingWarning);
+    }
+
+    fetchMontajesFromMySQL({ throwOnError: true })
+      .then((dbData) => {
+        if (dbData && dbData.length > 0) {
+          setMontajes(dbData);
+        }
+      })
+      .catch((err) => {
+        if (!pendingWarning) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "No se pudo sincronizar montajes con MySQL en la nube."
+          );
+        }
+      });
 
     const handleWindowFocus = () => {
       fetchMontajesFromMySQL().then((dbData) => {

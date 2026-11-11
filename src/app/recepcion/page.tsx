@@ -69,6 +69,7 @@ import {
   RecepcionCdeTicket,
 } from "@/data/recepcionCdeData";
 import { crossMatchAsuWithCde } from "@/lib/crossMatch";
+import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 import { getActiveUser, verifyDepositoPassword, verifyAdminPassword, authenticate } from "@/data/authData";
@@ -257,6 +258,37 @@ export default function RecepcionDashboardPage() {
     (ResultadoCargaCSV & { fileName: string; timestamp: string }) | null
   >(null);
 
+  const syncRecepcionAndCdeFromCloud = async (showFeedback = false) => {
+    const baseAsu = getStoredTickets();
+    const baseCde = getStoredCdeTickets();
+    try {
+      const [dbAsu, dbCde] = await Promise.all([
+        fetchTicketsFromMySQL({ throwOnError: showFeedback }).catch((err) => {
+          if (showFeedback) throw err;
+          return baseAsu;
+        }),
+        fetchCdeTicketsFromMySQL({ throwOnError: showFeedback }).catch((err) => {
+          if (showFeedback) throw err;
+          return baseCde;
+        }),
+      ]);
+      const finalAsu = dbAsu && dbAsu.length > 0 ? dbAsu : baseAsu;
+      const finalCde = dbCde && dbCde.length > 0 ? dbCde : baseCde;
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(finalAsu, finalCde, checkins, overrides, cross);
+      setTickets(enriched);
+      if (showFeedback) {
+        showToast(`Sincronizado con MySQL en la nube (${finalAsu.length} órdenes ASU · ${finalCde.length} CDE).`);
+      }
+    } catch (err) {
+      if (showFeedback) {
+        showToast(err instanceof Error ? err.message : "Error al sincronizar Recepción con MySQL.");
+      }
+    }
+  };
+
   // Carga inicial reactiva desde MySQL + LocalStorage con Cruce Inteligente CDE
   useEffect(() => {
     setIsClient(true);
@@ -279,25 +311,25 @@ export default function RecepcionDashboardPage() {
     );
     setTickets(initEnriched);
 
-    // Sincronizar asíncronamente con MySQL tanto ASU como CDE para cruce en tiempo real
-    Promise.all([
-      fetchTicketsFromMySQL().catch(() => baseAsu),
-      fetchCdeTicketsFromMySQL().catch(() => storedCde),
-    ]).then(([dbAsu, dbCde]) => {
-      const finalAsu = dbAsu && dbAsu.length > 0 ? dbAsu : baseAsu;
-      const finalCde = dbCde && dbCde.length > 0 ? dbCde : storedCde;
-      const checkins = getStoredCdeCheckins();
-      const overrides = getStoredSatiOverrides();
-      const cross = getStoredSatiCrossMatches();
+    const pendingWarning = consumeCloudSyncWarning();
+    if (pendingWarning) {
+      showToast(pendingWarning);
+    }
 
-      const enriched = crossMatchAsuWithCde(finalAsu, finalCde, checkins, overrides, cross);
-      setTickets(enriched);
-    });
+    void syncRecepcionAndCdeFromCloud(false);
+
+    const handleFocus = () => {
+      if (getActiveUser()) {
+        void syncRecepcionAndCdeFromCloud(false);
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, []);
 
   const showToast = (msg: string) => {
     setNotification(msg);
-    setTimeout(() => setNotification(null), 4500);
+    setTimeout(() => setNotification(null), 5500);
   };
 
   // Manejar carga de archivo CSV para actualizar estados de las órdenes
@@ -338,18 +370,22 @@ export default function RecepcionDashboardPage() {
       const totalModificadas = resultado.totalActualizadas + resultado.totalNuevas;
       if (totalModificadas > 0) {
         showToast(
-          `CSV cargado: ${resultado.totalActualizadas} orden(es) cambiaron de estado${
+          `CSV guardado en MySQL: ${resultado.totalActualizadas} orden(es) cambiaron de estado${
             resultado.totalNuevas > 0 ? ` y ${resultado.totalNuevas} nueva(s)` : ""
           } (${resultado.totalSinCambios} sin cambios).`
         );
       } else {
         showToast(
-          `CSV verificado (${resultado.totalFilasLeidas} órdenes): No se detectaron cambios de estado.`
+          `CSV verificado en MySQL (${resultado.totalFilasLeidas} órdenes): No se detectaron cambios de estado.`
         );
       }
     } catch (err) {
-      console.error("Error al procesar el archivo CSV:", err);
-      showToast("Error al leer el archivo CSV. Verifique que el formato sea válido.");
+      console.error("Error al procesar o sincronizar el archivo CSV:", err);
+      showToast(
+        err instanceof Error
+          ? err.message
+          : "Error al leer o sincronizar el archivo CSV con MySQL."
+      );
     } finally {
       setIsUploadingCSV(false);
       if (fileInputRef.current) {
@@ -1051,7 +1087,10 @@ ${accText}`;
               </div>
             </button>
 
-            <AuthBadge requiredModule="recepcion" />
+            <AuthBadge
+              requiredModule="recepcion"
+              onSyncMysql={() => void syncRecepcionAndCdeFromCloud(true)}
+            />
           </div>
         </div>
 

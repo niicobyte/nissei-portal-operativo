@@ -28,9 +28,12 @@ import {
   ComponenteMontaje,
   OrdenMontajeReal,
   addMontajeAsync,
+  fetchMontajesFromMySQL,
+  getPendingDirtyMontajeIds,
   getStoredVendedores,
   addCustomVendedor
 } from "@/data/montajesData";
+import { setCloudSyncWarning } from "@/lib/cloudSync";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 
@@ -42,6 +45,9 @@ export default function NuevoIngresoMontajePage() {
 
   useEffect(() => {
     setListaVendedores(getStoredVendedores());
+    fetchMontajesFromMySQL().then(() => {
+      setListaVendedores(getStoredVendedores());
+    });
   }, []);
 
   // Fecha actual en formato YYYY-MM-DD
@@ -373,6 +379,11 @@ export default function NuevoIngresoMontajePage() {
 
     // Guardar en almacenamiento local y confirmar persistencia en MySQL en la nube
     await addMontajeAsync(newOrder);
+    if (getPendingDirtyMontajeIds().includes(newOrder.id)) {
+      setCloudSyncWarning(
+        `Orden #${newOrder.id} guardada localmente, pero MySQL en la nube no confirmó aún. Pulse "Sincronizar Nube" al conectarse.`
+      );
+    }
 
     // Envío automático al Grupo de Montajes vía WhaApi (Canal MONTAJES -> Grupo 120363428540171277@g.us)
     const msg = generateWhatsAppMessage();

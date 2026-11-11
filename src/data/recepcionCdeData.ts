@@ -365,6 +365,82 @@ export function removeSatiCrossMatchLocal(idOrdenAsu: string, idOrdenCde: string
   }
 }
 
+export function replaceSatiCrossMatchesLocal(
+  list: Array<{ idOrdenAsu: string; idOrdenCde: string }>
+): void {
+  if (typeof window === 'undefined' || !Array.isArray(list)) return;
+  try {
+    const sanitized = list
+      .filter((m) => m && m.idOrdenAsu && m.idOrdenCde)
+      .map((m) => ({
+        idOrdenAsu: String(m.idOrdenAsu).trim(),
+        idOrdenCde: String(m.idOrdenCde).trim(),
+      }));
+    localStorage.setItem(SATI_CROSS_MATCHES_KEY, JSON.stringify(sanitized));
+  } catch (e) {
+    console.error('Error al sincronizar cruces SATI locales:', e);
+  }
+}
+
+export function applyCloudCdeCheckins(
+  cloudCheckins?: Record<string, SatiCheckinData> | null
+): Record<string, SatiCheckinData> {
+  if (typeof window === 'undefined' || !cloudCheckins || typeof cloudCheckins !== 'object') {
+    return getStoredCdeCheckins();
+  }
+  try {
+    const normalized: Record<string, SatiCheckinData> = {};
+    for (const [k, v] of Object.entries(cloudCheckins)) {
+      if (typeof v === 'boolean') {
+        normalized[k] = { recibido: v, fecha: '' };
+      } else if (v && typeof v === 'object') {
+        normalized[k] = {
+          recibido: Boolean((v as SatiCheckinData).recibido),
+          fecha: String((v as SatiCheckinData).fecha || ''),
+        };
+      }
+    }
+    localStorage.setItem(CDE_CHECKINS_KEY, JSON.stringify(normalized));
+    return normalized;
+  } catch (e) {
+    console.error('Error al guardar checkins CDE de nube:', e);
+    return getStoredCdeCheckins();
+  }
+}
+
+export function applyCloudCdeTickets(
+  rawData: RecepcionCdeTicket[],
+  cloudCheckins?: Record<string, SatiCheckinData> | null,
+  cloudCrossMatches?: Array<{ idOrdenAsu: string; idOrdenCde: string }> | null
+): RecepcionCdeTicket[] {
+  const checkins = cloudCheckins ? applyCloudCdeCheckins(cloudCheckins) : getStoredCdeCheckins();
+  if (Array.isArray(cloudCrossMatches)) {
+    replaceSatiCrossMatchesLocal(cloudCrossMatches);
+  }
+
+  const enriched: RecepcionCdeTicket[] = rawData
+    .filter((t: RecepcionCdeTicket) => {
+      const num = parseInt(t.idOrden, 10);
+      return isNaN(num) || num >= 100000;
+    })
+    .map((t: RecepcionCdeTicket, idx: number) => {
+      const rowKey = t.rowKey || `CDE_${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
+      const checkinInfo = checkins[rowKey] || checkins[t.idOrden];
+      const isRecibido = checkinInfo ? checkinInfo.recibido : Boolean(t.recibidoEnDeposito);
+      return {
+        ...t,
+        rowKey,
+        diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
+        esDanesa: isTicketDanesa(t.cliente),
+        recibidoEnDeposito: isRecibido,
+        fechaRecibidoDeposito: checkinInfo?.fecha || t.fechaRecibidoDeposito,
+      };
+    });
+
+  saveCdeTickets(enriched);
+  return enriched;
+}
+
 export function getStoredCdeTickets(): RecepcionCdeTicket[] {
   if (typeof window === 'undefined') return INITIAL_RECEPCION_CDE_DATA;
   try {
@@ -379,7 +455,7 @@ export function getStoredCdeTickets(): RecepcionCdeTicket[] {
       })
       .map((t: RecepcionCdeTicket, idx: number) => {
         const rowKey = t.rowKey || `CDE_${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
-        const checkinInfo = checkins[rowKey];
+        const checkinInfo = checkins[rowKey] || checkins[t.idOrden];
         const isRecibido = checkinInfo ? checkinInfo.recibido : Boolean(t.recibidoEnDeposito);
         return {
           ...t,
@@ -410,36 +486,27 @@ export function saveCdeTickets(tickets: RecepcionCdeTicket[]): void {
   }
 }
 
-export async function fetchCdeTicketsFromMySQL(): Promise<RecepcionCdeTicket[]> {
+export async function fetchCdeTicketsFromMySQL(options?: {
+  throwOnError?: boolean;
+}): Promise<RecepcionCdeTicket[]> {
   try {
     const res = await fetch("/api/db?module=cde", { cache: "no-store" });
-    const json = await res.json();
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      throw new Error(json?.error || `Error MySQL CDE (HTTP ${res.status})`);
+    }
     if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
-      const checkins = getStoredCdeCheckins();
-
-      const enriched: RecepcionCdeTicket[] = json.data
-        .filter((t: RecepcionCdeTicket) => {
-          const num = parseInt(t.idOrden, 10);
-          return isNaN(num) || num >= 100000;
-        })
-        .map((t: RecepcionCdeTicket, idx: number) => {
-          const rowKey = t.rowKey || `CDE_${t.idOrden}_${t.codigoProducto || ''}_${t.serial || ''}_${idx}`;
-          const checkinInfo = checkins[rowKey];
-          const isRecibido = checkinInfo ? checkinInfo.recibido : Boolean(t.recibidoEnDeposito);
-          return {
-            ...t,
-            rowKey,
-            diasResolucion: t.diasResolucion ?? calcularDiasResolucion(t.fechaIngreso, t.fechaEntregada),
-            esDanesa: isTicketDanesa(t.cliente),
-            recibidoEnDeposito: isRecibido,
-            fechaRecibidoDeposito: checkinInfo?.fecha || t.fechaRecibidoDeposito,
-          };
-        });
-      saveCdeTickets(enriched);
-      return enriched;
+      return applyCloudCdeTickets(
+        json.data as RecepcionCdeTicket[],
+        json.checkins || null,
+        Array.isArray(json.crossMatches) ? json.crossMatches : null
+      );
     }
   } catch (err) {
     console.warn("[MySQL Sync CDE] Usando caché local:", err);
+    if (options?.throwOnError) {
+      throw err instanceof Error ? err : new Error("Error al conectar con MySQL CDE.");
+    }
   }
   return getStoredCdeTickets();
 }
@@ -520,7 +587,8 @@ export interface ResultadoCargaCdeCSV {
 
 export function procesarActualizacionCdeCSV(
   csvContent: string,
-  currentTickets: RecepcionCdeTicket[]
+  currentTickets: RecepcionCdeTicket[],
+  options?: { skipBackgroundSync?: boolean }
 ): ResultadoCargaCdeCSV {
   const incoming = parseRecepcionCdeCSV(csvContent);
   const currentMap = new Map<string, RecepcionCdeTicket>();
@@ -624,7 +692,7 @@ export function procesarActualizacionCdeCSV(
 
   saveCdeTickets(updatedList);
 
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && !options?.skipBackgroundSync) {
     fetch('/api/db', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -657,13 +725,20 @@ export async function sincronizarCdeCsvOnline(
   csvText: string,
   currentTickets?: RecepcionCdeTicket[]
 ): Promise<ResultadoCargaCdeCSV> {
-  const base = currentTickets && currentTickets.length > 0
+  let base = currentTickets && currentTickets.length > 0
     ? currentTickets.filter((t) => {
         const n = parseInt(t.idOrden, 10);
         return isNaN(n) || n >= 100000;
       })
     : getStoredCdeTickets();
-  const resCalculo = procesarActualizacionCdeCSV(csvText, base);
+
+  if (typeof window !== "undefined") {
+    base = await fetchCdeTicketsFromMySQL({ throwOnError: true });
+  }
+
+  const resCalculo = procesarActualizacionCdeCSV(csvText, base, {
+    skipBackgroundSync: true,
+  });
 
   if (resCalculo.totalFilasLeidas === 0) {
     throw new Error(
@@ -687,10 +762,10 @@ export async function sincronizarCdeCsvOnline(
     }
 
     if (Array.isArray(json.data) && json.data.length > 0) {
-      saveCdeTickets(json.data);
+      const enriched = applyCloudCdeTickets(json.data as RecepcionCdeTicket[]);
       return {
         ...resCalculo,
-        updatedTickets: json.data,
+        updatedTickets: enriched,
       };
     }
   }

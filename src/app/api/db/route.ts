@@ -17,8 +17,11 @@ import {
   seedMontajesTable,
   seedCdeTable,
   getMysqlInfo,
+  formatMysqlError,
 } from "@/lib/mysql";
 import { clasificarMensajeCSV } from "@/data/tallerReparacionesData";
+
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
@@ -82,7 +85,7 @@ export async function GET(req: NextRequest) {
       {
         ok: false,
         serverInfo: getMysqlInfo(),
-        error: "Servidor MySQL en la nube ocupado. Conectando...",
+        error: formatMysqlError(err),
       },
       { status: 503 }
     );
@@ -333,31 +336,99 @@ export async function POST(req: NextRequest) {
     if (action === "BULK_UPDATE_RECEPCION_CSV") {
       const { tickets = [], cambios = [], nuevasOrdenes = [] } = body;
 
-      // Sincronización completa de todos los tickets del CSV en la nube MySQL
+      // Sincronización completa por lotes (100 filas por query) de tickets del CSV en MySQL
       if (Array.isArray(tickets) && tickets.length > 0) {
-        const CHUNK_SIZE = 150;
-        for (let i = 0; i < tickets.length; i += CHUNK_SIZE) {
-          const chunk = tickets.slice(i, i + CHUNK_SIZE);
-          for (const t of chunk) {
-            const isDelivered = String(t.estado || "").trim().toLowerCase() === "entregada";
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < tickets.length; i += BATCH_SIZE) {
+          const batch = tickets.slice(i, i + BATCH_SIZE).filter((t: any) => t && t.idOrden);
+          if (batch.length === 0) continue;
+          const values: any[] = [];
+          const placeholders = batch
+            .map((t: any) => {
+              const isDelivered = String(t.estado || "").trim().toLowerCase() === "entregada";
+              values.push(
+                t.idOrden,
+                t.codigoProducto || "",
+                t.cliente || "Cliente",
+                t.mensaje || "",
+                t.fechaIngreso || "",
+                t.fechaEntregada || null,
+                t.fechaVenta || null,
+                t.estado || "En Asignacion",
+                t.tipoComponente || "GENERAL",
+                t.marca || "",
+                t.modelo || "",
+                t.serial || "S/N",
+                t.accesorios || null,
+                t.origen || (isDelivered ? "RECIEN_ENTREGADO" : "CSV")
+              );
+              return "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            })
+            .join(", ");
+
+          await pool.query(
+            `INSERT INTO recepcion_tickets
+             (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, accesorios, origen)
+             VALUES ${placeholders}
+             ON DUPLICATE KEY UPDATE
+               codigo_producto = VALUES(codigo_producto),
+               cliente = VALUES(cliente),
+               mensaje = VALUES(mensaje),
+               fecha_ingreso = VALUES(fecha_ingreso),
+               fecha_entregada = COALESCE(VALUES(fecha_entregada), fecha_entregada),
+               fecha_venta = VALUES(fecha_venta),
+               estado = VALUES(estado),
+               tipo_componente = VALUES(tipo_componente),
+               marca = VALUES(marca),
+               modelo = VALUES(modelo),
+               serial = VALUES(serial),
+               accesorios = COALESCE(VALUES(accesorios), accesorios)`,
+            values
+          );
+        }
+      }
+
+      if (Array.isArray(cambios) && cambios.length > 0) {
+        for (const c of cambios) {
+          if (!c || !c.idOrden) continue;
+          const isDelivered = String(c.estadoNuevo || "").trim().toLowerCase() === "entregada";
+          await pool.query(
+            `UPDATE recepcion_tickets
+             SET estado = ?,
+                 fecha_entregada = COALESCE(?, fecha_entregada),
+                 origen = CASE
+                   WHEN origen = 'NUEVO_INGRESO' THEN 'NUEVO_INGRESO'
+                   WHEN ? THEN 'RECIEN_ENTREGADO'
+                   ELSE 'ESTADO_CAMBIADO'
+                 END
+             WHERE id_orden = ?`,
+            [c.estadoNuevo || "", c.fechaEntregada || null, isDelivered, c.idOrden]
+          );
+
+          const estLower = String(c.estadoNuevo || "").toLowerCase();
+          if (estLower.includes("reparada") || estLower === "entregada" || estLower === "qc") {
             await pool.query(
-              `INSERT INTO recepcion_tickets
-               (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, accesorios, origen)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-               ON DUPLICATE KEY UPDATE
-                 codigo_producto = VALUES(codigo_producto),
-                 cliente = VALUES(cliente),
-                 mensaje = VALUES(mensaje),
-                 fecha_ingreso = VALUES(fecha_ingreso),
-                 fecha_entregada = COALESCE(VALUES(fecha_entregada), fecha_entregada),
-                 fecha_venta = VALUES(fecha_venta),
-                 estado = VALUES(estado),
-                 tipo_componente = VALUES(tipo_componente),
-                 marca = VALUES(marca),
-                 modelo = VALUES(modelo),
-                 serial = VALUES(serial),
-                 accesorios = COALESCE(VALUES(accesorios), accesorios)`,
-              [
+              `UPDATE taller_reparaciones
+               SET estado = 'FINALIZADA'
+               WHERE id_orden = ?`,
+              [c.idOrden]
+            );
+          }
+        }
+      }
+
+      const validNuevas = Array.isArray(nuevasOrdenes)
+        ? nuevasOrdenes.filter((t: any) => t && t.idOrden && t.cliente && t.estado !== undefined)
+        : [];
+
+      if (validNuevas.length > 0) {
+        const BATCH_SIZE = 100;
+        for (let i = 0; i < validNuevas.length; i += BATCH_SIZE) {
+          const batch = validNuevas.slice(i, i + BATCH_SIZE);
+          const values: any[] = [];
+          const placeholders = batch
+            .map((t: any) => {
+              values.push(
                 t.idOrden,
                 t.codigoProducto || "",
                 t.cliente,
@@ -369,112 +440,72 @@ export async function POST(req: NextRequest) {
                 t.tipoComponente || "GENERAL",
                 t.marca || "",
                 t.modelo || "",
-                t.serial || "S/N",
-                t.accesorios || null,
-                t.origen || (isDelivered ? "RECIEN_ENTREGADO" : "CSV"),
+                t.serial || "SIN SERIAL VISIBLE"
+              );
+              return "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NUEVO_INGRESO')";
+            })
+            .join(", ");
+
+          await pool.query(
+            `INSERT INTO recepcion_tickets
+             (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
+             VALUES ${placeholders}
+             ON DUPLICATE KEY UPDATE
+               cliente = VALUES(cliente),
+               estado = VALUES(estado),
+               fecha_entregada = COALESCE(VALUES(fecha_entregada), fecha_entregada),
+               tipo_componente = VALUES(tipo_componente),
+               marca = VALUES(marca),
+               modelo = VALUES(modelo),
+               origen = 'NUEVO_INGRESO'`,
+            values
+          );
+        }
+
+        for (const t of validNuevas) {
+          const estLower = String(t.estado || "").toLowerCase();
+          if (
+            estLower.includes("reparación") ||
+            estLower.includes("asignad") ||
+            estLower.includes("asignacion") ||
+            estLower.includes("repuesto") ||
+            estLower === "qc" ||
+            estLower.includes("reparada")
+          ) {
+            const { detalleReparacion, observaciones } = clasificarMensajeCSV(
+              t.mensaje,
+              t.estado
+            );
+            const estadoTaller =
+              estLower.includes("reparada") || estLower === "qc"
+                ? "FINALIZADA"
+                : "SIN_ASIGNAR";
+            await pool.query(
+              `INSERT INTO taller_reparaciones
+               (id_orden, codigo_producto, cliente, equipo, marca, modelo, tipo_componente, serial,
+                falla_reportada, detalle_reparacion, observaciones, mensaje_sati, fecha_ingreso, estado)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)
+               ON DUPLICATE KEY UPDATE
+                 cliente = VALUES(cliente),
+                 equipo = VALUES(equipo),
+                 estado = VALUES(estado)`,
+              [
+                t.idOrden,
+                t.codigoProducto || "",
+                t.cliente,
+                `${t.marca || ""} ${t.modelo || ""}`.trim() || t.tipoComponente || "EQUIPO",
+                t.marca || "",
+                t.modelo || "",
+                t.tipoComponente || "GENERAL",
+                t.serial || "SIN SERIAL VISIBLE",
+                detalleReparacion,
+                observaciones,
+                t.mensaje || "",
+                t.fechaIngreso || "",
+                estadoTaller,
               ]
             );
           }
-        }
-      }
-
-      for (const c of cambios) {
-        const isDelivered = String(c.estadoNuevo || "").trim().toLowerCase() === "entregada";
-        await pool.query(
-          `UPDATE recepcion_tickets
-           SET estado = ?,
-               fecha_entregada = COALESCE(?, fecha_entregada),
-               origen = CASE
-                 WHEN origen = 'NUEVO_INGRESO' THEN 'NUEVO_INGRESO'
-                 WHEN ? THEN 'RECIEN_ENTREGADO'
-                 ELSE 'ESTADO_CAMBIADO'
-               END
-           WHERE id_orden = ?`,
-          [c.estadoNuevo, c.fechaEntregada || null, isDelivered, c.idOrden]
-        );
-
-        const estLower = String(c.estadoNuevo || "").toLowerCase();
-        if (estLower.includes("reparada") || estLower === "entregada" || estLower === "qc") {
-          await pool.query(
-            `UPDATE taller_reparaciones
-             SET estado = 'FINALIZADA'
-             WHERE id_orden = ?`,
-            [c.idOrden]
-          );
-        }
-      }
-
-      for (const t of nuevasOrdenes) {
-        await pool.query(
-          `INSERT INTO recepcion_tickets
-           (id_orden, codigo_producto, cliente, mensaje, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'NUEVO_INGRESO')
-           ON DUPLICATE KEY UPDATE
-             cliente = VALUES(cliente),
-             estado = VALUES(estado),
-             fecha_entregada = COALESCE(VALUES(fecha_entregada), fecha_entregada),
-             tipo_componente = VALUES(tipo_componente),
-             marca = VALUES(marca),
-             modelo = VALUES(modelo),
-             origen = 'NUEVO_INGRESO'`,
-          [
-            t.idOrden,
-            t.codigoProducto || "",
-            t.cliente,
-            t.mensaje || "",
-            t.fechaIngreso || "",
-            t.fechaEntregada || null,
-            t.fechaVenta || null,
-            t.estado,
-            t.tipoComponente || "GENERAL",
-            t.marca || "",
-            t.modelo || "",
-            t.serial || "SIN SERIAL VISIBLE",
-          ]
-        );
-
-        const estLower = String(t.estado || "").toLowerCase();
-        if (
-          estLower.includes("reparación") ||
-          estLower.includes("asignad") ||
-          estLower.includes("asignacion") ||
-          estLower.includes("repuesto") ||
-          estLower === "qc" ||
-          estLower.includes("reparada")
-        ) {
-          const { detalleReparacion, observaciones } = clasificarMensajeCSV(
-            t.mensaje,
-            t.estado
-          );
-          const estadoTaller =
-            estLower.includes("reparada") || estLower === "qc"
-              ? "FINALIZADA"
-              : "SIN_ASIGNAR";
-          await pool.query(
-            `INSERT INTO taller_reparaciones
-             (id_orden, codigo_producto, cliente, equipo, marca, modelo, tipo_componente, serial,
-              falla_reportada, detalle_reparacion, observaciones, mensaje_sati, fecha_ingreso, estado)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, '', ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-               cliente = VALUES(cliente),
-               equipo = VALUES(equipo),
-               estado = VALUES(estado)`,
-            [
-              t.idOrden,
-              t.codigoProducto || "",
-              t.cliente,
-              `${t.marca || ""} ${t.modelo || ""}`.trim() || t.tipoComponente || "EQUIPO",
-              t.marca || "",
-              t.modelo || "",
-              t.tipoComponente || "GENERAL",
-              t.serial || "SIN SERIAL VISIBLE",
-              detalleReparacion,
-              observaciones,
-              t.mensaje || "",
-              t.fechaIngreso || "",
-              estadoTaller,
-            ]
-          );
         }
       }
 
@@ -1142,9 +1173,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Acción no reconocida." }, { status: 400 });
   } catch (err: unknown) {
     console.error("[MYSQL POST ERROR]", err);
-    const detail = err instanceof Error ? err.message : "Error de conexión";
     return NextResponse.json(
-      { ok: false, error: `Error al sincronizar con MySQL en la nube (${detail}).` },
+      { ok: false, error: formatMysqlError(err) },
       { status: 503 }
     );
   }

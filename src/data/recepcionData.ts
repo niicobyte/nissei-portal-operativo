@@ -27386,45 +27386,94 @@ export function isTicketEntregadoReciente(ticket: RecepcionTicket): boolean {
   return initialStatus !== 'entregada';
 }
 
-export async function fetchTicketsFromMySQL(): Promise<RecepcionTicket[]> {
+export function applyCloudRecepcionTickets(rawData: RecepcionTicket[]): RecepcionTicket[] {
+  const localNewIds = new Set(getStoredIds(NEW_INGRESOS_STORAGE_KEY));
+  const localChangedIds = new Set(getStoredIds(ESTADOS_CAMBIADOS_STORAGE_KEY));
+  const localDeliveredIds = new Set(getStoredIds(ENTREGADOS_RECIENTES_STORAGE_KEY));
+
+  const enriched: RecepcionTicket[] = rawData.map((t: RecepcionTicket) => {
+    const cleanId = String(t.idOrden).trim();
+    const estLow = (t.estado || '').trim().toLowerCase();
+    const initialEst = INITIAL_STATUS_MAP.get(cleanId);
+    return {
+      ...t,
+      esNuevoIngreso:
+        Boolean(t.esNuevoIngreso) ||
+        localNewIds.has(cleanId) ||
+        !INITIAL_STATUS_MAP.has(cleanId) ||
+        (t.mensaje || '').includes('Accesorios:'),
+      esEstadoCambiadoReciente:
+        Boolean(t.esEstadoCambiadoReciente) ||
+        localChangedIds.has(cleanId) ||
+        (initialEst !== undefined && initialEst !== estLow),
+      esEntregadoReciente:
+        estLow === 'entregada' &&
+        (Boolean(t.esEntregadoReciente) ||
+          localDeliveredIds.has(cleanId) ||
+          initialEst === undefined ||
+          initialEst !== 'entregada'),
+    };
+  });
+  saveTickets(enriched);
+  return enriched;
+}
+
+export async function fetchTicketsFromMySQL(options?: {
+  throwOnError?: boolean;
+}): Promise<RecepcionTicket[]> {
   try {
     const res = await fetch('/api/db?module=recepcion', { cache: 'no-store' });
-    const json = await res.json();
-    if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
-      const localNewIds = new Set(getStoredIds(NEW_INGRESOS_STORAGE_KEY));
-      const localChangedIds = new Set(getStoredIds(ESTADOS_CAMBIADOS_STORAGE_KEY));
-      const localDeliveredIds = new Set(getStoredIds(ENTREGADOS_RECIENTES_STORAGE_KEY));
-
-      const enriched: RecepcionTicket[] = json.data.map((t: RecepcionTicket) => {
-        const cleanId = String(t.idOrden).trim();
-        const estLow = (t.estado || '').trim().toLowerCase();
-        const initialEst = INITIAL_STATUS_MAP.get(cleanId);
-        return {
-          ...t,
-          esNuevoIngreso:
-            Boolean(t.esNuevoIngreso) ||
-            localNewIds.has(cleanId) ||
-            !INITIAL_STATUS_MAP.has(cleanId) ||
-            (t.mensaje || '').includes('Accesorios:'),
-          esEstadoCambiadoReciente:
-            Boolean(t.esEstadoCambiadoReciente) ||
-            localChangedIds.has(cleanId) ||
-            (initialEst !== undefined && initialEst !== estLow),
-          esEntregadoReciente:
-            estLow === 'entregada' &&
-            (Boolean(t.esEntregadoReciente) ||
-              localDeliveredIds.has(cleanId) ||
-              initialEst === undefined ||
-              initialEst !== 'entregada'),
-        };
-      });
-      saveTickets(enriched);
-      return enriched;
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      throw new Error(json?.error || `Error MySQL (HTTP ${res.status})`);
+    }
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      return applyCloudRecepcionTickets(json.data as RecepcionTicket[]);
     }
   } catch (err) {
     console.warn('[MySQL Sync Recepcion] Usando caché local:', err);
+    if (options?.throwOnError) {
+      throw err instanceof Error ? err : new Error('Error al conectar con MySQL.');
+    }
   }
   return getStoredTickets();
+}
+
+export async function addTicketAsync(ticket: RecepcionTicket): Promise<RecepcionTicket[]> {
+  const isDelivered = (ticket.estado || '').trim().toLowerCase() === 'entregada';
+  const enrichedTicket: RecepcionTicket = {
+    ...ticket,
+    esNuevoIngreso: true,
+    esEntregadoReciente: isDelivered,
+  };
+  recordStoredId(NEW_INGRESOS_STORAGE_KEY, enrichedTicket.idOrden);
+  if (isDelivered) {
+    recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, enrichedTicket.idOrden);
+  }
+
+  const current = getStoredTickets();
+  const exists = current.some((t) => t.idOrden === ticket.idOrden);
+  const updated = exists
+    ? current.map((t) => (t.idOrden === ticket.idOrden ? enrichedTicket : t))
+    : [enrichedTicket, ...current];
+  saveTickets(updated);
+
+  if (typeof window !== 'undefined') {
+    const res = await fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'ADD_RECEPCION_TICKET', ticket: enrichedTicket }),
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      throw new Error(json?.error || 'No se pudo guardar el ticket en MySQL.');
+    }
+    if (Array.isArray(json.data) && json.data.length > 0) {
+      return applyCloudRecepcionTickets(json.data as RecepcionTicket[]);
+    }
+  }
+
+  return updated;
 }
 
 export function addTicket(ticket: RecepcionTicket): RecepcionTicket[] {
@@ -27574,6 +27623,8 @@ export interface ResultadoCargaCSV {
   totalNuevas: number;
   totalSinCambios: number;
   cambios: CambioEstadoCSV[];
+  nuevasOrdenesTickets?: RecepcionTicket[];
+  changedOrNewTickets?: RecepcionTicket[];
 }
 
 /**
@@ -27656,7 +27707,8 @@ function normalizeHeader(h: string): string {
  */
 export function procesarActualizacionCSV(
   csvText: string,
-  currentTickets?: RecepcionTicket[]
+  currentTickets?: RecepcionTicket[],
+  options?: { skipBackgroundSync?: boolean }
 ): ResultadoCargaCSV {
   const baseTickets = currentTickets ? [...currentTickets] : [...getStoredTickets()];
   const rows = parseCSVText(csvText);
@@ -27669,6 +27721,8 @@ export function procesarActualizacionCSV(
       totalNuevas: 0,
       totalSinCambios: 0,
       cambios: [],
+      nuevasOrdenesTickets: [],
+      changedOrNewTickets: [],
     };
   }
 
@@ -27715,6 +27769,7 @@ export function procesarActualizacionCSV(
 
   const cambios: CambioEstadoCSV[] = [];
   const nuevasOrdenes: RecepcionTicket[] = [];
+  const changedOrNewMap = new Map<string, RecepcionTicket>();
   let totalFilasLeidas = 0;
   let totalSinCambios = 0;
 
@@ -27758,6 +27813,7 @@ export function procesarActualizacionCSV(
           esEntregadoReciente: isDelivered ? true : actual.esEntregadoReciente,
         };
         baseTickets[existingIndex] = updatedTicket;
+        changedOrNewMap.set(rawId, updatedTicket);
 
         cambios.push({
           idOrden: rawId,
@@ -27773,11 +27829,13 @@ export function procesarActualizacionCSV(
           (fechaEntregadaCSV && fechaEntregadaCSV !== actual.fechaEntregada) ||
           (mensajeCSV && mensajeCSV !== actual.mensaje)
         ) {
-          baseTickets[existingIndex] = {
+          const enrichedLocal: RecepcionTicket = {
             ...actual,
             fechaEntregada: fechaEntregadaCSV || actual.fechaEntregada,
             mensaje: mensajeCSV || actual.mensaje,
           };
+          baseTickets[existingIndex] = enrichedLocal;
+          changedOrNewMap.set(rawId, enrichedLocal);
         }
         totalSinCambios++;
       }
@@ -27820,6 +27878,7 @@ export function procesarActualizacionCSV(
       };
 
       nuevasOrdenes.push(nuevoTicket);
+      changedOrNewMap.set(rawId, nuevoTicket);
       ticketMap.set(rawId, baseTickets.length + nuevasOrdenes.length - 1);
 
       cambios.push({
@@ -27835,8 +27894,9 @@ export function procesarActualizacionCSV(
 
   const finalTickets =
     nuevasOrdenes.length > 0 ? [...nuevasOrdenes, ...baseTickets] : baseTickets;
+  const changedOrNewTickets = Array.from(changedOrNewMap.values());
 
-  if (cambios.length > 0 || nuevasOrdenes.length > 0) {
+  if (cambios.length > 0 || nuevasOrdenes.length > 0 || changedOrNewTickets.length > 0) {
     saveTickets(finalTickets);
 
     // Sincronizar también el espejo local de taller_reparaciones para que el Visor MySQL y Taller reflejen las nuevas órdenes y estados
@@ -27920,15 +27980,18 @@ export function procesarActualizacionCSV(
         console.warn('Error sincronizando caché de taller con CSV:', e);
       }
 
-      fetch('/api/db', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'BULK_UPDATE_RECEPCION_CSV',
-          cambios: cambios.filter((c) => c.estadoAnterior !== 'NO ESTABA EN RECEPCIÓN (NUEVA)'),
-          nuevasOrdenes,
-        }),
-      }).catch((err) => console.error('[MySQL Error Bulk CSV Update]', err));
+      if (!options?.skipBackgroundSync) {
+        fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'BULK_UPDATE_RECEPCION_CSV',
+            tickets: changedOrNewTickets,
+            cambios: cambios.filter((c) => c.estadoAnterior !== 'NO ESTABA EN RECEPCIÓN (NUEVA)'),
+            nuevasOrdenes,
+          }),
+        }).catch((err) => console.error('[MySQL Error Bulk CSV Update]', err));
+      }
     }
   }
 
@@ -27939,6 +28002,8 @@ export function procesarActualizacionCSV(
     totalNuevas: nuevasOrdenes.length,
     totalSinCambios,
     cambios,
+    nuevasOrdenesTickets: nuevasOrdenes,
+    changedOrNewTickets,
   };
 }
 
@@ -27951,32 +28016,58 @@ export async function sincronizarRecepcionCsvOnline(
   csvText: string,
   currentTickets?: RecepcionTicket[]
 ): Promise<ResultadoCargaCSV> {
-  const baseTickets = currentTickets && currentTickets.length > 0 ? currentTickets : getStoredTickets();
-  const resCalculo = procesarActualizacionCSV(csvText, baseTickets);
+  let cloudBase = currentTickets && currentTickets.length > 0 ? currentTickets : getStoredTickets();
 
-  if (typeof window !== "undefined") {
-    const resp = await fetch("/api/db", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "BULK_UPDATE_RECEPCION_CSV",
-        tickets: resCalculo.updatedTickets,
-        cambios: resCalculo.cambios,
-        nuevasOrdenes: resCalculo.cambios.filter((c) => c.estadoAnterior === "NO ESTABA EN RECEPCIÓN (NUEVA)"),
-      }),
-    });
+  if (typeof window !== 'undefined') {
+    cloudBase = await fetchTicketsFromMySQL({ throwOnError: true });
+  }
 
-    const json = await resp.json();
-    if (!resp.ok || !json.ok) {
-      throw new Error(json.error || "No se pudo sincronizar el CSV en la base de datos MySQL en la nube.");
-    }
+  const resCalculo = procesarActualizacionCSV(csvText, cloudBase, {
+    skipBackgroundSync: true,
+  });
 
-    if (Array.isArray(json.data) && json.data.length > 0) {
-      saveTickets(json.data);
-      return {
-        ...resCalculo,
-        updatedTickets: json.data,
-      };
+  if (resCalculo.totalFilasLeidas === 0) {
+    throw new Error(
+      'No se detectaron órdenes válidas en el archivo CSV. Verifique el formato SATI exportado.'
+    );
+  }
+
+  if (typeof window !== 'undefined') {
+    const ticketsToPersist =
+      resCalculo.changedOrNewTickets && resCalculo.changedOrNewTickets.length > 0
+        ? resCalculo.changedOrNewTickets
+        : [];
+    const cambiosList = resCalculo.cambios.filter(
+      (c) => c.estadoAnterior !== 'NO ESTABA EN RECEPCIÓN (NUEVA)'
+    );
+    const nuevasList = resCalculo.nuevasOrdenesTickets || [];
+
+    if (ticketsToPersist.length > 0 || cambiosList.length > 0 || nuevasList.length > 0) {
+      const resp = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'BULK_UPDATE_RECEPCION_CSV',
+          tickets: ticketsToPersist,
+          cambios: cambiosList,
+          nuevasOrdenes: nuevasList,
+        }),
+      });
+
+      const json = await resp.json().catch(() => null);
+      if (!resp.ok || !json?.ok) {
+        throw new Error(
+          json?.error || 'No se pudo sincronizar el CSV en la base de datos MySQL en la nube.'
+        );
+      }
+
+      if (Array.isArray(json.data) && json.data.length > 0) {
+        const enriched = applyCloudRecepcionTickets(json.data as RecepcionTicket[]);
+        return {
+          ...resCalculo,
+          updatedTickets: enriched,
+        };
+      }
     }
   }
 

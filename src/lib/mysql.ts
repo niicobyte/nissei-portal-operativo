@@ -24,6 +24,19 @@ export interface MysqlConfig {
   isRailway: boolean;
 }
 
+function cleanEnvValue(value?: string): string {
+  if (!value) return "";
+  return value.trim().replace(/^['"]|['"]$/g, "");
+}
+
+function firstNonEmptyEnv(keys: string[]): { key: string; value: string } | null {
+  for (const key of keys) {
+    const val = cleanEnvValue(process.env[key]);
+    if (val) return { key, value: val };
+  }
+  return null;
+}
+
 export function resolveMysqlConfig(): MysqlConfig {
   const isRailway = Boolean(
     process.env.RAILWAY_ENVIRONMENT ||
@@ -31,21 +44,39 @@ export function resolveMysqlConfig(): MysqlConfig {
     process.env.RAILWAY_PROJECT_ID
   );
 
-  const connectionUrl =
-    process.env.MYSQL_URL ||
-    process.env.MYSQL_PUBLIC_URL ||
-    process.env.DATABASE_URL;
+  const envPassword =
+    firstNonEmptyEnv([
+      "MYSQL_PASSWORD",
+      "MYSQLPASSWORD",
+      "MYSQL_ROOT_PASSWORD",
+      "MYSQLROOTPASSWORD",
+      "MYSQL_PASS",
+      "MYSQL_PWD",
+      "DB_PASSWORD",
+      "DB_PASS",
+    ])?.value || "";
 
-  if (connectionUrl) {
+  const urlMatch = firstNonEmptyEnv([
+    "MYSQL_PRIVATE_URL",
+    "MYSQL_URL",
+    "DATABASE_URL",
+    "MYSQL_PUBLIC_URL",
+    "RAILWAY_MYSQL_URL",
+    "DB_URL",
+  ]);
+
+  if (urlMatch) {
     try {
-      const parsed = new URL(connectionUrl);
+      const parsed = new URL(urlMatch.value);
+      const parsedDb = parsed.pathname.replace(/^\//, "");
+      const parsedPassword = parsed.password ? decodeURIComponent(parsed.password) : "";
       return {
-        host: parsed.hostname || "localhost",
+        host: parsed.hostname || (isRailway ? "mysql.railway.internal" : "localhost"),
         port: Number(parsed.port || 3306),
         user: decodeURIComponent(parsed.username || "root"),
-        password: decodeURIComponent(parsed.password || ""),
-        database: parsed.pathname.replace(/^\//, "") || (isRailway ? "railway" : "nissei_portal"),
-        source: "URL",
+        password: parsedPassword || envPassword,
+        database: parsedDb || (isRailway ? "railway" : "nissei_portal"),
+        source: `URL:${urlMatch.key}`,
         isRailway,
       };
     } catch {
@@ -56,12 +87,29 @@ export function resolveMysqlConfig(): MysqlConfig {
   const defaultHost = isRailway ? "mysql.railway.internal" : "localhost";
   const defaultDatabase = isRailway ? "railway" : "nissei_portal";
 
+  const host =
+    firstNonEmptyEnv(["MYSQL_HOST", "MYSQLHOST", "MYSQL_PRIVATE_HOST", "DB_HOST"])?.value ||
+    defaultHost;
+  const port = Number(
+    firstNonEmptyEnv(["MYSQL_PORT", "MYSQLPORT", "DB_PORT"])?.value || 3306
+  );
+  const user =
+    firstNonEmptyEnv(["MYSQL_USER", "MYSQLUSER", "DB_USER"])?.value || "root";
+  const database =
+    firstNonEmptyEnv([
+      "MYSQL_DATABASE",
+      "MYSQLDATABASE",
+      "MYSQL_DB",
+      "DB_DATABASE",
+      "DB_NAME",
+    ])?.value || defaultDatabase;
+
   return {
-    host: process.env.MYSQL_HOST || process.env.MYSQLHOST || defaultHost,
-    port: Number(process.env.MYSQL_PORT || process.env.MYSQLPORT || 3306),
-    user: process.env.MYSQL_USER || process.env.MYSQLUSER || "root",
-    password: process.env.MYSQL_PASSWORD || process.env.MYSQLPASSWORD || "",
-    database: process.env.MYSQL_DATABASE || process.env.MYSQLDATABASE || defaultDatabase,
+    host,
+    port,
+    user,
+    password: envPassword,
+    database,
     source: isRailway ? "RAILWAY_INTERNAL" : "ENV_LOCAL",
     isRailway,
   };
@@ -76,12 +124,46 @@ export function getMysqlInfo() {
     user: config.user,
     isRailway: config.isRailway,
     source: config.source,
+    hasPassword: Boolean(config.password),
   };
+}
+
+export function formatMysqlError(err: unknown): string {
+  const info = getMysqlInfo();
+  const code =
+    err && typeof err === "object" && "code" in err
+      ? String((err as { code?: unknown }).code || "")
+      : "";
+  const rawMessage = err instanceof Error ? err.message : String(err || "Error desconocido de MySQL");
+
+  const isAccessDenied =
+    code === "ER_ACCESS_DENIED_ERROR" ||
+    rawMessage.toLowerCase().includes("access denied");
+
+  if (isAccessDenied && !info.hasPassword && info.isRailway) {
+    return (
+      `MySQL en Railway rechazó la conexión (using password: NO). ` +
+      `En Railway -> servicio nissei-portal-operativo -> Variables, agregue Reference Variable desde MySQL ` +
+      `(MYSQL_URL o MYSQLPASSWORD / MYSQL_ROOT_PASSWORD) y vuelva a desplegar.`
+    );
+  }
+
+  if (isAccessDenied) {
+    return `Acceso denegado a MySQL (${info.user}@${info.host}:${info.port}). Verifique las credenciales de MySQL en las variables de entorno.`;
+  }
+
+  if (code === "ECONNREFUSED" || code === "ENOTFOUND" || code === "ETIMEDOUT") {
+    return `No se pudo conectar a MySQL (${info.host}:${info.port}): ${rawMessage}`;
+  }
+
+  return rawMessage;
 }
 
 declare global {
   // eslint-disable-next-line no-var
   var __nisseiMysqlPool: mysql.Pool | undefined;
+  // eslint-disable-next-line no-var
+  var __nisseiMysqlPoolKey: string | undefined;
   // eslint-disable-next-line no-var
   var __nisseiMysqlInitialized: boolean | undefined;
   // eslint-disable-next-line no-var
@@ -90,7 +172,8 @@ declare global {
 
 export function getPool(): mysql.Pool {
   const config = resolveMysqlConfig();
-  if (!global.__nisseiMysqlPool) {
+  const poolKey = `${config.host}:${config.port}:${config.user}:${config.database}:${config.password ? "1" : "0"}`;
+  if (!global.__nisseiMysqlPool || global.__nisseiMysqlPoolKey !== poolKey) {
     global.__nisseiMysqlPool = mysql.createPool({
       host: config.host,
       port: config.port,
@@ -103,6 +186,9 @@ export function getPool(): mysql.Pool {
       charset: "utf8mb4",
       connectTimeout: 7000,
     });
+    global.__nisseiMysqlPoolKey = poolKey;
+    global.__nisseiMysqlInitialized = false;
+    global.__nisseiMysqlInitPromise = undefined;
   }
   return global.__nisseiMysqlPool;
 }

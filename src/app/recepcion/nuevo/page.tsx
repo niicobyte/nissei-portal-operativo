@@ -16,8 +16,8 @@ import {
   Calendar,
   Barcode
 } from "lucide-react";
-import { addTicket, getStoredTickets, RecepcionTicket } from "@/data/recepcionData";
-import { getStoredReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
+import { addTicketAsync, fetchTicketsFromMySQL, getStoredTickets, RecepcionTicket } from "@/data/recepcionData";
+import { fetchReparacionesFromMySQL, getStoredReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
 import {
   CATEGORY_FAMILIES,
   TOP_SATI_BRANDS,
@@ -252,32 +252,50 @@ export default function NuevoIngresoRetornoPage() {
     }
   };
 
-  // Cargar órdenes existentes y autocompletar si viene parámetro o sugerir correlativo
+  // Cargar órdenes existentes (caché + MySQL en la nube) y autocompletar
   useEffect(() => {
     const tList = getStoredTickets();
     const rList = getStoredReparaciones();
     setAllTickets(tList);
     setAllReparaciones(rList);
 
-    if (typeof window !== "undefined") {
-      const searchParams = new URLSearchParams(window.location.search);
-      const paramOrden = searchParams.get("orden");
-      if (paramOrden) {
-        handleOrderLookup(paramOrden, tList, rList);
-        return;
-      }
-    }
+    const searchParams =
+      typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+    const paramOrden = searchParams?.get("orden");
 
-    if (tList && tList.length > 0) {
+    if (paramOrden) {
+      handleOrderLookup(paramOrden, tList, rList);
+    } else if (tList && tList.length > 0) {
       const numericIds = tList
         .map((t) => Number(t.idOrden))
         .filter((n) => !isNaN(n));
       if (numericIds.length > 0) {
         const maxId = Math.max(...numericIds);
-        const defaultId = String(maxId + 1);
-        setOrderNumber(defaultId);
+        setOrderNumber(String(maxId + 1));
       }
     }
+
+    Promise.all([
+      fetchTicketsFromMySQL().catch(() => tList),
+      fetchReparacionesFromMySQL().catch(() => rList),
+    ]).then(([dbTickets, dbReparaciones]) => {
+      if (Array.isArray(dbTickets) && dbTickets.length > 0) {
+        setAllTickets(dbTickets);
+        if (paramOrden) {
+          handleOrderLookup(paramOrden, dbTickets, dbReparaciones);
+        } else {
+          const numericIds = dbTickets
+            .map((t) => Number(t.idOrden))
+            .filter((n) => !isNaN(n));
+          if (numericIds.length > 0) {
+            setOrderNumber(String(Math.max(...numericIds) + 1));
+          }
+        }
+      }
+      if (Array.isArray(dbReparaciones) && dbReparaciones.length > 0) {
+        setAllReparaciones(dbReparaciones);
+      }
+    });
   }, []);
 
   const handleSelectFamily = (family: CategoryFamily) => {
@@ -298,7 +316,7 @@ export default function NuevoIngresoRetornoPage() {
     setAccessories(accessories.filter((_, idx) => idx !== indexToRemove));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaved(true);
 
@@ -330,7 +348,11 @@ export default function NuevoIngresoRetornoPage() {
       serial: serialNumber.trim() || "SIN SERIAL",
     };
 
-    addTicket(newTicket);
+    try {
+      await addTicketAsync(newTicket);
+    } catch (err) {
+      console.error("[MySQL Save Ticket Warning]", err);
+    }
 
     // Envío automático al Grupo de Recepción Post-Venta vía WhaApi (Canal RECEPCION)
     const msg = getWhatsAppMessage();
@@ -345,7 +367,7 @@ export default function NuevoIngresoRetornoPage() {
 
     setTimeout(() => {
       router.push("/recepcion");
-    }, 1200);
+    }, 900);
   };
 
   // Previsualización del mensaje para WhatsApp

@@ -234,16 +234,24 @@ export function saveReparaciones(ordenes: OrdenReparacion[]) {
 }
 
 // Sincronizar lectura desde MySQL (/api/db?module=reparaciones)
-export async function fetchReparacionesFromMySQL(): Promise<OrdenReparacion[]> {
+export async function fetchReparacionesFromMySQL(options?: {
+  throwOnError?: boolean;
+}): Promise<OrdenReparacion[]> {
   try {
     const res = await fetch("/api/db?module=reparaciones", { cache: "no-store" });
-    const json = await res.json();
-    if (json.ok && Array.isArray(json.data) && json.data.length > 0) {
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      throw new Error(json?.error || `Error MySQL (HTTP ${res.status})`);
+    }
+    if (Array.isArray(json.data) && json.data.length > 0) {
       saveReparaciones(json.data);
       return json.data;
     }
   } catch (err) {
     console.warn("[MySQL Sync] Usando caché local mientras conecta a MySQL:", err);
+    if (options?.throwOnError) {
+      throw err instanceof Error ? err : new Error("Error al conectar con MySQL.");
+    }
   }
   return getStoredReparaciones();
 }
