@@ -1776,7 +1776,7 @@ export default function RecepcionCdeDashboardPage() {
                 setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="w-56"
+              className="max-w-[180px]"
             />
 
             {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}

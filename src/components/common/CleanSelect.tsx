@@ -119,8 +119,8 @@ export function CleanSelect({
             ? "border-zinc-900 ring-2 ring-zinc-900/10 bg-white text-zinc-900"
             : selectedOption && selectedOption.value !== "TODOS" && selectedOption.value !== "NINGUNO" && activeClassName
             ? activeClassName
-            : className || "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-800 hover:border-zinc-300"
-        }`}
+            : "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-800 hover:border-zinc-300"
+        } ${className}`}
       >
         <div className="flex items-center gap-1.5 truncate">
           {icon && <span className="shrink-0 text-zinc-500">{icon}</span>}

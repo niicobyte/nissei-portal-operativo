@@ -1698,7 +1698,7 @@ ${accText}`;
                 setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="w-56"
+              className="max-w-[180px]"
             />
 
             {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
@@ -1723,7 +1723,7 @@ ${accText}`;
                 setCurrentPage(1);
               }}
               icon={<ArrowUpDown className="w-3.5 h-3.5" />}
-              className="w-52"
+              className="max-w-[195px]"
             />
 
             {/* Resetear Filtros */}
