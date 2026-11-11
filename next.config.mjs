@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  experimental: {
+    middlewareClientMaxBodySize: "50mb",
+  },
   typescript: {
     ignoreBuildErrors: true,
   },

@@ -336,6 +336,7 @@ export async function POST(req: NextRequest) {
          WHERE id_orden = ?`,
         [newStatus, isDelivered, fechaHoy, isDelivered, idOrden]
       );
+
       const data = await dbGetRecepcionTickets();
       return NextResponse.json({ ok: true, data });
     }
@@ -515,6 +516,10 @@ export async function POST(req: NextRequest) {
             );
           }
         }
+      }
+
+      if (body.skipReturnData) {
+        return NextResponse.json({ ok: true });
       }
 
       const data = await dbGetRecepcionTickets();
@@ -1048,6 +1053,10 @@ export async function POST(req: NextRequest) {
           );
         }
       }
+      if (body.skipReturnData) {
+        return NextResponse.json({ ok: true });
+      }
+
       const data = await dbGetCdeTickets();
       return NextResponse.json({ ok: true, data });
     }

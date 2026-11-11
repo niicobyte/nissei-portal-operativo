@@ -28347,26 +28347,82 @@ export async function sincronizarRecepcionCsvOnline(
     const nuevasList = resCalculo.nuevasOrdenesTickets || [];
 
     if (ticketsToPersist.length > 0 || cambiosList.length > 0 || nuevasList.length > 0) {
-      const resp = await fetch('/api/db', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'BULK_UPDATE_RECEPCION_CSV',
-          tickets: ticketsToPersist,
-          cambios: cambiosList,
-          nuevasOrdenes: nuevasList,
-        }),
+      // Dividir en lotes compactos de 400 elementos (~250 KB/POST) para evitar cortes de body (>10 MB) en Middleware o proxy HTTP
+      const SYNC_CHUNK_SIZE = 400;
+      const postQueue: Array<{
+        tickets: Partial<RecepcionTicket>[];
+        cambios: CambioEstadoCSV[];
+        nuevasOrdenes: Partial<RecepcionTicket>[];
+      }> = [];
+
+      const compactTicket = (t: RecepcionTicket) => ({
+        idOrden: t.idOrden,
+        codigoProducto: t.codigoProducto || '',
+        cliente: t.cliente,
+        mensaje: t.mensaje || '',
+        fechaIngreso: t.fechaIngreso || '',
+        fechaEntregada: t.fechaEntregada || undefined,
+        fechaVenta: t.fechaVenta || undefined,
+        estado: t.estado || 'En Asignacion',
+        tipoComponente: t.tipoComponente || 'General',
+        marca: t.marca || '',
+        modelo: t.modelo || '',
+        serial: t.serial || 'S/N',
+        accesorios: t.accesorios || undefined,
       });
 
-      const json = await resp.json().catch(() => null);
-      if (!resp.ok || !json?.ok) {
-        throw new Error(
-          json?.error || 'No se pudo sincronizar el CSV en la base de datos MySQL en la nube.'
-        );
+      for (let i = 0; i < ticketsToPersist.length; i += SYNC_CHUNK_SIZE) {
+        postQueue.push({
+          tickets: ticketsToPersist.slice(i, i + SYNC_CHUNK_SIZE).map(compactTicket),
+          cambios: [],
+          nuevasOrdenes: [],
+        });
+      }
+      for (let i = 0; i < nuevasList.length; i += SYNC_CHUNK_SIZE) {
+        postQueue.push({
+          tickets: [],
+          cambios: [],
+          nuevasOrdenes: nuevasList.slice(i, i + SYNC_CHUNK_SIZE).map(compactTicket),
+        });
+      }
+      for (let i = 0; i < cambiosList.length; i += SYNC_CHUNK_SIZE) {
+        postQueue.push({
+          tickets: [],
+          cambios: cambiosList.slice(i, i + SYNC_CHUNK_SIZE),
+          nuevasOrdenes: [],
+        });
       }
 
-      if (Array.isArray(json.data) && json.data.length > 0) {
-        const enriched = applyCloudRecepcionTickets(json.data as RecepcionTicket[]);
+      let finalCloudData: RecepcionTicket[] | null = null;
+      for (let i = 0; i < postQueue.length; i++) {
+        const isLastChunk = i === postQueue.length - 1;
+        const payload = postQueue[i];
+        const resp = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'BULK_UPDATE_RECEPCION_CSV',
+            tickets: payload.tickets,
+            cambios: payload.cambios,
+            nuevasOrdenes: payload.nuevasOrdenes,
+            skipReturnData: !isLastChunk,
+          }),
+        });
+
+        const json = await resp.json().catch(() => null);
+        if (!resp.ok || !json?.ok) {
+          throw new Error(
+            json?.error || 'No se pudo sincronizar el CSV en la base de datos MySQL en la nube.'
+          );
+        }
+
+        if (isLastChunk && Array.isArray(json.data) && json.data.length > 0) {
+          finalCloudData = json.data as RecepcionTicket[];
+        }
+      }
+
+      if (finalCloudData && finalCloudData.length > 0) {
+        const enriched = applyCloudRecepcionTickets(finalCloudData);
         return {
           ...resCalculo,
           updatedTickets: enriched,

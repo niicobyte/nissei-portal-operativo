@@ -1056,22 +1056,55 @@ export async function sincronizarCdeCsvOnline(
 
   const ticketsToPersist = resCalculo.changedOrNewTickets ?? [];
   if (typeof window !== "undefined" && ticketsToPersist.length > 0) {
-    const resp = await fetch("/api/db", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "BULK_UPDATE_CDE_CSV",
-        tickets: ticketsToPersist,
-      }),
-    });
+    // Dividir en lotes compactos de 400 órdenes (~250 KB/POST) para evitar truncamientos de body (>10 MB) en Next Middleware o proxies HTTP
+    const SYNC_CHUNK_SIZE = 400;
+    const totalChunks = Math.ceil(ticketsToPersist.length / SYNC_CHUNK_SIZE);
+    let finalCloudData: RecepcionCdeTicket[] | null = null;
 
-    const json = await resp.json().catch(() => null);
-    if (!resp.ok || !json?.ok) {
-      throw new Error(json?.error || "Error al sincronizar con la base de datos MySQL en la nube (Railway).");
+    for (let i = 0; i < totalChunks; i++) {
+      const slice = ticketsToPersist
+        .slice(i * SYNC_CHUNK_SIZE, (i + 1) * SYNC_CHUNK_SIZE)
+        .map((t) => ({
+          idOrden: t.idOrden,
+          codigoProducto: t.codigoProducto || "",
+          cliente: t.cliente,
+          mensaje: t.mensaje || "",
+          fechaIngreso: t.fechaIngreso || "",
+          fechaEntregada: t.fechaEntregada || undefined,
+          fechaVenta: t.fechaVenta || undefined,
+          estado: t.estado || "En Asignacion",
+          tipoComponente: t.tipoComponente || "General",
+          modelo: t.modelo || "",
+          marca: t.marca || "",
+          serial: t.serial || "S/N",
+          diasResolucion: t.diasResolucion ?? null,
+          esDanesa: Boolean(t.esDanesa),
+          recibidoEnDeposito: Boolean(t.recibidoEnDeposito),
+        }));
+
+      const isLastChunk = i === totalChunks - 1;
+      const resp = await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "BULK_UPDATE_CDE_CSV",
+          tickets: slice,
+          skipReturnData: !isLastChunk,
+        }),
+      });
+
+      const json = await resp.json().catch(() => null);
+      if (!resp.ok || !json?.ok) {
+        throw new Error(json?.error || "Error al sincronizar con la base de datos MySQL en la nube (Railway).");
+      }
+
+      if (isLastChunk && Array.isArray(json.data) && json.data.length > 0) {
+        finalCloudData = json.data as RecepcionCdeTicket[];
+      }
     }
 
-    if (Array.isArray(json.data) && json.data.length > 0) {
-      const enriched = applyCloudCdeTickets(json.data as RecepcionCdeTicket[]);
+    if (finalCloudData && finalCloudData.length > 0) {
+      const enriched = applyCloudCdeTickets(finalCloudData);
       return {
         ...resCalculo,
         updatedTickets: enriched,
