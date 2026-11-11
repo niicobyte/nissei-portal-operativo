@@ -14,6 +14,7 @@ import {
   calcularDiasResolucion,
   isTicketDanesa,
   isDespachoCoherente,
+  isFechaValida,
 } from "@/data/recepcionCdeData";
 
 /**
@@ -238,19 +239,55 @@ export function crossMatchCdeWithAsu(
  */
 export function crossMatchAsuWithCde(
   asuTickets: RecepcionTicket[],
-  cdeTickets: RecepcionCdeTicket[]
+  cdeTickets: RecepcionCdeTicket[],
+  checkins: Record<string, any> = {},
+  overrides: Record<string, any> = {},
+  manualCrossMatches: Array<{ idOrdenAsu: string; idOrdenCde: string }> = []
 ): RecepcionTicket[] {
   if (!asuTickets || asuTickets.length === 0) return [];
   if (!cdeTickets || cdeTickets.length === 0) return asuTickets;
 
-  const cdeBySerial = new Map<string, RecepcionCdeTicket>();
-  const cdeById = new Map<string, RecepcionCdeTicket>();
+  // Filtrar estrictamente solo órdenes de CDE (>= 100000)
+  const realCdeTickets = cdeTickets.filter((c) => {
+    const num = parseInt(c.idOrden, 10);
+    return isNaN(num) || num >= 100000;
+  });
 
-  for (const c of cdeTickets) {
+  // Mapa de cruces manuales prioritarios confirmados
+  const manualAsuToCde = new Map<string, string>();
+  if (Array.isArray(manualCrossMatches)) {
+    manualCrossMatches.forEach((m) => {
+      if (m.idOrdenAsu && m.idOrdenCde) {
+        manualAsuToCde.set(m.idOrdenAsu.trim(), m.idOrdenCde.trim());
+      }
+    });
+  }
+
+  // Índices de CDE
+  const cdeById = new Map<string, RecepcionCdeTicket>();
+  const cdeBySerial = new Map<string, RecepcionCdeTicket[]>();
+  const cdeByProdModel = new Map<string, RecepcionCdeTicket[]>();
+  const cdeByClienteModel = new Map<string, RecepcionCdeTicket[]>();
+
+  for (const c of realCdeTickets) {
     if (c.idOrden) cdeById.set(c.idOrden.trim(), c);
     const s = normalizeSerial(c.serial);
-    if (s && !cdeBySerial.has(s)) {
-      cdeBySerial.set(s, c);
+    if (s) {
+      if (!cdeBySerial.has(s)) cdeBySerial.set(s, []);
+      cdeBySerial.get(s)!.push(c);
+    }
+    const cod = (c.codigoProducto || "").trim();
+    const mod = normalizeText(c.modelo);
+    if (cod && mod) {
+      const key = `${cod}___${mod}`;
+      if (!cdeByProdModel.has(key)) cdeByProdModel.set(key, []);
+      cdeByProdModel.get(key)!.push(c);
+    }
+    const cli = normalizeText(c.cliente);
+    if (cli && cli !== "danesasa" && mod) {
+      const key = `${cli}___${mod}`;
+      if (!cdeByClienteModel.has(key)) cdeByClienteModel.set(key, []);
+      cdeByClienteModel.get(key)!.push(c);
     }
   }
 
@@ -259,38 +296,150 @@ export function crossMatchAsuWithCde(
   return asuTickets.map((asu) => {
     const asuSerial = normalizeSerial(asu.serial);
     let match: RecepcionCdeTicket | null = null;
+    let matchReason = "";
 
-    if (asuSerial && cdeBySerial.has(asuSerial)) {
-      const cand = cdeBySerial.get(asuSerial)!;
-      if (!matchedCdeIds.has(cand.idOrden)) {
-        match = cand;
+    // 0. Cruce Manual prioritario
+    const manualCdeId = manualAsuToCde.get(asu.idOrden);
+    if (manualCdeId && cdeById.has(manualCdeId)) {
+      match = cdeById.get(manualCdeId)!;
+      matchReason = "Cruce Manual";
+    }
+
+    // 0.1 Overrides guardados
+    if (!match && overrides) {
+      const ov = overrides[asu.idOrden] || overrides[`ASU_${asu.idOrden}`];
+      if (ov?.idOrdenCde && cdeById.has(ov.idOrdenCde.trim())) {
+        match = cdeById.get(ov.idOrdenCde.trim())!;
+        matchReason = "Override Guardado";
       }
     }
 
+    // CRITERIO 1: Serial Físico exacto (con validación de coherencia cronológica)
+    if (!match && asuSerial && cdeBySerial.has(asuSerial)) {
+      const candidates = cdeBySerial.get(asuSerial)!;
+      for (const cand of candidates) {
+        if (matchedCdeIds.has(cand.idOrden)) continue;
+        if (isDespachoCoherente(asu.fechaIngreso, cand.fechaEntregada)) {
+          match = cand;
+          matchReason = "Serial Físico";
+          break;
+        }
+      }
+    }
+
+    // CRITERIO 2: Referencia directa de ID de CDE en el Mensaje de ASU
     if (!match && asu.mensaje) {
       const ids = extractOrderIds(asu.mensaje);
       for (const id of ids) {
         if (cdeById.has(id)) {
           const cand = cdeById.get(id)!;
           if (!matchedCdeIds.has(cand.idOrden)) {
-            match = cand;
+            if (isDespachoCoherente(asu.fechaIngreso, cand.fechaEntregada)) {
+              match = cand;
+              matchReason = `Ref. en Mensaje ASU (#${id})`;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    // CRITERIO 3: Serial de ASU mencionado en el Informe/Mensaje de CDE
+    if (!match && asuSerial && asuSerial.length >= 6) {
+      for (const c of realCdeTickets) {
+        if (matchedCdeIds.has(c.idOrden)) continue;
+        if (c.mensaje && c.mensaje.toUpperCase().includes(asuSerial)) {
+          if (isDespachoCoherente(asu.fechaIngreso, c.fechaEntregada)) {
+            match = c;
+            matchReason = "Serial en Informe CDE";
             break;
           }
         }
       }
     }
 
+    // CRITERIO 4: Mismo Cliente Particular + Modelo
+    if (!match && !isTicketDanesa(asu.cliente)) {
+      const cli = normalizeText(asu.cliente);
+      const mod = normalizeText(asu.modelo);
+      if (cli && cli.length >= 5 && mod) {
+        const key = `${cli}___${mod}`;
+        const candidates = cdeByClienteModel.get(key) || [];
+        for (const cand of candidates) {
+          if (matchedCdeIds.has(cand.idOrden)) continue;
+          const diffDias = getDiasDiferenciaFechas(cand.fechaIngreso, asu.fechaIngreso);
+          if (diffDias <= 45 && isDespachoCoherente(asu.fechaIngreso, cand.fechaEntregada)) {
+            match = cand;
+            matchReason = "Cliente & Modelo";
+            break;
+          }
+        }
+      }
+    }
+
+    // CRITERIO 5: Mismo Código + Modelo SOLO si cliente es Danesa SA
+    if (!match && isTicketDanesa(asu.cliente)) {
+      const cod = (asu.codigoProducto || "").trim();
+      const mod = normalizeText(asu.modelo);
+      if (cod && mod) {
+        const key = `${cod}___${mod}`;
+        const candidates = cdeByProdModel.get(key) || [];
+        for (const cand of candidates) {
+          if (matchedCdeIds.has(cand.idOrden)) continue;
+          const diffDias = getDiasDiferenciaFechas(cand.fechaIngreso, asu.fechaIngreso);
+          if (diffDias <= 30 && isDespachoCoherente(asu.fechaIngreso, cand.fechaEntregada)) {
+            match = cand;
+            matchReason = "Código & Modelo Danesa";
+            break;
+          }
+        }
+      }
+    }
+
+    // Verificar si ya fue confirmado en depósito (Checkin)
+    const checkinInfo =
+      (checkins && (checkins[asu.idOrden] || (match && (checkins[match.idOrden] || checkins[match.rowKey || ''])))) ||
+      null;
+    const isRecibido = Boolean(
+      asu.recibidoEnDeposito || (checkinInfo && checkinInfo.recibido)
+    );
+    const fechaRecibido =
+      checkinInfo?.fecha || asu.fechaRecibidoDeposito || (match && match.fechaRecibidoDeposito) || "";
+
+    const esEntregadaAsu = (asu.estado || "").toLowerCase() === "entregada";
+
     if (match) {
       matchedCdeIds.add(match.idOrden);
+
+      // Verificación de Despacho e Ingreso en CDE
+      const tieneDespachoValido =
+        isFechaValida(match.fechaEntregada) &&
+        isDespachoCoherente(asu.fechaIngreso, match.fechaEntregada);
+      const tieneIngresoValido = isFechaValida(match.fechaIngreso);
+
+      const enCamino = !isRecibido && !esEntregadaAsu && tieneDespachoValido;
+      const ingresadoEnCde = !isRecibido && !esEntregadaAsu && !tieneDespachoValido && tieneIngresoValido;
+
       return {
         ...asu,
         idOrdenCde: match.idOrden,
         estadoCde: match.estado,
+        fechaIngresoCde: match.fechaIngreso,
         fechaDespachoCde: match.fechaEntregada,
+        recibidoEnDeposito: isRecibido,
+        fechaRecibidoDeposito: fechaRecibido,
+        enCamino,
+        ingresadoEnCde,
       };
     }
 
-    return asu;
+    return {
+      ...asu,
+      recibidoEnDeposito: isRecibido,
+      fechaRecibidoDeposito: fechaRecibido,
+      enCamino: false,
+      ingresadoEnCde: false,
+    };
   });
 }
 

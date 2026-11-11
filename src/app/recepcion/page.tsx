@@ -61,7 +61,14 @@ import {
   saveSatiCrossMatchLocal,
   isTicketDanesa,
   parseFechaDMY,
+  getStoredCdeTickets,
+  fetchCdeTicketsFromMySQL,
+  getStoredCdeCheckins,
+  getStoredSatiOverrides,
+  getStoredSatiCrossMatches,
+  RecepcionCdeTicket,
 } from "@/data/recepcionCdeData";
+import { crossMatchAsuWithCde } from "@/lib/crossMatch";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 import { getActiveUser, verifyDepositoPassword, authenticate } from "@/data/authData";
@@ -70,7 +77,7 @@ import { useRouter } from "next/navigation";
 const ITEMS_PER_PAGE = 25;
 
 type ViewScope = "DANESA" | "CLIENTES_ASU" | "TODOS";
-type TransitFilter = "TODOS" | "EN_CAMINO" | "FALTA_INGRESAR" | "RECIBIDOS";
+type TransitFilter = "TODOS" | "EN_CAMINO" | "INGRESADO_CDE" | "FALTA_INGRESAR" | "RECIBIDOS";
 type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
 
 function matchesRecibidosDate(ticket: RecepcionTicket, filter: RecibidosDateFilter): boolean {
@@ -110,14 +117,15 @@ function isTicketEnCamino(t: RecepcionTicket): boolean {
   if (isTicketRecibido(t)) return false;
   const est = (t.estado || "").toLowerCase();
   if (est === "entregada") return false;
-  const rawMsg = (t.mensaje || "").trim().toLowerCase();
-  const sinMensaje =
-    !rawMsg ||
-    rawMsg === "sin observaciones técnicas registradas." ||
-    rawMsg === "sin observaciones técnicas registradas" ||
-    rawMsg === "sin observaciones" ||
-    rawMsg.length < 5;
-  return sinMensaje;
+  return Boolean(t.enCamino);
+}
+
+function isTicketIngresadoEnCde(t: RecepcionTicket): boolean {
+  if (isTicketRecibido(t)) return false;
+  const est = (t.estado || "").toLowerCase();
+  if (est === "entregada") return false;
+  if (t.enCamino) return false;
+  return Boolean(t.ingresadoEnCde);
 }
 
 function isTicketFaltaIngresar(t: RecepcionTicket): boolean {
@@ -245,26 +253,42 @@ export default function RecepcionDashboardPage() {
     (ResultadoCargaCSV & { fileName: string; timestamp: string }) | null
   >(null);
 
-  // Carga inicial reactiva desde MySQL + LocalStorage (solo si hay sesión autenticada)
+  // Carga inicial reactiva desde MySQL + LocalStorage con Cruce Inteligente CDE
   useEffect(() => {
     setIsClient(true);
     const active = getActiveUser();
     if (!active) return;
 
-    const stored = getStoredTickets();
-    fetchTicketsFromMySQL()
-      .then((dbData) => {
-        if (dbData && dbData.length > 0) {
-          setTickets(dbData);
-        } else if (stored && stored.length > 0) {
-          setTickets(stored);
-        } else {
-          setTickets(INITIAL_RECEPCION_DATA);
-        }
-      })
-      .catch(() => {
-        setTickets(stored && stored.length > 0 ? stored : INITIAL_RECEPCION_DATA);
-      });
+    const storedAsu = getStoredTickets();
+    const storedCde = getStoredCdeTickets();
+    const liveCheckins = getStoredCdeCheckins();
+    const liveOverrides = getStoredSatiOverrides();
+    const liveCross = getStoredSatiCrossMatches();
+
+    const baseAsu = storedAsu && storedAsu.length > 0 ? storedAsu : INITIAL_RECEPCION_DATA;
+    const initEnriched = crossMatchAsuWithCde(
+      baseAsu,
+      storedCde,
+      liveCheckins,
+      liveOverrides,
+      liveCross
+    );
+    setTickets(initEnriched);
+
+    // Sincronizar asíncronamente con MySQL tanto ASU como CDE para cruce en tiempo real
+    Promise.all([
+      fetchTicketsFromMySQL().catch(() => baseAsu),
+      fetchCdeTicketsFromMySQL().catch(() => storedCde),
+    ]).then(([dbAsu, dbCde]) => {
+      const finalAsu = dbAsu && dbAsu.length > 0 ? dbAsu : baseAsu;
+      const finalCde = dbCde && dbCde.length > 0 ? dbCde : storedCde;
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+
+      const enriched = crossMatchAsuWithCde(finalAsu, finalCde, checkins, overrides, cross);
+      setTickets(enriched);
+    });
   }, []);
 
   const showToast = (msg: string) => {
@@ -282,7 +306,18 @@ export default function RecepcionDashboardPage() {
       const text = await file.text();
       // Sincronización obligatoria directa a MySQL en la nube (Railway)
       const resultado = await sincronizarRecepcionCsvOnline(text, tickets);
-      setTickets(resultado.updatedTickets);
+      const cdeTickets = getStoredCdeTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(
+        resultado.updatedTickets,
+        cdeTickets,
+        checkins,
+        overrides,
+        cross
+      );
+      setTickets(enriched);
 
       const nowStr = new Date().toLocaleTimeString("es-PY", {
         hour: "2-digit",
@@ -323,7 +358,12 @@ export default function RecepcionDashboardPage() {
   const handleResetData = () => {
     if (confirm("¿Desea restablecer los registros a los datos originales del sistema SATI?")) {
       const reset = resetTickets();
-      setTickets(reset);
+      const cdeTickets = getStoredCdeTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(reset, cdeTickets, checkins, overrides, cross);
+      setTickets(enriched);
       setCsvReport(null);
       setCurrentPage(1);
       showToast("Datos originales SATI restablecidos correctamente (2,004 órdenes).");
@@ -728,6 +768,10 @@ ${accText}`;
     return scopeTickets.filter(isTicketEnCamino).length;
   }, [scopeTickets]);
 
+  const scopeIngresadoCde = useMemo(() => {
+    return scopeTickets.filter(isTicketIngresadoEnCde).length;
+  }, [scopeTickets]);
+
   const scopeFaltaIngresar = useMemo(() => {
     return scopeTickets.filter(isTicketFaltaIngresar).length;
   }, [scopeTickets]);
@@ -810,6 +854,8 @@ ${accText}`;
     // 1. Filtro de Tránsito / Flujo Operativo
     if (transitFilter === "EN_CAMINO") {
       result = result.filter(isTicketEnCamino);
+    } else if (transitFilter === "INGRESADO_CDE") {
+      result = result.filter(isTicketIngresadoEnCde);
     } else if (transitFilter === "FALTA_INGRESAR") {
       result = result.filter(isTicketFaltaIngresar);
     } else if (transitFilter === "RECIBIDOS") {
@@ -833,12 +879,13 @@ ${accText}`;
       );
     }
 
-    // 4. Búsqueda por texto libre
+    // 4. Búsqueda por texto libre (incluyendo orden de CDE)
     if (searchTerm.trim()) {
       const q = searchTerm.toLowerCase().trim();
       result = result.filter(
         (t) =>
           t.idOrden.toLowerCase().includes(q) ||
+          (t.idOrdenCde && t.idOrdenCde.toLowerCase().includes(q)) ||
           (t.codigoProducto && t.codigoProducto.toLowerCase().includes(q)) ||
           (t.cliente && t.cliente.toLowerCase().includes(q)) ||
           (t.marca && t.marca.toLowerCase().includes(q)) ||
@@ -1392,7 +1439,7 @@ ${accText}`;
 
           {/* Filtros Secundarios con Flujo de Tránsito y CleanSelect */}
           <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
-            {/* Filtro de Flujo: Todos los servicios / En camino / Falta ingresar / Recibidos */}
+            {/* Filtro de Flujo: Todos los servicios / En camino / Ingresada en CDE / Falta ingresar / Recibidos */}
             <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs flex-wrap">
               <button
                 type="button"
@@ -1420,13 +1467,30 @@ ${accText}`;
                     ? "bg-amber-500 text-white font-bold shadow-xs"
                     : "text-amber-700 hover:bg-amber-100/60"
                 }`}
-                title="Equipos que no están entregados ni recibidos y tienen informe técnico vacío (en camino / en revisión)"
+                title="Órdenes con cruce inteligente en CDE con fecha de despacho confirmada, en tránsito de retorno hacia ASU"
               >
                 <SpeedTruck
                   className={`w-3.5 h-3.5 ${transitFilter === "EN_CAMINO" ? "text-white" : "text-amber-700"}`}
                   smokeColor={transitFilter === "EN_CAMINO" ? "bg-white/80" : "bg-amber-400"}
                 />
                 <span>En camino ({scopeEnCamino})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("INGRESADO_CDE");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  transitFilter === "INGRESADO_CDE"
+                    ? "bg-indigo-600 text-white font-bold shadow-xs"
+                    : "text-indigo-700 hover:bg-indigo-100/60"
+                }`}
+                title="Órdenes que ya ingresaron a laboratorio CDE pero aún no tienen fecha de despacho"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Ingresadas en CDE ({scopeIngresadoCde})</span>
               </button>
 
               <button
@@ -1660,6 +1724,22 @@ ${accText}`;
                             >
                               ✓ RECIBIDO · LISTO RETIRO
                             </span>
+                          ) : isTicketEnCamino(ticket) ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200"
+                              title={`En camino por transportadora desde CDE (Despachado: ${ticket.fechaDespachoCde || 'En tránsito'}${ticket.idOrdenCde ? ` · CDE #${ticket.idOrdenCde}` : ''})`}
+                            >
+                              <SpeedTruck className="w-3 h-3 text-amber-600" smokeColor="bg-amber-400" />
+                              <span>EN CAMINO</span>
+                            </span>
+                          ) : isTicketIngresadoEnCde(ticket) ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                              title={`Ingresada en laboratorio técnico CDE: ${ticket.fechaIngresoCde || 'En taller CDE'}${ticket.idOrdenCde ? ` · CDE #${ticket.idOrdenCde}` : ''}`}
+                            >
+                              <Building2 className="w-3 h-3 text-indigo-600" />
+                              <span>INGRESADA EN CDE</span>
+                            </span>
                           ) : isTicketFaltaIngresar(ticket) ? (
                             <span
                               className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-50 text-purple-700 border border-purple-200"
@@ -1667,14 +1747,6 @@ ${accText}`;
                             >
                               <Inbox className="w-3 h-3 text-purple-600" />
                               <span>FALTA INGRESAR</span>
-                            </span>
-                          ) : isTicketEnCamino(ticket) ? (
-                            <span
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200"
-                              title="Equipo en tránsito o en revisión sin informe técnico final"
-                            >
-                              <SpeedTruck className="w-3 h-3 text-amber-600" smokeColor="bg-amber-400" />
-                              <span>EN CAMINO</span>
                             </span>
                           ) : null}
                           {isTicketNuevoIngreso(ticket) && (
@@ -1694,7 +1766,19 @@ ${accText}`;
                             )
                           )}
                         </div>
-                        <div className="text-[11px] text-zinc-500 font-mono tabular-nums">Cód: {ticket.codigoProducto || "N/A"}</div>
+                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                          <span className="text-[11px] text-zinc-500 font-mono tabular-nums">Cód: {ticket.codigoProducto || "N/A"}</span>
+                          {ticket.idOrdenCde && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-indigo-800 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                              <span>CDE #{ticket.idOrdenCde}</span>
+                              {ticket.fechaDespachoCde ? (
+                                <span className="text-amber-800 font-semibold">· Despacho: {ticket.fechaDespachoCde}</span>
+                              ) : ticket.fechaIngresoCde ? (
+                                <span className="text-zinc-600 font-normal">· Ingreso CDE: {ticket.fechaIngresoCde}</span>
+                              ) : null}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Cliente */}
