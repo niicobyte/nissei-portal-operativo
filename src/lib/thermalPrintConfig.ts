@@ -1,0 +1,140 @@
+export type ThermalPaperProfile = "80_72" | "80_76" | "58_48";
+export type ThermalLengthMode = "auto" | "80mm" | "100mm" | "120mm" | "150mm";
+
+export interface ThermalPrintSettings {
+  paperProfile: ThermalPaperProfile;
+  lengthMode: ThermalLengthMode;
+  marginMm: number;
+  offsetXMm: number;
+  scalePct: number;
+  highContrast: boolean;
+}
+
+export const THERMAL_SETTINGS_STORAGE_KEY = "nissei_thermal_print_settings_v1";
+
+export const DEFAULT_THERMAL_PRINT_SETTINGS: ThermalPrintSettings = {
+  paperProfile: "80_72",
+  lengthMode: "auto",
+  marginMm: 1,
+  offsetXMm: 0,
+  scalePct: 100,
+  highContrast: false,
+};
+
+export const THERMAL_PROFILE_META: Record<
+  ThermalPaperProfile,
+  { pageWidthMm: number; contentWidthMm: number; label: string; shortLabel: string }
+> = {
+  "80_72": {
+    pageWidthMm: 80,
+    contentWidthMm: 72,
+    label: "80mm estándar (72mm útil)",
+    shortLabel: "80mm · 72mm útil",
+  },
+  "80_76": {
+    pageWidthMm: 80,
+    contentWidthMm: 76,
+    label: "80mm ancho completo (76mm)",
+    shortLabel: "80mm · 76mm",
+  },
+  "58_48": {
+    pageWidthMm: 58,
+    contentWidthMm: 48,
+    label: "58mm mini (48mm útil)",
+    shortLabel: "58mm · 48mm",
+  },
+};
+
+function clamp(val: number, min: number, max: number, fallback: number): number {
+  return Number.isFinite(val) ? Math.min(max, Math.max(min, val)) : fallback;
+}
+
+export function sanitizeThermalSettings(
+  raw?: Partial<ThermalPrintSettings> | null
+): ThermalPrintSettings {
+  if (!raw || typeof raw !== "object") return { ...DEFAULT_THERMAL_PRINT_SETTINGS };
+  const paperProfile: ThermalPaperProfile =
+    raw.paperProfile && raw.paperProfile in THERMAL_PROFILE_META
+      ? raw.paperProfile
+      : DEFAULT_THERMAL_PRINT_SETTINGS.paperProfile;
+  const validLengths: ThermalLengthMode[] = ["auto", "80mm", "100mm", "120mm", "150mm"];
+  const lengthMode: ThermalLengthMode =
+    raw.lengthMode && validLengths.includes(raw.lengthMode)
+      ? raw.lengthMode
+      : DEFAULT_THERMAL_PRINT_SETTINGS.lengthMode;
+
+  return {
+    paperProfile,
+    lengthMode,
+    marginMm: clamp(Number(raw.marginMm), 0, 6, DEFAULT_THERMAL_PRINT_SETTINGS.marginMm),
+    offsetXMm: clamp(Number(raw.offsetXMm), -5, 5, DEFAULT_THERMAL_PRINT_SETTINGS.offsetXMm),
+    scalePct: clamp(Number(raw.scalePct), 75, 130, DEFAULT_THERMAL_PRINT_SETTINGS.scalePct),
+    highContrast: Boolean(raw.highContrast),
+  };
+}
+
+export function getStoredThermalPrintSettings(): ThermalPrintSettings {
+  if (typeof window === "undefined") return { ...DEFAULT_THERMAL_PRINT_SETTINGS };
+  try {
+    const raw = window.localStorage.getItem(THERMAL_SETTINGS_STORAGE_KEY);
+    if (!raw) return { ...DEFAULT_THERMAL_PRINT_SETTINGS };
+    return sanitizeThermalSettings(JSON.parse(raw) as Partial<ThermalPrintSettings>);
+  } catch {
+    return { ...DEFAULT_THERMAL_PRINT_SETTINGS };
+  }
+}
+
+export function saveThermalPrintSettings(settings: ThermalPrintSettings): ThermalPrintSettings {
+  const clean = sanitizeThermalSettings(settings);
+  if (typeof window !== "undefined") {
+    try {
+      window.localStorage.setItem(THERMAL_SETTINGS_STORAGE_KEY, JSON.stringify(clean));
+    } catch {
+      // Ignorar errores de cuota de almacenamiento
+    }
+  }
+  return clean;
+}
+
+export function resetThermalPrintSettings(): ThermalPrintSettings {
+  return saveThermalPrintSettings({ ...DEFAULT_THERMAL_PRINT_SETTINGS });
+}
+
+export function getThermalEffectiveContentMm(settings: ThermalPrintSettings): number {
+  const profile = THERMAL_PROFILE_META[settings.paperProfile];
+  return Math.max(40, Math.min(profile.contentWidthMm, profile.pageWidthMm - settings.marginMm * 2));
+}
+
+export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
+  const profile = THERMAL_PROFILE_META[settings.paperProfile];
+  const contentWidthMm = getThermalEffectiveContentMm(settings);
+  const scale = Math.max(0.75, Math.min(1.3, settings.scalePct / 100));
+  const scaledInnerMm = (contentWidthMm / scale).toFixed(2);
+  const heightRule = settings.lengthMode === "auto" ? "auto" : settings.lengthMode;
+
+  return `
+    @page {
+      size: ${profile.pageWidthMm}mm ${heightRule};
+      margin: ${settings.marginMm}mm;
+    }
+    @media print {
+      body.thermal-80mm-print #thermal-sticker-wrapper {
+        width: ${contentWidthMm}mm !important;
+        max-width: ${contentWidthMm}mm !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        transform: ${settings.offsetXMm !== 0 ? `translateX(${settings.offsetXMm}mm)` : "none"} !important;
+      }
+      body.thermal-80mm-print #thermal-sticker-80mm {
+        width: ${scaledInnerMm}mm !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0.5mm !important;
+        border: 0 !important;
+        zoom: ${scale};
+      }
+    }
+  `;
+}

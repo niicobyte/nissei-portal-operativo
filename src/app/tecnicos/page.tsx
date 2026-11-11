@@ -26,6 +26,8 @@ import {
   X,
   Send,
   AlertCircle,
+  SlidersHorizontal,
+  Info,
 } from "lucide-react";
 import {
   getStoredMontajes,
@@ -45,6 +47,18 @@ import {
 import { getActiveUser } from "@/data/authData";
 import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
+import {
+  ThermalPrintSettings,
+  ThermalPaperProfile,
+  ThermalLengthMode,
+  THERMAL_PROFILE_META,
+  DEFAULT_THERMAL_PRINT_SETTINGS,
+  getStoredThermalPrintSettings,
+  saveThermalPrintSettings,
+  resetThermalPrintSettings,
+  getThermalEffectiveContentMm,
+  buildThermalPrintCss,
+} from "@/lib/thermalPrintConfig";
 
 const STICKER_CAT_LABELS: Record<string, string> = {
   PROCESADOR: "CPU",
@@ -94,9 +108,12 @@ export default function TecnicosDashboardPage() {
   const [tipoServicioFilter, setTipoServicioFilter] = useState<"TODOS" | "Montaje" | "Expansion">("TODOS");
   const [tecnicoFilter, setTecnicoFilter] = useState<string>("TODOS");
   const [vendedorFilter, setVendedorFilter] = useState<string>("TODOS");
+  const [thermalSettings, setThermalSettings] = useState<ThermalPrintSettings>(DEFAULT_THERMAL_PRINT_SETTINGS);
+  const [showThermalConfig, setShowThermalConfig] = useState(false);
 
   // Carga reactiva de datos reales desde MySQL + LocalStorage y resincronización automática al enfocar ventana
   useEffect(() => {
+    setThermalSettings(getStoredThermalPrintSettings());
     const active = getActiveUser();
     if (!active) return;
 
@@ -455,6 +472,16 @@ export default function TecnicosDashboardPage() {
       return regB - regA;
     });
   }, [montajes, searchTerm, tipoServicioFilter, tecnicoFilter, vendedorFilter]);
+
+  const updateThermalSetting = <K extends keyof ThermalPrintSettings>(
+    key: K,
+    value: ThermalPrintSettings[K]
+  ) => {
+    setThermalSettings((prev) => saveThermalPrintSettings({ ...prev, [key]: value }));
+  };
+
+  const activeThermalMeta = THERMAL_PROFILE_META[thermalSettings.paperProfile];
+  const activeThermalContentMm = getThermalEffectiveContentMm(thermalSettings);
 
   const stickerObservaciones = selectedOrderForCert
     ? getRealObservaciones(selectedOrderForCert.observaciones)
@@ -1304,43 +1331,222 @@ export default function TecnicosDashboardPage() {
 
       </div>
 
-      {/* Modal Sticker Térmico 80mm para Identificación de Montaje */}
+      {/* Modal Sticker Térmico Configurable (80mm / 58mm) para Identificación de Montaje */}
       {selectedOrderForCert && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block">
-          <style media="print">{`
-            @page {
-              size: 80mm auto;
-              margin: 2mm;
-            }
-          `}</style>
-          <div className="bg-white rounded-xl w-full max-w-sm p-4 sm:p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92vh] overflow-y-auto print:w-[76mm] print:max-w-[76mm] print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
+          <style media="print">{buildThermalPrintCss(thermalSettings)}</style>
+          <div className="bg-white rounded-xl w-full max-w-md p-4 sm:p-5 shadow-2xl space-y-3.5 border border-zinc-200 max-h-[92vh] overflow-y-auto print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
 
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-2.5 print:hidden">
-              <div>
+            <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-2.5 print:hidden">
+              <div className="min-w-0">
                 <h2 className="text-sm font-bold text-zinc-900">
-                  Sticker de Montaje · 80mm
+                  Sticker de Montaje · {activeThermalMeta.pageWidthMm}mm
                 </h2>
                 <p className="text-[11px] text-zinc-500">
-                  Formato térmico compacto para pegar junto al equipo
+                  {activeThermalMeta.shortLabel} ({activeThermalContentMm}mm útil) · Margen {thermalSettings.marginMm}mm · {thermalSettings.scalePct}%
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setSelectedOrderForCert(null)}
-                className="text-zinc-400 hover:text-zinc-900 p-1 rounded-lg hover:bg-zinc-100 cursor-pointer transition-colors"
-                title="Cerrar vista previa"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-1 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowThermalConfig((prev) => !prev)}
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-colors cursor-pointer ${
+                    showThermalConfig
+                      ? "bg-zinc-900 text-white border-zinc-900"
+                      : "bg-zinc-50 hover:bg-zinc-100 text-zinc-700 border-zinc-200"
+                  }`}
+                  title="Ajustar parámetros de impresora térmica (ancho, márgenes, escala y centrado)"
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5" />
+                  <span>Calibrar</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrderForCert(null)}
+                  className="text-zinc-400 hover:text-zinc-900 p-1 rounded-lg hover:bg-zinc-100 cursor-pointer transition-colors"
+                  title="Cerrar vista previa"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            {/* Área Imprimible 80mm */}
+            {/* Panel Colapsable de Calibración y Parámetros de Impresora Térmica */}
+            {showThermalConfig && (
+              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 space-y-3 text-xs print:hidden">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-zinc-900 text-[11px] uppercase tracking-wide">
+                    Parámetros de Impresora Térmica
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setThermalSettings(resetThermalPrintSettings())}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-600 hover:text-zinc-900 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Restablecer
+                  </button>
+                </div>
+
+                {/* Ancho de rollo / cabezal útil */}
+                <div className="space-y-1">
+                  <label className="block text-[11px] font-semibold text-zinc-700">
+                    Ancho del papel y zona imprimible:
+                  </label>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {(Object.keys(THERMAL_PROFILE_META) as ThermalPaperProfile[]).map((key) => {
+                      const active = thermalSettings.paperProfile === key;
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          onClick={() => updateThermalSetting("paperProfile", key)}
+                          className={`px-2 py-1.5 rounded-lg text-[11px] font-semibold border text-center transition-colors cursor-pointer ${
+                            active
+                              ? "bg-zinc-900 text-white border-zinc-900"
+                              : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                          }`}
+                        >
+                          {THERMAL_PROFILE_META[key].shortLabel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Largo de papel + Margen + Offset + Escala */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-zinc-700">
+                      Formato / Alto de corte:
+                    </label>
+                    <select
+                      value={thermalSettings.lengthMode}
+                      onChange={(e) =>
+                        updateThermalSetting("lengthMode", e.target.value as ThermalLengthMode)
+                      }
+                      className="w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-[11px] font-medium text-zinc-900 outline-none focus:border-zinc-900"
+                    >
+                      <option value="auto">Rollo continuo (Auto)</option>
+                      <option value="100mm">Etiqueta {activeThermalMeta.pageWidthMm} × 100mm</option>
+                      <option value="120mm">Etiqueta {activeThermalMeta.pageWidthMm} × 120mm</option>
+                      <option value="150mm">Etiqueta {activeThermalMeta.pageWidthMm} × 150mm</option>
+                      <option value="80mm">Etiqueta {activeThermalMeta.pageWidthMm} × 80mm</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="block text-[11px] font-semibold text-zinc-700">
+                      Márgenes del navegador:
+                    </label>
+                    <div className="flex items-center gap-1">
+                      {[0, 1, 2, 4].map((mm) => (
+                        <button
+                          key={mm}
+                          type="button"
+                          onClick={() => updateThermalSetting("marginMm", mm)}
+                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+                            thermalSettings.marginMm === mm
+                              ? "bg-zinc-900 text-white border-zinc-900"
+                              : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                          }`}
+                        >
+                          {mm}mm
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-zinc-700">Escala de texto:</span>
+                      <span className="font-mono font-bold text-zinc-900">{thermalSettings.scalePct}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={80}
+                      max={120}
+                      step={5}
+                      value={thermalSettings.scalePct}
+                      onChange={(e) => updateThermalSetting("scalePct", Number(e.target.value))}
+                      className="w-full accent-zinc-900 cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="font-semibold text-zinc-700">Centrado lateral (X):</span>
+                      <span className="font-mono font-bold text-zinc-900">
+                        {thermalSettings.offsetXMm > 0 ? `+${thermalSettings.offsetXMm}` : thermalSettings.offsetXMm}mm
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={-4}
+                      max={4}
+                      step={0.5}
+                      value={thermalSettings.offsetXMm}
+                      onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
+                      className="w-full accent-zinc-900 cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 text-[11px] font-medium text-zinc-800 cursor-pointer pt-0.5">
+                  <input
+                    type="checkbox"
+                    checked={thermalSettings.highContrast}
+                    onChange={(e) => updateThermalSetting("highContrast", e.target.checked)}
+                    className="rounded border-zinc-300 accent-zinc-900"
+                  />
+                  <span>Negro intenso y bordes más marcados (cabezal térmico con tinta tenue)</span>
+                </label>
+
+                <div className="rounded-lg bg-white border border-zinc-200 p-2.5 text-[11px] text-zinc-600 space-y-1 leading-relaxed">
+                  <div className="flex items-center gap-1.5 font-bold text-zinc-900">
+                    <Info className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Si no detecta la impresora o sale cortado en Chrome/Edge:</span>
+                  </div>
+                  <p>
+                    1. Elegí tu impresora térmica una vez en <strong>Destino</strong> (el navegador la guarda automáticamente).
+                  </p>
+                  <p>
+                    2. En <strong>Más opciones</strong> dejá <strong>Márgenes: Ninguno</strong>, <strong>Escala: 100%</strong> y desmarcá <strong>Encabezados</strong>.
+                  </p>
+                  <p>
+                    3. Para imprimir directo sin ventana previa, abrí Chrome/Edge con{" "}
+                    <code className="px-1 py-0.5 bg-zinc-100 rounded text-[10px]">--kiosk-printing</code> y dejá la térmica predeterminada en Windows.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Área Imprimible Calibrada */}
             <div
-              id="thermal-sticker-80mm"
-              className="w-full max-w-[302px] mx-auto border border-dashed border-zinc-300 bg-white p-3 text-black print:w-full print:max-w-none print:border-0 print:p-[1mm]"
+              id="thermal-sticker-wrapper"
+              className="mx-auto print:mx-auto"
+              style={{
+                maxWidth:
+                  thermalSettings.paperProfile === "58_48"
+                    ? "220px"
+                    : thermalSettings.paperProfile === "80_72"
+                      ? "286px"
+                      : "302px",
+              }}
             >
+              <div
+                id="thermal-sticker-80mm"
+                className={`w-full border border-dashed border-zinc-300 bg-white p-3 text-black print:w-full print:max-w-none print:border-0 print:p-[0.5mm] ${
+                  thermalSettings.highContrast ? "contrast-125" : ""
+                }`}
+                style={{
+                  zoom: thermalSettings.scalePct / 100,
+                }}
+              >
               {/* Encabezado Compacto */}
-              <div className="border-b-2 border-black pb-1.5 text-center">
+              <div className={`${thermalSettings.highContrast ? "border-b-[3px]" : "border-b-2"} border-black pb-1.5 text-center`}>
                 <div className="text-[11px] font-black tracking-wider uppercase text-black">
                   Montaje Finalizado
                 </div>
@@ -1405,12 +1611,16 @@ export default function TecnicosDashboardPage() {
                   {selectedOrderForCert.componentes.map((c, i) => (
                     <li
                       key={i}
-                      className="text-[10px] leading-snug text-black break-words border-b border-dotted border-zinc-400 print:border-black/40 pb-1 last:border-b-0 last:pb-0"
+                      className={`text-[10px] leading-snug text-black break-words border-b border-dotted border-zinc-400 print:border-black/40 pb-1 last:border-b-0 last:pb-0 ${
+                        thermalSettings.highContrast ? "font-bold" : ""
+                      }`}
                     >
                       <span className="font-mono font-black">
                         [{formatCategoriaSticker(c.categoria)}]
                       </span>{" "}
-                      <span className="font-semibold">{c.descripcion}</span>
+                      <span className={thermalSettings.highContrast ? "font-bold" : "font-semibold"}>
+                        {c.descripcion}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -1418,11 +1628,11 @@ export default function TecnicosDashboardPage() {
 
               {/* Observaciones (Solo si el campo está rellenado) */}
               {stickerObservaciones && (
-                <div className="mt-1.5 border border-black p-1.5 bg-zinc-50 print:bg-white">
+                <div className={`mt-1.5 border border-black p-1.5 bg-zinc-50 print:bg-white ${thermalSettings.highContrast ? "border-2" : ""}`}>
                   <span className="text-[9px] font-mono font-black uppercase text-black block mb-0.5">
                     OBSERVACIONES:
                   </span>
-                  <p className="text-[10px] font-semibold text-black leading-snug whitespace-pre-wrap break-words">
+                  <p className={`text-[10px] text-black leading-snug whitespace-pre-wrap break-words ${thermalSettings.highContrast ? "font-bold" : "font-semibold"}`}>
                     {stickerObservaciones}
                   </p>
                 </div>
@@ -1431,6 +1641,7 @@ export default function TecnicosDashboardPage() {
               {/* Pie de Identificación */}
               <div className="border-t border-dashed border-black pt-1.5 mt-2 text-center text-[9px] font-mono font-bold text-black uppercase">
                 Etiqueta de entrega
+              </div>
               </div>
             </div>
 
@@ -1448,7 +1659,7 @@ export default function TecnicosDashboardPage() {
                 className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
               >
                 <Printer className="w-4 h-4" />
-                Imprimir Sticker (80mm)
+                Imprimir Sticker ({activeThermalMeta.pageWidthMm}mm)
               </button>
             </div>
 
