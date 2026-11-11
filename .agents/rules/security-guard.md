@@ -19,3 +19,7 @@ Para proteger la integridad del proyecto y evitar cualquier filtración o vulner
 3. **Verificación de Seguridad Pre-Commit:**
    - Antes de realizar cualquier subida o commit a GitHub, verificar que `node scripts/security-audit.mjs` pase con 0 errores.
    - En caso de duda o cambio crítico, delegar o consultar con el subagente `security-auditor`.
+
+4. **Modelos IA Mandatorios de Auditoría y Escaneo:**
+   - **100% Prioritario:** Utilizar `Claude Opus 5.5 High` (`claude-opus-5-5-high`) para análisis de seguridad, revisión de código defensiva y razonamiento crítico.
+   - **Fallback por agotamiento de tokens/cuota:** Cambiar a `Gemini 3.8 Flash Medium` (`gemini-3.8-flash-medium`) si se alcanza el límite de cuota.

@@ -18,6 +18,9 @@
 
 ## 3. Seguridad Defensiva y Prevención de Filtraciones (Zero-Leak Policy)
 - **Subagente dedicado:** `security-auditor` (Guardián de Seguridad).
+- **Modelos IA Mandatorios de Escaneo y Auditoría:**
+  - **100% Prioridad Principal:** `Claude Opus 5.5 High` (`claude-opus-5-5-high`).
+  - **Fallback por agotamiento de cuota/tokens:** `Gemini 3.8 Flash Medium` (`gemini-3.8-flash-medium`).
 - **Script de auditoría:** `node scripts/security-audit.mjs` (o `npm run audit:security`).
 - **Reglas mandatorias:**
   1. Ningún archivo con claves reales, tokens de WhaApi o credenciales de MySQL debe subirse a Git.
