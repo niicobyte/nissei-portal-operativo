@@ -464,20 +464,37 @@ export default function RecepcionCdeDashboardPage() {
 
   // Lista de tickets pertenecientes al ámbito actual (Danesa, Clientes ASU, Clientes CDE o Todos)
   const scopeTickets = useMemo(() => {
+    let list: RecepcionCdeTicket[] = [];
     if (viewScope === "DANESA") {
-      return tickets.filter((t) => t.esDanesa);
-    }
-    if (viewScope === "CLIENTES_ASU") {
-      return tickets.filter(
+      list = tickets.filter((t) => t.esDanesa);
+    } else if (viewScope === "CLIENTES_ASU") {
+      list = tickets.filter(
         (t) => !t.esDanesa && (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000)
       );
-    }
-    if (viewScope === "CLIENTES_CDE") {
-      return tickets.filter(
+    } else if (viewScope === "CLIENTES_CDE") {
+      list = tickets.filter(
         (t) => !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000)
       );
+    } else {
+      list = tickets;
     }
-    return tickets;
+
+    // Ordenamiento descendente consistente (más recientes primero) para sincronizar visualmente CDE y ASU
+    return [...list].sort((a, b) => {
+      const dateA = parseFechaDMY(a.fechaIngresoAsu || a.fechaIngresoCde || a.fechaIngreso);
+      const dateB = parseFechaDMY(b.fechaIngresoAsu || b.fechaIngresoCde || b.fechaIngreso);
+      if (dateA && dateB) {
+        const diff = dateB.getTime() - dateA.getTime();
+        if (diff !== 0) return diff;
+      } else if (dateA && !dateB) {
+        return -1;
+      } else if (!dateA && dateB) {
+        return 1;
+      }
+      const numA = parseInt(a.idOrden, 10) || 0;
+      const numB = parseInt(b.idOrden, 10) || 0;
+      return numB - numA;
+    });
   }, [tickets, viewScope]);
 
   // Lista única de componentes para filtro según el ámbito
@@ -1597,32 +1614,44 @@ export default function RecepcionCdeDashboardPage() {
                                 </span>
                                 <span className="text-[9px] font-sans font-bold text-zinc-500">ASU</span>
                               </div>
-                              <div className="text-[10px] font-mono text-zinc-600 flex items-center gap-1">
-                                <span className="text-zinc-400">CDE:</span>
-                                {idCdeVinculado ? (
-                                  <span className="font-bold text-indigo-700 bg-indigo-50 px-1 rounded border border-indigo-200">
-                                    #{idCdeVinculado}
-                                  </span>
-                                ) : (
+                              {idCdeVinculado ? (
+                                <div
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
+                                  title={`Vinculado a Orden CDE #${idCdeVinculado}`}
+                                >
+                                  <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
+                                  <span>CDE: #{idCdeVinculado}</span>
+                                </div>
+                              ) : (
+                                <div className="text-[10px] font-mono text-zinc-600 flex items-center gap-1">
+                                  <span className="text-zinc-400">CDE:</span>
                                   <span className="text-zinc-400 italic">Pendiente</span>
-                                )}
-                              </div>
+                                </div>
+                              )}
                             </div>
                           ) : viewScope === "CLIENTES_CDE" || esOrdenCdeNativa ? (
                             <div className="space-y-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
-                                  #{ticket.idOrden}
+                                  #{ticket.idOrdenCde || ticket.idOrden}
                                 </span>
                                 <span className="text-[9px] font-sans font-bold text-zinc-400">CDE</span>
                               </div>
-                              {ticket.idOrdenAsu && (
+                              {ticket.idOrdenAsu && ticket.idOrdenAsu !== (ticket.idOrdenCde || ticket.idOrden) ? (
                                 <div
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
                                   title={`Vinculado a Orden ASU #${ticket.idOrdenAsu}`}
                                 >
                                   <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
                                   <span>ASU: #{ticket.idOrdenAsu}</span>
+                                </div>
+                              ) : (
+                                <div
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-50 text-zinc-500 border border-zinc-200 text-[10px] font-medium"
+                                  title="Sin orden ASU asignada (puede vincularla con el botón Editar)"
+                                >
+                                  <span className="text-zinc-400">ASU:</span>
+                                  <span className="italic text-zinc-400">Pendiente</span>
                                 </div>
                               )}
                             </div>
@@ -1630,17 +1659,25 @@ export default function RecepcionCdeDashboardPage() {
                             <div className="space-y-1">
                               <div className="flex items-center gap-1.5">
                                 <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
-                                  #{ticket.idOrden}
+                                  #{ticket.idOrdenAsu || ticket.idOrden}
                                 </span>
                                 <span className="text-[9px] font-sans font-bold text-zinc-400">ASU</span>
                               </div>
-                              {esCdeValido(ticket.idOrdenCde) && ticket.idOrdenCde !== ticket.idOrden && (
+                              {esCdeValido(ticket.idOrdenCde) && ticket.idOrdenCde !== (ticket.idOrdenAsu || ticket.idOrden) ? (
                                 <div
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
                                   title={`Vinculado a Orden CDE #${ticket.idOrdenCde}`}
                                 >
                                   <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
                                   <span>CDE: #{ticket.idOrdenCde}</span>
+                                </div>
+                              ) : (
+                                <div
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-50 text-zinc-500 border border-zinc-200 text-[10px] font-medium"
+                                  title="Sin orden CDE vinculada"
+                                >
+                                  <span className="text-zinc-400">CDE:</span>
+                                  <span className="italic text-zinc-400">Pendiente</span>
                                 </div>
                               )}
                             </div>
@@ -1890,7 +1927,10 @@ export default function RecepcionCdeDashboardPage() {
                   DETALLE DE ORDEN SATI · MONITOREO SUCURSAL
                 </span>
                 <h3 className="text-lg font-black text-zinc-900">
-                  Orden #{selectedTicket.idOrdenAsu || selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
+                  {selectedTicket.origen === "CDE" || parseInt(selectedTicket.idOrden, 10) >= 125000
+                    ? `Orden CDE #${selectedTicket.idOrdenCde || selectedTicket.idOrden}`
+                    : `Orden ASU #${selectedTicket.idOrdenAsu || selectedTicket.idOrden}`
+                  } · {selectedTicket.marca} {selectedTicket.modelo}
                 </h3>
               </div>
               <div className="flex items-center gap-2">
@@ -2053,7 +2093,9 @@ export default function RecepcionCdeDashboardPage() {
                     <div>
                       <span className="text-zinc-500 text-[10px] block uppercase font-mono">Orden ASU:</span>
                       <strong className="text-zinc-900 truncate block">
-                        #{selectedTicket.idOrdenAsu || selectedTicket.idOrden}
+                        {selectedTicket.idOrdenAsu || (selectedTicket.origen === "ASU" || parseInt(selectedTicket.idOrden, 10) < 125000 ? selectedTicket.idOrden : null)
+                          ? `#${selectedTicket.idOrdenAsu || selectedTicket.idOrden}`
+                          : "Pendiente"}
                       </strong>
                     </div>
                     <div>
@@ -2061,6 +2103,8 @@ export default function RecepcionCdeDashboardPage() {
                       <strong className="text-indigo-700 truncate block">
                         {selectedTicket.idOrdenCde && parseInt(selectedTicket.idOrdenCde, 10) >= 125000
                           ? `#${selectedTicket.idOrdenCde}`
+                          : selectedTicket.origen === "CDE" && parseInt(selectedTicket.idOrden, 10) >= 125000
+                          ? `#${selectedTicket.idOrden}`
                           : "Pendiente"}
                       </strong>
                     </div>

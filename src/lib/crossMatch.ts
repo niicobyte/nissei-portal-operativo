@@ -425,11 +425,12 @@ export function buildUnifiedSatiList(
     });
   });
 
-  // 3. Agregar las órdenes de CDE que NO son de Danesa SA (Clientes CDE: 125000 en adelante)
-  // y las de Danesa SA de CDE que no hayan cruzado con ASU para no perder ningún registro
+  // 3. Agregar las órdenes de CDE (Clientes CDE: 125000 en adelante)
+  // Para Danesa SA: solo las que no hayan cruzado con ASU para no duplicar el envío de sucursal
   enrichedCde.forEach((cde, idx) => {
-    if (cdeEmparejadosIds.has(cde.idOrden)) {
-      // Ya integrada a través de su contraparte de ASU
+    const esDanesaCde = cde.esDanesa || isTicketDanesa(cde.cliente);
+    if (esDanesaCde && cdeEmparejadosIds.has(cde.idOrden)) {
+      // Las de Danesa SA ya están consolidadas en la fila de envío de la sucursal ASU
       return;
     }
 
@@ -447,6 +448,7 @@ export function buildUnifiedSatiList(
       fechaIngresoAsu: cde.fechaIngresoAsu || "",
       fechaIngresoCde: cde.fechaIngreso || "",
       idOrdenCde: cde.idOrden,
+      idOrdenAsu: cde.idOrdenAsu,
       recibidoEnDeposito: checkin.recibido,
       fechaRecibidoDeposito: checkin.fecha,
       origen: "CDE",
