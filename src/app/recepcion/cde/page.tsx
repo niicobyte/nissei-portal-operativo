@@ -30,6 +30,8 @@ import {
   Link2,
   Calendar,
   Edit3,
+  Plus,
+  Unlink,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import {
@@ -49,6 +51,9 @@ import {
   calcularDiasResolucion,
   saveSatiTicketOverride,
   getStoredSatiOverrides,
+  getStoredSatiCrossMatches,
+  saveSatiCrossMatchLocal,
+  removeSatiCrossMatchLocal,
 } from "@/data/recepcionCdeData";
 import { getStoredTickets, fetchTicketsFromMySQL } from "@/data/recepcionData";
 import {
@@ -93,39 +98,48 @@ function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: RecibidosDateF
 }
 
 /**
- * Determina si una orden está confirmada / en estado recibido en Llegada a Depósito:
- * 1. Si el usuario la desmarcó manualmente, devuelve false.
- * 2. Si t.recibidoEnDeposito es true.
- * 3. Si su estado es "Entregada" o "Reparada" (mandatorio por regla de negocio).
+ * Determina si una orden está confirmada físicamente como recibida en depósito sucursal.
  */
 function isTicketRecibido(t: RecepcionCdeTicket): boolean {
   if ((t as any).desmarcadoManual) return false;
-  if (t.recibidoEnDeposito) return true;
-  const displayStatus = getTicketDisplayStatus(t).toLowerCase();
-  if (displayStatus.includes("entregada") || displayStatus.includes("reparada")) {
-    return true;
-  }
-  const estAsu = (t.estadoAsu || "").toLowerCase();
-  const est = (t.estado || "").toLowerCase();
-  return (
-    estAsu.includes("entregada") ||
-    estAsu.includes("reparada") ||
-    est.includes("entregada") ||
-    est.includes("reparada")
-  );
+  return Boolean(t.recibidoEnDeposito);
 }
 
 /**
- * Determina el estado exacto unificado que se muestra en pantalla.
- * Permite que los filtros, los contadores de badges y las etiquetas en tabla
- * coincidan al 100% sin que estados como "Entregada" se cuelen en otros filtros.
+ * Determina si una orden está actualmente viajando por transportadora (En camino):
+ * Tiene fecha de despacho válida de CDE y aún no se ha confirmado su recepción física en destino.
+ */
+function isTicketEnCamino(t: RecepcionCdeTicket): boolean {
+  if (isTicketRecibido(t)) return false;
+  return isFechaValida(t.fechaEntregada) && isDespachoCoherente(t.fechaIngreso, t.fechaEntregada);
+}
+
+/**
+ * Determina si una orden carece de cruce unificado (ASU ↔ CDE) o se encuentra pendiente de vincular.
+ */
+function isTicketSinCruce(t: RecepcionCdeTicket): boolean {
+  const num = parseInt(t.idOrden, 10);
+  const esAsuODanesa = t.esDanesa || t.origen === "ASU" || (!isNaN(num) && num < 100000);
+  if (esAsuODanesa) {
+    if (!t.idOrdenCde) return true;
+    const cdeNum = parseInt(t.idOrdenCde.trim(), 10);
+    return isNaN(cdeNum) || cdeNum < 100000 || t.idOrdenCde === (t.idOrdenAsu || t.idOrden);
+  } else {
+    if (!t.idOrdenAsu) return true;
+    const asuNum = parseInt(t.idOrdenAsu.trim(), 10);
+    return isNaN(asuNum) || asuNum >= 100000 || t.idOrdenAsu === t.idOrden;
+  }
+}
+
+/**
+ * Determina el estado técnico unificado que se muestra en pantalla.
  */
 function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
   const est = (t.estado || "").trim();
   const estLower = est.toLowerCase();
   const estAsu = (t.estadoAsu || "").toLowerCase();
 
-  // 1. Si en ASU ya fue entregada al cliente final, o en CDE figura Entregada
+  // 1. Si en ASU ya fue entregada al cliente final
   if (estAsu.includes("entregada") || (!t.esDanesa && estLower.includes("entregada"))) {
     return "Entregada";
   }
@@ -154,9 +168,8 @@ function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
     return "Reparada";
   }
 
-  // 3. En Tránsito (Transportadora) si CDE despachó y aún no está recibido en destino
-  if (tieneDespachoValido && !isTicketRecibido(t)) {
-    return "En Tránsito (Transportadora)";
+  if (estLower.includes("entregada")) {
+    return "Entregada";
   }
 
   if (estLower.includes("sin reparo")) {
@@ -167,7 +180,6 @@ function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
     return "Control de Calidad (QC)";
   }
 
-  // Si no, el estado real que corresponda
   return t.estadoAsu || t.estado || "En Asignacion";
 }
 
@@ -181,7 +193,7 @@ export default function RecepcionCdeDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("TODOS");
   const [componentFilter, setComponentFilter] = useState("TODOS");
-  const [transitFilter, setTransitFilter] = useState<"TODOS" | "EN_TRANSITO" | "RECIBIDOS">("TODOS");
+  const [transitFilter, setTransitFilter] = useState<"TODOS" | "EN_TRANSITO" | "RECIBIDOS" | "SIN_CRUCE">("TODOS");
   const [recibidosDateFilter, setRecibidosDateFilter] = useState<RecibidosDateFilter>("TODAS");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -198,6 +210,11 @@ export default function RecepcionCdeDashboardPage() {
     fechaRecibidoAsu: "",
   });
 
+  // Modal Rápido de Vinculación SATI (ASU ↔ CDE)
+  const [linkingTicket, setLinkingTicket] = useState<RecepcionCdeTicket | null>(null);
+  const [linkOrderIdInput, setLinkOrderIdInput] = useState("");
+  const [isSubmittingLink, setIsSubmittingLink] = useState(false);
+
   // Subida y procesamiento de CSV
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingCSV, setIsUploadingCSV] = useState(false);
@@ -212,18 +229,35 @@ export default function RecepcionCdeDashboardPage() {
     const cdeTickets = getStoredCdeTickets();
     const checkins = getStoredCdeCheckins();
     const overrides = getStoredSatiOverrides();
-    const initialUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins, overrides);
+    const manualCross = getStoredSatiCrossMatches();
+    const initialUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins, overrides, manualCross);
     setTickets(initialUnified);
 
     // Sincronizar en tiempo real directamente con MySQL en la nube (Railway)
     Promise.all([
-      fetchCdeTicketsFromMySQL().catch(() => cdeTickets),
+      fetch("/api/db?module=cde")
+        .then((r) => r.json())
+        .then((json) => {
+          if (json.ok && Array.isArray(json.data)) {
+            if (Array.isArray(json.crossMatches)) {
+              json.crossMatches.forEach((m: any) => {
+                if (m.idOrdenAsu && m.idOrdenCde) {
+                  saveSatiCrossMatchLocal(m.idOrdenAsu, m.idOrdenCde);
+                }
+              });
+            }
+            return json.data;
+          }
+          return cdeTickets;
+        })
+        .catch(() => cdeTickets),
       fetchTicketsFromMySQL().catch(() => asuTickets),
     ]).then(([dbCde, dbAsu]) => {
       if (Array.isArray(dbCde) && Array.isArray(dbAsu)) {
         const liveCheckins = getStoredCdeCheckins();
         const liveOverrides = getStoredSatiOverrides();
-        const liveUnified = buildUnifiedSatiList(dbCde, dbAsu, liveCheckins, liveOverrides);
+        const liveCross = getStoredSatiCrossMatches();
+        const liveUnified = buildUnifiedSatiList(dbCde, dbAsu, liveCheckins, liveOverrides, liveCross);
         setTickets(liveUnified);
       }
     });
@@ -396,33 +430,9 @@ export default function RecepcionCdeDashboardPage() {
       return t.recibidoEnDeposito || estAsu.includes("entregada") || est.includes("entregada");
     };
 
-    // Tránsito por transportadora (aplica primordialmente a envíos de Danesa SA)
-    // Solo cuando CDE ya despachó y en ASU aún NO está recibida, ni entregada, ni reparada
-    const danesaRecibidos = danesaTickets.filter((t) => isTicketRecibido(t));
-    const danesaEnTransito = danesaTickets.filter((t) => {
-      const estAsu = (t.estadoAsu || "").toLowerCase();
-      const est = (t.estado || "").toLowerCase();
-      const yaEntregadaEnAsu = estAsu.includes("entregada");
-      const esReparada = estAsu.includes("reparada") || est.includes("reparada");
-      const tieneDetalleRep = Boolean(
-        (t.mensaje || "").toLowerCase().includes("repar") ||
-        (t.mensaje || "").toLowerCase().includes("cambio") ||
-        (t.mensaje || "").toLowerCase().includes("ok") ||
-        (t.mensaje || "").toLowerCase().includes("pieza") ||
-        (t.mensaje || "").toLowerCase().includes("funcional")
-      );
-      const resueltaReparada = esReparada || (tieneDetalleRep && !est.includes("sin reparo") && !estAsu.includes("sin reparo"));
-
-      const tieneDespachoValido =
-        isFechaValida(t.fechaEntregada) && isDespachoCoherente(t.fechaIngreso, t.fechaEntregada);
-
-      return (
-        !isTicketRecibido(t) &&
-        !yaEntregadaEnAsu &&
-        !resueltaReparada &&
-        tieneDespachoValido
-      );
-    });
+    // Tránsito por transportadora y recepción en depósito (Danesa SA)
+    const danesaRecibidos = danesaTickets.filter(isTicketRecibido);
+    const danesaEnTransito = danesaTickets.filter(isTicketEnCamino);
 
     // Equipos del ámbito aún en laboratorio CDE / ya cerrados
     const scopeEnLaboratorio = scopeTickets.filter((t) => !esEntregada(t));
@@ -563,20 +573,16 @@ export default function RecepcionCdeDashboardPage() {
       result = result.filter((t) => t.tipoComponente === componentFilter);
     }
 
-    // 4. Filtro de Tránsito / Recibidos en Depósito
+    // 4. Filtro de Tránsito / Recibidos en Depósito / Sin Cruce
     if (transitFilter === "EN_TRANSITO") {
-      result = result.filter(
-        (t) =>
-          !isTicketRecibido(t) &&
-          (getTicketDisplayStatus(t).toLowerCase().includes("tránsito") ||
-            getTicketDisplayStatus(t).toLowerCase().includes("transito") ||
-            isFechaValida(t.fechaEntregada))
-      );
+      result = result.filter(isTicketEnCamino);
     } else if (transitFilter === "RECIBIDOS") {
-      result = result.filter((t) => isTicketRecibido(t));
+      result = result.filter(isTicketRecibido);
       if (recibidosDateFilter !== "TODAS") {
         result = result.filter((t) => matchesRecibidosDate(t, recibidosDateFilter));
       }
+    } else if (transitFilter === "SIN_CRUCE") {
+      result = result.filter(isTicketSinCruce);
     }
 
     // 5. Búsqueda por texto libre
@@ -602,20 +608,18 @@ export default function RecepcionCdeDashboardPage() {
 
   // Conteo dinámico según el ámbito para las pestañas de tránsito y recepción
   const scopeEnTransito = useMemo(() => {
-    return scopeTickets.filter(
-      (t) =>
-        !isTicketRecibido(t) &&
-        (getTicketDisplayStatus(t).toLowerCase().includes("tránsito") ||
-          getTicketDisplayStatus(t).toLowerCase().includes("transito") ||
-          isFechaValida(t.fechaEntregada))
-    ).length;
+    return scopeTickets.filter(isTicketEnCamino).length;
   }, [scopeTickets]);
 
   const scopeRecibidosList = useMemo(() => {
-    return scopeTickets.filter((t) => isTicketRecibido(t));
+    return scopeTickets.filter(isTicketRecibido);
   }, [scopeTickets]);
 
   const scopeRecibidosCount = scopeRecibidosList.length;
+
+  const scopeSinCruceCount = useMemo(() => {
+    return scopeTickets.filter(isTicketSinCruce).length;
+  }, [scopeTickets]);
 
   const countRecibidosTodas = scopeRecibidosCount;
   const countRecibidosHoy = useMemo(
@@ -693,7 +697,153 @@ export default function RecepcionCdeDashboardPage() {
           : null
       );
     }
+    // Persistir asíncronamente en MySQL
+    fetch("/api/db", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "TOGGLE_CDE_CHECKIN",
+        idOrden: t?.idOrden,
+        idOrdenAsu: t?.idOrdenAsu,
+        idOrdenCde: t?.idOrdenCde,
+        recibidoEnDeposito: targetState,
+        fechaRecibido: targetState ? dateUsed : "",
+      }),
+    }).catch(() => {});
+
     showToast(res.recibido ? "Orden confirmada como recibida en sucursal." : "Recepción desmarcada.");
+  };
+
+  // Abrir modal de vinculación rápida para conectar orden ASU ↔ CDE
+  const openLinkModal = (ticket: RecepcionCdeTicket) => {
+    setLinkingTicket(ticket);
+    const esAsu = ticket.origen === "ASU" || ticket.esDanesa || parseInt(ticket.idOrden, 10) < 100000;
+    const initialInput = esAsu ? (ticket.idOrdenCde || "") : (ticket.idOrdenAsu || "");
+    setLinkOrderIdInput(initialInput && initialInput !== "Pendiente" ? initialInput : "");
+  };
+
+  // Sugerencias inteligentes para autocompletar el cruce
+  const linkSuggestions = useMemo(() => {
+    if (!linkingTicket) return [];
+    const esAsu = linkingTicket.origen === "ASU" || linkingTicket.esDanesa || parseInt(linkingTicket.idOrden, 10) < 100000;
+    const candidates = tickets.filter((t) => {
+      const isCandCde = !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 100000);
+      return esAsu ? isCandCde : !isCandCde;
+    });
+
+    const targetSerial = (linkingTicket.serial || "").trim().toUpperCase();
+    const targetModel = (linkingTicket.modelo || "").trim().toLowerCase();
+    const targetCliente = (linkingTicket.cliente || "").trim().toLowerCase();
+
+    const matches: Array<{ ticket: RecepcionCdeTicket; score: number; reason: string }> = [];
+
+    for (const cand of candidates) {
+      let score = 0;
+      let reason = "";
+      const candSerial = (cand.serial || "").trim().toUpperCase();
+      const candModel = (cand.modelo || "").trim().toLowerCase();
+      const candCliente = (cand.cliente || "").trim().toLowerCase();
+
+      if (targetSerial && targetSerial.length >= 5 && candSerial && targetSerial === candSerial) {
+        score += 100;
+        reason = "Mismo serial físico";
+      } else if (targetModel && candModel && (targetModel.includes(candModel) || candModel.includes(targetModel))) {
+        score += 40;
+        reason = "Modelo coincidente";
+      } else if (targetCliente && candCliente && targetCliente === candCliente && targetCliente !== "danesa sa") {
+        score += 30;
+        reason = "Mismo cliente";
+      }
+
+      if (score > 0) {
+        matches.push({ ticket: cand, score, reason });
+      }
+    }
+
+    return matches.sort((a, b) => b.score - a.score).slice(0, 4);
+  }, [linkingTicket, tickets]);
+
+  // Ejecutar vinculación interactiva entre orden ASU y CDE
+  const handleLinkCrossMatch = async (ticket: RecepcionCdeTicket, rawInputId: string) => {
+    const cleanInput = rawInputId.replace(/[^0-9]/g, "").trim();
+    if (!cleanInput) {
+      showToast("Por favor ingrese un número de orden válido.");
+      return;
+    }
+
+    setIsSubmittingLink(true);
+    try {
+      const esAsu = ticket.origen === "ASU" || ticket.esDanesa || parseInt(ticket.idOrden, 10) < 100000;
+      const idOrdenAsu = esAsu ? (ticket.idOrdenAsu || ticket.idOrden) : cleanInput;
+      const idOrdenCde = esAsu ? cleanInput : (ticket.idOrdenCde || ticket.idOrden);
+
+      // Guardar cruce en almacenamiento local
+      saveSatiCrossMatchLocal(idOrdenAsu, idOrdenCde);
+
+      // Guardar override
+      saveSatiTicketOverride(ticket.rowKey || ticket.idOrden, {
+        idOrdenAsu,
+        idOrdenCde,
+      });
+
+      // Persistir de inmediato en MySQL en la nube (Railway)
+      await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "LINK_CROSS_MATCH",
+          idOrdenAsu,
+          idOrdenCde,
+        }),
+      }).catch((e) => console.warn("[MySQL Link Error]", e));
+
+      // Reconstruir lista unificada enriquecida
+      const cdeTickets = getStoredCdeTickets();
+      const asuTickets = getStoredTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const manualCross = getStoredSatiCrossMatches();
+      const updatedUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins, overrides, manualCross);
+      setTickets(updatedUnified);
+
+      setLinkingTicket(null);
+      setLinkOrderIdInput("");
+      showToast(`¡Cruce SATI exitoso! Orden ASU #${idOrdenAsu} vinculada con CDE #${idOrdenCde} y guardada en MySQL.`);
+    } catch (err: unknown) {
+      console.error("Error al vincular cruce:", err);
+      showToast("Error al vincular las órdenes.");
+    } finally {
+      setIsSubmittingLink(false);
+    }
+  };
+
+  // Desvincular cruce existente
+  const handleUnlinkCrossMatch = async (ticket: RecepcionCdeTicket) => {
+    if (!ticket.idOrdenAsu || !ticket.idOrdenCde) return;
+    try {
+      removeSatiCrossMatchLocal(ticket.idOrdenAsu, ticket.idOrdenCde);
+      await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "UNLINK_CROSS_MATCH",
+          idOrdenAsu: ticket.idOrdenAsu,
+          idOrdenCde: ticket.idOrdenCde,
+        }),
+      }).catch(() => {});
+
+      const cdeTickets = getStoredCdeTickets();
+      const asuTickets = getStoredTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const manualCross = getStoredSatiCrossMatches();
+      const updatedUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins, overrides, manualCross);
+      setTickets(updatedUnified);
+      setLinkingTicket(null);
+      showToast("Cruce desvinculado correctamente.");
+    } catch {
+      showToast("Error al desvincular.");
+    }
   };
 
   // Abrir Modal de Detalle y cargar formulario de edición
@@ -814,6 +964,19 @@ export default function RecepcionCdeDashboardPage() {
       showToast("Error al guardar los cambios.");
     } finally {
       setIsSavingEdits(false);
+    }
+  };
+
+  const hasCrossMatch = (ticket: RecepcionCdeTicket): boolean => {
+    const esAsu = ticket.origen === "ASU" || ticket.esDanesa || parseInt(ticket.idOrden, 10) < 100000;
+    if (esAsu) {
+      if (!ticket.idOrdenCde) return false;
+      const num = parseInt(ticket.idOrdenCde.trim(), 10);
+      return !isNaN(num) && num >= 100000 && ticket.idOrdenCde !== (ticket.idOrdenAsu || ticket.idOrden);
+    } else {
+      if (!ticket.idOrdenAsu) return false;
+      const num = parseInt(ticket.idOrdenAsu.trim(), 10);
+      return !isNaN(num) && num < 100000 && ticket.idOrdenAsu !== ticket.idOrden;
     }
   };
 
@@ -1403,6 +1566,21 @@ export default function RecepcionCdeDashboardPage() {
                 <Check className="w-3 h-3" />
                 <span>Recibidos ({scopeRecibidosCount})</span>
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("SIN_CRUCE");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  transitFilter === "SIN_CRUCE"
+                    ? "bg-indigo-600 text-white font-bold shadow-xs"
+                    : "text-indigo-700 hover:bg-indigo-100/60"
+                }`}
+              >
+                <Link2 className="w-3 h-3" />
+                <span>Sin Cruce ({scopeSinCruceCount})</span>
+              </button>
             </div>
 
             {/* Filtro de Fecha de Recepción (Hoy / Ayer / etc.) cuando se selecciona Recibidos */}
@@ -1527,6 +1705,25 @@ export default function RecepcionCdeDashboardPage() {
           </div>
         </section>
 
+        {/* Banner Explicativo de Cruces Pendientes */}
+        {transitFilter === "SIN_CRUCE" && (
+          <div className="p-4 bg-gradient-to-r from-indigo-50 via-purple-50 to-indigo-50/70 border border-indigo-200 rounded-2xl flex items-center justify-between text-xs text-indigo-950 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Link2 className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-extrabold text-indigo-950 text-sm">
+                  Apartado de Cruces Pendientes ({filteredTickets.length} órdenes por vincular)
+                </p>
+                <p className="text-xs text-indigo-800 mt-0.5">
+                  Estas órdenes aún no tienen su orden complementaria asignada (ASU o CDE). Haga clic en el botón <strong>+ Vincular</strong> en la primera columna para asociarlas de forma definitiva y sincronizarlas en MySQL de la nube.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Tabla de Órdenes SATI ASU - CDE */}
         <section className="bg-white rounded-2xl border border-zinc-200 shadow-xs overflow-hidden">
           <div className="p-4 border-b border-zinc-100 flex items-center justify-between">
@@ -1622,17 +1819,23 @@ export default function RecepcionCdeDashboardPage() {
                               </div>
                               {idCdeVinculado ? (
                                 <div
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
-                                  title={`Vinculado a Orden CDE #${idCdeVinculado}`}
+                                  onClick={() => openLinkModal(ticket)}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
+                                  title={`Vinculado a Orden CDE #${idCdeVinculado}. Click para modificar o desvincular`}
                                 >
                                   <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
                                   <span>CDE: #{idCdeVinculado}</span>
                                 </div>
                               ) : (
-                                <div className="text-[10px] font-mono text-zinc-600 flex items-center gap-1">
-                                  <span className="text-zinc-400">CDE:</span>
-                                  <span className="text-zinc-400 italic">Pendiente</span>
-                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => openLinkModal(ticket)}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
+                                  title="Sin orden CDE vinculada. Haga click para vincular"
+                                >
+                                  <Plus className="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                                  <span>Vincular CDE</span>
+                                </button>
                               )}
                             </div>
                           ) : viewScope === "CLIENTES_CDE" || esOrdenCdeNativa ? (
@@ -1645,20 +1848,23 @@ export default function RecepcionCdeDashboardPage() {
                               </div>
                               {ticket.idOrdenAsu && ticket.idOrdenAsu !== (ticket.idOrdenCde || ticket.idOrden) ? (
                                 <div
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
-                                  title={`Vinculado a Orden ASU #${ticket.idOrdenAsu}`}
+                                  onClick={() => openLinkModal(ticket)}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
+                                  title={`Vinculado a Orden ASU #${ticket.idOrdenAsu}. Click para modificar o desvincular`}
                                 >
                                   <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
                                   <span>ASU: #{ticket.idOrdenAsu}</span>
                                 </div>
                               ) : (
-                                <div
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-50 text-zinc-500 border border-zinc-200 text-[10px] font-medium"
-                                  title="Sin orden ASU asignada (puede vincularla con el botón Editar)"
+                                <button
+                                  type="button"
+                                  onClick={() => openLinkModal(ticket)}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
+                                  title="Sin orden ASU vinculada. Haga click para vincular"
                                 >
-                                  <span className="text-zinc-400">ASU:</span>
-                                  <span className="italic text-zinc-400">Pendiente</span>
-                                </div>
+                                  <Plus className="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                                  <span>Vincular ASU</span>
+                                </button>
                               )}
                             </div>
                           ) : (
@@ -1671,20 +1877,23 @@ export default function RecepcionCdeDashboardPage() {
                               </div>
                               {esCdeValido(ticket.idOrdenCde) && ticket.idOrdenCde !== (ticket.idOrdenAsu || ticket.idOrden) ? (
                                 <div
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold"
-                                  title={`Vinculado a Orden CDE #${ticket.idOrdenCde}`}
+                                  onClick={() => openLinkModal(ticket)}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
+                                  title={`Vinculado a Orden CDE #${ticket.idOrdenCde}. Click para modificar o desvincular`}
                                 >
                                   <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
                                   <span>CDE: #{ticket.idOrdenCde}</span>
                                 </div>
                               ) : (
-                                <div
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-zinc-50 text-zinc-500 border border-zinc-200 text-[10px] font-medium"
-                                  title="Sin orden CDE vinculada"
+                                <button
+                                  type="button"
+                                  onClick={() => openLinkModal(ticket)}
+                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
+                                  title="Sin orden CDE vinculada. Haga click para vincular"
                                 >
-                                  <span className="text-zinc-400">CDE:</span>
-                                  <span className="italic text-zinc-400">Pendiente</span>
-                                </div>
+                                  <Plus className="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                                  <span>Vincular CDE</span>
+                                </button>
                               )}
                             </div>
                           )}
@@ -2287,6 +2496,139 @@ export default function RecepcionCdeDashboardPage() {
               >
                 Cerrar
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Vinculación SATI Rápida (ASU ↔ CDE) */}
+      {linkingTicket && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-zinc-200 space-y-4 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700">
+                  <Link2 className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-sm text-zinc-900">
+                    Vincular Cruce SATI (ASU ↔ CDE)
+                  </h3>
+                  <p className="text-[11px] text-zinc-500">
+                    Sincronización bidireccional en MySQL de la nube
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLinkingTicket(null)}
+                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Ficha de la Orden Actual */}
+            <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-bold text-zinc-900 font-mono text-sm">
+                  Orden #{linkingTicket.idOrden} ({linkingTicket.origen || "ASU"})
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-200 text-zinc-700 font-bold uppercase truncate max-w-[140px]">
+                  {linkingTicket.cliente}
+                </span>
+              </div>
+              <p className="text-zinc-600 font-medium truncate">
+                Equipo: <strong className="text-zinc-900">{linkingTicket.marca} {linkingTicket.modelo}</strong>
+              </p>
+              <div className="flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+                <span>Serial: {linkingTicket.serial || "SIN SERIAL"}</span>
+                <span>Ingreso: {linkingTicket.fechaIngreso || "-"}</span>
+              </div>
+            </div>
+
+            {/* Input para la orden complementaria */}
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-zinc-800">
+                {linkingTicket.origen === "ASU" || linkingTicket.esDanesa || parseInt(linkingTicket.idOrden, 10) < 100000
+                  ? "Ingrese el N° de Orden CDE (#100000+):"
+                  : "Ingrese el N° de Orden ASU (#20000+):"}
+              </label>
+              <input
+                type="text"
+                autoFocus
+                value={linkOrderIdInput}
+                onChange={(e) => setLinkOrderIdInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && linkOrderIdInput.trim()) {
+                    handleLinkCrossMatch(linkingTicket, linkOrderIdInput);
+                  }
+                }}
+                placeholder={
+                  linkingTicket.origen === "ASU" || linkingTicket.esDanesa || parseInt(linkingTicket.idOrden, 10) < 100000
+                    ? "Ej: 125662"
+                    : "Ej: 29405"
+                }
+                className="w-full px-3 py-2 text-sm font-mono font-bold bg-white border border-zinc-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 rounded-xl outline-none"
+              />
+            </div>
+
+            {/* Sugerencias detectadas inteligentemente */}
+            {linkSuggestions.length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                <span className="text-[11px] font-bold text-indigo-900 block">
+                  💡 Sugerencias inteligentes:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {linkSuggestions.map((s, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setLinkOrderIdInput(s.ticket.idOrden)}
+                      className="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-900 text-[11px] font-mono flex items-center gap-1.5 transition-colors cursor-pointer text-left"
+                    >
+                      <span className="font-bold">#{s.ticket.idOrden}</span>
+                      <span className="text-[10px] text-indigo-600 truncate max-w-[150px]">
+                        {s.ticket.modelo} ({s.reason})
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Botones de Acción */}
+            <div className="pt-3 border-t border-zinc-100 flex items-center justify-between">
+              {hasCrossMatch(linkingTicket) ? (
+                <button
+                  type="button"
+                  onClick={() => handleUnlinkCrossMatch(linkingTicket)}
+                  className="px-3 py-1.5 rounded-xl border border-rose-200 text-rose-700 hover:bg-rose-50 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <Unlink className="w-3.5 h-3.5" />
+                  <span>Desvincular</span>
+                </button>
+              ) : (
+                <div />
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setLinkingTicket(null)}
+                  className="px-3 py-1.5 rounded-xl border border-zinc-200 text-zinc-700 hover:bg-zinc-100 text-xs font-medium cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isSubmittingLink || !linkOrderIdInput.trim()}
+                  onClick={() => handleLinkCrossMatch(linkingTicket, linkOrderIdInput)}
+                  className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                >
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                  <span>{isSubmittingLink ? "Guardando..." : "Confirmar Cruce"}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

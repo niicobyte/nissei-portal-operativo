@@ -305,13 +305,26 @@ export function buildUnifiedSatiList(
   cdeTickets: RecepcionCdeTicket[],
   asuTickets: RecepcionTicket[],
   checkins: Record<string, any> = {},
-  overrides: Record<string, any> = {}
+  overrides: Record<string, any> = {},
+  manualCrossMatches: Array<{ idOrdenAsu: string; idOrdenCde: string }> = []
 ): RecepcionCdeTicket[] {
   // Asegurar que solo participen órdenes reales de CDE (>= 100000)
   const cleanCdeTickets = (cdeTickets || []).filter((c) => {
     const num = parseInt(c.idOrden, 10);
     return isNaN(num) || num >= 100000;
   });
+
+  // Mapa de cruces manuales prioritarios confirmados por el usuario
+  const manualCdeToAsu = new Map<string, string>();
+  const manualAsuToCde = new Map<string, string>();
+  if (Array.isArray(manualCrossMatches)) {
+    manualCrossMatches.forEach((m) => {
+      if (m.idOrdenAsu && m.idOrdenCde) {
+        manualAsuToCde.set(m.idOrdenAsu.trim(), m.idOrdenCde.trim());
+        manualCdeToAsu.set(m.idOrdenCde.trim(), m.idOrdenAsu.trim());
+      }
+    });
+  }
 
   // 1. Cruzar CDE con ASU
   const enrichedCde = crossMatchCdeWithAsu(cleanCdeTickets, asuTickets);
@@ -321,7 +334,14 @@ export function buildUnifiedSatiList(
   const cdeEmparejadosIds = new Set<string>();
 
   enrichedCde.forEach((c) => {
-    if (c.idOrdenAsu) {
+    // Si hay cruce manual para esta orden CDE, priorizarlo
+    const manualAsuId = manualCdeToAsu.get(c.idOrden);
+    if (manualAsuId) {
+      c.idOrdenAsu = manualAsuId;
+      c.matchReason = "Cruce Manual Confirmado";
+      cdeByAsuId.set(manualAsuId, c);
+      cdeEmparejadosIds.add(c.idOrden);
+    } else if (c.idOrdenAsu) {
       cdeByAsuId.set(c.idOrdenAsu, c);
       cdeEmparejadosIds.add(c.idOrden);
     }
@@ -329,15 +349,16 @@ export function buildUnifiedSatiList(
 
   const unifiedList: RecepcionCdeTicket[] = [];
 
-  // Helper para extraer estado y fecha de checkin (auto-confirma Reparada y Entregada)
+  // Helper para extraer estado y fecha de checkin (solo confirmado si el operario lo registró físicamente)
   const getCheckinInfo = (
     rowKey: string,
     fallbackRecibido?: boolean,
     fallbackFecha?: string,
     stAsu?: string,
-    stCde?: string
+    stCde?: string,
+    idOrden?: string
   ) => {
-    const val = checkins[rowKey];
+    const val = checkins[rowKey] ?? (idOrden ? checkins[idOrden] : undefined);
     if (typeof val === 'boolean') {
       return { recibido: val, fecha: fallbackFecha || '' };
     }
@@ -348,18 +369,17 @@ export function buildUnifiedSatiList(
       };
     }
 
-    // Auto-confirmación mandatoria: toda orden en estado Reparada o Entregada se confirma como Recibido
-    const st1 = (stAsu || "").toLowerCase();
-    const st2 = (stCde || "").toLowerCase();
-    const esAutoRecibido =
-      st1.includes("entregad") ||
-      st1.includes("reparad") ||
-      st2.includes("entregad") ||
-      st2.includes("reparad");
+    // Solo si viene explícitamente confirmado como recibido desde la base de datos (sati_checkins)
+    if (fallbackRecibido) {
+      return {
+        recibido: true,
+        fecha: fallbackFecha || '',
+      };
+    }
 
     return {
-      recibido: Boolean(fallbackRecibido || esAutoRecibido),
-      fecha: fallbackFecha || '',
+      recibido: false,
+      fecha: '',
     };
   };
 
@@ -368,14 +388,39 @@ export function buildUnifiedSatiList(
   // - Clientes ASU: clientes directos de Asunción.
   asuTickets.forEach((asu, idx) => {
     const esDanesa = isTicketDanesa(asu.cliente);
+
+    // Verificar si hay cruce manual prioritario definido por el usuario
+    const manualCdeId = manualAsuToCde.get(asu.idOrden);
+    const manualCdeTicket = manualCdeId
+      ? cleanCdeTickets.find((c) => c.idOrden === manualCdeId) || {
+          idOrden: manualCdeId,
+          codigoProducto: asu.codigoProducto || "",
+          cliente: asu.cliente,
+          mensaje: "",
+          fechaIngreso: "",
+          fechaEntregada: "",
+          estado: "En Asignacion",
+          tipoComponente: asu.tipoComponente || "",
+          modelo: asu.modelo || "",
+          marca: asu.marca || "",
+          serial: asu.serial || "",
+          esDanesa,
+          matchReason: "Cruce Manual Confirmado",
+        }
+      : undefined;
+
     const rawMatchedCde = cdeByAsuId.get(asu.idOrden);
 
     // Validación de coherencia cronológica y rango de CDE:
-    // La orden de CDE debe ser >= 125000 y el despacho debe ser posterior o igual al ingreso en ASU.
-    const esCdeValido = rawMatchedCde && parseInt(rawMatchedCde.idOrden, 10) >= 125000;
+    // La orden de CDE debe ser >= 100000 y el despacho debe ser posterior o igual al ingreso en ASU.
+    const esCdeValido = rawMatchedCde && parseInt(rawMatchedCde.idOrden, 10) >= 100000;
     const esCronologicamenteCoherente =
       Boolean(esCdeValido && isDespachoCoherente(asu.fechaIngreso, rawMatchedCde?.fechaEntregada));
-    const matchedCde = esCronologicamenteCoherente ? rawMatchedCde : undefined;
+    const matchedCde = manualCdeTicket || (esCronologicamenteCoherente ? rawMatchedCde : undefined);
+
+    if (manualCdeTicket) {
+      cdeEmparejadosIds.add(manualCdeTicket.idOrden);
+    }
 
     const rowKey = (asu as any).rowKey || `ASU_${asu.idOrden}_${asu.codigoProducto || ""}_${asu.serial || ""}_${idx}`;
 
@@ -390,7 +435,8 @@ export function buildUnifiedSatiList(
       asu.recibidoEnDeposito,
       fechaDespachoCde || asu.fechaEntregada || (asu as any).fechaRecibidoDeposito,
       asu.estado,
-      matchedCde?.estado
+      matchedCde?.estado,
+      asu.idOrden
     );
 
     // Días de taller (solo si hay fecha de despacho legítima)
@@ -416,10 +462,10 @@ export function buildUnifiedSatiList(
       recibidoEnDeposito: checkin.recibido,
       fechaRecibidoDeposito: checkin.fecha,
       idOrdenAsu: asu.idOrden,
-      idOrdenCde: matchedCde?.idOrden,           // Nº Orden CDE vinculado (solo si >= 125000 y coherente)
+      idOrdenCde: matchedCde?.idOrden,           // Nº Orden CDE vinculado
       clienteAsu: asu.cliente,
       estadoAsu: asu.estado,
-      matchReason: matchedCde?.matchReason,
+      matchReason: manualCdeTicket ? "Cruce Manual Confirmado" : matchedCde?.matchReason,
       origen: "ASU",
       rowKey,
     });
@@ -440,7 +486,8 @@ export function buildUnifiedSatiList(
       cde.recibidoEnDeposito,
       cde.fechaEntregada || cde.fechaRecibidoDeposito,
       undefined,
-      cde.estado
+      cde.estado,
+      cde.idOrden
     );
 
     unifiedList.push({

@@ -293,27 +293,52 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
 
+      // Tabla de cruces manuales de órdenes SATI (ASU ↔ CDE) confirmados por el usuario
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS sati_cross_matches (
+          id_orden_asu VARCHAR(50) NOT NULL,
+          id_orden_cde VARCHAR(50) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          PRIMARY KEY (id_orden_asu, id_orden_cde),
+          INDEX idx_cde (id_orden_cde),
+          INDEX idx_asu (id_orden_asu)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
+      // Tabla de confirmaciones de recepción física en depósito (Checkins legítimos de operarios)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS sati_checkins (
+          id_orden VARCHAR(50) PRIMARY KEY,
+          id_orden_asu VARCHAR(50),
+          id_orden_cde VARCHAR(50),
+          recibido TINYINT(1) DEFAULT 1,
+          fecha_recibido VARCHAR(50) NOT NULL,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_chk_asu (id_orden_asu),
+          INDEX idx_chk_cde (id_orden_cde)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
       // Limpieza preventiva: recepcion_cde_tickets solo debe contener órdenes reales de CDE (>= 100000)
       await pool.query(
         "DELETE FROM recepcion_cde_tickets WHERE CAST(id_orden AS UNSIGNED) < 100000"
       ).catch(() => {});
 
-      // Auto-confirmar en depósito las órdenes con estado Entregada o Reparada
-      await pool.query(
-        `UPDATE recepcion_cde_tickets
-         SET recibido_en_deposito = 1,
-             fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
-         WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
-           AND recibido_en_deposito = 0`
-      ).catch(() => {});
+      // Sincronizar estado de recibido: solo las confirmadas en sati_checkins son recibidas;
+      // las órdenes con despacho por transportadora permanecen en camino hasta confirmarse físicamente.
+      await pool.query(`
+        UPDATE recepcion_cde_tickets
+        SET recibido_en_deposito = 0, fecha_recibido_deposito = NULL
+        WHERE id_orden NOT IN (SELECT id_orden FROM sati_checkins WHERE recibido = 1)
+          AND id_orden NOT IN (SELECT id_orden_cde FROM sati_checkins WHERE recibido = 1 AND id_orden_cde IS NOT NULL)
+      `).catch(() => {});
 
-      await pool.query(
-        `UPDATE recepcion_tickets
-         SET recibido_en_deposito = 1,
-             fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
-         WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
-           AND recibido_en_deposito = 0`
-      ).catch(() => {});
+      await pool.query(`
+        UPDATE recepcion_tickets
+        SET recibido_en_deposito = 0, fecha_recibido_deposito = NULL
+        WHERE id_orden NOT IN (SELECT id_orden FROM sati_checkins WHERE recibido = 1)
+          AND id_orden NOT IN (SELECT id_orden_asu FROM sati_checkins WHERE recibido = 1 AND id_orden_asu IS NOT NULL)
+      `).catch(() => {});
 
       // 3. Seed de Usuarios (almacena únicamente hash SHA-256, nunca texto plano)
       for (const u of USER_PROFILES) {
@@ -750,3 +775,76 @@ export async function getMysqlStats() {
     usuarios: usr[0]?.count || 0,
   };
 }
+
+export interface SatiCrossMatchRecord {
+  idOrdenAsu: string;
+  idOrdenCde: string;
+}
+
+export async function dbGetSatiCrossMatches(): Promise<SatiCrossMatchRecord[]> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    "SELECT id_orden_asu, id_orden_cde FROM sati_cross_matches"
+  );
+  return rows.map((r) => ({
+    idOrdenAsu: String(r.id_orden_asu),
+    idOrdenCde: String(r.id_orden_cde),
+  }));
+}
+
+export async function dbSaveSatiCrossMatch(idOrdenAsu: string, idOrdenCde: string): Promise<void> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  await pool.query(
+    `INSERT INTO sati_cross_matches (id_orden_asu, id_orden_cde)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE created_at = CURRENT_TIMESTAMP`,
+    [idOrdenAsu.trim(), idOrdenCde.trim()]
+  );
+}
+
+export async function dbDeleteSatiCrossMatch(idOrdenAsu: string, idOrdenCde: string): Promise<void> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  await pool.query(
+    "DELETE FROM sati_cross_matches WHERE id_orden_asu = ? AND id_orden_cde = ?",
+    [idOrdenAsu.trim(), idOrdenCde.trim()]
+  );
+}
+
+export async function dbGetSatiCheckins(): Promise<Record<string, { recibido: boolean; fecha: string }>> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    "SELECT id_orden, id_orden_asu, id_orden_cde, recibido, fecha_recibido FROM sati_checkins"
+  );
+  const result: Record<string, { recibido: boolean; fecha: string }> = {};
+  for (const r of rows) {
+    const val = { recibido: Boolean(r.recibido), fecha: r.fecha_recibido || "" };
+    if (r.id_orden) result[r.id_orden] = val;
+    if (r.id_orden_asu) result[r.id_orden_asu] = val;
+    if (r.id_orden_cde) result[r.id_orden_cde] = val;
+  }
+  return result;
+}
+
+export async function dbSaveSatiCheckin(
+  idOrden: string,
+  recibido: boolean,
+  fecha: string,
+  idOrdenAsu?: string,
+  idOrdenCde?: string
+): Promise<void> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  await pool.query(
+    `INSERT INTO sati_checkins (id_orden, id_orden_asu, id_orden_cde, recibido, fecha_recibido)
+     VALUES (?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE
+       recibido = VALUES(recibido),
+       fecha_recibido = VALUES(fecha_recibido)`,
+    [idOrden.trim(), idOrdenAsu ? idOrdenAsu.trim() : null, idOrdenCde ? idOrdenCde.trim() : null, recibido ? 1 : 0, fecha]
+  );
+}
+

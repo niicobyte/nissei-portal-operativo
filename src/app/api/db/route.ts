@@ -7,6 +7,11 @@ import {
   dbGetMontajes,
   dbGetUsuarios,
   dbGetCdeTickets,
+  dbGetSatiCrossMatches,
+  dbSaveSatiCrossMatch,
+  dbDeleteSatiCrossMatch,
+  dbGetSatiCheckins,
+  dbSaveSatiCheckin,
   seedReparacionesTable,
   seedRecepcionTable,
   seedMontajesTable,
@@ -38,16 +43,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, serverInfo, data });
     }
     if (mod === "cde") {
-      const data = await dbGetCdeTickets();
-      return NextResponse.json({ ok: true, serverInfo, data });
+      const [data, crossMatches, checkins] = await Promise.all([
+        dbGetCdeTickets(),
+        dbGetSatiCrossMatches().catch(() => []),
+        dbGetSatiCheckins().catch(() => ({})),
+      ]);
+      return NextResponse.json({ ok: true, serverInfo, data, crossMatches, checkins });
+    }
+    if (mod === "sati_cross_matches") {
+      const crossMatches = await dbGetSatiCrossMatches();
+      return NextResponse.json({ ok: true, serverInfo, crossMatches });
     }
 
-    const [reparaciones, recepcion, montajes, usuarios, cde] = await Promise.all([
+    const [reparaciones, recepcion, montajes, usuarios, cde, crossMatches, checkins] = await Promise.all([
       dbGetReparaciones(),
       dbGetRecepcionTickets(),
       dbGetMontajes(),
       dbGetUsuarios(),
       dbGetCdeTickets(),
+      dbGetSatiCrossMatches().catch(() => []),
+      dbGetSatiCheckins().catch(() => ({})),
     ]);
 
     return NextResponse.json({
@@ -58,6 +73,8 @@ export async function GET(req: NextRequest) {
       montajes,
       usuarios,
       cde,
+      crossMatches,
+      checkins,
     });
   } catch (err: unknown) {
     console.error("[MYSQL GET ERROR]", err);
@@ -586,6 +603,9 @@ export async function POST(req: NextRequest) {
         ).catch((err) => console.warn("[DB Warning ASU Toggle]", err));
       }
 
+      // Guardar confirmación en la tabla sati_checkins
+      await dbSaveSatiCheckin(idOrden, Boolean(recibidoEnDeposito), fecha, idOrdenAsu, idOrdenCde).catch(() => {});
+
       const data = await dbGetCdeTickets();
       return NextResponse.json({ ok: true, data });
     }
@@ -606,6 +626,11 @@ export async function POST(req: NextRequest) {
       const tieneFechaRecibido = fechaRecibidoAsu && String(fechaRecibidoAsu).trim() !== "";
       const esRecibido = recibidoEnDeposito !== undefined ? (recibidoEnDeposito ? 1 : 0) : (tieneFechaRecibido ? 1 : null);
       const fechaRecibidoVal = tieneFechaRecibido ? String(fechaRecibidoAsu).trim() : null;
+
+      // Si se vinculó ASU con CDE, persistir el cruce
+      if (idOrdenAsu && idOrdenCde) {
+        await dbSaveSatiCrossMatch(idOrdenAsu, idOrdenCde).catch(() => {});
+      }
 
       if (idOrdenCde) {
         await pool.query(
@@ -654,6 +679,42 @@ export async function POST(req: NextRequest) {
       }
 
       return NextResponse.json({ ok: true, message: "Ticket actualizado correctamente en MySQL." });
+    }
+
+    // 11c. Vincular cruce manual SATI (ASU ↔ CDE)
+    if (action === "LINK_CROSS_MATCH") {
+      const { idOrdenAsu, idOrdenCde } = body;
+      if (!idOrdenAsu || !idOrdenCde) {
+        return NextResponse.json({ ok: false, error: "IDs de orden requeridos." }, { status: 400 });
+      }
+
+      await dbSaveSatiCrossMatch(idOrdenAsu, idOrdenCde);
+
+      // Si la orden de CDE ya tiene fecha entregada, heredar a ASU para reflejar despacho
+      const [cdeRows]: any = await pool.query(
+        "SELECT fecha_entregada, estado, mensaje FROM recepcion_cde_tickets WHERE id_orden = ?",
+        [idOrdenCde]
+      );
+      if (cdeRows && cdeRows[0]?.fecha_entregada) {
+        await pool.query(
+          "UPDATE recepcion_tickets SET fecha_entregada = ? WHERE id_orden = ?",
+          [cdeRows[0].fecha_entregada, idOrdenAsu]
+        ).catch(() => {});
+      }
+
+      return NextResponse.json({
+        ok: true,
+        message: `Cruce #${idOrdenAsu} ↔ #${idOrdenCde} guardado en MySQL de la nube.`,
+      });
+    }
+
+    // 11d. Desvincular cruce manual SATI
+    if (action === "UNLINK_CROSS_MATCH") {
+      const { idOrdenAsu, idOrdenCde } = body;
+      if (idOrdenAsu && idOrdenCde) {
+        await dbDeleteSatiCrossMatch(idOrdenAsu, idOrdenCde);
+      }
+      return NextResponse.json({ ok: true, message: "Cruce desvinculado correctamente." });
     }
 
     // 12. Actualización masiva desde CSV en SATI CDE / Depósito Danesa (Full MySQL)
@@ -769,32 +830,7 @@ export async function POST(req: NextRequest) {
       const { checkins = [], overrides = [] } = body;
       let totalSincronizados = 0;
 
-      // 1. Auto-confirmar en MySQL todas las órdenes Entregadas o Reparadas con SQL nativo masivo ultra-rápido (< 20ms)
-      const [cdeUpdated]: any = await pool.query(
-        `UPDATE recepcion_cde_tickets
-         SET recibido_en_deposito = 1,
-             fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
-         WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
-            OR (fecha_entregada IS NOT NULL AND fecha_entregada != '')`
-      ).catch((err) => {
-        console.warn("[DB CDE Bulk Auto-Confirm Warning]", err);
-        return [{ affectedRows: 0 }];
-      });
-
-      const [asuUpdated]: any = await pool.query(
-        `UPDATE recepcion_tickets
-         SET recibido_en_deposito = 1,
-             fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
-         WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
-            OR (fecha_entregada IS NOT NULL AND fecha_entregada != '')`
-      ).catch((err) => {
-        console.warn("[DB ASU Bulk Auto-Confirm Warning]", err);
-        return [{ affectedRows: 0 }];
-      });
-
-      totalSincronizados += (cdeUpdated?.affectedRows || 0) + (asuUpdated?.affectedRows || 0);
-
-      // 2. Procesar checkins explícitos o personalizados por lotes (Batch IN) para no saturar la red
+      // 1. Procesar checkins explícitos o personalizados por lotes (Batch IN) para no saturar la red
       if (Array.isArray(checkins) && checkins.length > 0) {
         const activos = checkins.filter((c: any) => c.recibidoEnDeposito);
         const inactivos = checkins.filter((c: any) => !c.recibidoEnDeposito);
@@ -810,6 +846,15 @@ export async function POST(req: NextRequest) {
           const ids = [chk.idOrden, chk.idOrdenAsu, chk.idOrdenCde].filter(Boolean);
           if (!porFecha.has(f)) porFecha.set(f, []);
           porFecha.get(f)!.push(...ids);
+
+          // Registrar en sati_checkins permanente
+          await dbSaveSatiCheckin(
+            chk.idOrden,
+            true,
+            f,
+            chk.idOrdenAsu,
+            chk.idOrdenCde
+          ).catch(() => {});
         }
 
         for (const [fechaVal, allIds] of porFecha.entries()) {
@@ -859,15 +904,28 @@ export async function POST(req: NextRequest) {
               chunk
             ).catch(() => {});
           }
+
+          for (const chk of inactivos) {
+            await dbSaveSatiCheckin(
+              chk.idOrden,
+              false,
+              "",
+              chk.idOrdenAsu,
+              chk.idOrdenCde
+            ).catch(() => {});
+          }
         }
 
         totalSincronizados += checkins.length;
       }
 
-      // 3. Aplicar overrides manuales de fechas u órdenes
+      // 2. Aplicar overrides manuales de fechas u órdenes
       if (Array.isArray(overrides) && overrides.length > 0) {
         for (const ov of overrides) {
           const { idOrdenAsu, idOrdenCde, fechaIngresoAsu, fechaIngresoCde, fechaDespachoCde, fechaRecibidoAsu } = ov;
+          if (idOrdenAsu && idOrdenCde) {
+            await dbSaveSatiCrossMatch(idOrdenAsu, idOrdenCde).catch(() => {});
+          }
           if (idOrdenCde) {
             await pool.query(
               `UPDATE recepcion_cde_tickets

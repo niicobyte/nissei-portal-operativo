@@ -328,6 +328,43 @@ export function saveSatiTicketOverride(key: string, override: SatiTicketOverride
   }
 }
 
+const SATI_CROSS_MATCHES_KEY = 'nissei_sati_cross_matches';
+
+export function getStoredSatiCrossMatches(): Array<{ idOrdenAsu: string; idOrdenCde: string }> {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(SATI_CROSS_MATCHES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveSatiCrossMatchLocal(idOrdenAsu: string, idOrdenCde: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getStoredSatiCrossMatches().filter(
+      (m) => m.idOrdenAsu !== idOrdenAsu && m.idOrdenCde !== idOrdenCde
+    );
+    list.push({ idOrdenAsu: idOrdenAsu.trim(), idOrdenCde: idOrdenCde.trim() });
+    localStorage.setItem(SATI_CROSS_MATCHES_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.error('Error al guardar cruce SATI local:', e);
+  }
+}
+
+export function removeSatiCrossMatchLocal(idOrdenAsu: string, idOrdenCde: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const list = getStoredSatiCrossMatches().filter(
+      (m) => !(m.idOrdenAsu === idOrdenAsu && m.idOrdenCde === idOrdenCde)
+    );
+    localStorage.setItem(SATI_CROSS_MATCHES_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.error('Error al eliminar cruce SATI local:', e);
+  }
+}
+
 export function getStoredCdeTickets(): RecepcionCdeTicket[] {
   if (typeof window === 'undefined') return INITIAL_RECEPCION_CDE_DATA;
   try {
