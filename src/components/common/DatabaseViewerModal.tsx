@@ -1345,10 +1345,6 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                     {showReauthPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium pt-0.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Validación automática en tiempo real al escribir (sin dar Enter)</span>
-                </div>
               </div>
 
               {reauthError && (

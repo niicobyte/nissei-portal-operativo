@@ -367,11 +367,7 @@ export default function NuevoIngresoMontajePage() {
       progreso: 35,
       prioridad: priority,
       consumoEstimado: tipoServicio === "Montaje" ? "550W" : undefined,
-      observaciones:
-        observations.trim() ||
-        (tipoServicio === "Montaje"
-          ? `Montaje de PC registrado por ${effectiveVendedor} (${salesChannel}).`
-          : `Expansión de Notebook registrada por ${effectiveVendedor} (${salesChannel}).`),
+      observaciones: observations.trim(),
       componentes: components
     };
 

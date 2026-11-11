@@ -2038,10 +2038,6 @@ ${accText}`;
                       {showDepPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium pt-1">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Validación automática en tiempo real al escribir (sin dar Enter)</span>
-                  </div>
                 </div>
 
                 {depositoAuthError && (

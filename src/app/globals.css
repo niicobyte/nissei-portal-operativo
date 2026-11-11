@@ -312,3 +312,25 @@ samp {
   animation: cpuBenchAura 2.4s ease-in-out infinite;
 }
 
+/* Impresión térmica compacta 80mm para stickers de Taller de Montajes */
+@media print {
+  body.thermal-80mm-print {
+    min-height: 0 !important;
+    height: auto !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.thermal-80mm-print main {
+    min-height: 0 !important;
+    height: auto !important;
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { HeaderActions } from "@/components/common/HeaderActions";
 import { AuthGuard } from "@/components/common/AuthGuard";
 import {
-  Award,
   Printer,
   Eye,
   RotateCcw,
@@ -41,6 +40,33 @@ import {
 } from "@/data/montajesData";
 import { getActiveUser } from "@/data/authData";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
+
+const STICKER_CAT_LABELS: Record<string, string> = {
+  PROCESADOR: "CPU",
+  PLACA_MADRE: "PLACA",
+  RAM: "RAM",
+  GPU: "GPU",
+  ALMACENAMIENTO: "SSD/ALM",
+  FUENTE: "FUENTE",
+  GABINETE: "GABINETE",
+  REFRIGERACION: "COOLER",
+  NOTEBOOK: "NOTEBOOK",
+  OTROS: "OTRO",
+};
+
+function formatCategoriaSticker(categoria?: string): string {
+  if (!categoria) return "ITEM";
+  return STICKER_CAT_LABELS[categoria] || categoria.replace(/_/g, " ");
+}
+
+function getRealObservaciones(observaciones?: string | null): string | null {
+  const clean = (observaciones || "").trim();
+  if (!clean) return null;
+  if (/^sin observaciones\.?$/i.test(clean)) return null;
+  if (/^(Montaje de PC|Expansión de Notebook) registrad[oa] por .+$/i.test(clean)) return null;
+  if (/^Orden (Montaje|Expansion|Expansión) cargada desde archivo CSV\.?$/i.test(clean)) return null;
+  return clean;
+}
 
 export default function TecnicosDashboardPage() {
   const [montajes, setMontajes] = useState<OrdenMontajeReal[]>([]);
@@ -85,6 +111,18 @@ export default function TecnicosDashboardPage() {
     window.addEventListener("focus", handleWindowFocus);
     return () => window.removeEventListener("focus", handleWindowFocus);
   }, []);
+
+  // Activar clase compacta de impresión térmica 80mm mientras está abierto el modal de sticker
+  useEffect(() => {
+    if (selectedOrderForCert) {
+      document.body.classList.add("thermal-80mm-print");
+    } else {
+      document.body.classList.remove("thermal-80mm-print");
+    }
+    return () => {
+      document.body.classList.remove("thermal-80mm-print");
+    };
+  }, [selectedOrderForCert]);
 
   const showToast = (msg: string) => {
     setNotification(msg);
@@ -349,10 +387,17 @@ export default function TecnicosDashboardPage() {
     });
   }, [montajes, searchTerm, tipoServicioFilter, tecnicoFilter, vendedorFilter]);
 
+  const stickerObservaciones = selectedOrderForCert
+    ? getRealObservaciones(selectedOrderForCert.observaciones)
+    : null;
+  const detailObservaciones = selectedOrderForDetail
+    ? getRealObservaciones(selectedOrderForDetail.observaciones)
+    : null;
+
   return (
     <AuthGuard requiredModule="montajes">
-      <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16">
-      <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8">
+      <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16 print:min-h-0 print:bg-white print:p-0">
+      <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8 print:hidden">
         
         {/* Cabecera unificada con Sincronización en la Nube y Carga CSV a MySQL */}
         <HeaderActions
@@ -991,7 +1036,7 @@ export default function TecnicosDashboardPage() {
                           <button
                             onClick={() => setSelectedOrderForCert(order)}
                             className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors flex items-center justify-center cursor-pointer"
-                            title="Imprimir Boleta / Certificado QA"
+                            title="Imprimir Sticker 80mm"
                           >
                             <Printer className="w-4 h-4" />
                           </button>
@@ -1122,13 +1167,13 @@ export default function TecnicosDashboardPage() {
               </div>
 
               {/* Observaciones */}
-              {selectedOrderForDetail.observaciones && (
+              {detailObservaciones && (
                 <div className="text-xs space-y-1 bg-amber-50/70 border border-amber-200/80 p-2.5 rounded-xl">
                   <span className="font-bold text-amber-900 block font-mono text-[10px] uppercase">
                     Instrucciones &amp; Observaciones:
                   </span>
                   <p className="text-amber-950 text-[11px] leading-relaxed">
-                    {selectedOrderForDetail.observaciones}
+                    {detailObservaciones}
                   </p>
                 </div>
               )}
@@ -1152,7 +1197,7 @@ export default function TecnicosDashboardPage() {
                     className="px-3.5 py-2 border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
                   >
                     <Printer className="w-3.5 h-3.5 text-zinc-600" />
-                    <span>Imprimir Certificado</span>
+                    <span>Imprimir Sticker</span>
                   </button>
 
                   {selectedOrderForDetail.estado.toLowerCase() !== "entregado" &&
@@ -1173,104 +1218,172 @@ export default function TecnicosDashboardPage() {
           </div>
         )}
 
-        {/* Modal Certificado QA */}
-        {selectedOrderForCert && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5 border border-zinc-200 print:p-0 max-h-[90vh] overflow-y-auto">
-              
-              <div className="text-center border-b border-zinc-200 pb-4">
-                <div className="inline-block px-3 py-1 bg-zinc-900 text-white text-xs font-mono rounded uppercase font-semibold mb-2">
-                  NISSEI QUALITY ASSURANCE LABORATORY
-                </div>
-                <h2 className="text-2xl font-extrabold text-zinc-900 tracking-tight">
-                  CERTIFICADO DE CONFORMIDAD TÉCNICA
+      </div>
+
+      {/* Modal Sticker Térmico 80mm para Identificación de Montaje */}
+      {selectedOrderForCert && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block">
+          <style media="print">{`
+            @page {
+              size: 80mm auto;
+              margin: 2mm;
+            }
+          `}</style>
+          <div className="bg-white rounded-xl w-full max-w-sm p-4 sm:p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92vh] overflow-y-auto print:w-[76mm] print:max-w-[76mm] print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
+
+            <div className="flex items-center justify-between border-b border-zinc-200 pb-2.5 print:hidden">
+              <div>
+                <h2 className="text-sm font-bold text-zinc-900">
+                  Sticker de Montaje · 80mm
                 </h2>
-                <p className="text-xs text-zinc-500 mt-0.5">
-                  Laboratorio de Montaje &amp; Expansiones · Sucursal Ciudad del Este
+                <p className="text-[11px] text-zinc-500">
+                  Formato térmico compacto para pegar junto al equipo
                 </p>
               </div>
-
-              <div className="grid grid-cols-2 gap-3 text-xs font-mono bg-zinc-50 p-4 rounded-lg border border-zinc-200">
-                <div>
-                  <span className="text-zinc-500 block">Nº ORDEN / INTERNO:</span>
-                  <strong className="text-sm text-zinc-900">
-                    {selectedOrderForCert.id} (Reg: {selectedOrderForCert.nro_reg})
-                  </strong>
-                </div>
-                <div>
-                  <span className="text-zinc-500 block">CLIENTE:</span>
-                  <strong className="text-sm text-zinc-900">{selectedOrderForCert.cliente}</strong>
-                </div>
-                <div>
-                  <span className="text-zinc-500 block">TÉCNICO RESPONSABLE:</span>
-                  <strong className="text-sm text-zinc-900">{selectedOrderForCert.tecnico}</strong>
-                </div>
-                <div>
-                  <span className="text-zinc-500 block">VENDEDOR / CANAL:</span>
-                  <strong className="text-sm text-zinc-900">
-                    {selectedOrderForCert.vendedor} ({selectedOrderForCert.canal})
-                  </strong>
-                </div>
-                <div>
-                  <span className="text-zinc-500 block">SERVICIO:</span>
-                  <strong className="text-sm text-zinc-900">
-                    {selectedOrderForCert.tipo_servicio === "Montaje"
-                      ? `Montaje PC (${selectedOrderForCert.cantidadEquipos || 1} Equipos)`
-                      : "Expansión Notebook"}
-                  </strong>
-                </div>
-                <div>
-                  <span className="text-zinc-500 block">ESTADO FINAL:</span>
-                  <strong className="text-sm text-emerald-700">APROBADO QA</strong>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-xs">
-                <span className="font-semibold text-zinc-900 block">
-                  Componentes Verificados ({selectedOrderForCert.componentes.length} ítems):
-                </span>
-                <div className="max-h-40 overflow-y-auto divide-y divide-zinc-100 border border-zinc-200 rounded p-2 bg-zinc-50/50 space-y-1">
-                  {selectedOrderForCert.componentes.map((c, i) => (
-                    <div key={i} className="text-[11px] flex justify-between gap-2 pt-1">
-                      <span className="font-medium text-zinc-800 truncate">{c.descripcion}</span>
-                      <span className="font-mono text-zinc-500 whitespace-nowrap">S/N: {c.seriales}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="border-t border-dashed border-zinc-300 pt-3 flex items-center justify-between text-xs text-zinc-600">
-                <div>
-                  <p className="font-bold text-zinc-900">Garantía NISSEI Paraguay</p>
-                  <p>12 meses en ensamble y mano de obra técnica.</p>
-                </div>
-                <div className="text-right font-mono text-[11px]">
-                  <span>Firma Digital: </span>
-                  <strong className="text-emerald-700">VERIFICADA-SATI</strong>
-                </div>
-              </div>
-
-              <div className="pt-3 border-t border-zinc-200 flex justify-between items-center">
-                <button
-                  onClick={() => setSelectedOrderForCert(null)}
-                  className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900"
-                >
-                  Cerrar
-                </button>
-                <button
-                  onClick={() => window.print()}
-                  className="px-5 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg flex items-center gap-2 shadow-sm transition-colors"
-                >
-                  <Printer className="w-4 h-4" />
-                  Imprimir Certificado QA
-                </button>
-              </div>
-
+              <button
+                type="button"
+                onClick={() => setSelectedOrderForCert(null)}
+                className="text-zinc-400 hover:text-zinc-900 p-1 rounded-lg hover:bg-zinc-100 cursor-pointer transition-colors"
+                title="Cerrar vista previa"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-          </div>
-        )}
 
-      </div>
+            {/* Área Imprimible 80mm */}
+            <div
+              id="thermal-sticker-80mm"
+              className="w-full max-w-[302px] mx-auto border border-dashed border-zinc-300 bg-white p-3 text-black print:w-full print:max-w-none print:border-0 print:p-[1mm]"
+            >
+              {/* Encabezado Compacto */}
+              <div className="border-b-2 border-black pb-1.5 text-center">
+                <div className="text-[11px] font-black tracking-wider uppercase text-black">
+                  NISSEI · MONTAJES CDE
+                </div>
+                <div className="text-[10px] font-mono font-bold text-black mt-0.5 flex items-center justify-between gap-2">
+                  <span>
+                    {selectedOrderForCert.tipo_servicio === "Montaje"
+                      ? `MONTAJE PC${
+                          (selectedOrderForCert.cantidadEquipos || 1) > 1
+                            ? ` (${selectedOrderForCert.cantidadEquipos} EQ.)`
+                            : ""
+                        }`
+                      : "EXPANSIÓN NB"}
+                  </span>
+                  <span>#{selectedOrderForCert.id}</span>
+                </div>
+              </div>
+
+              {/* Datos del Cliente & Orden */}
+              <div className="border-b border-dashed border-black py-2 space-y-1">
+                <div>
+                  <span className="text-[9px] font-mono font-bold uppercase text-black block leading-none">
+                    CLIENTE:
+                  </span>
+                  <strong className="text-[15px] font-black uppercase text-black leading-tight block break-words mt-0.5">
+                    {selectedOrderForCert.cliente}
+                  </strong>
+                </div>
+                <div className="flex items-center justify-between gap-2 text-[10px] font-mono text-black pt-0.5">
+                  <span>
+                    Reg: <strong>{selectedOrderForCert.nro_reg}</strong>
+                  </span>
+                  <span>
+                    Fecha: <strong>{selectedOrderForCert.fecha_montaje}</strong>
+                  </span>
+                </div>
+                {selectedOrderForCert.prioridad !== "NORMAL" && (
+                  <div className="inline-block border border-black px-1.5 py-0.5 text-[9px] font-mono font-black uppercase text-black">
+                    PRIORIDAD: {selectedOrderForCert.prioridad}
+                  </div>
+                )}
+              </div>
+
+              {/* Datos de Vendedor / Canal */}
+              <div className="border-b border-dashed border-black py-1.5 text-[10.5px] font-mono text-black space-y-0.5">
+                <div className="flex justify-between gap-2">
+                  <span className="font-bold uppercase shrink-0">VENDEDOR:</span>
+                  <span className="font-black text-right break-words">
+                    {selectedOrderForCert.vendedor}
+                  </span>
+                </div>
+                <div className="flex justify-between gap-2 text-[9.5px]">
+                  <span className="uppercase shrink-0">CANAL:</span>
+                  <span className="font-semibold text-right">
+                    {selectedOrderForCert.canal}
+                  </span>
+                </div>
+                {selectedOrderForCert.tecnico &&
+                  selectedOrderForCert.tecnico !== "Sin Asignar" && (
+                    <div className="flex justify-between gap-2 text-[9.5px]">
+                      <span className="uppercase shrink-0">TÉCNICO:</span>
+                      <span className="font-semibold text-right">
+                        {selectedOrderForCert.tecnico}
+                      </span>
+                    </div>
+                  )}
+              </div>
+
+              {/* Componentes (Sin seriales) */}
+              <div className="py-2 space-y-1">
+                <div className="text-[10px] font-mono font-black uppercase text-black border-b border-black pb-0.5">
+                  COMPONENTES ({selectedOrderForCert.componentes.length}):
+                </div>
+                <ul className="space-y-1 pt-0.5">
+                  {selectedOrderForCert.componentes.map((c, i) => (
+                    <li
+                      key={i}
+                      className="text-[10px] leading-snug text-black break-words border-b border-dotted border-zinc-400 print:border-black/40 pb-1 last:border-b-0 last:pb-0"
+                    >
+                      <span className="font-mono font-black">
+                        [{formatCategoriaSticker(c.categoria)}]
+                      </span>{" "}
+                      <span className="font-semibold">{c.descripcion}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Observaciones (Solo si el campo está rellenado) */}
+              {stickerObservaciones && (
+                <div className="mt-1.5 border border-black p-1.5 bg-zinc-50 print:bg-white">
+                  <span className="text-[9px] font-mono font-black uppercase text-black block mb-0.5">
+                    OBSERVACIONES:
+                  </span>
+                  <p className="text-[10px] font-semibold text-black leading-snug whitespace-pre-wrap break-words">
+                    {stickerObservaciones}
+                  </p>
+                </div>
+              )}
+
+              {/* Pie de Identificación */}
+              <div className="border-t border-dashed border-black pt-1.5 mt-2 text-center text-[9px] font-mono font-bold text-black uppercase">
+                Etiqueta de entrega · Taller NISSEI
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-zinc-200 flex justify-between items-center print:hidden">
+              <button
+                type="button"
+                onClick={() => setSelectedOrderForCert(null)}
+                className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 cursor-pointer"
+              >
+                Cerrar
+              </button>
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+              >
+                <Printer className="w-4 h-4" />
+                Imprimir Sticker (80mm)
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </main>
     </AuthGuard>
   );

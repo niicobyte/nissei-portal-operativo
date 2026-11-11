@@ -1298,7 +1298,7 @@ export function procesarActualizacionMontajesCSV(
         progreso: isDone ? 100 : 35,
         prioridad: "NORMAL",
         consumoEstimado: tipoServicio === "Montaje" ? "450W" : undefined,
-        observaciones: g.observaciones || `Orden ${tipoServicio} cargada desde archivo CSV.`,
+        observaciones: g.observaciones || "",
         componentes: g.componentes,
       };
       updatedMap.set(newOrder.id, newOrder);

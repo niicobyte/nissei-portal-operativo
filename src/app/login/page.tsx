@@ -371,10 +371,6 @@ function LoginForm() {
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium pt-0.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Validación automática en tiempo real al escribir (sin dar Enter)</span>
-                </div>
               </div>
 
               {/* Mensajes de Estado */}
@@ -449,10 +445,6 @@ function LoginForm() {
                     >
                       {showDbPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                     </button>
-                  </div>
-                  <div className="flex items-center gap-1 text-[10px] text-emerald-700 font-medium">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                    <span>Se valida automáticamente al escribir (sin dar Enter)</span>
                   </div>
                   {dbError && (
                     <div className="text-[11px] text-rose-600 font-medium">
