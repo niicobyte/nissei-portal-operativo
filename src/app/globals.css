@@ -146,3 +146,169 @@ samp {
   animation: smokePuff3 0.65s infinite linear 0.44s;
 }
 
+/* ==========================================================================
+   Animaciones Sectoriales: Recepción Post-Venta & Taller de Montajes PC
+   ========================================================================== */
+
+/* 1. Recepción Post-Venta: Flotación suave de paquete */
+@keyframes receptionBoxFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* 1b. Haz de escáner óptico láser (Lector de Código / SATI Check-in) */
+@keyframes receptionLaserScan {
+  0% {
+    top: 10%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  55% {
+    top: 85%;
+    opacity: 0.95;
+  }
+  75% {
+    opacity: 0;
+  }
+  100% {
+    top: 10%;
+    opacity: 0;
+  }
+}
+
+/* 1c. Radar de recepción / Ping de nuevo aviso WhatsApp */
+@keyframes receptionRadarPing {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.95;
+  }
+  80%, 100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* 2. Taller de Montajes de PC: Frecuencia de reloj / Núcleo de Silicio */
+@keyframes cpuCorePulse {
+  0%, 100% {
+    opacity: 0.4;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* 2b. Corriente en buses de pines hacia el procesador */
+@keyframes cpuPinPulseTop {
+  0% {
+    transform: translateY(-2.5px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(2px);
+    opacity: 0;
+  }
+}
+
+@keyframes cpuPinPulseBottom {
+  0% {
+    transform: translateY(2.5px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-2px);
+    opacity: 0;
+  }
+}
+
+@keyframes cpuPinPulseLeft {
+  0% {
+    transform: translateX(-2.5px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(2px);
+    opacity: 0;
+  }
+}
+
+@keyframes cpuPinPulseRight {
+  0% {
+    transform: translateX(2.5px);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-2px);
+    opacity: 0;
+  }
+}
+
+/* 2c. Aura eléctrica de banco de pruebas */
+@keyframes cpuBenchAura {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.65;
+    transform: scale(1.08);
+  }
+}
+
+.animate-reception-float {
+  display: inline-flex;
+  animation: receptionBoxFloat 2.6s ease-in-out infinite;
+}
+
+.animate-laser-scan {
+  animation: receptionLaserScan 2.1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.animate-radar-ping {
+  animation: receptionRadarPing 1.9s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+.animate-cpu-core {
+  animation: cpuCorePulse 1.5s ease-in-out infinite;
+}
+
+.animate-pin-top {
+  animation: cpuPinPulseTop 1.1s ease-in-out infinite;
+}
+
+.animate-pin-bottom {
+  animation: cpuPinPulseBottom 1.1s ease-in-out infinite 0.28s;
+}
+
+.animate-pin-left {
+  animation: cpuPinPulseLeft 1.1s ease-in-out infinite 0.55s;
+}
+
+.animate-pin-right {
+  animation: cpuPinPulseRight 1.1s ease-in-out infinite 0.82s;
+}
+
+.animate-cpu-aura {
+  animation: cpuBenchAura 2.4s ease-in-out infinite;
+}
+

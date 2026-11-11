@@ -23,6 +23,8 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
+import { AnimatedReceptionBox } from "@/components/common/AnimatedReceptionBox";
+import { AnimatedCpu } from "@/components/common/AnimatedCpu";
 import {
   USER_PROFILES,
   UserProfile,
@@ -202,7 +204,11 @@ function LoginForm() {
               >
                 <div className="flex items-center gap-3.5">
                   <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeSector === "RECEPCION" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
-                    <PackageOpen className="w-5 h-5" />
+                    <AnimatedReceptionBox
+                      className="w-5 h-5"
+                      beamColor={activeSector === "RECEPCION" ? "bg-emerald-300" : "bg-emerald-500"}
+                      pingColor={activeSector === "RECEPCION" ? "bg-emerald-300" : "bg-emerald-500"}
+                    />
                   </span>
                   <div>
                     <strong className="block text-sm font-bold">Recepción Post-Venta</strong>
@@ -253,7 +259,11 @@ function LoginForm() {
               >
                 <div className="flex items-center gap-3.5">
                   <span className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeSector === "MONTAJES" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
-                    <Cpu className="w-5 h-5" />
+                    <AnimatedCpu
+                      className="w-5 h-5"
+                      coreColor={activeSector === "MONTAJES" ? "bg-cyan-300" : "bg-cyan-500"}
+                      auraColor={activeSector === "MONTAJES" ? "bg-cyan-400/25" : "bg-cyan-500/15"}
+                    />
                   </span>
                   <div>
                     <strong className="block text-sm font-bold">Taller de Montajes de PC</strong>

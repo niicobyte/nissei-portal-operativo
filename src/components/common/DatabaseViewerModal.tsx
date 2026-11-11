@@ -24,6 +24,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
+import { AnimatedReceptionBox } from "@/components/common/AnimatedReceptionBox";
+import { AnimatedCpu } from "@/components/common/AnimatedCpu";
 import { getSafeUserProfiles, getAdminAuthHeaders, UserProfile } from "@/data/authData";
 import { getStoredTickets, saveTickets, RecepcionTicket } from "@/data/recepcionData";
 import { getStoredReparaciones, saveReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
@@ -550,7 +552,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
               }`}
             >
-              <PackageOpen className="w-3.5 h-3.5 text-zinc-700" />
+              <AnimatedReceptionBox className="w-3.5 h-3.5 text-zinc-700" beamColor="bg-emerald-500" pingColor="bg-emerald-500" />
               <span className="font-mono">recepcion_tickets</span>
               <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
                 {recepcion.length}
@@ -582,7 +584,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
               }`}
             >
-              <Cpu className="w-3.5 h-3.5 text-zinc-700" />
+              <AnimatedCpu className="w-3.5 h-3.5 text-zinc-700" coreColor="bg-cyan-500" />
               <span className="font-mono">ordenes_montaje</span>
               <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
                 {montajes.length}
