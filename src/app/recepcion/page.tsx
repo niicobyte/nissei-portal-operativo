@@ -73,7 +73,11 @@ import {
   getStoredSatiCrossMatches,
   RecepcionCdeTicket,
 } from "@/data/recepcionCdeData";
-import { crossMatchAsuWithCde } from "@/lib/crossMatch";
+import {
+  crossMatchAsuWithCde,
+  formatSatiSentenceCase,
+  matchesSmartSatiSearch,
+} from "@/lib/crossMatch";
 import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
@@ -957,20 +961,9 @@ ${accText}`;
       );
     }
 
-    // 4. Búsqueda por texto libre (incluyendo orden de CDE)
+    // 4. Búsqueda por texto libre (incluyendo orden de CDE y prefijo "(JC)" opcional)
     if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase().trim();
-      result = result.filter(
-        (t) =>
-          t.idOrden.toLowerCase().includes(q) ||
-          (t.idOrdenCde && t.idOrdenCde.toLowerCase().includes(q)) ||
-          (t.codigoProducto && t.codigoProducto.toLowerCase().includes(q)) ||
-          (t.cliente && t.cliente.toLowerCase().includes(q)) ||
-          (t.marca && t.marca.toLowerCase().includes(q)) ||
-          (t.modelo && t.modelo.toLowerCase().includes(q)) ||
-          (t.serial && t.serial.toLowerCase().includes(q)) ||
-          (t.mensaje && t.mensaje.toLowerCase().includes(q))
-      );
+      result = result.filter((t) => matchesSmartSatiSearch(t, searchTerm));
     }
 
     // 5. Ordenamiento
@@ -1903,9 +1896,14 @@ ${accText}`;
                       </td>
 
                       {/* Mensaje / Detalle */}
-                      <td className="py-3 px-4 text-zinc-600 max-w-xs truncate" title={ticket.mensaje}>
-                        {ticket.mensaje || "Sin observaciones técnicas registradas."}
-                      </td>
+                      {(() => {
+                        const formattedMensaje = formatSatiSentenceCase(ticket.mensaje);
+                        return (
+                          <td className="py-3 px-4 text-zinc-600 max-w-xs truncate" title={formattedMensaje}>
+                            {formattedMensaje || "Sin observaciones técnicas registradas."}
+                          </td>
+                        );
+                      })()}
 
                       {/* Fechas */}
                       <td className="py-3 px-4 font-mono text-[11px] whitespace-nowrap tabular-nums">
@@ -2472,7 +2470,7 @@ ${accText}`;
                 <div className="border-t border-dashed border-[#cccccc] pt-2">
                   <span className="text-[#888888] block mb-1">INFORME TÉCNICO:</span>
                   <span className="text-[11px] font-sans text-slate-700 block leading-tight">
-                    {showPrintModal.mensaje || "Sin observaciones."}
+                    {formatSatiSentenceCase(showPrintModal.mensaje) || "Sin observaciones."}
                   </span>
                 </div>
               </div>

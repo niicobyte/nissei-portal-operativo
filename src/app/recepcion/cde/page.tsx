@@ -71,6 +71,11 @@ import {
   crossMatchCdeWithAsu,
   buildUnifiedSatiList,
   getTicketRowKey,
+  normalizeSerial,
+  clientsMatch,
+  computeEquipmentSimilarity,
+  formatSatiSentenceCase,
+  matchesSmartSatiSearch,
 } from "@/lib/crossMatch";
 import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 
@@ -689,22 +694,9 @@ export default function RecepcionCdeDashboardPage() {
       result = result.filter(isTicketSinCruce);
     }
 
-    // 5. Búsqueda por texto libre
+    // 5. Búsqueda por texto libre (soporta prefijo "(JC)" opcional y serial/modelo sin signos)
     if (searchTerm.trim()) {
-      const q = searchTerm.toLowerCase().trim();
-      result = result.filter(
-        (t) =>
-          t.idOrden.toLowerCase().includes(q) ||
-          (t.idOrdenAsu && t.idOrdenAsu.toLowerCase().includes(q)) ||
-          (t.idOrdenCde && t.idOrdenCde.toLowerCase().includes(q)) ||
-          (t.clienteAsu && t.clienteAsu.toLowerCase().includes(q)) ||
-          (t.codigoProducto && t.codigoProducto.toLowerCase().includes(q)) ||
-          (t.cliente && t.cliente.toLowerCase().includes(q)) ||
-          (t.modelo && t.modelo.toLowerCase().includes(q)) ||
-          (t.marca && t.marca.toLowerCase().includes(q)) ||
-          (t.serial && t.serial.toLowerCase().includes(q)) ||
-          (t.mensaje && t.mensaje.toLowerCase().includes(q))
-      );
+      result = result.filter((t) => matchesSmartSatiSearch(t, searchTerm));
     }
 
     return result;
@@ -826,41 +818,53 @@ export default function RecepcionCdeDashboardPage() {
     setLinkOrderIdInput(initialInput && initialInput !== "Pendiente" ? initialInput : "");
   };
 
-  // Sugerencias inteligentes para autocompletar el cruce
+  // Sugerencias inteligentes para autocompletar el cruce (serial, equipo fuzzy, cliente con fallback "(JC)" y código)
   const linkSuggestions = useMemo(() => {
     if (!linkingTicket) return [];
     const esAsu = linkingTicket.origen === "ASU" || linkingTicket.esDanesa || parseInt(linkingTicket.idOrden, 10) < 100000;
     const candidates = tickets.filter((t) => {
-      const isCandCde = !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 100000);
+      const num = parseInt(t.idOrden, 10);
+      const isCandCde = t.origen === "CDE" || (!isNaN(num) && num >= 100000);
       return esAsu ? isCandCde : !isCandCde;
     });
 
-    const targetSerial = (linkingTicket.serial || "").trim().toUpperCase();
-    const targetModel = (linkingTicket.modelo || "").trim().toLowerCase();
-    const targetCliente = (linkingTicket.cliente || "").trim().toLowerCase();
+    const targetSerial = normalizeSerial(linkingTicket.serial);
+    const targetCod = (linkingTicket.codigoProducto || "").trim();
 
     const matches: Array<{ ticket: RecepcionCdeTicket; score: number; reason: string }> = [];
 
     for (const cand of candidates) {
       let score = 0;
-      let reason = "";
-      const candSerial = (cand.serial || "").trim().toUpperCase();
-      const candModel = (cand.modelo || "").trim().toLowerCase();
-      const candCliente = (cand.cliente || "").trim().toLowerCase();
+      const reasons: string[] = [];
+      const candSerial = normalizeSerial(cand.serial);
+      const candCod = (cand.codigoProducto || "").trim();
+      const equipSim = computeEquipmentSimilarity(
+        linkingTicket.marca,
+        linkingTicket.modelo,
+        cand.marca,
+        cand.modelo
+      );
+      const clientCheck = clientsMatch(linkingTicket.cliente, cand.cliente);
 
-      if (targetSerial && targetSerial.length >= 5 && candSerial && targetSerial === candSerial) {
-        score += 100;
-        reason = "Mismo serial físico";
-      } else if (targetModel && candModel && (targetModel.includes(candModel) || candModel.includes(targetModel))) {
-        score += 40;
-        reason = "Modelo coincidente";
-      } else if (targetCliente && candCliente && targetCliente === candCliente && targetCliente !== "danesa sa") {
-        score += 30;
-        reason = "Mismo cliente";
+      if (targetSerial && candSerial && targetSerial === candSerial) {
+        score += 120;
+        reasons.push("Mismo serial");
+      }
+      if (clientCheck.matched) {
+        score += clientCheck.viaJcFallback ? 45 : 60;
+        reasons.push(clientCheck.viaJcFallback ? "Cliente (con JC)" : "Mismo cliente");
+      }
+      if (targetCod && candCod && targetCod === candCod) {
+        score += 35;
+        reasons.push("Mismo código");
+      }
+      if (equipSim >= 0.72) {
+        score += Math.round(equipSim * 50);
+        reasons.push(equipSim >= 0.98 ? "Mismo equipo" : "Equipo similar");
       }
 
-      if (score > 0) {
-        matches.push({ ticket: cand, score, reason });
+      if (score >= 45) {
+        matches.push({ ticket: cand, score, reason: reasons.slice(0, 2).join(" · ") });
       }
     }
 
@@ -2111,9 +2115,14 @@ export default function RecepcionCdeDashboardPage() {
 
                         {/* Dictamen / Informe Técnico */}
                         <td className="py-3 px-3 max-w-[280px]">
-                          <p className="truncate text-zinc-700 text-[11px] font-sans" title={ticket.mensaje}>
-                            {ticket.mensaje || <span className="text-zinc-400 italic">Sin observaciones</span>}
-                          </p>
+                          {(() => {
+                            const formattedMensaje = formatSatiSentenceCase(ticket.mensaje);
+                            return (
+                              <p className="truncate text-zinc-700 text-[11px] font-sans" title={formattedMensaje}>
+                                {formattedMensaje || <span className="text-zinc-400 italic">Sin observaciones</span>}
+                              </p>
+                            );
+                          })()}
                         </td>
 
                         {/* Llegada a Depósito / Confirmación en Sucursal (oculta para Clientes CDE) */}
@@ -2525,7 +2534,7 @@ export default function RecepcionCdeDashboardPage() {
                   Dictamen Técnico &amp; Mensaje de Servicio
                 </span>
                 <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-800 text-xs font-sans leading-relaxed whitespace-pre-wrap">
-                  {selectedTicket.mensaje || "Sin observaciones técnicas cargadas."}
+                  {formatSatiSentenceCase(selectedTicket.mensaje) || "Sin observaciones técnicas cargadas."}
                 </div>
               </div>
 
