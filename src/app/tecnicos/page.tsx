@@ -1275,7 +1275,7 @@ export default function TecnicosDashboardPage() {
               {/* Encabezado Compacto */}
               <div className="border-b-2 border-black pb-1.5 text-center">
                 <div className="text-[11px] font-black tracking-wider uppercase text-black">
-                  NISSEI · MONTAJES CDE
+                  Montaje Finalizado
                 </div>
                 <div className="text-[10px] font-mono font-bold text-black mt-0.5 flex items-center justify-between gap-2">
                   <span>
@@ -1375,7 +1375,7 @@ export default function TecnicosDashboardPage() {
 
               {/* Pie de Identificación */}
               <div className="border-t border-dashed border-black pt-1.5 mt-2 text-center text-[9px] font-mono font-bold text-black uppercase">
-                Etiqueta de entrega · Taller NISSEI
+                Etiqueta de entrega
               </div>
             </div>
 
