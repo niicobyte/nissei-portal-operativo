@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import { CleanDatePicker } from "@/components/common/CleanDatePicker";
 import Link from "next/link";
@@ -16,37 +16,71 @@ import {
   Wrench,
   AlertCircle,
   Laptop,
-  Search,
-  Check
+  Upload,
+  FileSpreadsheet,
+  Send,
+  Database,
 } from "lucide-react";
 import {
-  CATALOGO_MONTAJE_PC,
-  CATALOGO_EXPANSION_NOTEBOOK,
   CATALOGO_HARDWARE_REAL,
   LISTA_VENDEDORES_REALES,
   LISTA_TECNICOS_MONTAJE,
+  MONTAJES_WHATSAPP_GROUP_ID,
   ComponenteMontaje,
   OrdenMontajeReal,
+  SkuCatalogItem,
   addMontajeAsync,
   fetchMontajesFromMySQL,
   getPendingDirtyMontajeIds,
   getStoredVendedores,
-  addCustomVendedor
+  addCustomVendedor,
+  getStoredSkuCatalog,
+  fetchSkuCatalogFromMySQL,
+  saveSkusToCatalogOnline,
+  parseSkuImportText,
+  mergeSkuCatalogItems,
+  extractSkusFromOrders,
+  isRealSku,
+  formatMontajeWhatsAppMessage,
 } from "@/data/montajesData";
 import { setCloudSyncWarning } from "@/lib/cloudSync";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 
+const EXPANSION_PRIORITY_CATS = new Set(["NOTEBOOK", "RAM", "ALMACENAMIENTO"]);
+
 export default function NuevoIngresoMontajePage() {
   const router = useRouter();
+  const skuFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Lista dinámica de vendedores persistida en localStorage
+  // Lista dinámica de vendedores y catálogo maestro de SKUs sincronizados con MySQL
   const [listaVendedores, setListaVendedores] = useState<string[]>(LISTA_VENDEDORES_REALES);
+  const [skuCatalog, setSkuCatalog] = useState<SkuCatalogItem[]>(() =>
+    CATALOGO_HARDWARE_REAL.map((c) => ({
+      sku: c.sku,
+      descripcion: c.descripcion,
+      categoria: c.categoria,
+      fuente: "OFICIAL",
+    }))
+  );
 
   useEffect(() => {
     setListaVendedores(getStoredVendedores());
-    fetchMontajesFromMySQL().then(() => {
+    setSkuCatalog(getStoredSkuCatalog());
+
+    Promise.all([
+      fetchMontajesFromMySQL().catch(() => []),
+      fetchSkuCatalogFromMySQL().catch(() => []),
+    ]).then(([orders, dbCatalog]) => {
       setListaVendedores(getStoredVendedores());
+      const fromOrders = Array.isArray(orders) ? extractSkusFromOrders(orders) : [];
+      setSkuCatalog((prev) =>
+        mergeSkuCatalogItems(
+          prev,
+          fromOrders,
+          Array.isArray(dbCatalog) ? dbCatalog : []
+        )
+      );
     });
   }, []);
 
@@ -63,14 +97,35 @@ export default function NuevoIngresoMontajePage() {
 
   // 2. APARTADO DE DATOS DEL CLIENTE & TIPO DE SERVICIO
   const [clientName, setClientName] = useState<string>("");
-  const [clientPhone, setClientPhone] = useState<string>("");
+  const [cantidadEquipos, setCantidadEquipos] = useState<number>(1);
   const [tipoServicio, setTipoServicio] = useState<"Montaje" | "Expansion">("Montaje");
 
   // 3. APARTADO DE COMPONENTES DE HARDWARE
   const [components, setComponents] = useState<ComponenteMontaje[]>([]);
-  
-  // Catálogo activo según la modalidad
-  const currentCatalog = tipoServicio === "Montaje" ? CATALOGO_MONTAJE_PC : CATALOGO_EXPANSION_NOTEBOOK;
+
+  // Catálogo activo priorizando la modalidad pero incluyendo todos los SKUs aprendidos en MySQL
+  const currentCatalog = useMemo(() => {
+    const items = [...skuCatalog];
+    items.sort((a, b) => {
+      const aMatch =
+        tipoServicio === "Expansion"
+          ? EXPANSION_PRIORITY_CATS.has(a.categoria)
+          : a.categoria !== "NOTEBOOK";
+      const bMatch =
+        tipoServicio === "Expansion"
+          ? EXPANSION_PRIORITY_CATS.has(b.categoria)
+          : b.categoria !== "NOTEBOOK";
+      if (aMatch !== bMatch) return aMatch ? -1 : 1;
+      return a.descripcion.localeCompare(b.descripcion);
+    });
+    return items;
+  }, [skuCatalog, tipoServicio]);
+
+  // Estados para importador masivo CSV / Lista de SKUs a MySQL
+  const [showSkuImporter, setShowSkuImporter] = useState(false);
+  const [skuImportText, setSkuImportText] = useState("");
+  const [isImportingSkus, setIsImportingSkus] = useState(false);
+  const [skuImportFeedback, setSkuImportFeedback] = useState<string | null>(null);
 
   // Estados para el ingreso de componente (manual con autocompletado por SKU)
   const [customSku, setCustomSku] = useState("");
@@ -157,15 +212,21 @@ export default function NuevoIngresoMontajePage() {
       return;
     }
 
-    // Buscar en catálogo de la modalidad o en el general
-    const found =
-      currentCatalog.find((c) => c.sku.toLowerCase() === clean.toLowerCase()) ||
-      CATALOGO_HARDWARE_REAL.find((c) => c.sku.toLowerCase() === clean.toLowerCase());
+    // Buscar en catálogo unificado (oficial + MySQL catalogo_sku + órdenes históricas)
+    const found = skuCatalog.find((c) => c.sku.toLowerCase() === clean.toLowerCase());
 
     if (found) {
       setCustomCategory(found.categoria);
       setCustomDesc(found.descripcion);
-      setSkuMatchNotice(`Coincidencia oficial encontrada: [${found.categoria}] ${found.descripcion}`);
+      const originTag =
+        found.fuente === "OFICIAL"
+          ? "Catálogo oficial"
+          : found.fuente === "CSV"
+            ? "CSV en MySQL"
+            : found.fuente === "ORDEN"
+              ? "Orden previa MySQL"
+              : "Guardado en MySQL";
+      setSkuMatchNotice(`${originTag}: [${found.categoria}] ${found.descripcion}`);
     } else {
       setSkuMatchNotice(null);
     }
@@ -177,9 +238,9 @@ export default function NuevoIngresoMontajePage() {
     const clean = descVal.trim();
     if (!clean) return;
 
-    const found =
-      currentCatalog.find((c) => c.descripcion.toLowerCase() === clean.toLowerCase()) ||
-      CATALOGO_HARDWARE_REAL.find((c) => c.descripcion.toLowerCase() === clean.toLowerCase());
+    const found = skuCatalog.find(
+      (c) => c.descripcion.toLowerCase() === clean.toLowerCase()
+    );
 
     if (found) {
       setCustomSku(found.sku);
@@ -188,27 +249,93 @@ export default function NuevoIngresoMontajePage() {
     }
   };
 
-  // Agregar componente a la tabla
+  // Agregar componente a la tabla y aprender SKU nuevo en MySQL si corresponde
   const handleAddComponent = () => {
     if (!customDesc.trim()) {
       alert("Por favor ingrese la descripción del componente o un SKU válido.");
       return;
     }
 
+    const cleanSku = customSku.trim();
+    const cleanDesc = customDesc.trim();
+    const assignedSku = cleanSku || `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
+
     const newComponent: ComponenteMontaje = {
-      sku: customSku.trim() || `SKU-${Math.floor(100000 + Math.random() * 900000)}`,
-      descripcion: customDesc.trim(),
+      sku: assignedSku,
+      descripcion: cleanDesc,
       seriales: customSerial.trim() || "Sin serial visible",
-      categoria: customCategory
+      categoria: customCategory,
     };
 
     setComponents((prev) => [...prev, newComponent]);
+
+    let learnedNotice: string | null = null;
+    if (isRealSku(cleanSku)) {
+      const existing = skuCatalog.find(
+        (c) => c.sku.toLowerCase() === cleanSku.toLowerCase()
+      );
+      if (
+        !existing ||
+        existing.descripcion.toLowerCase() !== cleanDesc.toLowerCase() ||
+        existing.categoria !== customCategory
+      ) {
+        const newItem: SkuCatalogItem = {
+          sku: cleanSku,
+          descripcion: cleanDesc,
+          categoria: customCategory,
+          fuente: "MANUAL",
+        };
+        setSkuCatalog((prev) => mergeSkuCatalogItems(prev, [newItem]));
+        learnedNotice = `Nuevo SKU ${cleanSku} guardado en catálogo MySQL para futuros montajes.`;
+        void saveSkusToCatalogOnline([newItem]).then((res) => {
+          if (res.items.length > 0) {
+            setSkuCatalog(res.items);
+          }
+        });
+      }
+    }
 
     // Limpiar campos listos para el siguiente componente
     setCustomSku("");
     setCustomDesc("");
     setCustomSerial("");
-    setSkuMatchNotice(null);
+    setSkuMatchNotice(learnedNotice);
+  };
+
+  // Importar lote de SKUs desde archivo CSV o lista pegada hacia MySQL
+  const handleSaveImportedSkus = async (rawText: string) => {
+    const parsed = parseSkuImportText(rawText);
+    if (parsed.length === 0) {
+      setSkuImportFeedback(
+        "No se detectaron SKUs válidos. Usá formato: SKU, Descripción, Categoría (opcional)."
+      );
+      return;
+    }
+    setIsImportingSkus(true);
+    setSkuImportFeedback(null);
+    const res = await saveSkusToCatalogOnline(parsed);
+    setSkuCatalog(res.items);
+    setIsImportingSkus(false);
+    if (res.ok) {
+      setSkuImportFeedback(
+        `¡Listo! ${res.totalGuardados} SKU(s) guardados en MySQL (catalogo_sku) y disponibles para todo el equipo.`
+      );
+      setSkuImportText("");
+    } else {
+      setSkuImportFeedback(
+        res.error || "Guardado localmente, pero falló la sincronización con MySQL."
+      );
+    }
+  };
+
+  const handleSkuCsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    await handleSaveImportedSkus(text);
+    if (skuFileInputRef.current) {
+      skuFileInputRef.current.value = "";
+    }
   };
 
   // Eliminar componente
@@ -255,14 +382,14 @@ export default function NuevoIngresoMontajePage() {
       return;
     }
 
-    // 3. Cliente / Razón Social -> Salta a Teléfono
+    // 3. Cliente / Razón Social -> Salta a Cantidad de Equipos
     if (target.id === "input-client-name") {
-      document.getElementById("input-client-phone")?.focus();
+      document.getElementById("input-cantidad-equipos")?.focus();
       return;
     }
 
-    // 4. Teléfono del cliente -> Salta a SKU del componente
-    if (target.id === "input-client-phone") {
+    // 4. Cantidad de Equipos -> Salta a SKU del componente
+    if (target.id === "input-cantidad-equipos") {
       document.getElementById("component-sku")?.focus();
       return;
     }
@@ -353,6 +480,7 @@ export default function NuevoIngresoMontajePage() {
       }
     }
 
+    const safeCantidadEquipos = Math.max(1, Number(cantidadEquipos) || 1);
     const cleanReg = nroRegistroInterno.replace(/[^0-9]/g, "") || String(Math.floor(100000 + Math.random() * 900000));
     const prefix = tipoServicio === "Montaje" ? "MNT" : "EXP";
     const newId = `${prefix}-${cleanReg.slice(0, 7)}`;
@@ -367,7 +495,7 @@ export default function NuevoIngresoMontajePage() {
       canal: salesChannel,
       estado: "En Proceso",
       tipo_servicio: tipoServicio,
-      cantidadEquipos: 1,
+      cantidadEquipos: safeCantidadEquipos,
       tecnico: assignedTech,
       etapa: "ARMADO_MECANICO",
       progreso: 35,
@@ -379,46 +507,94 @@ export default function NuevoIngresoMontajePage() {
 
     // Guardar en almacenamiento local y confirmar persistencia en MySQL en la nube
     await addMontajeAsync(newOrder);
-    if (getPendingDirtyMontajeIds().includes(newOrder.id)) {
-      setCloudSyncWarning(
-        `Orden #${newOrder.id} guardada localmente, pero MySQL en la nube no confirmó aún. Pulse "Sincronizar Nube" al conectarse.`
-      );
+    const mysqlPending = getPendingDirtyMontajeIds().includes(newOrder.id);
+
+    // Envío explícito y esperado (await) al Grupo de Montajes vía WhaApi antes de navegar
+    const msg = formatMontajeWhatsAppMessage({
+      cliente: newOrder.cliente,
+      nro_reg: newOrder.nro_reg,
+      vendedor: effectiveVendedor,
+      canal: salesChannel,
+      tipo_servicio: tipoServicio,
+      cantidadEquipos: safeCantidadEquipos,
+      tecnico: assignedTech,
+      prioridad: priority,
+      fecha_montaje: assemblyDate,
+      componentes: components,
+      observaciones: observations.trim(),
+    });
+
+    let whatsappSent = false;
+    let whatsappError: string | null = null;
+    try {
+      const waController = new AbortController();
+      const waTimer = setTimeout(() => waController.abort(), 8000);
+      const waRes = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel: "MONTAJES",
+          to: MONTAJES_WHATSAPP_GROUP_ID,
+          body: msg,
+        }),
+        keepalive: true,
+        signal: waController.signal,
+      });
+      clearTimeout(waTimer);
+      const waJson = await waRes.json().catch(() => null);
+      if (waRes.ok && waJson?.success) {
+        whatsappSent = true;
+      } else {
+        whatsappError =
+          (typeof waJson?.error === "string" && waJson.error) ||
+          `Error HTTP ${waRes.status} al enviar notificación.`;
+        console.error("[WHAPI MONTAJES ERROR]", waRes.status, waJson);
+      }
+    } catch (err) {
+      whatsappError =
+        err instanceof DOMException && err.name === "AbortError"
+          ? "Tiempo de espera agotado conectando con WhaApi."
+          : "Error de red al enviar notificación a WhatsApp.";
+      console.error("[WHAPI ERROR]", err);
     }
 
-    // Envío automático al Grupo de Montajes vía WhaApi (Canal MONTAJES -> Grupo 120363428540171277@g.us)
-    const msg = generateWhatsAppMessage();
-    fetch("/api/whatsapp/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        channel: "MONTAJES",
-        to: "120363428540171277@g.us",
-        body: msg
-      })
-    }).catch((err) => console.error("[WHAPI ERROR]", err));
+    if (mysqlPending && !whatsappSent) {
+      setCloudSyncWarning(
+        `Orden #${newOrder.id} guardada localmente (MySQL sin confirmar) y WhatsApp falló: ${whatsappError}`
+      );
+    } else if (mysqlPending) {
+      setCloudSyncWarning(
+        `Orden #${newOrder.id} enviada a WhatsApp (${MONTAJES_WHATSAPP_GROUP_ID}), pero MySQL aún no confirmó. Pulse "Sincronizar Nube".`
+      );
+    } else if (!whatsappSent) {
+      setCloudSyncWarning(
+        `Orden #${newOrder.id} guardada en MySQL, pero NO se envió al grupo WhatsApp (${MONTAJES_WHATSAPP_GROUP_ID}): ${whatsappError}`
+      );
+    } else {
+      setCloudSyncWarning(
+        `Orden #${newOrder.id} guardada en MySQL y aviso enviado al grupo de WhatsApp (${MONTAJES_WHATSAPP_GROUP_ID}).`
+      );
+    }
 
     router.push("/tecnicos");
   };
 
-  // Mensaje para notificación de WhatsApp
+  // Mensaje para previsualización en vivo y notificación al grupo de WhatsApp
   const generateWhatsAppMessage = () => {
-    const compText = components
-      .map((c) => `• [${c.categoria}] ${c.descripcion} (SKU: ${c.sku} | S/N: ${c.seriales || "A registrar en banco"})`)
-      .join("\n");
-
     const effectiveVendedor = salesAgent === "OTRO" ? customSalesAgent.trim() || "Asesor Comercial" : salesAgent;
-
-    return `El montaje de *${clientName || "Cliente"}*, ha ingresado y finalizara en la brevedad posible:
-
-*Nro. Registro / Interno:* ${nroRegistroInterno || "Pendiente"}
-*Vendedor Responsable:* ${effectiveVendedor} (${salesChannel})
-*Servicio:* ${tipoServicio === "Montaje" ? "Montaje de PC Completa" : "Expansión / Upgrade de Notebook"}
-*Técnico Responsable:* ${assignedTech}
-*Prioridad:* ${priority}
-*Fecha Estimada de Entrega:* ${assemblyDate}
-
-*Componentes a Procesar:*
-${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observaciones:* ${observations}` : ""}`;
+    return formatMontajeWhatsAppMessage({
+      cliente: clientName,
+      nro_reg: nroRegistroInterno,
+      vendedor: effectiveVendedor,
+      canal: salesChannel,
+      tipo_servicio: tipoServicio,
+      cantidadEquipos: cantidadEquipos,
+      tecnico: assignedTech,
+      prioridad: priority,
+      fecha_montaje: assemblyDate,
+      componentes: components,
+      observaciones: observations,
+    });
   };
 
   return (
@@ -612,16 +788,38 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
 
                 <div>
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
-                    Teléfono / WhatsApp de Contacto
+                    Cantidad de Equipos (PCs / Laptops) *
                   </label>
-                  <input
-                    id="input-client-phone"
-                    type="tel"
-                    value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
-                    placeholder="Ej: +595 983 123 456"
-                    className="w-full text-xs sm:text-sm font-mono border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none text-zinc-900"
-                  />
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setCantidadEquipos((prev) => Math.max(1, prev - 1))}
+                      className="px-3 py-2 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-xs font-bold text-zinc-700 cursor-pointer"
+                      aria-label="Restar equipo"
+                    >
+                      −
+                    </button>
+                    <input
+                      id="input-cantidad-equipos"
+                      type="number"
+                      min={1}
+                      max={99}
+                      required
+                      value={cantidadEquipos}
+                      onChange={(e) =>
+                        setCantidadEquipos(Math.max(1, parseInt(e.target.value, 10) || 1))
+                      }
+                      className="w-full text-center text-xs sm:text-sm font-mono font-bold border border-zinc-200 rounded-lg px-2 py-2 focus:border-zinc-900 outline-none text-zinc-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setCantidadEquipos((prev) => Math.min(99, prev + 1))}
+                      className="px-3 py-2 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-xs font-bold text-zinc-700 cursor-pointer"
+                      aria-label="Sumar equipo"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -686,14 +884,82 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                       Apartado de Componentes de Hardware ({tipoServicio === "Montaje" ? "PC Completa" : "Notebook & Expansión"})
                     </h2>
                     <span className="text-xs text-zinc-500">
-                      Ingrese el SKU para autocompletar la categoría y descripción oficial, o complete los campos de forma manual.
+                      Ingrese el SKU para autocompletar o cargue uno nuevo y quedará guardado en MySQL para todos.
                     </span>
                   </div>
                 </div>
-                <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-zinc-100 text-zinc-800 border border-zinc-200">
-                  {components.length} {components.length === 1 ? "componente" : "componentes"}
-                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <input
+                    ref={skuFileInputRef}
+                    type="file"
+                    accept=".csv,.txt,text/csv"
+                    onChange={handleSkuCsvFileChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowSkuImporter((prev) => !prev);
+                      setSkuImportFeedback(null);
+                    }}
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 cursor-pointer transition-colors"
+                    title="Importar lista o CSV de SKUs a MySQL"
+                  >
+                    <Database className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{skuCatalog.length} SKUs en catálogo · Importar CSV</span>
+                  </button>
+                  <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-zinc-100 text-zinc-800 border border-zinc-200">
+                    {components.length} {components.length === 1 ? "componente" : "componentes"}
+                  </span>
+                </div>
               </div>
+
+              {showSkuImporter && (
+                <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div>
+                      <h3 className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                        Importar SKUs al Catálogo Maestro MySQL
+                      </h3>
+                      <p className="text-[11px] text-zinc-600">
+                        Subí un archivo CSV o pegá una lista (<code className="font-mono">SKU, Descripción, Categoría</code>). Se sincroniza en la nube para cualquier PC.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => skuFileInputRef.current?.click()}
+                      disabled={isImportingSkus}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-zinc-50 border border-zinc-300 rounded-lg text-xs font-semibold text-zinc-800 cursor-pointer"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Subir archivo .CSV</span>
+                    </button>
+                  </div>
+
+                  <textarea
+                    rows={3}
+                    value={skuImportText}
+                    onChange={(e) => setSkuImportText(e.target.value)}
+                    placeholder={"774198, CPU INTEL I5-12400 2.5GHZ LGA1700, PROCESADOR\n879268, MB ASUS PRIME H610M-D D4, PLACA_MADRE"}
+                    className="w-full text-xs font-mono bg-white border border-zinc-200 rounded-lg p-2.5 outline-none focus:border-zinc-900 text-zinc-900"
+                  />
+
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <span className="text-[11px] text-zinc-600">
+                      {skuImportFeedback || "También podés escribir un SKU nuevo directo abajo y se guardará automáticamente al agregarlo."}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={isImportingSkus || !skuImportText.trim()}
+                      onClick={() => void handleSaveImportedSkus(skuImportText)}
+                      className="px-3 py-1.5 bg-zinc-900 hover:bg-black disabled:opacity-50 text-white text-xs font-semibold rounded-lg cursor-pointer"
+                    >
+                      {isImportingSkus ? "Guardando en MySQL..." : "Guardar Lista en MySQL"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Formulario de Ingreso Directo Inteligente (OPCIÓN DEFAULT) */}
               <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 space-y-3">
@@ -1001,6 +1267,13 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                 </div>
 
                 <div className="pt-2 flex justify-between">
+                  <span className="text-zinc-500">Cantidad de Equipos:</span>
+                  <span className="font-mono font-bold text-zinc-900">
+                    {cantidadEquipos} {cantidadEquipos === 1 ? "unidad" : "unidades"}
+                  </span>
+                </div>
+
+                <div className="pt-2 flex justify-between">
                   <span className="text-zinc-500">Técnico Responsable:</span>
                   <span className="text-zinc-900 font-bold">{assignedTech}</span>
                 </div>
@@ -1013,11 +1286,17 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
                 </div>
               </div>
 
-              {/* Previsualización Notificación WhatsApp */}
+              {/* Previsualización Notificación WhatsApp al Grupo Montajes */}
               <div className="pt-3 border-t border-zinc-200 space-y-1.5">
-                <span className="text-[11px] font-mono text-zinc-500 uppercase block font-semibold">
-                  Aviso Automático de WhatsApp al Cliente:
-                </span>
+                <div className="flex items-center justify-between gap-1">
+                  <span className="text-[11px] font-mono text-zinc-500 uppercase block font-semibold">
+                    Aviso al Grupo WhatsApp (Montajes):
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
+                    <Send className="w-2.5 h-2.5" />
+                    Grupo CDE
+                  </span>
+                </div>
                 <pre className="p-2.5 rounded bg-zinc-50 border border-zinc-200 text-[11px] font-mono text-zinc-700 whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed">
                   {generateWhatsAppMessage()}
                 </pre>
@@ -1027,10 +1306,10 @@ ${compText || "(Sin componentes registrados aún)"}${observations ? `\n\n*Observ
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full py-3 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isSubmitting ? (
-                  <span>Registrando en taller...</span>
+                  <span>Guardando y enviando al grupo...</span>
                 ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-emerald-400" />

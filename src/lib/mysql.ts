@@ -1,6 +1,14 @@
 import mysql from "mysql2/promise";
 import { INITIAL_RECEPCION_DATA, RecepcionTicket } from "@/data/recepcionData";
-import { INITIAL_MONTAJES_REALES, OrdenMontajeReal } from "@/data/montajesData";
+import {
+  CATALOGO_HARDWARE_REAL,
+  INITIAL_MONTAJES_REALES,
+  OrdenMontajeReal,
+  SkuCatalogItem,
+  isRealSku,
+  mergeSkuCatalogItems,
+  normalizeCategoriaSku,
+} from "@/data/montajesData";
 import {
   LISTA_TECNICOS,
   OrdenReparacion,
@@ -405,6 +413,18 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
 
+      // Catálogo maestro dinámico de SKUs de hardware (aprendido de órdenes, ingresos manuales y CSV)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS catalogo_sku (
+          sku VARCHAR(80) PRIMARY KEY,
+          descripcion VARCHAR(350) NOT NULL,
+          categoria VARCHAR(50) NOT NULL DEFAULT 'OTROS',
+          fuente VARCHAR(30) NOT NULL DEFAULT 'OFICIAL',
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_sku_categoria (categoria)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
+
       // Limpieza preventiva: recepcion_cde_tickets solo debe contener órdenes reales de CDE (>= 100000)
       await pool.query(
         "DELETE FROM recepcion_cde_tickets WHERE CAST(id_orden AS UNSIGNED) < 100000"
@@ -473,6 +493,14 @@ export async function ensureDatabaseInitialized(): Promise<void> {
       );
       if ((cdeCountRows[0]?.count || 0) === 0) {
         await seedCdeTable(pool);
+      }
+
+      // 8. Seed inicial del Catálogo de SKUs (oficial + SKUs históricos de ordenes_montaje) si está vacío
+      const [skuCountRows] = await pool.query<mysql.RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM catalogo_sku"
+      );
+      if ((skuCountRows[0]?.count || 0) === 0) {
+        await seedCatalogoSkuTable(pool);
       }
 
       global.__nisseiMysqlInitialized = true;
@@ -692,6 +720,95 @@ export async function seedMontajesTable(pool: mysql.Pool): Promise<void> {
   );
 }
 
+/**
+ * Inserta o actualiza SKUs de hardware reales en `catalogo_sku`.
+ */
+export async function upsertSkusToMySQL(
+  pool: mysql.Pool,
+  items: { sku: string; descripcion: string; categoria?: string; fuente?: string }[],
+  options?: { overwrite?: boolean }
+): Promise<number> {
+  const dedup = new Map<string, [string, string, string, string]>();
+
+  for (const raw of items || []) {
+    const sku = String(raw?.sku || "").trim().slice(0, 80);
+    const descripcion = String(raw?.descripcion || "").trim().slice(0, 350);
+    if (!isRealSku(sku) || !descripcion) continue;
+    const categoria = normalizeCategoriaSku(raw?.categoria, descripcion);
+    const fuente = String(raw?.fuente || "MANUAL").trim().slice(0, 30);
+    dedup.set(sku.toLowerCase(), [sku, descripcion, categoria, fuente]);
+  }
+
+  const values = Array.from(dedup.values());
+  if (values.length === 0) return 0;
+
+  const CHUNK_SIZE = 200;
+  const sql = options?.overwrite
+    ? `INSERT INTO catalogo_sku (sku, descripcion, categoria, fuente)
+       VALUES ?
+       ON DUPLICATE KEY UPDATE
+         descripcion = VALUES(descripcion),
+         categoria = IF(VALUES(categoria) <> 'OTROS', VALUES(categoria), categoria),
+         fuente = VALUES(fuente)`
+    : `INSERT INTO catalogo_sku (sku, descripcion, categoria, fuente)
+       VALUES ?
+       ON DUPLICATE KEY UPDATE
+         descripcion = IF(LENGTH(descripcion) = 0, VALUES(descripcion), descripcion),
+         categoria = IF(categoria = 'OTROS' AND VALUES(categoria) <> 'OTROS', VALUES(categoria), categoria)`;
+
+  for (let i = 0; i < values.length; i += CHUNK_SIZE) {
+    const chunk = values.slice(i, i + CHUNK_SIZE);
+    await pool.query(sql, [chunk]);
+  }
+
+  return values.length;
+}
+
+export async function seedCatalogoSkuTable(pool: mysql.Pool): Promise<void> {
+  const officialItems: SkuCatalogItem[] = CATALOGO_HARDWARE_REAL.map((c) => ({
+    sku: c.sku,
+    descripcion: c.descripcion,
+    categoria: c.categoria,
+    fuente: "OFICIAL",
+  }));
+
+  const fromSavedOrders: SkuCatalogItem[] = [];
+  try {
+    const [orderRows] = await pool.query<mysql.RowDataPacket[]>(
+      "SELECT tipo_servicio, componentes_json FROM ordenes_montaje"
+    );
+    for (const r of orderRows) {
+      let comps: { sku?: string; descripcion?: string; categoria?: string }[] = [];
+      try {
+        comps = JSON.parse(r.componentes_json || "[]");
+      } catch {
+        comps = [];
+      }
+      if (!Array.isArray(comps)) continue;
+      for (const c of comps) {
+        const sku = String(c?.sku || "").trim();
+        const desc = String(c?.descripcion || "").trim();
+        if (!isRealSku(sku) || !desc) continue;
+        fromSavedOrders.push({
+          sku,
+          descripcion: desc,
+          categoria: normalizeCategoriaSku(
+            c.categoria,
+            desc,
+            r.tipo_servicio === "Expansion" ? "Expansion" : "Montaje"
+          ),
+          fuente: "ORDEN",
+        });
+      }
+    }
+  } catch {
+    // Si aún no existen órdenes guardadas, continuar con el catálogo oficial
+  }
+
+  const combined = mergeSkuCatalogItems(fromSavedOrders, officialItems);
+  await upsertSkusToMySQL(pool, combined, { overwrite: false });
+}
+
 // ============================================================================
 // LECTURAS DESDE MYSQL
 // ============================================================================
@@ -798,6 +915,31 @@ export async function dbGetMontajes(): Promise<OrdenMontajeReal[]> {
       componentes,
     };
   });
+}
+
+export async function dbGetCatalogoSku(): Promise<SkuCatalogItem[]> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    "SELECT sku, descripcion, categoria, fuente, updated_at FROM catalogo_sku ORDER BY updated_at DESC, sku ASC"
+  );
+
+  const dbItems: SkuCatalogItem[] = rows.map((r) => ({
+    sku: String(r.sku || "").trim(),
+    descripcion: String(r.descripcion || "").trim(),
+    categoria: normalizeCategoriaSku(String(r.categoria || ""), String(r.descripcion || "")),
+    fuente: (r.fuente as SkuCatalogItem["fuente"]) || "OFICIAL",
+    updated_at: r.updated_at ? new Date(r.updated_at).toISOString() : undefined,
+  }));
+
+  const officialItems: SkuCatalogItem[] = CATALOGO_HARDWARE_REAL.map((c) => ({
+    sku: c.sku,
+    descripcion: c.descripcion,
+    categoria: c.categoria,
+    fuente: "OFICIAL",
+  }));
+
+  return mergeSkuCatalogItems(officialItems, dbItems);
 }
 
 export async function dbGetUsuarios(): Promise<UserProfile[]> {

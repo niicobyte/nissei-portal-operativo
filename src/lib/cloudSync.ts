@@ -1,10 +1,13 @@
 import { applyCloudRecepcionTickets, RecepcionTicket } from "@/data/recepcionData";
 import { saveReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
 import {
+  extractSkusFromOrders,
   getPendingDirtyMontajeIds,
   mergeAndSaveCloudMontajes,
+  mergeAndSaveCloudSkuCatalog,
   OrdenMontajeReal,
   pushPendingDirtyMontajes,
+  SkuCatalogItem,
 } from "@/data/montajesData";
 import {
   applyCloudCdeTickets,
@@ -81,11 +84,16 @@ export async function syncAllModulesFromMySQL(timeoutMs = 7500): Promise<CloudSy
 
     if (Array.isArray(json.montajes) && json.montajes.length > 0) {
       mergeAndSaveCloudMontajes(json.montajes as OrdenMontajeReal[]);
+      mergeAndSaveCloudSkuCatalog(extractSkusFromOrders(json.montajes as OrdenMontajeReal[]));
       if (getPendingDirtyMontajeIds().length > 0) {
         await pushPendingDirtyMontajes().catch((err) => {
           console.warn("[CloudSync] Pendientes de montaje no subidos aún:", err);
         });
       }
+    }
+
+    if (Array.isArray(json.catalogoSku) && json.catalogoSku.length > 0) {
+      mergeAndSaveCloudSkuCatalog(json.catalogoSku as SkuCatalogItem[]);
     }
 
     if (Array.isArray(json.cde) && json.cde.length > 0) {

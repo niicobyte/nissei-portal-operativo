@@ -29,14 +29,17 @@ export async function sendWhapiMessage({
   channel,
   body,
 }: WhapiSendOptions): Promise<WhapiResponse> {
-  const token = process.env.WHAPI_API_TOKEN || "";
-  const baseUrl = process.env.WHAPI_API_URL || "https://gate.whapi.cloud";
+  const token = (process.env.WHAPI_API_TOKEN || process.env.WHAPI_TOKEN || "").trim();
+  const baseUrl = (process.env.WHAPI_API_URL || "https://gate.whapi.cloud")
+    .trim()
+    .replace(/\/+$/, "");
 
-  if (!token) {
+  if (!token || token === "tu_token_whapi_aqui") {
     console.error("[WHAPI] Error: WHAPI_API_TOKEN no está configurado en las variables de entorno.");
     return {
       sent: false,
-      error: "Servicio de mensajería no configurado en el servidor.",
+      error:
+        "WHAPI_API_TOKEN no está configurado en el servidor (verificá las Variables de entorno en Railway).",
     };
   }
 
@@ -83,25 +86,48 @@ export async function sendWhapiMessage({
       }),
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    let data: Record<string, unknown> = {};
+    try {
+      data = rawText ? (JSON.parse(rawText) as Record<string, unknown>) : {};
+    } catch {
+      data = {};
+    }
 
     if (!response.ok) {
-      console.error("[WHAPI] Error en respuesta del proveedor:", response.status);
+      const nestedError =
+        typeof data.error === "object" && data.error !== null
+          ? (data.error as { message?: string }).message
+          : typeof data.error === "string"
+            ? data.error
+            : undefined;
+      const detail =
+        nestedError ||
+        (typeof data.message === "string" ? data.message : undefined) ||
+        "";
+      console.error("[WHAPI] Error en respuesta del proveedor:", response.status, detail);
       return {
         sent: false,
-        error: `No se pudo entregar el mensaje por WhatsApp (código ${response.status}).`,
+        error: detail
+          ? `WhaApi rechazó el envío (HTTP ${response.status}): ${detail}`
+          : `No se pudo entregar el mensaje por WhatsApp (código ${response.status}).`,
       };
     }
 
+    const msgObj =
+      typeof data.message === "object" && data.message !== null
+        ? (data.message as { id?: string })
+        : undefined;
+
     return {
       sent: true,
-      message: { id: data?.message?.id || "sent" },
+      message: { id: msgObj?.id || "sent" },
     };
   } catch (err) {
     console.error("[WHAPI] Error de red al enviar mensaje:", err);
     return {
       sent: false,
-      error: "Error de conexión con la pasarela de WhatsApp.",
+      error: "Error de conexión con la pasarela de WhatsApp (WhaApi).",
     };
   }
 }

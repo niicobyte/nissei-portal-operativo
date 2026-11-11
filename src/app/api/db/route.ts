@@ -12,6 +12,8 @@ import {
   dbDeleteSatiCrossMatch,
   dbGetSatiCheckins,
   dbSaveSatiCheckin,
+  dbGetCatalogoSku,
+  upsertSkusToMySQL,
   seedReparacionesTable,
   seedRecepcionTable,
   seedMontajesTable,
@@ -57,8 +59,12 @@ export async function GET(req: NextRequest) {
       const crossMatches = await dbGetSatiCrossMatches();
       return NextResponse.json({ ok: true, serverInfo, crossMatches });
     }
+    if (mod === "catalogo_sku") {
+      const data = await dbGetCatalogoSku();
+      return NextResponse.json({ ok: true, serverInfo, data });
+    }
 
-    const [reparaciones, recepcion, montajes, usuarios, cde, crossMatches, checkins] = await Promise.all([
+    const [reparaciones, recepcion, montajes, usuarios, cde, crossMatches, checkins, catalogoSku] = await Promise.all([
       dbGetReparaciones(),
       dbGetRecepcionTickets(),
       dbGetMontajes(),
@@ -66,6 +72,7 @@ export async function GET(req: NextRequest) {
       dbGetCdeTickets(),
       dbGetSatiCrossMatches().catch(() => []),
       dbGetSatiCheckins().catch(() => ({})),
+      dbGetCatalogoSku().catch(() => []),
     ]);
 
     return NextResponse.json({
@@ -78,6 +85,7 @@ export async function GET(req: NextRequest) {
       cde,
       crossMatches,
       checkins,
+      catalogoSku,
     });
   } catch (err: unknown) {
     console.error("[MYSQL GET ERROR]", err);
@@ -557,8 +565,23 @@ export async function POST(req: NextRequest) {
           JSON.stringify(orden.componentes || []),
         ]
       );
-      const data = await dbGetMontajes();
-      return NextResponse.json({ ok: true, data });
+      const skusOrden = Array.isArray(orden.componentes)
+        ? orden.componentes.map((c: { sku?: string; descripcion?: string; categoria?: string }) => ({
+            sku: c?.sku || "",
+            descripcion: c?.descripcion || "",
+            categoria: c?.categoria || "OTROS",
+            fuente: "ORDEN",
+          }))
+        : [];
+      await upsertSkusToMySQL(pool, skusOrden, { overwrite: false }).catch((err) =>
+        console.warn("[DB Warning Upsert SKU on ADD_MONTAJE]", err)
+      );
+
+      const [data, catalogoSku] = await Promise.all([
+        dbGetMontajes(),
+        dbGetCatalogoSku().catch(() => []),
+      ]);
+      return NextResponse.json({ ok: true, data, catalogoSku });
     }
 
     // 8. Actualizar técnico de orden de Montaje
@@ -659,14 +682,52 @@ export async function POST(req: NextRequest) {
           );
           totalSincronizados++;
         }
+
+        const learnedSkus = ordenes.flatMap(
+          (orden: { componentes?: { sku?: string; descripcion?: string; categoria?: string }[] }) =>
+            Array.isArray(orden?.componentes)
+              ? orden.componentes.map((c) => ({
+                  sku: c?.sku || "",
+                  descripcion: c?.descripcion || "",
+                  categoria: c?.categoria || "OTROS",
+                  fuente: "ORDEN",
+                }))
+              : []
+        );
+        if (learnedSkus.length > 0) {
+          await upsertSkusToMySQL(pool, learnedSkus, { overwrite: false }).catch((err) =>
+            console.warn("[DB Warning Bulk Upsert SKUs]", err)
+          );
+        }
       }
 
-      const data = await dbGetMontajes();
+      const [data, catalogoSku] = await Promise.all([
+        dbGetMontajes(),
+        dbGetCatalogoSku().catch(() => []),
+      ]);
       return NextResponse.json({
         ok: true,
         data,
+        catalogoSku,
         totalSincronizados,
         message: `Sincronización de montajes con MySQL completada (${totalSincronizados} registro(s) guardados).`,
+      });
+    }
+
+    // 10c. Guardar o importar SKUs nuevos en el catálogo maestro MySQL (`catalogo_sku`)
+    if (action === "UPSERT_CATALOGO_SKU") {
+      const { items = [] } = body;
+      const totalGuardados = await upsertSkusToMySQL(
+        pool,
+        Array.isArray(items) ? items : [],
+        { overwrite: true }
+      );
+      const data = await dbGetCatalogoSku();
+      return NextResponse.json({
+        ok: true,
+        totalGuardados,
+        data,
+        message: `${totalGuardados} SKU(s) guardados en el catálogo maestro de MySQL.`,
       });
     }
 

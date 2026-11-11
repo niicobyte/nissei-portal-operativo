@@ -24,6 +24,8 @@ import {
   Upload,
   FileSpreadsheet,
   X,
+  Send,
+  AlertCircle,
 } from "lucide-react";
 import {
   getStoredMontajes,
@@ -36,6 +38,8 @@ import {
   updateMontajeEstado,
   resetMontajes,
   LISTA_TECNICOS_MONTAJE,
+  MONTAJES_WHATSAPP_GROUP_ID,
+  formatMontajeWhatsAppMessage,
   OrdenMontajeReal
 } from "@/data/montajesData";
 import { getActiveUser } from "@/data/authData";
@@ -77,8 +81,10 @@ export default function TecnicosDashboardPage() {
 
   // Sincronización con MySQL en la nube y carga de CSV
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
   const [isUploadingCSV, setIsUploadingCSV] = useState(false);
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
   const [csvReport, setCsvReport] = useState<
     (ResultadoCargaMontajesCSV & { fileName: string; timestamp: string }) | null
   >(null);
@@ -143,7 +149,53 @@ export default function TecnicosDashboardPage() {
 
   const showToast = (msg: string) => {
     setNotification(msg);
-    setTimeout(() => setNotification(null), 4000);
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    const duration = msg.length > 70 ? 7000 : 4000;
+    toastTimerRef.current = setTimeout(() => setNotification(null), duration);
+  };
+
+  // Enviar o reenviar la ficha del montaje al grupo de WhatsApp (120363428540171277@g.us)
+  const handleSendOrderToWhatsApp = async (order: OrdenMontajeReal) => {
+    setIsSendingWhatsApp(true);
+    try {
+      const msg = formatMontajeWhatsAppMessage({
+        cliente: order.cliente,
+        nro_reg: order.nro_reg,
+        vendedor: order.vendedor,
+        canal: order.canal,
+        tipo_servicio: order.tipo_servicio,
+        cantidadEquipos: order.cantidadEquipos || 1,
+        tecnico: order.tecnico,
+        prioridad: order.prioridad,
+        fecha_montaje: order.fecha_montaje,
+        componentes: order.componentes || [],
+        observaciones: getRealObservaciones(order.observaciones) || undefined,
+      });
+
+      const res = await fetch("/api/whatsapp/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          channel: "MONTAJES",
+          to: MONTAJES_WHATSAPP_GROUP_ID,
+          body: msg,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success) {
+        showToast(
+          `Aviso de la orden #${order.id} enviado al grupo de WhatsApp (${MONTAJES_WHATSAPP_GROUP_ID}).`
+        );
+      } else {
+        showToast(
+          `No se pudo enviar al grupo WhatsApp: ${json?.error || `HTTP ${res.status}`}`
+        );
+      }
+    } catch {
+      showToast("Error de red al conectar con el envío de WhatsApp.");
+    } finally {
+      setIsSendingWhatsApp(false);
+    }
   };
 
   // Guardar y sincronizar órdenes de montaje con MySQL en la nube
@@ -633,9 +685,13 @@ export default function TecnicosDashboardPage() {
 
         {/* Notificación Toast */}
         {notification && (
-          <div className="fixed top-5 right-5 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg border border-zinc-700 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-            <span>{notification}</span>
+          <div className="fixed top-5 right-5 z-50 max-w-md bg-zinc-900 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl border border-zinc-700 flex items-start gap-2.5">
+            {/no se pudo|error|falló|no está configurado|sin confirmar/i.test(notification) ? (
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+            )}
+            <span className="leading-relaxed">{notification}</span>
           </div>
         )}
 
@@ -1204,7 +1260,18 @@ export default function TecnicosDashboardPage() {
                   Cerrar
                 </button>
 
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <div className="flex items-center gap-2 w-full sm:w-auto justify-end flex-wrap">
+                  <button
+                    type="button"
+                    disabled={isSendingWhatsApp}
+                    onClick={() => void handleSendOrderToWhatsApp(selectedOrderForDetail)}
+                    className="px-3.5 py-2 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                    title={`Enviar resumen al grupo ${MONTAJES_WHATSAPP_GROUP_ID}`}
+                  >
+                    <Send className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>{isSendingWhatsApp ? "Enviando..." : "Enviar a WhatsApp"}</span>
+                  </button>
+
                   <button
                     onClick={() => {
                       const ord = selectedOrderForDetail;

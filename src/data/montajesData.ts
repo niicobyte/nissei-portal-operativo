@@ -885,6 +885,9 @@ export async function addMontajeAsync(newOrden: OrdenMontajeReal): Promise<Orden
       const json = await res.json().catch(() => null);
       if (res.ok && json?.ok) {
         clearDirtyMontajeIds([newOrden.id]);
+        if (Array.isArray(json.catalogoSku)) {
+          mergeAndSaveCloudSkuCatalog(json.catalogoSku as SkuCatalogItem[]);
+        }
         if (Array.isArray(json.data) && json.data.length > 0) {
           saveMontajes(json.data);
           return json.data;
@@ -1073,9 +1076,15 @@ function parseMontajesCSVText(csvText: string): string[][] {
   const cleanText = csvText.replace(/^\uFEFF/, "");
   const firstLineEnd = cleanText.indexOf("\n");
   const firstLine = firstLineEnd !== -1 ? cleanText.slice(0, firstLineEnd) : cleanText;
+  const tabCount = (firstLine.match(/\t/g) || []).length;
   const semicolonCount = (firstLine.match(/;/g) || []).length;
   const commaCount = (firstLine.match(/,/g) || []).length;
-  const delimiter = semicolonCount > commaCount ? ";" : ",";
+  const delimiter =
+    tabCount >= semicolonCount && tabCount >= commaCount && tabCount > 0
+      ? "\t"
+      : semicolonCount > commaCount
+        ? ";"
+        : ",";
 
   const rows: string[][] = [];
   let currentRow: string[] = [];
@@ -1454,6 +1463,9 @@ export async function sincronizarMontajesCsvOnline(
         throw new Error(json?.error || "Error al subir el CSV de montajes a MySQL en la nube.");
       }
       clearDirtyMontajeIds();
+      if (Array.isArray(json.catalogoSku)) {
+        mergeAndSaveCloudSkuCatalog(json.catalogoSku as SkuCatalogItem[]);
+      }
       if (Array.isArray(json.data) && json.data.length > 0) {
         saveMontajes(json.data);
         syncVendedoresFromMontajes(json.data);
@@ -1463,4 +1475,319 @@ export async function sincronizarMontajesCsvOnline(
   }
 
   return resultado;
+}
+
+// ============================================================================
+// CATÁLOGO DINÁMICO DE SKUs (PERSISTIDO EN MYSQL + APRENDIZAJE DE ÓRDENES + CSV)
+// ============================================================================
+
+export interface SkuCatalogItem {
+  sku: string;
+  descripcion: string;
+  categoria: ComponenteMontaje["categoria"];
+  fuente?: "OFICIAL" | "ORDEN" | "MANUAL" | "CSV";
+  updated_at?: string;
+}
+
+export const SKU_CATALOG_STORAGE_KEY = "nissei_catalogo_sku_v1";
+
+const VALID_COMPONENT_CATEGORIES: ComponenteMontaje["categoria"][] = [
+  "PROCESADOR",
+  "PLACA_MADRE",
+  "RAM",
+  "GPU",
+  "ALMACENAMIENTO",
+  "FUENTE",
+  "GABINETE",
+  "REFRIGERACION",
+  "NOTEBOOK",
+  "OTROS",
+];
+
+/**
+ * Determina si un código SKU es real y reutilizable en el catálogo
+ * (descarta placeholders autogenerados tipo SKU-XXXXXX o sin código).
+ */
+export function isRealSku(sku: string | undefined | null): boolean {
+  const clean = String(sku || "").trim();
+  if (clean.length < 2) return false;
+  if (/^SKU-\d{5,7}$/i.test(clean)) return false;
+  if (/^(n\/a|s\/n|na|sin\s*sku|-+)$/i.test(clean)) return false;
+  return true;
+}
+
+export function normalizeCategoriaSku(
+  rawCat: string | undefined,
+  descripcion: string,
+  fallbackTipo: "Montaje" | "Expansion" = "Montaje"
+): ComponenteMontaje["categoria"] {
+  const upper = String(rawCat || "").trim().toUpperCase().replace(/\s+/g, "_");
+  if ((VALID_COMPONENT_CATEGORIES as string[]).includes(upper)) {
+    return upper as ComponenteMontaje["categoria"];
+  }
+  if (upper.includes("PROC") || upper === "CPU") return "PROCESADOR";
+  if (upper.includes("PLACA") || upper.includes("MOTHER") || upper === "MB") return "PLACA_MADRE";
+  if (upper.includes("RAM") || upper.includes("MEM")) return "RAM";
+  if (upper.includes("GPU") || upper.includes("VGA") || upper.includes("VIDEO") || upper.includes("GRAFICA")) return "GPU";
+  if (upper.includes("ALM") || upper.includes("SSD") || upper.includes("HDD") || upper.includes("NVME") || upper.includes("DISCO")) return "ALMACENAMIENTO";
+  if (upper.includes("FUENTE") || upper === "PSU") return "FUENTE";
+  if (upper.includes("GAB") || upper === "CASE") return "GABINETE";
+  if (upper.includes("REFRIG") || upper.includes("COOLER") || upper.includes("LIQ")) return "REFRIGERACION";
+  if (upper.includes("NOTE") || upper === "NB" || upper.includes("LAPTOP")) return "NOTEBOOK";
+  return inferCategoriaComponente(descripcion, fallbackTipo);
+}
+
+/**
+ * Extrae todos los SKUs reales utilizados en órdenes históricas o recientes de montaje.
+ */
+export function extractSkusFromOrders(orders: OrdenMontajeReal[]): SkuCatalogItem[] {
+  const extracted: SkuCatalogItem[] = [];
+  for (const ord of orders) {
+    if (!Array.isArray(ord.componentes)) continue;
+    for (const c of ord.componentes) {
+      const sku = String(c.sku || "").trim();
+      const desc = String(c.descripcion || "").trim();
+      if (!isRealSku(sku) || !desc) continue;
+      extracted.push({
+        sku,
+        descripcion: desc,
+        categoria: normalizeCategoriaSku(c.categoria, desc, ord.tipo_servicio === "Expansion" ? "Expansion" : "Montaje"),
+        fuente: "ORDEN",
+      });
+    }
+  }
+  return extracted;
+}
+
+/**
+ * Unifica múltiples listas de SKUs conservando un único registro por SKU (case-insensitive).
+ * Las listas posteriores tienen mayor prioridad para enriquecer descripción/categoría.
+ */
+export function mergeSkuCatalogItems(...lists: SkuCatalogItem[][]): SkuCatalogItem[] {
+  const map = new Map<string, SkuCatalogItem>();
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const item of list) {
+      const sku = String(item?.sku || "").trim();
+      const desc = String(item?.descripcion || "").trim();
+      if (!isRealSku(sku) || !desc) continue;
+      const key = sku.toLowerCase();
+      const existing = map.get(key);
+      map.set(key, {
+        sku: existing?.sku || sku,
+        descripcion: desc || existing?.descripcion || "",
+        categoria: normalizeCategoriaSku(item.categoria, desc),
+        fuente: item.fuente || existing?.fuente || "OFICIAL",
+        updated_at: item.updated_at || existing?.updated_at,
+      });
+    }
+  }
+  return Array.from(map.values());
+}
+
+const OFFICIAL_SKU_ITEMS: SkuCatalogItem[] = CATALOGO_HARDWARE_REAL.map((c) => ({
+  sku: c.sku,
+  descripcion: c.descripcion,
+  categoria: c.categoria,
+  fuente: "OFICIAL",
+}));
+
+export function getStoredSkuCatalog(): SkuCatalogItem[] {
+  const fromOrders = extractSkusFromOrders([
+    ...INITIAL_MONTAJES_REALES,
+    ...(typeof window !== "undefined" ? getStoredMontajes() : []),
+  ]);
+  if (typeof window === "undefined") {
+    return mergeSkuCatalogItems(OFFICIAL_SKU_ITEMS, fromOrders);
+  }
+  try {
+    const raw = localStorage.getItem(SKU_CATALOG_STORAGE_KEY);
+    const localItems: SkuCatalogItem[] = raw ? JSON.parse(raw) : [];
+    return mergeSkuCatalogItems(OFFICIAL_SKU_ITEMS, fromOrders, Array.isArray(localItems) ? localItems : []);
+  } catch {
+    return mergeSkuCatalogItems(OFFICIAL_SKU_ITEMS, fromOrders);
+  }
+}
+
+export function saveSkuCatalog(items: SkuCatalogItem[]): void {
+  if (typeof window === "undefined") return;
+  try {
+    const merged = mergeSkuCatalogItems(OFFICIAL_SKU_ITEMS, items);
+    localStorage.setItem(SKU_CATALOG_STORAGE_KEY, JSON.stringify(merged));
+  } catch (err) {
+    console.warn("Error guardando catálogo de SKU en localStorage:", err);
+  }
+}
+
+export function mergeAndSaveCloudSkuCatalog(cloudItems: SkuCatalogItem[]): SkuCatalogItem[] {
+  const current = getStoredSkuCatalog();
+  const merged = mergeSkuCatalogItems(current, cloudItems);
+  saveSkuCatalog(merged);
+  return merged;
+}
+
+export async function fetchSkuCatalogFromMySQL(): Promise<SkuCatalogItem[]> {
+  const fallback = getStoredSkuCatalog();
+  if (typeof window === "undefined") return fallback;
+  try {
+    const res = await fetch("/api/db?module=catalogo_sku", { cache: "no-store" });
+    const json = await res.json().catch(() => null);
+    if (res.ok && json?.ok && Array.isArray(json.data)) {
+      return mergeAndSaveCloudSkuCatalog(json.data as SkuCatalogItem[]);
+    }
+  } catch (err) {
+    console.warn("[MySQL Sync SKU] Usando caché local:", err);
+  }
+  return fallback;
+}
+
+/**
+ * Guarda uno o más SKUs nuevos/actualizados localmente y los sincroniza hacia MySQL (`catalogo_sku`).
+ */
+export async function saveSkusToCatalogOnline(
+  items: SkuCatalogItem[]
+): Promise<{ ok: boolean; items: SkuCatalogItem[]; totalGuardados: number; error?: string }> {
+  const validItems = items
+    .map((it) => ({
+      sku: String(it.sku || "").trim(),
+      descripcion: String(it.descripcion || "").trim(),
+      categoria: normalizeCategoriaSku(it.categoria, String(it.descripcion || "")),
+      fuente: it.fuente || ("MANUAL" as const),
+    }))
+    .filter((it) => isRealSku(it.sku) && it.descripcion.length > 0);
+
+  if (validItems.length === 0) {
+    return {
+      ok: false,
+      items: getStoredSkuCatalog(),
+      totalGuardados: 0,
+      error: "No se detectaron SKUs válidos para guardar.",
+    };
+  }
+
+  const mergedLocal = mergeSkuCatalogItems(getStoredSkuCatalog(), validItems);
+  saveSkuCatalog(mergedLocal);
+
+  if (typeof window === "undefined") {
+    return { ok: true, items: mergedLocal, totalGuardados: validItems.length };
+  }
+
+  try {
+    const res = await fetch("/api/db", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "UPSERT_CATALOGO_SKU",
+        items: validItems,
+      }),
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok) {
+      return {
+        ok: false,
+        items: mergedLocal,
+        totalGuardados: validItems.length,
+        error: json?.error || "No se pudo sincronizar el SKU con MySQL.",
+      };
+    }
+    const cloudMerged = Array.isArray(json.data)
+      ? mergeAndSaveCloudSkuCatalog(json.data as SkuCatalogItem[])
+      : mergedLocal;
+    return {
+      ok: true,
+      items: cloudMerged,
+      totalGuardados: Number(json.totalGuardados ?? validItems.length),
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      items: mergedLocal,
+      totalGuardados: validItems.length,
+      error: err instanceof Error ? err.message : "Error de red guardando SKU en MySQL.",
+    };
+  }
+}
+
+/**
+ * Parsea un CSV, TSV o lista pegada con columnas de SKU, Descripción y Categoría (opcional).
+ * Soporta tanto archivos con cabecera como listas directas sin encabezado.
+ */
+export function parseSkuImportText(rawText: string): SkuCatalogItem[] {
+  const rows = parseMontajesCSVText(rawText);
+  if (rows.length === 0) return [];
+
+  const firstHeaders = rows[0].map(normalizeMontajeHeader);
+  const idxSkuH = firstHeaders.findIndex((h) => h === "sku" || h === "codigo" || h === "codigoproducto" || h === "cod");
+  const idxDescH = firstHeaders.findIndex((h) => h.includes("desc") || h.includes("producto") || h.includes("hardware") || h.includes("nombre") || h.includes("equipo"));
+  const idxCatH = firstHeaders.findIndex((h) => h.includes("categ") || h === "tipo" || h === "rubro");
+
+  const hasHeader = idxSkuH !== -1 && idxDescH !== -1;
+  const startIdx = hasHeader ? 1 : 0;
+  const idxSku = hasHeader ? idxSkuH : 0;
+  const idxDesc = hasHeader ? idxDescH : 1;
+  const idxCat = hasHeader ? idxCatH : 2;
+
+  const parsed: SkuCatalogItem[] = [];
+  for (let i = startIdx; i < rows.length; i++) {
+    const cells = rows[i];
+    if (cells.length < 2) continue;
+    const sku = (cells[idxSku] || "").trim();
+    const descripcion = (cells[idxDesc] || "").trim();
+    const rawCat = idxCat >= 0 ? (cells[idxCat] || "").trim() : "";
+    if (!isRealSku(sku) || !descripcion) continue;
+
+    parsed.push({
+      sku,
+      descripcion,
+      categoria: normalizeCategoriaSku(rawCat, descripcion),
+      fuente: "CSV",
+    });
+  }
+
+  return mergeSkuCatalogItems(parsed);
+}
+
+export const MONTAJES_WHATSAPP_GROUP_ID = "120363428540171277@g.us";
+
+export function formatMontajeWhatsAppMessage(params: {
+  cliente: string;
+  nro_reg: string;
+  vendedor: string;
+  canal: string;
+  tipo_servicio: "Montaje" | "Expansion";
+  cantidadEquipos: number;
+  tecnico: string;
+  prioridad: string;
+  fecha_montaje: string;
+  componentes: ComponenteMontaje[];
+  observaciones?: string;
+}): string {
+  const cant = Math.max(1, Number(params.cantidadEquipos) || 1);
+  const compText = params.componentes
+    .map(
+      (c) =>
+        `• [${c.categoria}] ${c.descripcion} (SKU: ${c.sku} | S/N: ${
+          c.seriales || "A registrar en banco"
+        })`
+    )
+    .join("\n");
+
+  const obs = (params.observaciones || "").trim();
+
+  return `El montaje de *${params.cliente || "Cliente"}*, ha ingresado y finalizara en la brevedad posible:
+
+*Nro. Registro / Interno:* ${params.nro_reg || "Pendiente"}
+*Vendedor Responsable:* ${params.vendedor} (${params.canal})
+*Servicio:* ${
+    params.tipo_servicio === "Montaje"
+      ? "Montaje de PC Completa"
+      : "Expansión / Upgrade de Notebook"
+  }
+*Cantidad de Equipos:* ${cant} ${cant === 1 ? "equipo" : "equipos"}
+*Técnico Responsable:* ${params.tecnico}
+*Prioridad:* ${params.prioridad}
+*Fecha Estimada de Entrega:* ${params.fecha_montaje}
+
+*Componentes a Procesar:*
+${compText || "(Sin componentes registrados aún)"}${obs ? `\n\n*Observaciones:* ${obs}` : ""}`;
 }
