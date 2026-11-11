@@ -33,6 +33,10 @@ import {
   Lock,
   EyeOff,
   Box,
+  Inbox,
+  Check,
+  Calendar,
+  UserCheck,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
@@ -55,6 +59,8 @@ import {
   toggleCheckinDeposito,
   saveSatiTicketOverride,
   saveSatiCrossMatchLocal,
+  isTicketDanesa,
+  parseFechaDMY,
 } from "@/data/recepcionCdeData";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
@@ -62,6 +68,73 @@ import { getActiveUser, verifyDepositoPassword, authenticate } from "@/data/auth
 import { useRouter } from "next/navigation";
 
 const ITEMS_PER_PAGE = 25;
+
+type ViewScope = "DANESA" | "CLIENTES_ASU" | "TODOS";
+type TransitFilter = "TODOS" | "EN_CAMINO" | "FALTA_INGRESAR" | "RECIBIDOS";
+type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
+
+function matchesRecibidosDate(ticket: RecepcionTicket, filter: RecibidosDateFilter): boolean {
+  if (filter === "TODAS") return true;
+
+  const dateStr = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || ticket.fechaIngreso;
+  if (!dateStr) return false;
+
+  const d = parseFechaDMY(dateStr);
+  if (!d) return false;
+
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const itemDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((today.getTime() - itemDate.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (filter === "HOY") {
+    return diffDays === 0;
+  }
+  if (filter === "AYER") {
+    return diffDays === 1;
+  }
+  if (filter === "ULTIMOS_7") {
+    return diffDays >= 0 && diffDays <= 7;
+  }
+  if (filter === "ESTE_MES") {
+    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  }
+  return true;
+}
+
+function isTicketRecibido(t: RecepcionTicket): boolean {
+  return Boolean(t.recibidoEnDeposito);
+}
+
+function isTicketEnCamino(t: RecepcionTicket): boolean {
+  if (isTicketRecibido(t)) return false;
+  const est = (t.estado || "").toLowerCase();
+  if (est === "entregada") return false;
+  const rawMsg = (t.mensaje || "").trim().toLowerCase();
+  const sinMensaje =
+    !rawMsg ||
+    rawMsg === "sin observaciones técnicas registradas." ||
+    rawMsg === "sin observaciones técnicas registradas" ||
+    rawMsg === "sin observaciones" ||
+    rawMsg.length < 5;
+  return sinMensaje;
+}
+
+function isTicketFaltaIngresar(t: RecepcionTicket): boolean {
+  if (isTicketRecibido(t)) return false;
+  const est = (t.estado || "").toLowerCase();
+  if (est === "entregada") return false;
+  const rawMsg = (t.mensaje || "").trim().toLowerCase();
+  const tieneMensaje = Boolean(
+    rawMsg &&
+    rawMsg !== "sin observaciones técnicas registradas." &&
+    rawMsg !== "sin observaciones técnicas registradas" &&
+    rawMsg !== "sin observaciones" &&
+    rawMsg.length >= 5
+  );
+  const esReparada = est.includes("reparad") || est === "qc";
+  return tieneMensaje && esReparada;
+}
 
 export default function RecepcionDashboardPage() {
   const router = useRouter();
@@ -96,13 +169,13 @@ export default function RecepcionDashboardPage() {
     router.push("/recepcion/cde");
   };
 
-  // Filtros y búsqueda
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("TODOS");
+  // Filtros y ámbito estilo SATI ASU - CDE
+  const [viewScope, setViewScope] = useState<ViewScope>("DANESA");
+  const [transitFilter, setTransitFilter] = useState<TransitFilter>("TODOS");
+  const [recibidosDateFilter, setRecibidosDateFilter] = useState<RecibidosDateFilter>("TODAS");
   const [statusFilter, setStatusFilter] = useState("TODOS");
-  const [recentFilter, setRecentFilter] = useState<
-    "NINGUNO" | "NUEVOS_INGRESOS" | "ESTADOS_CAMBIADOS" | "RECIEN_ENTREGADOS" | "TODOS_RECIENTES"
-  >("NINGUNO");
+  const [componentFilter, setComponentFilter] = useState("TODOS");
+  const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"ID_DESC" | "ID_ASC" | "CLIENTE_ASC" | "MARCA_ASC">("ID_DESC");
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -573,24 +646,47 @@ ${accText}`;
     }
   };
 
-  // Métricas globales calculadas a partir del dataset real
+  // Segmentación por ámbito (Danesa SA / Clientes ASU / Todos)
+  const scopeTickets = useMemo(() => {
+    if (viewScope === "DANESA") {
+      return tickets.filter((t) => isTicketDanesa(t.cliente));
+    }
+    if (viewScope === "CLIENTES_ASU") {
+      return tickets.filter((t) => !isTicketDanesa(t.cliente));
+    }
+    return tickets;
+  }, [tickets, viewScope]);
+
+  // Conteos totales por ámbito para las pestañas superiores
+  const totalDanesa = useMemo(
+    () => tickets.filter((t) => isTicketDanesa(t.cliente)).length,
+    [tickets]
+  );
+  const totalClientesAsu = useMemo(
+    () => tickets.filter((t) => !isTicketDanesa(t.cliente)).length,
+    [tickets]
+  );
+  const totalUniversal = tickets.length;
+
+  // Métricas del ámbito seleccionado
   const metrics = useMemo(() => {
-    const total = tickets.length || 1;
-    const entregadas = tickets.filter((t) => t.estado.toLowerCase() === "entregada").length;
-    const enReparacion = tickets.filter(
+    const list = scopeTickets;
+    const total = list.length || 1;
+    const entregadas = list.filter((t) => (t.estado || "").toLowerCase() === "entregada").length;
+    const enReparacion = list.filter(
       (t) =>
-        t.estado.toLowerCase().includes("reparación") ||
-        t.estado.toLowerCase().includes("asignad") ||
-        t.estado.toLowerCase().includes("asignacion")
+        (t.estado || "").toLowerCase().includes("reparación") ||
+        (t.estado || "").toLowerCase().includes("asignad") ||
+        (t.estado || "").toLowerCase().includes("asignacion")
     ).length;
-    const reparadas = tickets.filter((t) => t.estado.toLowerCase() === "reparada").length;
-    const qc = tickets.filter((t) => t.estado.toUpperCase() === "QC").length;
+    const reparadas = list.filter((t) => (t.estado || "").toLowerCase() === "reparada").length;
+    const qc = list.filter((t) => (t.estado || "").toUpperCase() === "QC").length;
 
     // Top marcas
     const brandCounts: Record<string, number> = {};
     const catCounts: Record<string, number> = {};
 
-    tickets.forEach((t) => {
+    list.forEach((t) => {
       const b = (t.marca || "OTRAS").trim().toUpperCase();
       brandCounts[b] = (brandCounts[b] || 0) + 1;
 
@@ -617,7 +713,7 @@ ${accText}`;
       }));
 
     return {
-      total,
+      total: list.length,
       entregadas,
       enReparacion,
       reparadas,
@@ -625,95 +721,135 @@ ${accText}`;
       topBrands,
       topCategories,
     };
-  }, [tickets]);
+  }, [scopeTickets]);
 
-  // Contadores de actividad reciente (Nuevos ingresos, Estados cambiados recientemente y Recientemente entregados)
-  const recentCounts = useMemo(() => {
-    let nuevosIngresos = 0;
-    let estadosCambiados = 0;
-    let recienEntregados = 0;
-    let todosRecientes = 0;
+  // Conteos dinámicos del ámbito para los botones de flujo operativo
+  const scopeEnCamino = useMemo(() => {
+    return scopeTickets.filter(isTicketEnCamino).length;
+  }, [scopeTickets]);
 
-    for (const t of tickets) {
-      const isNew = isTicketNuevoIngreso(t);
-      const isChanged = isTicketEstadoCambiadoReciente(t);
-      const isDeliv = isTicketEntregadoReciente(t);
-      if (isNew) nuevosIngresos++;
-      if (isChanged) estadosCambiados++;
-      if (isDeliv) recienEntregados++;
-      if (isNew || isChanged || isDeliv) todosRecientes++;
+  const scopeFaltaIngresar = useMemo(() => {
+    return scopeTickets.filter(isTicketFaltaIngresar).length;
+  }, [scopeTickets]);
+
+  const scopeRecibidosList = useMemo(() => {
+    return scopeTickets.filter(isTicketRecibido);
+  }, [scopeTickets]);
+
+  const scopeRecibidosCount = scopeRecibidosList.length;
+
+  const countRecibidosTodas = scopeRecibidosCount;
+  const countRecibidosHoy = useMemo(
+    () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "HOY")).length,
+    [scopeRecibidosList]
+  );
+  const countRecibidosAyer = useMemo(
+    () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "AYER")).length,
+    [scopeRecibidosList]
+  );
+  const countRecibidos7d = useMemo(
+    () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "ULTIMOS_7")).length,
+    [scopeRecibidosList]
+  );
+  const countRecibidosMes = useMemo(
+    () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "ESTE_MES")).length,
+    [scopeRecibidosList]
+  );
+
+  // Opciones dinámicas para CleanSelect de Estados
+  const statusOptions = useMemo<CleanSelectOption[]>(() => {
+    const counts: Record<string, number> = {};
+    scopeTickets.forEach((t) => {
+      const st = (t.estado || "En Asignacion").trim();
+      counts[st] = (counts[st] || 0) + 1;
+    });
+    const sorted = Object.keys(counts).sort((a, b) => a.localeCompare(b));
+    return [
+      { value: "TODOS", label: "Todos los estados", count: scopeTickets.length },
+      ...sorted.map((st) => ({
+        value: st,
+        label: st,
+        count: counts[st],
+      })),
+    ];
+  }, [scopeTickets]);
+
+  // Opciones dinámicas para CleanSelect de Categorías
+  const componentOptions = useMemo<CleanSelectOption[]>(() => {
+    const counts: Record<string, number> = {};
+    scopeTickets.forEach((t) => {
+      const c = (t.tipoComponente || "OTRO").trim().toUpperCase();
+      counts[c] = (counts[c] || 0) + 1;
+    });
+    const sorted = Object.keys(counts).sort((a, b) => a.localeCompare(b));
+    return [
+      { value: "TODOS", label: "Todas las categorías", count: scopeTickets.length },
+      ...sorted.map((c) => ({
+        value: c,
+        label: c,
+        count: counts[c],
+      })),
+    ];
+  }, [scopeTickets]);
+
+  // Opciones de ordenamiento
+  const sortOptions = useMemo<CleanSelectOption[]>(
+    () => [
+      { value: "ID_DESC", label: "Más recientes (ID ↓)" },
+      { value: "ID_ASC", label: "Más antiguos (ID ↑)" },
+      { value: "CLIENTE_ASC", label: "Cliente (A-Z)" },
+      { value: "MARCA_ASC", label: "Marca (A-Z)" },
+    ],
+    []
+  );
+
+  // Filtrado y ordenamiento de tickets
+  const filteredTickets = useMemo(() => {
+    let result = scopeTickets;
+
+    // 1. Filtro de Tránsito / Flujo Operativo
+    if (transitFilter === "EN_CAMINO") {
+      result = result.filter(isTicketEnCamino);
+    } else if (transitFilter === "FALTA_INGRESAR") {
+      result = result.filter(isTicketFaltaIngresar);
+    } else if (transitFilter === "RECIBIDOS") {
+      result = result.filter(isTicketRecibido);
+      if (recibidosDateFilter !== "TODAS") {
+        result = result.filter((t) => matchesRecibidosDate(t, recibidosDateFilter));
+      }
     }
 
-    return { nuevosIngresos, estadosCambiados, recienEntregados, todosRecientes };
-  }, [tickets]);
+    // 2. Filtro de Estado
+    if (statusFilter !== "TODOS") {
+      result = result.filter(
+        (t) => (t.estado || "").trim().toLowerCase() === statusFilter.trim().toLowerCase()
+      );
+    }
 
-  // Filtrado y ordenamiento
-  const filteredTickets = useMemo(() => {
-    let result = tickets.filter((ticket) => {
-      if (recentFilter === "NUEVOS_INGRESOS") {
-        if (!isTicketNuevoIngreso(ticket)) return false;
-      } else if (recentFilter === "ESTADOS_CAMBIADOS") {
-        if (!isTicketEstadoCambiadoReciente(ticket)) return false;
-      } else if (recentFilter === "RECIEN_ENTREGADOS") {
-        if (!isTicketEntregadoReciente(ticket)) return false;
-      } else if (recentFilter === "TODOS_RECIENTES") {
-        if (
-          !isTicketNuevoIngreso(ticket) &&
-          !isTicketEstadoCambiadoReciente(ticket) &&
-          !isTicketEntregadoReciente(ticket)
-        ) {
-          return false;
-        }
-      }
+    // 3. Filtro de Categoría / Componente
+    if (componentFilter !== "TODOS") {
+      result = result.filter(
+        (t) => (t.tipoComponente || "").trim().toUpperCase() === componentFilter.trim().toUpperCase()
+      );
+    }
 
-      const query = searchTerm.toLowerCase().trim();
-      const matchSearch =
-        !query ||
-        ticket.idOrden.toLowerCase().includes(query) ||
-        (ticket.codigoProducto && ticket.codigoProducto.toLowerCase().includes(query)) ||
-        (ticket.cliente && ticket.cliente.toLowerCase().includes(query)) ||
-        (ticket.marca && ticket.marca.toLowerCase().includes(query)) ||
-        (ticket.modelo && ticket.modelo.toLowerCase().includes(query)) ||
-        (ticket.serial && ticket.serial.toLowerCase().includes(query)) ||
-        (ticket.mensaje && ticket.mensaje.toLowerCase().includes(query));
+    // 4. Búsqueda por texto libre
+    if (searchTerm.trim()) {
+      const q = searchTerm.toLowerCase().trim();
+      result = result.filter(
+        (t) =>
+          t.idOrden.toLowerCase().includes(q) ||
+          (t.codigoProducto && t.codigoProducto.toLowerCase().includes(q)) ||
+          (t.cliente && t.cliente.toLowerCase().includes(q)) ||
+          (t.marca && t.marca.toLowerCase().includes(q)) ||
+          (t.modelo && t.modelo.toLowerCase().includes(q)) ||
+          (t.serial && t.serial.toLowerCase().includes(q)) ||
+          (t.mensaje && t.mensaje.toLowerCase().includes(q))
+      );
+    }
 
-      const comp = (ticket.tipoComponente || "").toUpperCase();
-      const matchCategory =
-        categoryFilter === "TODOS" ||
-        (categoryFilter === "AURICULAR" && (comp.includes("AURICULAR") || comp.includes("SPEAKER") || comp.includes("AUDIO"))) ||
-        (categoryFilter === "NOTEBOOK" && (comp.includes("NOTEBOOK") || comp.includes("PC") || comp.includes("LAPTOP"))) ||
-        (categoryFilter === "RELOJ" && comp.includes("RELOJ")) ||
-        (categoryFilter === "CAMARA" && (comp.includes("CAMARA") || comp.includes("LENTE") || comp.includes("OPTICA"))) ||
-        (categoryFilter === "IMPRESORA" && comp.includes("IMPRESORA")) ||
-        (categoryFilter === "CELULAR" && comp.includes("CELULAR")) ||
-        (categoryFilter === "TABLET" && comp.includes("TABLET")) ||
-        (categoryFilter === "MONITOR" && (comp.includes("MONITOR") || comp.includes("TV"))) ||
-        (categoryFilter === "OTROS" &&
-          !comp.includes("AURICULAR") &&
-          !comp.includes("NOTEBOOK") &&
-          !comp.includes("RELOJ") &&
-          !comp.includes("CAMARA") &&
-          !comp.includes("IMPRESORA") &&
-          !comp.includes("CELULAR") &&
-          !comp.includes("TABLET") &&
-          !comp.includes("MONITOR") &&
-          !comp.includes("TV"));
-
-      const est = (ticket.estado || "").toLowerCase();
-      const matchStatus =
-        statusFilter === "TODOS" ||
-        (statusFilter === "Entregada" && est === "entregada") ||
-        (statusFilter === "En Reparación" && (est.includes("reparación") || est.includes("asignad"))) ||
-        (statusFilter === "Reparada" && est === "reparada") ||
-        (statusFilter === "QC" && est === "qc") ||
-        (statusFilter === "Enviado Stock" && est.includes("stock")) ||
-        (statusFilter === "Liquidacion" && est.includes("liquidacion"));
-
-      return matchSearch && matchCategory && matchStatus;
-    });
-
-    // Ordenamiento
-    result.sort((a, b) => {
+    // 5. Ordenamiento
+    result = [...result].sort((a, b) => {
       if (sortBy === "ID_DESC") {
         return (Number(b.idOrden) || 0) - (Number(a.idOrden) || 0);
       }
@@ -730,12 +866,28 @@ ${accText}`;
     });
 
     return result;
-  }, [tickets, searchTerm, categoryFilter, statusFilter, recentFilter, sortBy]);
+  }, [
+    scopeTickets,
+    transitFilter,
+    recibidosDateFilter,
+    statusFilter,
+    componentFilter,
+    searchTerm,
+    sortBy,
+  ]);
 
   // Reset a página 1 al filtrar
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, categoryFilter, statusFilter, recentFilter, sortBy]);
+  }, [
+    viewScope,
+    transitFilter,
+    recibidosDateFilter,
+    statusFilter,
+    componentFilter,
+    searchTerm,
+    sortBy,
+  ]);
 
   // Paginación
   const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE) || 1;
@@ -987,14 +1139,28 @@ ${accText}`;
         {/* 5 KPIs Principales con datos reales */}
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 2xl:gap-6">
           <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block">Total Órdenes SATI</span>
+            <span className="text-xs text-zinc-500 block">
+              {viewScope === "DANESA"
+                ? "Envíos Danesa SA"
+                : viewScope === "CLIENTES_ASU"
+                ? "Órdenes Clientes ASU"
+                : "Total Órdenes SATI"}
+            </span>
             <div className="flex items-baseline gap-2 mt-1">
               <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-zinc-900 tabular-nums">
                 {metrics.total.toLocaleString()}
               </span>
-              <span className="text-xs text-emerald-600 font-medium">100% Real</span>
+              <span className="text-xs text-emerald-600 font-medium">
+                {viewScope === "TODOS" ? "100% Real" : `de ${totalUniversal.toLocaleString()} tot.`}
+              </span>
             </div>
-            <span className="text-xs text-zinc-400 block mt-1">Base SATI CDE</span>
+            <span className="text-xs text-zinc-400 block mt-1">
+              {viewScope === "DANESA"
+                ? "Nuestra Sucursal ASU"
+                : viewScope === "CLIENTES_ASU"
+                ? "Clientes Particulares ASU"
+                : "Base SATI CDE"}
+            </span>
           </div>
 
           <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
@@ -1144,159 +1310,292 @@ ${accText}`;
           </div>
         </section>
 
-        {/* Barra de Filtros, Categorías & Búsqueda */}
-        <section className="bg-white p-4 rounded-xl border border-[#e5e5e5] shadow-sm space-y-3.5">
-          <div className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
-            {/* Buscador */}
+        {/* Barra de Filtros, Selector de Ámbito Reestructurado y Búsqueda */}
+        <section className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+
+            {/* Selector de Ámbito con las 3 pestañas solicitadas para Recepción Post-Venta */}
+            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 flex-wrap">
+              {(
+                [
+                  {
+                    key: "DANESA" as ViewScope,
+                    label: "Danesa SA (Nuestra Sucursal)",
+                    count: totalDanesa,
+                    icon: <Package className="w-3.5 h-3.5" />,
+                  },
+                  {
+                    key: "CLIENTES_ASU" as ViewScope,
+                    label: "Clientes ASU",
+                    count: totalClientesAsu,
+                    icon: <UserCheck className="w-3.5 h-3.5" />,
+                  },
+                  {
+                    key: "TODOS" as ViewScope,
+                    label: "Todos",
+                    count: totalUniversal,
+                    icon: <Layers className="w-3.5 h-3.5" />,
+                  },
+                ]
+              ).map((s) => (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => {
+                    setViewScope(s.key);
+                    setTransitFilter("TODOS");
+                    setRecibidosDateFilter("TODAS");
+                    setStatusFilter("TODOS");
+                    setComponentFilter("TODOS");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                    viewScope === s.key ? "bg-zinc-900 text-white shadow-xs" : "text-zinc-600 hover:text-zinc-900"
+                  }`}
+                >
+                  {s.icon}
+                  <span>{s.label}</span>
+                  <span
+                    className={`px-1.5 rounded text-[10px] font-mono font-normal ${
+                      viewScope === s.key ? "bg-white/20 text-white" : "bg-zinc-200 text-zinc-700"
+                    }`}
+                  >
+                    {s.count.toLocaleString()}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Buscador de Órdenes */}
             <div className="relative w-full lg:w-96 2xl:w-[28rem]">
+              <Search className="w-4 h-4 absolute left-3 top-2.5 text-zinc-400" />
               <input
                 type="text"
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Buscar por Nº Orden, SATI, Cliente, Serie o Marca..."
-                className="w-full text-xs sm:text-sm bg-[#fcfbfb] border border-[#e5e5e5] rounded-xl pl-10 pr-8 py-2.5 focus:outline-none focus:border-[#121212] transition-colors"
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                placeholder="Buscar por ID Orden (ASU o CDE), Serial, Modelo, Cliente..."
+                className="w-full pl-9 pr-8 py-2 bg-zinc-50 hover:bg-zinc-100/70 focus:bg-white border border-zinc-200 focus:border-zinc-900 rounded-xl text-xs outline-none transition-all placeholder:text-zinc-400"
               />
-              <Search className="w-4 h-4 text-[#888888] absolute left-3.5 top-3 pointer-events-none" />
               {searchTerm && (
                 <button
                   onClick={() => setSearchTerm("")}
-                  className="absolute right-3 top-2.5 text-xs text-[#888888] hover:text-[#121212] p-1"
+                  className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               )}
             </div>
-
-            {/* Controles de Estado y Orden */}
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Filtro Desplegable de Actividad Reciente */}
-              <CleanSelect
-                value={recentFilter}
-                onChange={(val) => {
-                  setRecentFilter(val as any);
-                  setCurrentPage(1);
-                }}
-                dropdownWidth="w-72"
-                options={[
-                  {
-                    value: "NINGUNO",
-                    label: "Todos los registros",
-                    badge: tickets.length,
-                    icon: <Layers className="w-3.5 h-3.5" />,
-                  },
-                  {
-                    value: "ESTADOS_CAMBIADOS",
-                    label: "Estados cambiados recientemente",
-                    badge: recentCounts.estadosCambiados,
-                    badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
-                    icon: <Clock className="w-3.5 h-3.5 text-amber-600" />,
-                  },
-                  {
-                    value: "RECIEN_ENTREGADOS",
-                    label: "Recién entregados",
-                    badge: recentCounts.recienEntregados,
-                    badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
-                    icon: <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />,
-                  },
-                  {
-                    value: "TODOS_RECIENTES",
-                    label: "Toda actividad reciente",
-                    badge: recentCounts.todosRecientes,
-                    badgeColor: "bg-zinc-100 text-zinc-800 border-zinc-200",
-                    icon: <Sparkles className="w-3.5 h-3.5 text-zinc-700" />,
-                  },
-                ]}
-                activeClassName="bg-zinc-900 text-white border-zinc-900 shadow-sm"
-              />
-
-              {/* Filtro por Estado */}
-              <CleanSelect
-                value={statusFilter}
-                onChange={(val) => {
-                  setStatusFilter(val);
-                  setCurrentPage(1);
-                }}
-                icon={<Filter className="w-3.5 h-3.5" />}
-                dropdownWidth="w-64"
-                options={[
-                  { value: "TODOS", label: "Todos los estados" },
-                  {
-                    value: "Entregada",
-                    label: "Entregada",
-                    badge: "✓",
-                    badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
-                  },
-                  {
-                    value: "En Reparación",
-                    label: "En Reparación / Taller",
-                    badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
-                  },
-                  {
-                    value: "Reparada",
-                    label: "Reparada (Lista)",
-                    badgeColor: "bg-sky-100 text-sky-800 border-sky-200",
-                  },
-                  {
-                    value: "QC",
-                    label: "Control de Calidad (QC)",
-                    badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
-                  },
-                  {
-                    value: "Enviado Stock",
-                    label: "Enviado a Stock",
-                    badgeColor: "bg-zinc-100 text-zinc-700 border-zinc-200",
-                  },
-                  {
-                    value: "Liquidacion",
-                    label: "Liquidación",
-                    badgeColor: "bg-rose-100 text-rose-700 border-rose-200",
-                  },
-                ]}
-                activeClassName="bg-zinc-900 text-white border-zinc-900 shadow-sm"
-              />
-
-              {/* Ordenamiento */}
-              <CleanSelect
-                value={sortBy}
-                onChange={(val) => setSortBy(val as any)}
-                icon={<ArrowUpDown className="w-3.5 h-3.5" />}
-                dropdownWidth="w-56"
-                options={[
-                  { value: "ID_DESC", label: "Más recientes (ID ↓)" },
-                  { value: "ID_ASC", label: "Más antiguos (ID ↑)" },
-                  { value: "CLIENTE_ASC", label: "Cliente (A-Z)" },
-                  { value: "MARCA_ASC", label: "Marca (A-Z)" },
-                ]}
-              />
-            </div>
           </div>
 
-          {/* Pastillas de Categorías */}
-          <div className="flex items-center gap-1.5 text-xs overflow-x-auto pb-1 scrollbar-none flex-nowrap sm:flex-wrap">
-            {[
-              { id: "TODOS", label: `Todos (${tickets.length})` },
-              { id: "AURICULAR", label: "Auriculares & Audio" },
-              { id: "NOTEBOOK", label: "Notebooks & PCs" },
-              { id: "RELOJ", label: "Relojes & Smart" },
-              { id: "CAMARA", label: "Cámaras & Óptica" },
-              { id: "IMPRESORA", label: "Impresoras" },
-              { id: "CELULAR", label: "Celulares" },
-              { id: "TABLET", label: "Tablets" },
-              { id: "MONITOR", label: "Monitores & TV" },
-              { id: "OTROS", label: "Otros" },
-            ].map((btn) => (
+          {/* Filtros Secundarios con Flujo de Tránsito y CleanSelect */}
+          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
+            {/* Filtro de Flujo: Todos los servicios / En camino / Falta ingresar / Recibidos */}
+            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs flex-wrap">
               <button
-                key={btn.id}
-                onClick={() => setCategoryFilter(btn.id)}
-                className={`px-3 py-1.5 rounded-lg font-medium transition-colors flex-shrink-0 ${
-                  categoryFilter === btn.id
-                    ? "bg-[#121212] text-white shadow-sm"
-                    : "bg-[#f5f3f3] text-[#555555] hover:bg-[#e5e5e5]"
+                type="button"
+                onClick={() => {
+                  setTransitFilter("TODOS");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  transitFilter === "TODOS"
+                    ? "bg-white font-bold text-zinc-900 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-900"
                 }`}
               >
-                {btn.label}
+                Todos los servicios
               </button>
-            ))}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("EN_CAMINO");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  transitFilter === "EN_CAMINO"
+                    ? "bg-amber-500 text-white font-bold shadow-xs"
+                    : "text-amber-700 hover:bg-amber-100/60"
+                }`}
+                title="Equipos que no están entregados ni recibidos y tienen informe técnico vacío (en camino / en revisión)"
+              >
+                <SpeedTruck
+                  className={`w-3.5 h-3.5 ${transitFilter === "EN_CAMINO" ? "text-white" : "text-amber-700"}`}
+                  smokeColor={transitFilter === "EN_CAMINO" ? "bg-white/80" : "bg-amber-400"}
+                />
+                <span>En camino ({scopeEnCamino})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("FALTA_INGRESAR");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  transitFilter === "FALTA_INGRESAR"
+                    ? "bg-purple-600 text-white font-bold shadow-xs"
+                    : "text-purple-700 hover:bg-purple-100/60"
+                }`}
+                title="Equipos reparados o QC con informe técnico escrito pero pendientes de recibir físicamente"
+              >
+                <Inbox className="w-3 h-3" />
+                <span>Falta ingresar ({scopeFaltaIngresar})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("RECIBIDOS");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  transitFilter === "RECIBIDOS"
+                    ? "bg-emerald-600 text-white font-bold shadow-xs"
+                    : "text-emerald-700 hover:bg-emerald-100/60"
+                }`}
+              >
+                <Check className="w-3 h-3" />
+                <span>Recibidos ({scopeRecibidosCount})</span>
+              </button>
+            </div>
+
+            {/* Filtro de Fecha de Recepción cuando se selecciona Recibidos */}
+            {transitFilter === "RECIBIDOS" && (
+              <div className="flex items-center gap-1 bg-emerald-50/80 p-1 rounded-xl border border-emerald-200 text-xs flex-wrap">
+                <span className="text-[11px] font-bold text-emerald-900 px-2 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+                  <span>Fecha:</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("TODAS");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "TODAS"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Todas ({countRecibidosTodas})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("HOY");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "HOY"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Hoy ({countRecibidosHoy})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("AYER");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "AYER"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Ayer ({countRecibidosAyer})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("ULTIMOS_7");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "ULTIMOS_7"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Últimos 7 días ({countRecibidos7d})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRecibidosDateFilter("ESTE_MES");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                    recibidosDateFilter === "ESTE_MES"
+                      ? "bg-emerald-700 text-white font-bold shadow-xs"
+                      : "text-emerald-800 hover:bg-emerald-100"
+                  }`}
+                >
+                  Este mes ({countRecibidosMes})
+                </button>
+              </div>
+            )}
+
+            {/* Filtro de Estado con CleanSelect */}
+            <CleanSelect
+              options={statusOptions}
+              value={statusFilter}
+              onChange={(val) => {
+                setStatusFilter(val);
+                setCurrentPage(1);
+              }}
+              className="w-56"
+            />
+
+            {/* Filtro de Componente / Categoría con CleanSelect */}
+            <CleanSelect
+              options={componentOptions}
+              value={componentFilter}
+              onChange={(val) => {
+                setComponentFilter(val);
+                setCurrentPage(1);
+              }}
+              className="w-56"
+            />
+
+            {/* Ordenamiento */}
+            <CleanSelect
+              options={sortOptions}
+              value={sortBy}
+              onChange={(val) => {
+                setSortBy(val as any);
+                setCurrentPage(1);
+              }}
+              icon={<ArrowUpDown className="w-3.5 h-3.5" />}
+              className="w-52"
+            />
+
+            {/* Resetear Filtros */}
+            {(statusFilter !== "TODOS" || componentFilter !== "TODOS" || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter("TODOS");
+                  setComponentFilter("TODOS");
+                  setTransitFilter("TODOS");
+                  setRecibidosDateFilter("TODAS");
+                  setSearchTerm("");
+                  setCurrentPage(1);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer ml-auto"
+                title="Restablecer todos los filtros a sus valores predeterminados"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Restablecer filtros</span>
+              </button>
+            )}
           </div>
         </section>
 
@@ -1305,10 +1604,18 @@ ${accText}`;
           <div className="p-4 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 className="text-base font-bold text-zinc-900">
-                Tickets de Recepción &amp; Retornos Post-Venta
+                {viewScope === "DANESA"
+                  ? `Envíos Danesa SA (Nuestra Sucursal ASU) (${filteredTickets.length})`
+                  : viewScope === "CLIENTES_ASU"
+                  ? `Órdenes de Clientes ASU (${filteredTickets.length})`
+                  : `Tickets de Recepción & Retornos Post-Venta (${filteredTickets.length})`}
               </h3>
               <p className="text-xs text-zinc-500">
-                Registros sincronizados con la base central de NISSEI SATI
+                {viewScope === "DANESA"
+                  ? "Envíos directos de Danesa SA a laboratorio técnico y retornos"
+                  : viewScope === "CLIENTES_ASU"
+                  ? "Servicios técnicos y garantías de clientes NISSEI Asunción"
+                  : "Registros sincronizados con la base central de NISSEI SATI"}
               </p>
             </div>
             <div className="flex items-center gap-2.5 flex-wrap">
@@ -1346,14 +1653,30 @@ ${accText}`;
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-zinc-900 font-mono tabular-nums">#{ticket.idOrden}</span>
-                          {ticket.recibidoEnDeposito && (
+                          {ticket.recibidoEnDeposito ? (
                             <span
                               className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
                               title={`Recibido en depósito: ${ticket.fechaRecibidoDeposito || ''}`}
                             >
                               ✓ RECIBIDO · LISTO RETIRO
                             </span>
-                          )}
+                          ) : isTicketFaltaIngresar(ticket) ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-50 text-purple-700 border border-purple-200"
+                              title="Equipo con informe técnico listo pero pendiente de ingreso físico en recepción"
+                            >
+                              <Inbox className="w-3 h-3 text-purple-600" />
+                              <span>FALTA INGRESAR</span>
+                            </span>
+                          ) : isTicketEnCamino(ticket) ? (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200"
+                              title="Equipo en tránsito o en revisión sin informe técnico final"
+                            >
+                              <SpeedTruck className="w-3 h-3 text-amber-600" smokeColor="bg-amber-400" />
+                              <span>EN CAMINO</span>
+                            </span>
+                          ) : null}
                           {isTicketNuevoIngreso(ticket) && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
                               NUEVO INGRESO
@@ -1377,6 +1700,12 @@ ${accText}`;
                       {/* Cliente */}
                       <td className="py-3 px-4">
                         <div className="font-semibold text-zinc-900">{ticket.cliente || "Cliente Particular"}</div>
+                        {isTicketDanesa(ticket.cliente) && (
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200 mt-0.5">
+                            <Package className="w-3 h-3 text-amber-700" />
+                            <span>Danesa SA</span>
+                          </span>
+                        )}
                       </td>
 
                       {/* Equipo & Categoría */}
