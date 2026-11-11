@@ -599,24 +599,35 @@ export async function POST(req: NextRequest) {
         fechaIngresoAsu,
         fechaIngresoCde,
         fechaDespachoCde,
+        fechaRecibidoAsu,
+        recibidoEnDeposito,
       } = body;
+
+      const tieneFechaRecibido = fechaRecibidoAsu && String(fechaRecibidoAsu).trim() !== "";
+      const esRecibido = recibidoEnDeposito !== undefined ? (recibidoEnDeposito ? 1 : 0) : (tieneFechaRecibido ? 1 : null);
+      const fechaRecibidoVal = tieneFechaRecibido ? String(fechaRecibidoAsu).trim() : null;
 
       if (idOrdenCde) {
         await pool.query(
           `UPDATE recepcion_cde_tickets
            SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso),
-               fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada)
+               fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada),
+               recibido_en_deposito = COALESCE(?, recibido_en_deposito),
+               fecha_recibido_deposito = COALESCE(?, fecha_recibido_deposito)
            WHERE id_orden = ?`,
-          [fechaIngresoCde || null, fechaDespachoCde || null, idOrdenCde]
+          [fechaIngresoCde || null, fechaDespachoCde || null, esRecibido, fechaRecibidoVal, idOrdenCde]
         ).catch(() => {});
       }
 
       if (idOrdenAsu) {
         await pool.query(
           `UPDATE recepcion_tickets
-           SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso)
+           SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso),
+               fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada),
+               recibido_en_deposito = COALESCE(?, recibido_en_deposito),
+               fecha_recibido_deposito = COALESCE(?, fecha_recibido_deposito)
            WHERE id_orden = ?`,
-          [fechaIngresoAsu || null, idOrdenAsu]
+          [fechaIngresoAsu || null, fechaDespachoCde || null, esRecibido, fechaRecibidoVal, idOrdenAsu]
         ).catch(() => {});
       }
 
@@ -624,9 +635,21 @@ export async function POST(req: NextRequest) {
         await pool.query(
           `UPDATE recepcion_cde_tickets
            SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso),
-               fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada)
+               fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada),
+               recibido_en_deposito = COALESCE(?, recibido_en_deposito),
+               fecha_recibido_deposito = COALESCE(?, fecha_recibido_deposito)
            WHERE id_orden = ?`,
-          [fechaIngresoCde || null, fechaDespachoCde || null, idOrden]
+          [fechaIngresoCde || null, fechaDespachoCde || null, esRecibido, fechaRecibidoVal, idOrden]
+        ).catch(() => {});
+
+        await pool.query(
+          `UPDATE recepcion_tickets
+           SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso),
+               fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada),
+               recibido_en_deposito = COALESCE(?, recibido_en_deposito),
+               fecha_recibido_deposito = COALESCE(?, fecha_recibido_deposito)
+           WHERE id_orden = ?`,
+          [fechaIngresoAsu || null, fechaDespachoCde || null, esRecibido, fechaRecibidoVal, idOrden]
         ).catch(() => {});
       }
 
@@ -738,6 +761,94 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({
         ok: true,
         message: `Registro ${id} eliminado correctamente.`
+      });
+    }
+
+    // 15. Sincronización masiva de órdenes SATI, checkins y overrides a MySQL en la nube
+    if (action === "SYNC_ALL_SATI_TO_MYSQL") {
+      const { checkins = [], overrides = [] } = body;
+      let totalSincronizados = 0;
+
+      // 1. Actualizar checkins de órdenes recibidas en recepcion_cde_tickets y recepcion_tickets
+      if (Array.isArray(checkins) && checkins.length > 0) {
+        for (const chk of checkins) {
+          const { idOrden, idOrdenAsu, idOrdenCde, recibidoEnDeposito, fechaRecibido } = chk;
+          const fechaVal = fechaRecibido || new Date().toLocaleDateString("es-PY", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          const targetIds = [idOrden, idOrdenAsu, idOrdenCde].filter(Boolean);
+
+          for (const tid of targetIds) {
+            await pool.query(
+              `UPDATE recepcion_cde_tickets
+               SET recibido_en_deposito = ?,
+                   fecha_recibido_deposito = ?
+               WHERE id_orden = ?`,
+              [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fechaVal : null, tid]
+            ).catch(() => {});
+
+            await pool.query(
+              `UPDATE recepcion_tickets
+               SET recibido_en_deposito = ?,
+                   fecha_recibido_deposito = ?
+               WHERE id_orden = ?`,
+              [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fechaVal : null, tid]
+            ).catch(() => {});
+          }
+          totalSincronizados++;
+        }
+      }
+
+      // 2. Auto-confirmar en recepcion_cde_tickets y recepcion_tickets cualquier orden Entregada o Reparada
+      await pool.query(
+        `UPDATE recepcion_cde_tickets
+         SET recibido_en_deposito = 1,
+             fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
+         WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
+           AND (recibido_en_deposito = 0 OR recibido_en_deposito IS NULL)`
+      ).catch(() => {});
+
+      await pool.query(
+        `UPDATE recepcion_tickets
+         SET recibido_en_deposito = 1,
+             fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
+         WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
+           AND (recibido_en_deposito = 0 OR recibido_en_deposito IS NULL)`
+      ).catch(() => {});
+
+      // 3. Aplicar overrides manuales de fechas u órdenes si fueron enviados
+      if (Array.isArray(overrides) && overrides.length > 0) {
+        for (const ov of overrides) {
+          const { idOrdenAsu, idOrdenCde, fechaIngresoAsu, fechaIngresoCde, fechaDespachoCde, fechaRecibidoAsu } = ov;
+          if (idOrdenCde) {
+            await pool.query(
+              `UPDATE recepcion_cde_tickets
+               SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso),
+                   fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada),
+                   fecha_recibido_deposito = COALESCE(NULLIF(?, ''), fecha_recibido_deposito)
+               WHERE id_orden = ?`,
+              [fechaIngresoCde || null, fechaDespachoCde || null, fechaRecibidoAsu || null, idOrdenCde]
+            ).catch(() => {});
+          }
+          if (idOrdenAsu) {
+            await pool.query(
+              `UPDATE recepcion_tickets
+               SET fecha_ingreso = COALESCE(NULLIF(?, ''), fecha_ingreso),
+                   fecha_entregada = COALESCE(NULLIF(?, ''), fecha_entregada),
+                   fecha_recibido_deposito = COALESCE(NULLIF(?, ''), fecha_recibido_deposito)
+               WHERE id_orden = ?`,
+              [fechaIngresoAsu || null, fechaDespachoCde || null, fechaRecibidoAsu || null, idOrdenAsu]
+            ).catch(() => {});
+          }
+        }
+      }
+
+      return NextResponse.json({
+        ok: true,
+        message: "Sincronización completa con MySQL finalizada con éxito.",
+        totalSincronizados,
       });
     }
 

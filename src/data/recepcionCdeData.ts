@@ -304,6 +304,7 @@ export interface SatiTicketOverride {
   fechaIngresoAsu?: string;
   fechaIngresoCde?: string;
   fechaDespachoCde?: string;
+  fechaRecibidoAsu?: string;
 }
 
 export function getStoredSatiOverrides(): Record<string, SatiTicketOverride> {

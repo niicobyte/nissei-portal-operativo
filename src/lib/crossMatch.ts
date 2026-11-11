@@ -304,7 +304,8 @@ export function crossMatchAsuWithCde(
 export function buildUnifiedSatiList(
   cdeTickets: RecepcionCdeTicket[],
   asuTickets: RecepcionTicket[],
-  checkins: Record<string, any> = {}
+  checkins: Record<string, any> = {},
+  overrides: Record<string, any> = {}
 ): RecepcionCdeTicket[] {
   // Asegurar que solo participen órdenes reales de CDE (>= 100000)
   const cleanCdeTickets = (cdeTickets || []).filter((c) => {
@@ -452,6 +453,36 @@ export function buildUnifiedSatiList(
       rowKey,
     });
   });
+
+  // 4. Aplicar overrides manuales guardados de órdenes y fechas
+  if (overrides && Object.keys(overrides).length > 0) {
+    return unifiedList.map((t) => {
+      const ov =
+        overrides[t.rowKey || ""] ||
+        (t.idOrden && overrides[t.idOrden]) ||
+        (t.idOrdenAsu && overrides[t.idOrdenAsu]) ||
+        (t.idOrdenCde && overrides[t.idOrdenCde]);
+      if (!ov) return t;
+
+      const newIngresoAsu = ov.fechaIngresoAsu || t.fechaIngresoAsu;
+      const newIngresoCde = ov.fechaIngresoCde || t.fechaIngresoCde;
+      const newDespacho = ov.fechaDespachoCde !== undefined ? ov.fechaDespachoCde : t.fechaEntregada;
+      const newRecibido = ov.fechaRecibidoAsu ? ov.fechaRecibidoAsu : t.fechaRecibidoDeposito;
+      const newDias = newDespacho ? calcularDiasResolucion(newIngresoAsu || newIngresoCde || t.fechaIngreso, newDespacho) : t.diasResolucion;
+
+      return {
+        ...t,
+        idOrdenAsu: ov.idOrdenAsu || t.idOrdenAsu,
+        idOrdenCde: ov.idOrdenCde || t.idOrdenCde,
+        fechaIngresoAsu: newIngresoAsu,
+        fechaIngresoCde: newIngresoCde,
+        fechaEntregada: newDespacho,
+        fechaRecibidoDeposito: newRecibido,
+        recibidoEnDeposito: ov.fechaRecibidoAsu ? true : t.recibidoEnDeposito,
+        diasResolucion: newDias,
+      };
+    });
+  }
 
   return unifiedList;
 }

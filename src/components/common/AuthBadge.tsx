@@ -3,11 +3,13 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, LogOut, Key, ChevronDown, ShieldAlert, ArrowRight, Trash2 } from "lucide-react";
+import { Lock, LogOut, Key, ChevronDown, ShieldAlert, ArrowRight, Trash2, RefreshCw } from "lucide-react";
 import { getActiveUser, logout, UserProfile } from "@/data/authData";
 
 interface AuthBadgeProps {
   requiredModule?: "recepcion" | "reparaciones" | "montajes" | "tecnicos" | "deposito.danesa" | "sati-cde";
+  onSyncMysql?: () => void;
+  isSyncingMysql?: boolean;
 }
 
 function isAuthorizedForModule(
@@ -29,7 +31,7 @@ function isAuthorizedForModule(
   return false;
 }
 
-export function AuthBadge({ requiredModule }: AuthBadgeProps) {
+export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthBadgeProps) {
   const router = useRouter();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -176,6 +178,22 @@ export function AuthBadge({ requiredModule }: AuthBadgeProps) {
             <Key className="w-3.5 h-3.5 text-zinc-500" />
             <span>Cambiar de perfil</span>
           </Link>
+
+          {onSyncMysql && (
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onSyncMysql();
+              }}
+              disabled={isSyncingMysql}
+              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-indigo-50 text-indigo-700 transition-colors text-left cursor-pointer font-medium"
+              title="Guarda todos los estados recibidos y cambios de órdenes en la base de datos MySQL online"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isSyncingMysql ? "animate-spin" : ""}`} />
+              <span>{isSyncingMysql ? "Sincronizando..." : "Sincronizar con MySQL"}</span>
+            </button>
+          )}
 
           <button
             type="button"

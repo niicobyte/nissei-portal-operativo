@@ -46,6 +46,7 @@ import {
   parseFechaDMY,
   calcularDiasResolucion,
   saveSatiTicketOverride,
+  getStoredSatiOverrides,
 } from "@/data/recepcionCdeData";
 import { getStoredTickets, fetchTicketsFromMySQL } from "@/data/recepcionData";
 import {
@@ -192,11 +193,13 @@ export default function RecepcionCdeDashboardPage() {
     fechaIngresoAsu: "",
     fechaIngresoCde: "",
     fechaDespachoCde: "",
+    fechaRecibidoAsu: "",
   });
 
   // Subida y procesamiento de CSV
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingCSV, setIsUploadingCSV] = useState(false);
+  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
   const [csvReport, setCsvReport] = useState<
     (ResultadoCargaCdeCSV & { fileName: string; timestamp: string }) | null
   >(null);
@@ -206,7 +209,8 @@ export default function RecepcionCdeDashboardPage() {
     const asuTickets = getStoredTickets();
     const cdeTickets = getStoredCdeTickets();
     const checkins = getStoredCdeCheckins();
-    const initialUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins);
+    const overrides = getStoredSatiOverrides();
+    const initialUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins, overrides);
     setTickets(initialUnified);
 
     // Sincronizar en tiempo real directamente con MySQL en la nube (Railway)
@@ -216,7 +220,8 @@ export default function RecepcionCdeDashboardPage() {
     ]).then(([dbCde, dbAsu]) => {
       if (Array.isArray(dbCde) && Array.isArray(dbAsu)) {
         const liveCheckins = getStoredCdeCheckins();
-        const liveUnified = buildUnifiedSatiList(dbCde, dbAsu, liveCheckins);
+        const liveOverrides = getStoredSatiOverrides();
+        const liveUnified = buildUnifiedSatiList(dbCde, dbAsu, liveCheckins, liveOverrides);
         setTickets(liveUnified);
       }
     });
@@ -225,6 +230,84 @@ export default function RecepcionCdeDashboardPage() {
   const showToast = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 4500);
+  };
+
+  // Sincronizar y consolidar todas las órdenes recibidas, checkins y overrides con MySQL en la nube
+  const handleSyncAllToCloud = async () => {
+    setIsSyncingCloud(true);
+    try {
+      const overridesObj = getStoredSatiOverrides();
+
+      // Recopilar lista de todas las órdenes confirmadas como recibidas
+      const checkinList: Array<{
+        idOrden: string;
+        idOrdenAsu?: string;
+        idOrdenCde?: string;
+        recibidoEnDeposito: boolean;
+        fechaRecibido: string;
+      }> = [];
+
+      tickets.forEach((t) => {
+        if (isTicketRecibido(t)) {
+          const f =
+            t.fechaRecibidoDeposito ||
+            t.fechaEntregada ||
+            new Date().toLocaleDateString("es-PY", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            });
+          checkinList.push({
+            idOrden: t.idOrden,
+            idOrdenAsu: t.idOrdenAsu,
+            idOrdenCde: t.idOrdenCde,
+            recibidoEnDeposito: true,
+            fechaRecibido: f,
+          });
+        }
+      });
+
+      const res = await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "SYNC_ALL_SATI_TO_MYSQL",
+          checkins: checkinList,
+          overrides: Object.entries(overridesObj).map(([key, val]) => ({
+            key,
+            ...val,
+          })),
+        }),
+      });
+
+      const json = await res.json().catch(() => ({ ok: false }));
+      if (!res.ok || !json.ok) {
+        throw new Error(json.error || "Error al conectar con la base de datos.");
+      }
+
+      // Descargar datos consolidados desde MySQL
+      const [dbCde, dbAsu] = await Promise.all([
+        fetchCdeTicketsFromMySQL().catch(() => getStoredCdeTickets()),
+        fetchTicketsFromMySQL().catch(() => getStoredTickets()),
+      ]);
+
+      const liveCheckins = getStoredCdeCheckins();
+      const liveOverrides = getStoredSatiOverrides();
+      const freshUnified = buildUnifiedSatiList(dbCde, dbAsu, liveCheckins, liveOverrides);
+      setTickets(freshUnified);
+
+      showToast(
+        `¡Sincronización con MySQL completada! ${
+          json.totalSincronizados || checkinList.length
+        } orden(es) sincronizadas y guardadas en la base de datos online.`
+      );
+    } catch (err: unknown) {
+      console.error("Error en sincronización con MySQL:", err);
+      const msg = err instanceof Error ? err.message : "Error al conectar con MySQL en la nube.";
+      showToast(`${msg} Reintente en unos instantes.`);
+    } finally {
+      setIsSyncingCloud(false);
+    }
   };
 
   // Manejar carga de archivo CSV para actualizar órdenes CDE y sincronizar a MySQL
@@ -590,12 +673,17 @@ export default function RecepcionCdeDashboardPage() {
   const handleOpenTicketModal = (ticket: RecepcionCdeTicket) => {
     setSelectedTicket(ticket);
     setIsEditingModal(false);
+    const fechaRecibidoActual =
+      ticket.fechaRecibidoDeposito ||
+      (isTicketRecibido(ticket) ? (ticket.fechaEntregada || "") : "");
+
     setEditForm({
       idOrdenAsu: ticket.idOrdenAsu || (ticket.origen === "ASU" ? ticket.idOrden : ""),
       idOrdenCde: ticket.idOrdenCde || (ticket.origen === "CDE" ? ticket.idOrden : ""),
       fechaIngresoAsu: ticket.fechaIngresoAsu || (ticket.origen === "ASU" ? ticket.fechaIngreso : ""),
       fechaIngresoCde: ticket.fechaIngresoCde || (ticket.origen === "CDE" ? ticket.fechaIngreso : ""),
       fechaDespachoCde: ticket.fechaEntregada || "",
+      fechaRecibidoAsu: fechaRecibidoActual,
     });
   };
 
@@ -608,6 +696,8 @@ export default function RecepcionCdeDashboardPage() {
       const newIngreso = editForm.fechaIngresoAsu || editForm.fechaIngresoCde || selectedTicket.fechaIngreso;
       const newDespacho = editForm.fechaDespachoCde;
       const newDias = newDespacho ? calcularDiasResolucion(newIngreso, newDespacho) : null;
+      const newRecibidoAsu = editForm.fechaRecibidoAsu.trim();
+      const isRecibidoNow = Boolean(newRecibidoAsu) || isTicketRecibido(selectedTicket);
 
       // Guardar override persistente en localStorage
       saveSatiTicketOverride(rowKey, {
@@ -616,7 +706,22 @@ export default function RecepcionCdeDashboardPage() {
         fechaIngresoAsu: editForm.fechaIngresoAsu,
         fechaIngresoCde: editForm.fechaIngresoCde,
         fechaDespachoCde: editForm.fechaDespachoCde,
+        fechaRecibidoAsu: newRecibidoAsu,
       });
+
+      // Si se estableció una fecha de recibido o fue confirmado, actualizar checkin local y remoto
+      if (newRecibidoAsu) {
+        toggleCheckinDeposito(
+          rowKey,
+          {
+            idOrden: selectedTicket.idOrden,
+            idOrdenAsu: editForm.idOrdenAsu || selectedTicket.idOrdenAsu,
+            idOrdenCde: editForm.idOrdenCde || selectedTicket.idOrdenCde,
+          },
+          true,
+          newRecibidoAsu
+        );
+      }
 
       // Persistir a MySQL
       await fetch('/api/db', {
@@ -630,6 +735,8 @@ export default function RecepcionCdeDashboardPage() {
           fechaIngresoAsu: editForm.fechaIngresoAsu,
           fechaIngresoCde: editForm.fechaIngresoCde,
           fechaDespachoCde: editForm.fechaDespachoCde,
+          fechaRecibidoAsu: newRecibidoAsu,
+          recibidoEnDeposito: isRecibidoNow,
         }),
       }).catch((e) => console.warn('[MySQL Save Error]', e));
 
@@ -646,6 +753,9 @@ export default function RecepcionCdeDashboardPage() {
               fechaEntregada: editForm.fechaDespachoCde,
               fechaIngreso: newIngreso,
               diasResolucion: newDias,
+              fechaRecibidoDeposito: newRecibidoAsu || t.fechaRecibidoDeposito,
+              recibidoEnDeposito: isRecibidoNow,
+              desmarcadoManual: false,
             };
           }
           return t;
@@ -663,6 +773,9 @@ export default function RecepcionCdeDashboardPage() {
               fechaEntregada: editForm.fechaDespachoCde,
               fechaIngreso: newIngreso,
               diasResolucion: newDias,
+              fechaRecibidoDeposito: newRecibidoAsu || prev.fechaRecibidoDeposito,
+              recibidoEnDeposito: isRecibidoNow,
+              desmarcadoManual: false,
             }
           : null
       );
@@ -779,6 +892,31 @@ export default function RecepcionCdeDashboardPage() {
               className="hidden"
             />
 
+            {/* Botón Sincronizar Nube / MySQL Online */}
+            <button
+              type="button"
+              onClick={handleSyncAllToCloud}
+              disabled={isSyncingCloud}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer disabled:opacity-60"
+              title="Sincronizar y consolidar todos los estados recibidos y cambios en MySQL en la nube"
+            >
+              <span
+                className={`w-6 h-6 rounded flex items-center justify-center text-white ${
+                  isSyncingCloud ? "bg-amber-600" : "bg-indigo-600"
+                }`}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCloud ? "animate-spin" : ""}`} />
+              </span>
+              <div className="text-left leading-tight">
+                <strong className="block text-xs font-bold text-zinc-900">
+                  {isSyncingCloud ? "Sincronizando..." : "Sincronizar Nube"}
+                </strong>
+                <span className="text-[11px] text-zinc-500 font-normal">
+                  {isSyncingCloud ? "Guardando en MySQL" : "Guardar en MySQL"}
+                </span>
+              </div>
+            </button>
+
             {/* Botón idéntico al de Recepción con icono verde y dos líneas de texto */}
             <button
               type="button"
@@ -801,7 +939,11 @@ export default function RecepcionCdeDashboardPage() {
             </button>
 
             {/* UN SOLO AuthBadge al extremo derecho */}
-            <AuthBadge requiredModule="deposito.danesa" />
+            <AuthBadge
+              requiredModule="deposito.danesa"
+              onSyncMysql={handleSyncAllToCloud}
+              isSyncingMysql={isSyncingCloud}
+            />
           </div>
         </div>
 
@@ -1840,7 +1982,7 @@ export default function RecepcionCdeDashboardPage() {
                     />
                   </div>
 
-                  <div className="sm:col-span-2">
+                  <div>
                     <label className="block text-[11px] font-bold text-zinc-700 mb-1">
                       Fecha de Despacho CDE (Transportadora):
                     </label>
@@ -1849,6 +1991,19 @@ export default function RecepcionCdeDashboardPage() {
                       value={editForm.fechaDespachoCde}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, fechaDespachoCde: e.target.value }))}
                       placeholder="DD/MM/AAAA HH:mm (vacío si sigue en taller CDE)"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                      Fecha de Recibido en ASU (Sucursal):
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.fechaRecibidoAsu}
+                      onChange={(e) => setEditForm((prev) => ({ ...prev, fechaRecibidoAsu: e.target.value }))}
+                      placeholder="DD/MM/AAAA o DD/MM/AAAA HH:mm"
                       className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
                     />
                   </div>
@@ -1943,6 +2098,28 @@ export default function RecepcionCdeDashboardPage() {
                   <span className="text-zinc-800 font-mono font-semibold">
                     {selectedTicket.fechaEntregada || "Pendiente de cierre en CDE"}
                   </span>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[11px]">Fecha de Recibido ASU</span>
+                  {(() => {
+                    const esRecib = isTicketRecibido(selectedTicket);
+                    const fechaRec =
+                      selectedTicket.fechaRecibidoDeposito ||
+                      (esRecib ? selectedTicket.fechaEntregada : null);
+                    if (fechaRec) {
+                      return (
+                        <span className="text-emerald-700 font-mono font-bold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>{fechaRec}</span>
+                        </span>
+                      );
+                    }
+                    return (
+                      <span className="text-zinc-400 font-mono text-[11px] italic">
+                        Pendiente de recepción
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div>
                   <span className="text-zinc-500 block text-[11px]">Fecha de Venta</span>
