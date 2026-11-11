@@ -23,6 +23,7 @@ import {
   Trash2,
   AlertTriangle,
 } from "lucide-react";
+import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { getSafeUserProfiles, getAdminAuthHeaders, UserProfile } from "@/data/authData";
 import { getStoredTickets, saveTickets, RecepcionTicket } from "@/data/recepcionData";
 import { getStoredReparaciones, saveReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
@@ -203,7 +204,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           body: JSON.stringify({ action: "DELETE_ROW", table, id }),
         });
       } catch (networkErr) {
-        console.warn("[DB VIEWER] Servidor MySQL en espera, procesando eliminación en espejo local:", networkErr);
+        console.warn("[DB VIEWER] Error de conexión con MySQL en la nube:", networkErr);
       }
 
       // 2. Actualizar el estado local y localStorage inmediatamente
@@ -480,7 +481,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 ) : (
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                     <HardDrive className="w-3 h-3" />
-                    Espejo Local Activo (Sincronizado con navegador · MySQL en espera)
+                    MySQL en la Nube (Conectando...)
                   </span>
                 )}
               </div>
@@ -565,7 +566,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
               }`}
             >
-              <Truck className="w-3.5 h-3.5 text-zinc-700" />
+              <SpeedTruck className="w-3.5 h-3.5 text-zinc-700" smokeColor="bg-amber-400" />
               <span className="font-mono">recepcion_cde_tickets</span>
               <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
                 {cde.length}

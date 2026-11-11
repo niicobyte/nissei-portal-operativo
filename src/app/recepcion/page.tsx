@@ -35,6 +35,7 @@ import {
   Box,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
+import { SpeedTruck } from "@/components/common/SpeedTruck";
 import {
   RecepcionTicket,
   INITIAL_RECEPCION_DATA,
@@ -1350,7 +1351,7 @@ ${accText}`;
           <div className="space-y-1.5 max-w-2xl">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-lg bg-amber-400 text-zinc-900">
-                <Truck className="w-4 h-4" />
+                <SpeedTruck className="w-4 h-4 text-zinc-900" smokeColor="bg-amber-100" />
               </span>
               <span className="text-[11px] font-mono uppercase font-bold text-amber-300 tracking-wider">
                 Módulo Especial de Depósito Danesa
@@ -1385,7 +1386,7 @@ ${accText}`;
               <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
                 <div className="flex items-center gap-2">
                   <div className="p-2 rounded-lg bg-amber-100 text-amber-900">
-                    <Truck className="w-4 h-4" />
+                    <SpeedTruck className="w-4 h-4 text-amber-900" smokeColor="bg-amber-400" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-zinc-900">SATI ASU - CDE</h3>

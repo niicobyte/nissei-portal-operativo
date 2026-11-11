@@ -377,7 +377,7 @@ export function buildUnifiedSatiList(
       Boolean(esCdeValido && isDespachoCoherente(asu.fechaIngreso, rawMatchedCde?.fechaEntregada));
     const matchedCde = esCronologicamenteCoherente ? rawMatchedCde : undefined;
 
-    const rowKey = asu.rowKey || `ASU_${asu.idOrden}_${asu.codigoProducto || ""}_${asu.serial || ""}_${idx}`;
+    const rowKey = (asu as any).rowKey || `ASU_${asu.idOrden}_${asu.codigoProducto || ""}_${asu.serial || ""}_${idx}`;
 
     // Fecha de despacho CDE (solo si el cruce es legítimo y cronológicamente coherente)
     const fechaDespachoCde = matchedCde?.fechaEntregada || "";

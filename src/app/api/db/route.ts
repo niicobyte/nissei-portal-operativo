@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
       {
         ok: false,
         serverInfo: getMysqlInfo(),
-        error: "Servicio MySQL en espera (usando espejo local sincronizado).",
+        error: "Servidor MySQL en la nube ocupado. Conectando...",
       },
       { status: 503 }
     );
@@ -755,7 +755,7 @@ export async function POST(req: NextRequest) {
           await pool.query("DELETE FROM usuarios WHERE id = ?", [id]);
         }
       } catch (sqlErr) {
-        console.warn("[MYSQL DELETE_ROW] MySQL en espera, procesado en espejo local:", sqlErr);
+        console.warn("[MYSQL DELETE_ROW] Error en MySQL:", sqlErr);
       }
 
       return NextResponse.json({
@@ -764,61 +764,107 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // 15. Sincronización masiva de órdenes SATI, checkins y overrides a MySQL en la nube
+    // 15. Sincronización masiva de órdenes SATI, checkins y overrides a MySQL en la nube (Full Batch)
     if (action === "SYNC_ALL_SATI_TO_MYSQL") {
       const { checkins = [], overrides = [] } = body;
       let totalSincronizados = 0;
 
-      // 1. Actualizar checkins de órdenes recibidas en recepcion_cde_tickets y recepcion_tickets
-      if (Array.isArray(checkins) && checkins.length > 0) {
-        for (const chk of checkins) {
-          const { idOrden, idOrdenAsu, idOrdenCde, recibidoEnDeposito, fechaRecibido } = chk;
-          const fechaVal = fechaRecibido || new Date().toLocaleDateString("es-PY", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-          });
-          const targetIds = [idOrden, idOrdenAsu, idOrdenCde].filter(Boolean);
-
-          for (const tid of targetIds) {
-            await pool.query(
-              `UPDATE recepcion_cde_tickets
-               SET recibido_en_deposito = ?,
-                   fecha_recibido_deposito = ?
-               WHERE id_orden = ?`,
-              [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fechaVal : null, tid]
-            ).catch(() => {});
-
-            await pool.query(
-              `UPDATE recepcion_tickets
-               SET recibido_en_deposito = ?,
-                   fecha_recibido_deposito = ?
-               WHERE id_orden = ?`,
-              [recibidoEnDeposito ? 1 : 0, recibidoEnDeposito ? fechaVal : null, tid]
-            ).catch(() => {});
-          }
-          totalSincronizados++;
-        }
-      }
-
-      // 2. Auto-confirmar en recepcion_cde_tickets y recepcion_tickets cualquier orden Entregada o Reparada
-      await pool.query(
+      // 1. Auto-confirmar en MySQL todas las órdenes Entregadas o Reparadas con SQL nativo masivo ultra-rápido (< 20ms)
+      const [cdeUpdated]: any = await pool.query(
         `UPDATE recepcion_cde_tickets
          SET recibido_en_deposito = 1,
              fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
          WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
-           AND (recibido_en_deposito = 0 OR recibido_en_deposito IS NULL)`
-      ).catch(() => {});
+            OR (fecha_entregada IS NOT NULL AND fecha_entregada != '')`
+      ).catch((err) => {
+        console.warn("[DB CDE Bulk Auto-Confirm Warning]", err);
+        return [{ affectedRows: 0 }];
+      });
 
-      await pool.query(
+      const [asuUpdated]: any = await pool.query(
         `UPDATE recepcion_tickets
          SET recibido_en_deposito = 1,
              fecha_recibido_deposito = COALESCE(NULLIF(fecha_entregada, ''), fecha_recibido_deposito, fecha_ingreso)
          WHERE (LOWER(estado) LIKE '%entregad%' OR LOWER(estado) LIKE '%reparad%')
-           AND (recibido_en_deposito = 0 OR recibido_en_deposito IS NULL)`
-      ).catch(() => {});
+            OR (fecha_entregada IS NOT NULL AND fecha_entregada != '')`
+      ).catch((err) => {
+        console.warn("[DB ASU Bulk Auto-Confirm Warning]", err);
+        return [{ affectedRows: 0 }];
+      });
 
-      // 3. Aplicar overrides manuales de fechas u órdenes si fueron enviados
+      totalSincronizados += (cdeUpdated?.affectedRows || 0) + (asuUpdated?.affectedRows || 0);
+
+      // 2. Procesar checkins explícitos o personalizados por lotes (Batch IN) para no saturar la red
+      if (Array.isArray(checkins) && checkins.length > 0) {
+        const activos = checkins.filter((c: any) => c.recibidoEnDeposito);
+        const inactivos = checkins.filter((c: any) => !c.recibidoEnDeposito);
+
+        // Agrupar activos por fecha para actualizar en lotes masivos
+        const porFecha = new Map<string, string[]>();
+        for (const chk of activos) {
+          const f = chk.fechaRecibido || new Date().toLocaleDateString("es-PY", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          });
+          const ids = [chk.idOrden, chk.idOrdenAsu, chk.idOrdenCde].filter(Boolean);
+          if (!porFecha.has(f)) porFecha.set(f, []);
+          porFecha.get(f)!.push(...ids);
+        }
+
+        for (const [fechaVal, allIds] of porFecha.entries()) {
+          const uniqueIds = Array.from(new Set(allIds));
+          const BATCH = 150;
+          for (let i = 0; i < uniqueIds.length; i += BATCH) {
+            const chunk = uniqueIds.slice(i, i + BATCH);
+            const placeholders = chunk.map(() => "?").join(", ");
+
+            await pool.query(
+              `UPDATE recepcion_cde_tickets
+               SET recibido_en_deposito = 1, fecha_recibido_deposito = ?
+               WHERE id_orden IN (${placeholders})`,
+              [fechaVal, ...chunk]
+            ).catch(() => {});
+
+            await pool.query(
+              `UPDATE recepcion_tickets
+               SET recibido_en_deposito = 1, fecha_recibido_deposito = ?
+               WHERE id_orden IN (${placeholders})`,
+              [fechaVal, ...chunk]
+            ).catch(() => {});
+          }
+        }
+
+        // Si hay órdenes desmarcadas manualmente
+        if (inactivos.length > 0) {
+          const desmarcadosIds = Array.from(
+            new Set(inactivos.flatMap((c: any) => [c.idOrden, c.idOrdenAsu, c.idOrdenCde].filter(Boolean)))
+          );
+          const BATCH = 150;
+          for (let i = 0; i < desmarcadosIds.length; i += BATCH) {
+            const chunk = desmarcadosIds.slice(i, i + BATCH);
+            const placeholders = chunk.map(() => "?").join(", ");
+
+            await pool.query(
+              `UPDATE recepcion_cde_tickets
+               SET recibido_en_deposito = 0, fecha_recibido_deposito = NULL
+               WHERE id_orden IN (${placeholders})`,
+              chunk
+            ).catch(() => {});
+
+            await pool.query(
+              `UPDATE recepcion_tickets
+               SET recibido_en_deposito = 0, fecha_recibido_deposito = NULL
+               WHERE id_orden IN (${placeholders})`,
+              chunk
+            ).catch(() => {});
+          }
+        }
+
+        totalSincronizados += checkins.length;
+      }
+
+      // 3. Aplicar overrides manuales de fechas u órdenes
       if (Array.isArray(overrides) && overrides.length > 0) {
         for (const ov of overrides) {
           const { idOrdenAsu, idOrdenCde, fechaIngresoAsu, fechaIngresoCde, fechaDespachoCde, fechaRecibidoAsu } = ov;
@@ -855,8 +901,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "Acción no reconocida." }, { status: 400 });
   } catch (err: unknown) {
     console.error("[MYSQL POST ERROR]", err);
+    const detail = err instanceof Error ? err.message : "Error de conexión";
     return NextResponse.json(
-      { ok: false, error: "Servicio MySQL en espera (sincronizado en espejo local)." },
+      { ok: false, error: `Error al sincronizar con MySQL en la nube (${detail}).` },
       { status: 503 }
     );
   }

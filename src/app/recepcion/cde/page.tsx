@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
+import { SpeedTruck } from "@/components/common/SpeedTruck";
 import {
   Truck,
   Package,
@@ -58,10 +59,10 @@ import {
 
 const ITEMS_PER_PAGE = 25;
 
-export type ViewScope = "DANESA" | "CLIENTES_ASU" | "CLIENTES_CDE" | "TODOS";
-export type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
+type ViewScope = "DANESA" | "CLIENTES_ASU" | "CLIENTES_CDE" | "TODOS";
+type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
 
-export function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: RecibidosDateFilter): boolean {
+function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: RecibidosDateFilter): boolean {
   if (filter === "TODAS") return true;
 
   // Filtrar primordialmente con la fecha de entregada (despacho/entrega) para seguimiento de días
@@ -97,7 +98,7 @@ export function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: Recibid
  * 2. Si t.recibidoEnDeposito es true.
  * 3. Si su estado es "Entregada" o "Reparada" (mandatorio por regla de negocio).
  */
-export function isTicketRecibido(t: RecepcionCdeTicket): boolean {
+function isTicketRecibido(t: RecepcionCdeTicket): boolean {
   if ((t as any).desmarcadoManual) return false;
   if (t.recibidoEnDeposito) return true;
   const displayStatus = getTicketDisplayStatus(t).toLowerCase();
@@ -119,7 +120,7 @@ export function isTicketRecibido(t: RecepcionCdeTicket): boolean {
  * Permite que los filtros, los contadores de badges y las etiquetas en tabla
  * coincidan al 100% sin que estados como "Entregada" se cuelen en otros filtros.
  */
-export function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
+function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
   const est = (t.estado || "").trim();
   const estLower = est.toLowerCase();
   const estAsu = (t.estadoAsu || "").toLowerCase();
@@ -815,8 +816,8 @@ export default function RecepcionCdeDashboardPage() {
 
     if (lower.includes("tránsito") || lower.includes("transito")) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
-          <Truck className="w-3 h-3 text-amber-700" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
+          <SpeedTruck className="w-3 h-3 text-amber-700" smokeColor="bg-amber-400" />
           <span>En Tránsito (Transportadora)</span>
         </span>
       );
@@ -1022,8 +1023,8 @@ export default function RecepcionCdeDashboardPage() {
               </div>
               <div className="bg-white p-3 rounded-lg border border-zinc-200">
                 <span className="text-[11px] text-zinc-500 block">En Tránsito (Transportadora)</span>
-                <strong className="text-lg font-extrabold text-amber-700 font-mono flex items-center gap-1">
-                  <Truck className="w-4 h-4 text-amber-600" />
+                <strong className="text-lg font-extrabold text-amber-700 font-mono flex items-center gap-1.5">
+                  <SpeedTruck className="w-4 h-4 text-amber-600" smokeColor="bg-amber-400" />
                   <span>{csvReport.totalEnTransitoNuevos.toLocaleString()}</span>
                 </strong>
               </div>
@@ -1076,8 +1077,8 @@ export default function RecepcionCdeDashboardPage() {
                         </span>
                         <ArrowRight className="w-3 h-3 text-zinc-400" />
                         {c.enTransito ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                            <Truck className="w-3 h-3 text-amber-700" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                            <SpeedTruck className="w-3 h-3 text-amber-700" smokeColor="bg-amber-400" />
                             <span>En Tránsito (Transportadora)</span>
                           </span>
                         ) : (
@@ -1357,7 +1358,10 @@ export default function RecepcionCdeDashboardPage() {
                       : "text-amber-700 hover:bg-amber-100/60"
                   }`}
                 >
-                  <Truck className="w-3 h-3" />
+                  <SpeedTruck
+                    className={`w-3.5 h-3.5 ${transitFilter === "EN_TRANSITO" ? "text-white" : "text-amber-700"}`}
+                    smokeColor={transitFilter === "EN_TRANSITO" ? "bg-white/80" : "bg-amber-400"}
+                  />
                   <span>En camino ({scopeEnTransito})</span>
                 </button>
                 <button
@@ -1706,8 +1710,8 @@ export default function RecepcionCdeDashboardPage() {
                             <div className="flex flex-col">
                               <span className="font-bold text-zinc-900">{ticket.fechaEntregada}</span>
                               {isDanesa && (
-                                <span className="text-[10px] text-amber-700 font-sans flex items-center gap-0.5 font-semibold">
-                                  <Truck className="w-2.5 h-2.5" />
+                                <span className="text-[10px] text-amber-700 font-sans flex items-center gap-1 font-semibold">
+                                  <SpeedTruck className="w-2.5 h-2.5 text-amber-700" smokeColor="bg-amber-400" />
                                   <span>Despacho transportadora</span>
                                 </span>
                               )}
@@ -2175,7 +2179,7 @@ export default function RecepcionCdeDashboardPage() {
                       {isRecibidoModal ? (
                         <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                       ) : (
-                        <Truck className="w-5 h-5 text-amber-600 shrink-0" />
+                        <SpeedTruck className="w-5 h-5 text-amber-600 shrink-0" smokeColor="bg-amber-400" />
                       )}
                       <div>
                         <strong className="block text-zinc-900 text-xs font-bold">

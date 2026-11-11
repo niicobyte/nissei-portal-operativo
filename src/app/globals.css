@@ -67,3 +67,82 @@ samp {
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/* Animación del Camioncito a Toda Velocidad con Estela de Humo */
+@keyframes truckSpeedBounce {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  25% {
+    transform: translateY(-0.8px) rotate(-1.5deg);
+  }
+  50% {
+    transform: translateY(0.5px) rotate(0.5deg);
+  }
+  75% {
+    transform: translateY(-0.4px) rotate(-1deg);
+  }
+}
+
+@keyframes smokePuff1 {
+  0% {
+    opacity: 0.85;
+    transform: translate(0, 0) scale(0.35);
+  }
+  50% {
+    opacity: 0.55;
+    transform: translate(-3.5px, -2px) scale(0.85);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-9px, -4px) scale(1.6);
+  }
+}
+
+@keyframes smokePuff2 {
+  0% {
+    opacity: 0.8;
+    transform: translate(0, 0) scale(0.3);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-4.5px, -1.5px) scale(0.8);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-11px, -3px) scale(1.5);
+  }
+}
+
+@keyframes smokePuff3 {
+  0% {
+    opacity: 0.9;
+    transform: translate(0, 0) scale(0.25);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translate(-3px, -2.5px) scale(0.75);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-8px, -5px) scale(1.4);
+  }
+}
+
+.animate-speed-truck {
+  display: inline-block;
+  animation: truckSpeedBounce 0.28s infinite ease-in-out;
+}
+
+.animate-smoke-1 {
+  animation: smokePuff1 0.65s infinite linear;
+}
+
+.animate-smoke-2 {
+  animation: smokePuff2 0.65s infinite linear 0.22s;
+}
+
+.animate-smoke-3 {
+  animation: smokePuff3 0.65s infinite linear 0.44s;
+}
+
