@@ -2027,14 +2027,14 @@ export default function RecepcionCdeDashboardPage() {
                                   }`}
                                   title={
                                     isRecibido
-                                      ? "Equipo en estado Recibido (Click para desmarcar llegada)"
+                                      ? "Recibido · Listo para que retire el cliente (Click para desmarcar llegada)"
                                       : "Haga click para confirmar llegada de esta unidad a depósito"
                                   }
                                 >
                                   {isRecibido ? (
                                     <>
                                       <Check className="w-3 h-3 stroke-[3]" />
-                                      <span>Recibido</span>
+                                      <span>Listo retiro</span>
                                     </>
                                   ) : (
                                     <>

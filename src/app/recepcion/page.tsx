@@ -112,6 +112,7 @@ export default function RecepcionDashboardPage() {
   const [modalAccesorios, setModalAccesorios] = useState<string>("");
   const [modalAccessoriesList, setModalAccessoriesList] = useState<string[]>([]);
   const [modalNewAccessory, setModalNewAccessory] = useState<string>("");
+  const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const parseAccesoriosString = (raw: string | undefined): string[] => {
     if (!raw) return [];
@@ -376,11 +377,56 @@ ${statusText}
 ${accText}`;
   };
 
+  const handleAbrirParaNotificar = (ticket: RecepcionTicket) => {
+    setSelectedTicket(ticket);
+    const rawMsg = (ticket.mensaje || "").trim();
+    const esVacio =
+      !rawMsg ||
+      rawMsg.toLowerCase() === "sin observaciones técnicas registradas." ||
+      rawMsg.toLowerCase() === "sin observaciones técnicas registradas" ||
+      rawMsg.toLowerCase() === "sin observaciones" ||
+      rawMsg.length < 4;
+
+    if (ticket.recibidoEnDeposito) {
+      showToast(`✅ Orden #${ticket.idOrden}: Recibido · Listo para retiro de cliente.`);
+    } else if (esVacio) {
+      showToast(`📋 Complete el informe técnico de la orden #${ticket.idOrden} y pulse "Notificar por WhatsApp" para marcar como recibido.`);
+    }
+    setTimeout(() => {
+      modalTextareaRef.current?.focus();
+    }, 150);
+  };
+
   const handleNotificarWhatsAppRecepcion = async (ticket: RecepcionTicket) => {
     const accFinal =
       modalAccessoriesList.length > 0
         ? modalAccessoriesList.join(", ")
         : modalAccesorios.trim();
+
+    // 1. Validar estrictamente que el informe técnico / mensaje esté completado antes de marcar recibido
+    const msgParaValidar = (
+      selectedTicket && selectedTicket.idOrden === ticket.idOrden
+        ? modalMensaje
+        : ticket.mensaje || ""
+    ).trim();
+
+    const esMsgVacio =
+      !msgParaValidar ||
+      msgParaValidar.toLowerCase() === "sin observaciones técnicas registradas." ||
+      msgParaValidar.toLowerCase() === "sin observaciones técnicas registradas" ||
+      msgParaValidar.toLowerCase() === "sin observaciones" ||
+      msgParaValidar.length < 4;
+
+    if (esMsgVacio) {
+      if (!selectedTicket || selectedTicket.idOrden !== ticket.idOrden) {
+        setSelectedTicket(ticket);
+      }
+      showToast("⚠️ Debe completar el informe técnico / mensaje antes de notificar y marcar como recibido.");
+      setTimeout(() => {
+        modalTextareaRef.current?.focus();
+      }, 100);
+      return;
+    }
 
     // Si el mensaje o accesorios en el modal fueron modificados, guardarlos antes de notificar
     let currentTicket = ticket;
@@ -509,16 +555,14 @@ ${accText}`;
       if (res.ok && data?.success) {
         showToast(
           matchedCdeId
-            ? `✅ Notificación enviada al grupo. Orden #${ticket.idOrden} cruzada con CDE #${matchedCdeId} y marcada como Recibido (${fechaNotificacion}).`
-            : `✅ Notificación enviada al grupo. Orden #${ticket.idOrden} registrada en Recibidos SATI ASU - CDE (${fechaNotificacion}).`
+            ? `✅ Orden #${ticket.idOrden}: Recibido · Listo para que retire el cliente (cruzado con CDE #${matchedCdeId}).`
+            : `✅ Orden #${ticket.idOrden}: Recibido · Listo para que retire el cliente (notificado al grupo).`
         );
       } else {
         const errorMsg = data?.error || "Error al entregar mensaje";
         console.error("[WHATSAPP ERROR]", errorMsg);
         showToast(
-          matchedCdeId
-            ? `⚠️ WhatsApp: ${errorMsg} (Cruzado con CDE #${matchedCdeId} y marcado Recibido).`
-            : `⚠️ WhatsApp: ${errorMsg} (Marcado Recibido en SATI ASU - CDE).`
+          `✅ Orden #${ticket.idOrden}: Recibido · Listo para retiro (aviso WhatsApp: ${errorMsg}).`
         );
       }
     } catch (err: unknown) {
@@ -1305,9 +1349,9 @@ ${accText}`;
                           {ticket.recibidoEnDeposito && (
                             <span
                               className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              title={`Confirmado en Recibidos SATI ASU - CDE${ticket.fechaRecibidoDeposito ? ` (${ticket.fechaRecibidoDeposito})` : ''}`}
+                              title={`Recibido en depósito: ${ticket.fechaRecibidoDeposito || ''}`}
                             >
-                              ✓ RECIBIDO
+                              ✓ RECIBIDO · LISTO RETIRO
                             </span>
                           )}
                           {isTicketNuevoIngreso(ticket) && (
@@ -1371,22 +1415,26 @@ ${accText}`;
                       {/* Acciones */}
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => handleNotificarWhatsAppRecepcion(ticket)}
-                            className={`p-1.5 rounded transition-colors flex items-center justify-center cursor-pointer ${
-                              ticket.recibidoEnDeposito
-                                ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
-                                : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
-                            }`}
-                            title={
-                              ticket.recibidoEnDeposito
-                                ? `Notificado y Recibido (${ticket.fechaRecibidoDeposito || ''}). Click para re-notificar al grupo.`
-                                : "Notificar al Grupo por WhatsApp & Recibir en SATI ASU - CDE"
-                            }
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                          </button>
+                          {ticket.recibidoEnDeposito ? (
+                            <button
+                              type="button"
+                              onClick={() => handleAbrirParaNotificar(ticket)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-2xs whitespace-nowrap cursor-pointer"
+                              title={`Recibido · Listo para que retire el cliente (${ticket.fechaRecibidoDeposito || ''}). Click para ver detalle o re-notificar.`}
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                              <span>Listo retiro</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleAbrirParaNotificar(ticket)}
+                              className="p-1.5 text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 rounded transition-colors flex items-center justify-center cursor-pointer"
+                              title="Completar informe técnico para recibir y notificar al grupo"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </button>
+                          )}
 
                           <button
                             onClick={() => setSelectedTicket(ticket)}
@@ -1623,7 +1671,14 @@ ${accText}`;
                   </div>
                   <div>
                     <span className="text-[#888888] block text-[11px]">Fecha de Entrega</span>
-                    <strong className="text-[#121212] font-mono">{selectedTicket.fechaEntregada || "Pendiente de retiro"}</strong>
+                    {selectedTicket.recibidoEnDeposito ? (
+                      <strong className="text-emerald-700 font-bold flex items-center gap-1 font-sans text-xs">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                        <span>Recibido · Listo para que retire el cliente</span>
+                      </strong>
+                    ) : (
+                      <strong className="text-[#121212] font-mono">{selectedTicket.fechaEntregada || "Pendiente de retiro"}</strong>
+                    )}
                   </div>
                   {selectedTicket.fechaVenta && (
                     <div>
@@ -1666,6 +1721,7 @@ ${accText}`;
                     </button>
                   </div>
                   <textarea
+                    ref={modalTextareaRef}
                     value={modalMensaje}
                     onChange={(e) => setModalMensaje(e.target.value)}
                     placeholder="Añada o modifique aquí el informe técnico, observaciones del laboratorio, pruebas ejecutadas..."
@@ -1810,10 +1866,23 @@ ${accText}`;
                 <button
                   type="button"
                   onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors"
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors ${
+                    selectedTicket.recibidoEnDeposito
+                      ? "bg-emerald-700 hover:bg-emerald-800"
+                      : "bg-emerald-600 hover:bg-emerald-700"
+                  }`}
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  Notificar por WhatsApp
+                  {selectedTicket.recibidoEnDeposito ? (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                      <span>Recibido · Listo para retiro (Re-notificar)</span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Notificar por WhatsApp &amp; Marcar Recibido</span>
+                    </>
+                  )}
                 </button>
 
                 <button
