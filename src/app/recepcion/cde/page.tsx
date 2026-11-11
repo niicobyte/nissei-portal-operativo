@@ -3,6 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { AuthBadge } from "@/components/common/AuthBadge";
+import { AuthGuard } from "@/components/common/AuthGuard";
 import {
   Truck,
   Package,
@@ -860,7 +861,8 @@ export default function RecepcionCdeDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#fbf9f9] text-[#121212] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16 font-sans">
+    <AuthGuard requiredModule="deposito.danesa">
+      <main className="min-h-screen bg-[#fbf9f9] text-[#121212] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16 font-sans">
       <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8">
 
         {/* Notificación Toast Flotante */}
@@ -2244,6 +2246,7 @@ export default function RecepcionCdeDashboardPage() {
         </div>
       )}
 
-    </main>
+      </main>
+    </AuthGuard>
   );
 }

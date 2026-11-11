@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   Lock,
   Eye,
@@ -18,19 +18,24 @@ import {
   PackageOpen,
   Cpu,
   Database,
-  Truck
+  Truck,
+  Clock,
+  ShieldAlert,
 } from "lucide-react";
 import {
   USER_PROFILES,
   UserProfile,
   authenticate,
   getActiveUser,
-  verifyAdminPassword
+  verifyAdminPassword,
+  logout,
 } from "@/data/authData";
 import DatabaseViewerModal from "@/components/common/DatabaseViewerModal";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const reason = searchParams.get("reason");
 
   // Sector principal seleccionado: "RECEPCION" | "DEPOSITO" | "MONTAJES"
   const [activeSector, setActiveSector] = useState<"RECEPCION" | "DEPOSITO" | "MONTAJES">("RECEPCION");
@@ -45,32 +50,33 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Estados para el acceso directo al Visor de Base de Datos MySQL debajo de "Sistema de Asistencia Técnica Integrada"
+  // Estados para el acceso directo al Visor de Base de Datos MySQL
   const [showDbAuthBox, setShowDbAuthBox] = useState(false);
   const [dbPassword, setDbPassword] = useState("");
   const [showDbPassword, setShowDbPassword] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
 
-  // Inicialización inteligente según sesión previa
+  // Limpieza rigurosa de sesiones expiradas al ingresar a la pantalla de Login
   useEffect(() => {
-    const active = getActiveUser();
-    if (active) {
-      if (active.role === "DEPOSITO" || active.id === "deposito.danesa") {
-        setActiveSector("DEPOSITO");
-        const prof = USER_PROFILES.find((p) => p.id === "deposito.danesa");
-        if (prof) setSelectedProfile(prof);
-      } else if (active.role === "RECEPCION") {
-        setActiveSector("RECEPCION");
-        const prof = USER_PROFILES.find((p) => p.id === "recepcion");
-        if (prof) setSelectedProfile(prof);
-      } else {
-        setActiveSector("MONTAJES");
-        const prof = USER_PROFILES.find((p) => p.id === "montajes");
-        if (prof) setSelectedProfile(prof);
-      }
-    }
+    logout();
   }, []);
+
+  const reasonBanner = (() => {
+    if (reason === "inactivity") {
+      return {
+        title: "Sesión cerrada por inactividad (15 min)",
+        desc: "Por protocolo de seguridad de la sucursal, la sesión se bloqueó tras 15 minutos sin interacción. Ingrese su clave para continuar.",
+      };
+    }
+    if (reason === "expired" || reason === "unauthenticated") {
+      return {
+        title: "Autenticación requerida",
+        desc: "El acceso directo sin contraseña está bloqueado. Ingrese las credenciales de su sector para acceder.",
+      };
+    }
+    return null;
+  })();
 
   const handleSelectSector = (sector: "MONTAJES" | "RECEPCION" | "DEPOSITO") => {
     setActiveSector(sector);
@@ -111,20 +117,21 @@ export default function LoginPage() {
     setSuccess(`Autenticado como ${authUser.nombre}. Redirigiendo a su panel...`);
     setTimeout(() => {
       router.push(authUser.defaultRoute);
-    }, 700);
+    }, 500);
   };
 
   const handleToggleDbAccess = () => {
     setDbError(null);
-    // Si ya escribió la contraseña de Admin en el campo principal, abre directo la ventana
     if (verifyAdminPassword(password)) {
+      setDbPassword("");
+      setShowDbAuthBox(false);
       setIsDbModalOpen(true);
       return;
     }
-    setShowDbAuthBox((prev) => !prev);
+    setShowDbAuthBox(!showDbAuthBox);
   };
 
-  const handleOpenDatabaseViewer = (e: React.FormEvent) => {
+  const handleDbAuthSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setDbError(null);
     const entered = dbPassword.trim() || password.trim();
@@ -138,9 +145,6 @@ export default function LoginPage() {
     setShowDbAuthBox(false);
     setIsDbModalOpen(true);
   };
-
-  const recepcionProfile = USER_PROFILES.find((p) => p.id === "recepcion")!;
-  const montajesProfile = USER_PROFILES.find((p) => p.id === "montajes")!;
 
   return (
     <main className="min-h-screen bg-[#fbf9f9] py-8 sm:py-12 2xl:py-20 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
@@ -160,6 +164,17 @@ export default function LoginPage() {
           </p>
         </div>
 
+        {/* Banner de Sesión Expirada por Seguridad o Inactividad */}
+        {reasonBanner && (
+          <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex items-start gap-3 text-xs shadow-xs animate-in fade-in duration-300">
+            <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <strong className="block text-xs font-bold text-amber-900">{reasonBanner.title}</strong>
+              <p className="text-[11px] text-amber-800 mt-0.5">{reasonBanner.desc}</p>
+            </div>
+          </div>
+        )}
+
         {/* Tarjeta de Autenticación Principal */}
         <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12">
           
@@ -171,14 +186,14 @@ export default function LoginPage() {
               </h2>
             </div>
 
-            {/* Los 2 Sectores Operativos */}
+            {/* Los 3 Sectores Operativos */}
             <div className="space-y-3">
               
               {/* Opción 1: Recepción Post-Venta */}
               <button
                 type="button"
                 onClick={() => handleSelectSector("RECEPCION")}
-                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
+                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                   activeSector === "RECEPCION"
                     ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
                     : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
@@ -202,7 +217,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleSelectSector("DEPOSITO")}
-                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
+                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                   activeSector === "DEPOSITO"
                     ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
                     : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
@@ -226,7 +241,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => handleSelectSector("MONTAJES")}
-                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between ${
+                className={`w-full p-4 rounded-xl border text-left transition-all flex items-center justify-between cursor-pointer ${
                   activeSector === "MONTAJES"
                     ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
                     : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
@@ -324,14 +339,14 @@ export default function LoginPage() {
               {/* Botón Ingresar */}
               <button
                 type="submit"
-                className="w-full py-2.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
+                className="w-full py-2.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Acceder a {selectedProfile.nombre}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
 
-            {/* Pie de Página + Acceso a Base de Datos MySQL debajo de "Sistema de Asistencia Técnica Integrada" */}
+            {/* Pie de Página + Acceso a Base de Datos MySQL */}
             <div className="pt-6 border-t border-zinc-200 text-center space-y-2.5">
               <span className="text-[11px] text-zinc-400 block font-mono">
                 Sistema de Asistencia Técnica Integrada
@@ -340,7 +355,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={handleToggleDbAccess}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-mono text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/60 border border-transparent hover:border-zinc-200 transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-md text-[11px] font-mono text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/60 border border-transparent hover:border-zinc-200 transition-colors cursor-pointer"
               >
                 <Database className="w-3 h-3" />
                 <span>Base de Datos</span>
@@ -348,69 +363,64 @@ export default function LoginPage() {
               </button>
 
               {showDbAuthBox && (
-                <form
-                  onSubmit={handleOpenDatabaseViewer}
-                  className="p-3 rounded-xl bg-white border border-zinc-200 shadow-xs text-left space-y-2 mt-2"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-bold text-zinc-800 flex items-center gap-1.5">
-                      <Database className="w-3.5 h-3.5 text-zinc-700" />
-                      <span>Acceso a Tablas MySQL</span>
-                    </span>
-                    <span className="text-[10px] font-mono text-zinc-400">Solo Admin</span>
+                <form onSubmit={handleDbAuthSubmit} className="mt-2 p-3 bg-zinc-100 rounded-lg border border-zinc-300 space-y-2 text-left">
+                  <div className="text-[11px] font-bold text-zinc-700 flex items-center gap-1">
+                    <Lock className="w-3 h-3 text-zinc-600" />
+                    <span>Clave de Administrador</span>
                   </div>
-
-                  <div className="flex items-center gap-1.5">
-                    <div className="relative flex-1">
-                      <input
-                        type={showDbPassword ? "text" : "password"}
-                        value={dbPassword}
-                        onChange={(e) => setDbPassword(e.target.value)}
-                        placeholder="Contraseña de Admin..."
-                        autoFocus
-                        className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 pr-7 focus:border-zinc-900 focus:bg-white outline-none"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowDbPassword(!showDbPassword)}
-                        className="absolute right-2 top-2 text-zinc-400 hover:text-zinc-700"
-                      >
-                        {showDbPassword ? (
-                          <EyeOff className="w-3.5 h-3.5" />
-                        ) : (
-                          <Eye className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
+                  <div className="relative">
+                    <input
+                      type={showDbPassword ? "text" : "password"}
+                      value={dbPassword}
+                      onChange={(e) => setDbPassword(e.target.value)}
+                      placeholder="Ingrese clave de Admin..."
+                      className="w-full text-xs bg-white border border-zinc-300 rounded px-2.5 py-1.5 pr-8 outline-none focus:border-zinc-900"
+                    />
                     <button
-                      type="submit"
-                      className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors whitespace-nowrap"
+                      type="button"
+                      onClick={() => setShowDbPassword(!showDbPassword)}
+                      className="absolute right-2 top-2 text-zinc-400 hover:text-zinc-600"
                     >
-                      Ver Datos
+                      {showDbPassword ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
                     </button>
                   </div>
-
                   {dbError && (
-                    <p className="text-[11px] text-rose-600 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3 shrink-0" />
-                      <span>{dbError}</span>
-                    </p>
+                    <div className="text-[11px] text-rose-600 font-medium">
+                      {dbError}
+                    </div>
                   )}
+                  <button
+                    type="submit"
+                    className="w-full py-1.5 bg-zinc-900 hover:bg-black text-white text-[11px] font-bold rounded transition-colors cursor-pointer"
+                  >
+                    Abrir Visor MySQL
+                  </button>
                 </form>
               )}
             </div>
-
           </div>
-
         </div>
 
       </div>
 
-      {/* Ventana Modal de Inspección de Base de Datos MySQL */}
       <DatabaseViewerModal
         isOpen={isDbModalOpen}
         onClose={() => setIsDbModalOpen(false)}
       />
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#fbf9f9] flex items-center justify-center">
+          <div className="text-xs font-mono text-zinc-500">Cargando control de acceso...</div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

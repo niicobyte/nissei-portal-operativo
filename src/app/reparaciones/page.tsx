@@ -38,6 +38,7 @@ import {
 } from "@/data/tallerReparacionesData";
 import { getActiveUser } from "@/data/authData";
 import { AuthBadge } from "@/components/common/AuthBadge";
+import { AuthGuard } from "@/components/common/AuthGuard";
 import { CleanSelect } from "@/components/common/CleanSelect";
 
 export default function TallerReparacionesPage() {
@@ -348,7 +349,8 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
   }, [tecnicoOrdenes, tecnicoPage]);
 
   return (
-    <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16">
+    <AuthGuard requiredModule="reparaciones">
+      <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16">
       <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8">
         
         {/* Notificación Toast */}
@@ -1649,5 +1651,6 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
 
       </div>
     </main>
+    </AuthGuard>
   );
 }

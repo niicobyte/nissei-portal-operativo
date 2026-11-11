@@ -51,6 +51,7 @@ import {
   isTicketEntregadoReciente,
 } from "@/data/recepcionData";
 import { AuthBadge } from "@/components/common/AuthBadge";
+import { AuthGuard } from "@/components/common/AuthGuard";
 import { getActiveUser, verifyDepositoPassword, authenticate } from "@/data/authData";
 import { useRouter } from "next/navigation";
 
@@ -642,7 +643,8 @@ ${accText}`;
   };
 
   return (
-    <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16">
+    <AuthGuard requiredModule="recepcion">
+      <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16">
       <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8">
         
         {/* Notificación Toast Flotante */}
@@ -1766,5 +1768,6 @@ ${accText}`;
 
       </div>
     </main>
+    </AuthGuard>
   );
 }

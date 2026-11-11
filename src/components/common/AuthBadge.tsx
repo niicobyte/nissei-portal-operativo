@@ -55,18 +55,27 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
 
   const handleClearLocalData = () => {
     if (typeof window !== "undefined") {
+      logout();
       const keys = [
         "nissei_recepcion_data_v2",
         "nissei_recepcion_cde_data_v3",
         "nissei_deposito_cde_checkins_v1",
+        "nissei_sati_ticket_overrides_v1",
         "nissei_reparaciones_data",
         "nissei_montajes_data",
         "nissei_usuarios_data",
         "nissei_taller_data",
+        "nissei_active_session_v1",
+        "nissei_active_session_v2",
+        "nissei_active_session_v3",
+        "nissei_active_session_v4",
       ];
-      keys.forEach((k) => localStorage.removeItem(k));
+      keys.forEach((k) => {
+        localStorage.removeItem(k);
+        sessionStorage.removeItem(k);
+      });
       setMenuOpen(false);
-      window.location.reload();
+      window.location.href = "/login";
     }
   };
 

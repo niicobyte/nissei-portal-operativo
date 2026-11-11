@@ -7,16 +7,32 @@ import {
 } from "@/data/authData";
 
 function resolveAuthenticatedUser(req: NextRequest): UserProfile | null {
-  const cookieVal = req.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!cookieVal || !cookieVal.includes(":")) return null;
+  const rawCookie = req.cookies.get(AUTH_COOKIE_NAME)?.value;
+  if (!rawCookie) return null;
 
-  const [id, hash] = cookieVal.split(":");
-  if (!id || !hash) return null;
+  try {
+    const cookieVal = decodeURIComponent(rawCookie);
+    if (!cookieVal.includes(":")) return null;
 
-  const found = USER_PROFILES.find(
-    (p) => p.id === id && p.passwordHash === hash
-  );
-  return found || null;
+    const parts = cookieVal.split(":");
+    const id = parts[0];
+    const hash = parts[1];
+    const expiresAt = parts[2] ? Number(parts[2]) : null;
+
+    if (!id || !hash) return null;
+
+    // Si tiene expiración y el tiempo actual superó el límite de inactividad: EXPIRADO
+    if (expiresAt && Date.now() > expiresAt) {
+      return null;
+    }
+
+    const found = USER_PROFILES.find(
+      (p) => p.id === id && p.passwordHash === hash
+    );
+    return found || null;
+  } catch {
+    return null;
+  }
 }
 
 function hasValidAdminHeader(req: NextRequest): boolean {
@@ -62,12 +78,16 @@ export function middleware(req: NextRequest) {
   ) {
     if (!user) {
       const loginUrl = new URL("/login", req.url);
-      return NextResponse.redirect(loginUrl);
+      loginUrl.searchParams.set("reason", "expired");
+      const response = NextResponse.redirect(loginUrl, 307);
+      // Limpiar cookie vencida o ausente de inmediato
+      response.cookies.delete(AUTH_COOKIE_NAME);
+      return response;
     }
 
     if (!isAuthorizedForPath(user, pathname)) {
       const allowedUrl = new URL(user.defaultRoute, req.url);
-      return NextResponse.redirect(allowedUrl);
+      return NextResponse.redirect(allowedUrl, 307);
     }
   }
 

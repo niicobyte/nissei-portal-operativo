@@ -192,19 +192,23 @@ export const USER_PROFILES: UserProfile[] = [
   },
 ];
 
-const AUTH_STORAGE_KEY = "nissei_active_session_v3";
+export const AUTH_STORAGE_KEY = "nissei_active_session_v4";
 export const AUTH_COOKIE_NAME = "nissei_sati_token";
 export const ADMIN_HEADER_NAME = "x-sati-admin-auth";
+export const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos exactos de inactividad estricta
 
-function syncSessionCookie(profile: UserProfile | null): void {
+export function syncSessionCookie(profile: UserProfile | null): void {
   if (typeof document === "undefined") return;
   try {
     if (!profile) {
-      document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
+      document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict`;
       return;
     }
-    const tokenValue = `${profile.id}:${profile.passwordHash}`;
-    document.cookie = `${AUTH_COOKIE_NAME}=${tokenValue}; path=/; max-age=86400; SameSite=Lax`;
+    const expiresAt = Date.now() + SESSION_TIMEOUT_MS;
+    const tokenValue = `${profile.id}:${profile.passwordHash}:${expiresAt}`;
+    // Cookie de sesión (sin max-age persistente) para que expire al cerrar el navegador,
+    // y con timestamp de 15 minutos para que expire por inactividad.
+    document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(tokenValue)}; path=/; SameSite=Strict`;
   } catch {
     // Ignore cookie errors in restricted contexts
   }
@@ -224,19 +228,72 @@ export function getAdminAuthHeaders(): Record<string, string> {
   return { [ADMIN_HEADER_NAME]: adminProfile.passwordHash };
 }
 
-export function getActiveUser(): UserProfile | null {
-  if (typeof window === "undefined") return null;
+/**
+ * Renueva el timestamp de actividad de la sesión activa
+ */
+export function touchSession(): void {
+  if (typeof window === "undefined") return;
   try {
-    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
-    if (!raw) return null;
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return;
     const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.id) return;
+    const now = Date.now();
+    parsed.lastActive = now;
+    sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+
     const found = USER_PROFILES.find((p) => p.id === parsed.id);
     if (found) {
       syncSessionCookie(found);
+    }
+  } catch {
+    // Ignore error
+  }
+}
+
+export function getActiveUser(): UserProfile | null {
+  if (typeof window === "undefined") return null;
+  try {
+    // Limpieza preventiva de versiones antiguas inseguras
+    localStorage.removeItem("nissei_active_session_v1");
+    localStorage.removeItem("nissei_active_session_v2");
+    localStorage.removeItem("nissei_active_session_v3");
+
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) {
+      syncSessionCookie(null);
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.id || !parsed.ts) {
+      logout();
+      return null;
+    }
+
+    const now = Date.now();
+    const lastActive = Number(parsed.lastActive || parsed.ts);
+    // Verificación estricta: Si pasaron más de 15 minutos sin interacción: EXPIRADA
+    if (now - lastActive > SESSION_TIMEOUT_MS) {
+      console.warn("[AUTH GUARD] Sesión cerrada automáticamente tras 15 minutos de inactividad.");
+      logout();
+      return null;
+    }
+
+    const found = USER_PROFILES.find((p) => p.id === parsed.id);
+    if (found) {
+      // Renovar actividad en memoria
+      parsed.lastActive = now;
+      sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+      syncSessionCookie(found);
       return found;
     }
+
+    logout();
     return null;
   } catch {
+    logout();
     return null;
   }
 }
@@ -244,7 +301,12 @@ export function getActiveUser(): UserProfile | null {
 export function setActiveUser(profile: UserProfile): void {
   if (typeof window === "undefined") return;
   try {
-    // Nunca persistir contraseñas ni hashes en localStorage
+    const now = Date.now();
+    // Limpieza estricta de residuos antiguos
+    localStorage.removeItem("nissei_active_session_v1");
+    localStorage.removeItem("nissei_active_session_v2");
+    localStorage.removeItem("nissei_active_session_v3");
+
     const safeSession = {
       id: profile.id,
       nombre: profile.nombre,
@@ -252,8 +314,10 @@ export function setActiveUser(profile: UserProfile): void {
       defaultRoute: profile.defaultRoute,
       avatar: profile.avatar,
       badge: profile.badge,
-      ts: Date.now(),
+      ts: now,
+      lastActive: now,
     };
+    sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeSession));
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeSession));
     syncSessionCookie(profile);
   } catch (e) {
@@ -264,7 +328,11 @@ export function setActiveUser(profile: UserProfile): void {
 export function logout(): void {
   if (typeof window === "undefined") return;
   try {
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem(AUTH_STORAGE_KEY);
+    localStorage.removeItem("nissei_active_session_v1");
+    localStorage.removeItem("nissei_active_session_v2");
+    localStorage.removeItem("nissei_active_session_v3");
     syncSessionCookie(null);
   } catch (e) {
     console.error("Error al cerrar sesión:", e);
