@@ -70,8 +70,8 @@ type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
 function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: RecibidosDateFilter): boolean {
   if (filter === "TODAS") return true;
 
-  // Filtrar primordialmente con la fecha de entregada (despacho/entrega) para seguimiento de días
-  const dateStr = ticket.fechaEntregada || ticket.fechaRecibidoDeposito || ticket.fechaIngreso;
+  // Filtrar primordialmente con la fecha real de confirmación/notificación a depósito
+  const dateStr = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || ticket.fechaIngreso;
   if (!dateStr) return false;
 
   const d = parseFechaDMY(dateStr);
@@ -245,6 +245,13 @@ export default function RecepcionCdeDashboardPage() {
                   saveSatiCrossMatchLocal(m.idOrdenAsu, m.idOrdenCde);
                 }
               });
+            }
+            if (json.checkins && typeof json.checkins === "object") {
+              const localCheckins = getStoredCdeCheckins();
+              const merged = { ...localCheckins, ...json.checkins };
+              try {
+                localStorage.setItem(CDE_CHECKINS_KEY, JSON.stringify(merged));
+              } catch {}
             }
             return json.data;
           }
@@ -2007,7 +2014,7 @@ export default function RecepcionCdeDashboardPage() {
                         <td className="py-3 px-3 text-center whitespace-nowrap">
                           {(() => {
                             const isRecibido = isTicketRecibido(ticket);
-                            const fechaMostrar = ticket.fechaEntregada || ticket.fechaRecibidoDeposito || "";
+                            const fechaMostrar = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || "";
                             return (
                               <div className="flex flex-col items-center gap-0.5">
                                 <button

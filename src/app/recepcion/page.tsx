@@ -51,6 +51,11 @@ import {
   isTicketEstadoCambiadoReciente,
   isTicketEntregadoReciente,
 } from "@/data/recepcionData";
+import {
+  toggleCheckinDeposito,
+  saveSatiTicketOverride,
+  saveSatiCrossMatchLocal,
+} from "@/data/recepcionCdeData";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 import { getActiveUser, verifyDepositoPassword, authenticate } from "@/data/authData";
@@ -379,21 +384,38 @@ ${accText}`;
 
     // Si el mensaje o accesorios en el modal fueron modificados, guardarlos antes de notificar
     let currentTicket = ticket;
-    if (
-      modalMensaje !== ticket.mensaje ||
-      accFinal !== (ticket.accesorios || "")
-    ) {
-      const updated = updateTicketDetails(ticket.idOrden, {
-        mensaje: modalMensaje,
-        accesorios: accFinal,
-      });
-      setTickets(updated);
-      currentTicket = { ...ticket, mensaje: modalMensaje, accesorios: accFinal };
-      setSelectedTicket(currentTicket);
+    if (selectedTicket && selectedTicket.idOrden === ticket.idOrden) {
+      if (
+        modalMensaje !== ticket.mensaje ||
+        accFinal !== (ticket.accesorios || "")
+      ) {
+        const updated = updateTicketDetails(ticket.idOrden, {
+          mensaje: modalMensaje,
+          accesorios: accFinal,
+        });
+        setTickets(updated);
+        currentTicket = { ...ticket, mensaje: modalMensaje, accesorios: accFinal };
+        setSelectedTicket(currentTicket);
+      }
     }
     const msg = generarMensajeWhatsAppRecepcion(currentTicket);
 
+    // Capturar fecha y hora exacta del momento en que se toca el botón para el cruce
+    const now = new Date();
+    const fechaHoyCorta = now.toLocaleDateString("es-PY", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+    const horaCorta = now.toLocaleTimeString("es-PY", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+    const fechaNotificacion = `${fechaHoyCorta} ${horaCorta}`;
+
     try {
+      // 1. Enviar mensaje por WhatsApp
       const res = await fetch("/api/whatsapp/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -404,14 +426,100 @@ ${accText}`;
       });
 
       const data = await res.json();
+
+      // 2. Sincronizar y cruzar de inmediato con SATI ASU - CDE en MySQL
+      let matchedCdeId: string | undefined = undefined;
+      try {
+        const dbRes = await fetch("/api/db", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "NOTIFICAR_Y_RECIBIR_SATI",
+            idOrden: ticket.idOrden,
+            serial: ticket.serial,
+            codigoProducto: ticket.codigoProducto,
+            cliente: ticket.cliente,
+            fechaNotificacion,
+          }),
+        });
+        const dbJson = await dbRes.json();
+        if (dbJson.ok && dbJson.matchedCdeId) {
+          matchedCdeId = dbJson.matchedCdeId;
+        }
+      } catch (dbErr) {
+        console.warn("[MySQL Error Notificar y Recibir]", dbErr);
+      }
+
+      // 3. Persistir en almacenamiento local para reflejo inmediato en el navegador
+      toggleCheckinDeposito(
+        ticket.idOrden,
+        {
+          idOrden: ticket.idOrden,
+          idOrdenAsu: ticket.idOrden,
+          idOrdenCde: matchedCdeId,
+        },
+        true,
+        fechaNotificacion
+      );
+      saveSatiTicketOverride(ticket.idOrden, {
+        fechaRecibidoAsu: fechaNotificacion,
+        idOrdenAsu: ticket.idOrden,
+        idOrdenCde: matchedCdeId,
+      });
+      if (matchedCdeId) {
+        saveSatiCrossMatchLocal(ticket.idOrden, matchedCdeId);
+        toggleCheckinDeposito(
+          matchedCdeId,
+          {
+            idOrden: matchedCdeId,
+            idOrdenAsu: ticket.idOrden,
+            idOrdenCde: matchedCdeId,
+          },
+          true,
+          fechaNotificacion
+        );
+      }
+
+      // 4. Actualizar estado reactivo en pantalla
+      setTickets((prev) =>
+        prev.map((t) =>
+          t.idOrden === ticket.idOrden
+            ? {
+                ...t,
+                recibidoEnDeposito: true,
+                fechaRecibidoDeposito: fechaNotificacion,
+                idOrdenCde: matchedCdeId || t.idOrdenCde,
+              }
+            : t
+        )
+      );
+      if (selectedTicket && selectedTicket.idOrden === ticket.idOrden) {
+        setSelectedTicket((prev) =>
+          prev
+            ? {
+                ...prev,
+                recibidoEnDeposito: true,
+                fechaRecibidoDeposito: fechaNotificacion,
+                idOrdenCde: matchedCdeId || (prev as any).idOrdenCde,
+              }
+            : null
+        );
+      }
+
       if (res.ok && data?.success) {
         showToast(
-          `Notificación enviada al grupo de Recepción por WhatsApp (Orden #${ticket.idOrden}).`
+          matchedCdeId
+            ? `✅ Notificación enviada al grupo. Orden #${ticket.idOrden} cruzada con CDE #${matchedCdeId} y marcada como Recibido (${fechaNotificacion}).`
+            : `✅ Notificación enviada al grupo. Orden #${ticket.idOrden} registrada en Recibidos SATI ASU - CDE (${fechaNotificacion}).`
         );
       } else {
         const errorMsg = data?.error || "Error al entregar mensaje";
         console.error("[WHATSAPP ERROR]", errorMsg);
-        showToast(`Error al enviar a WhatsApp: ${errorMsg}`);
+        showToast(
+          matchedCdeId
+            ? `⚠️ WhatsApp: ${errorMsg} (Cruzado con CDE #${matchedCdeId} y marcado Recibido).`
+            : `⚠️ WhatsApp: ${errorMsg} (Marcado Recibido en SATI ASU - CDE).`
+        );
       }
     } catch (err: unknown) {
       console.error("[WHATSAPP FETCH ERROR]", err);
@@ -1194,6 +1302,14 @@ ${accText}`;
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-zinc-900 font-mono tabular-nums">#{ticket.idOrden}</span>
+                          {ticket.recibidoEnDeposito && (
+                            <span
+                              className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              title={`Confirmado en Recibidos SATI ASU - CDE${ticket.fechaRecibidoDeposito ? ` (${ticket.fechaRecibidoDeposito})` : ''}`}
+                            >
+                              ✓ RECIBIDO
+                            </span>
+                          )}
                           {isTicketNuevoIngreso(ticket) && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
                               NUEVO INGRESO
@@ -1255,6 +1371,23 @@ ${accText}`;
                       {/* Acciones */}
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleNotificarWhatsAppRecepcion(ticket)}
+                            className={`p-1.5 rounded transition-colors flex items-center justify-center cursor-pointer ${
+                              ticket.recibidoEnDeposito
+                                ? "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+                                : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+                            }`}
+                            title={
+                              ticket.recibidoEnDeposito
+                                ? `Notificado y Recibido (${ticket.fechaRecibidoDeposito || ''}). Click para re-notificar al grupo.`
+                                : "Notificar al Grupo por WhatsApp & Recibir en SATI ASU - CDE"
+                            }
+                          >
+                            <MessageSquare className="w-4 h-4" />
+                          </button>
+
                           <button
                             onClick={() => setSelectedTicket(ticket)}
                             className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors flex items-center justify-center"

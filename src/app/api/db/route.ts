@@ -717,6 +717,125 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, message: "Cruce desvinculado correctamente." });
     }
 
+    // 11e. Notificar por WhatsApp y marcar como Recibido en SATI ASU - CDE con cruce automático
+    if (action === "NOTIFICAR_Y_RECIBIR_SATI") {
+      const { idOrden, serial, codigoProducto, cliente, fechaNotificacion } = body;
+      if (!idOrden) {
+        return NextResponse.json({ ok: false, error: "Nº de orden requerido." }, { status: 400 });
+      }
+
+      const idOrdenStr = String(idOrden).trim();
+      const serialStr = serial ? String(serial).trim() : "";
+      const prodCode = codigoProducto ? String(codigoProducto).trim() : "";
+
+      const now = new Date();
+      const fechaHoyCorta = now.toLocaleDateString("es-PY", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const horaCorta = now.toLocaleTimeString("es-PY", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      });
+      const fecha = fechaNotificacion || `${fechaHoyCorta} ${horaCorta}`;
+
+      // 1. Marcar la orden de ASU como recibida en depósito
+      await pool.query(
+        `UPDATE recepcion_tickets
+         SET recibido_en_deposito = 1,
+             fecha_recibido_deposito = ?
+         WHERE id_orden = ?`,
+        [fecha, idOrdenStr]
+      ).catch((err) => console.warn("[DB Warning Recepcion Ticket Update]", err));
+
+      // 2. Buscar cruce automático con orden CDE
+      let matchedCdeId: string | null = null;
+
+      // 2a. Verificar si ya existe un cruce previo registrado en sati_cross_matches
+      const [existingMatches]: any = await pool.query(
+        "SELECT id_orden_cde FROM sati_cross_matches WHERE id_orden_asu = ? LIMIT 1",
+        [idOrdenStr]
+      );
+      if (existingMatches && existingMatches.length > 0 && existingMatches[0]?.id_orden_cde) {
+        matchedCdeId = String(existingMatches[0].id_orden_cde).trim();
+      }
+
+      // 2b. Si no hay cruce previo, buscar en recepcion_cde_tickets por número de serie físico válido
+      const isSerialValido =
+        serialStr &&
+        serialStr.toUpperCase() !== "SIN SERIAL" &&
+        serialStr.toUpperCase() !== "S/N" &&
+        serialStr.length >= 4;
+
+      if (!matchedCdeId && isSerialValido) {
+        const [cdeBySerial]: any = await pool.query(
+          `SELECT id_orden FROM recepcion_cde_tickets 
+           WHERE CAST(id_orden AS UNSIGNED) >= 100000 
+             AND (serial = ? OR serial LIKE ?)
+           LIMIT 1`,
+          [serialStr, `%${serialStr}%`]
+        );
+        if (cdeBySerial && cdeBySerial.length > 0 && cdeBySerial[0]?.id_orden) {
+          matchedCdeId = String(cdeBySerial[0].id_orden).trim();
+        }
+      }
+
+      // 2c. Si aún no cruza, buscar si en el mensaje/dictamen de CDE mencionan la orden ASU
+      if (!matchedCdeId) {
+        const [cdeByMention]: any = await pool.query(
+          `SELECT id_orden FROM recepcion_cde_tickets 
+           WHERE CAST(id_orden AS UNSIGNED) >= 100000 
+             AND (mensaje LIKE ? OR mensaje LIKE ?)
+           LIMIT 1`,
+          [`%#${idOrdenStr}%`, `%${idOrdenStr}%`]
+        );
+        if (cdeByMention && cdeByMention.length > 0 && cdeByMention[0]?.id_orden) {
+          matchedCdeId = String(cdeByMention[0].id_orden).trim();
+        }
+      }
+
+      // 2d. Si aún no cruza y coincide código de producto + cliente directo
+      if (!matchedCdeId && prodCode && cliente && String(cliente).trim().toLowerCase() !== "danesa sa") {
+        const [cdeByProdClient]: any = await pool.query(
+          `SELECT id_orden FROM recepcion_cde_tickets
+           WHERE CAST(id_orden AS UNSIGNED) >= 100000
+             AND codigo_producto = ? AND cliente = ?
+           LIMIT 1`,
+          [prodCode, cliente]
+        );
+        if (cdeByProdClient && cdeByProdClient.length > 0 && cdeByProdClient[0]?.id_orden) {
+          matchedCdeId = String(cdeByProdClient[0].id_orden).trim();
+        }
+      }
+
+      // 3. Si se encontró orden CDE emparejada, actualizarla y persistir el cruce
+      if (matchedCdeId) {
+        await dbSaveSatiCrossMatch(idOrdenStr, matchedCdeId).catch(() => {});
+        await pool.query(
+          `UPDATE recepcion_cde_tickets
+           SET recibido_en_deposito = 1,
+               fecha_recibido_deposito = ?
+           WHERE id_orden = ?`,
+          [fecha, matchedCdeId]
+        ).catch(() => {});
+        await dbSaveSatiCheckin(matchedCdeId, true, fecha, idOrdenStr, matchedCdeId).catch(() => {});
+      }
+
+      // 4. Registrar checkin oficial de ASU en sati_checkins
+      await dbSaveSatiCheckin(idOrdenStr, true, fecha, idOrdenStr, matchedCdeId || undefined).catch(() => {});
+
+      return NextResponse.json({
+        ok: true,
+        fecha,
+        matchedCdeId,
+        message: matchedCdeId
+          ? `Orden #${idOrdenStr} cruzada con CDE #${matchedCdeId} y confirmada como Recibido (${fecha}).`
+          : `Orden #${idOrdenStr} confirmada como Recibido en SATI ASU - CDE (${fecha}).`,
+      });
+    }
+
     // 12. Actualización masiva desde CSV en SATI CDE / Depósito Danesa (Full MySQL)
     if (action === "BULK_UPDATE_CDE_CSV") {
       const { tickets = [] } = body;

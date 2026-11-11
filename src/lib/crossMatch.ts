@@ -356,9 +356,15 @@ export function buildUnifiedSatiList(
     fallbackFecha?: string,
     stAsu?: string,
     stCde?: string,
-    idOrden?: string
+    idOrden?: string,
+    idOrdenAsu?: string,
+    idOrdenCde?: string
   ) => {
-    const val = checkins[rowKey] ?? (idOrden ? checkins[idOrden] : undefined);
+    const val =
+      checkins[rowKey] ??
+      (idOrden ? checkins[idOrden] : undefined) ??
+      (idOrdenAsu ? checkins[idOrdenAsu] : undefined) ??
+      (idOrdenCde ? checkins[idOrdenCde] : undefined);
     if (typeof val === 'boolean') {
       return { recibido: val, fecha: fallbackFecha || '' };
     }
@@ -433,10 +439,12 @@ export function buildUnifiedSatiList(
     const checkin = getCheckinInfo(
       rowKey,
       asu.recibidoEnDeposito,
-      fechaDespachoCde || asu.fechaEntregada || (asu as any).fechaRecibidoDeposito,
+      (asu as any).fechaRecibidoDeposito || fechaDespachoCde || asu.fechaEntregada,
       asu.estado,
       matchedCde?.estado,
-      asu.idOrden
+      asu.idOrden,
+      asu.idOrden,
+      matchedCde?.idOrden
     );
 
     // Días de taller (solo si hay fecha de despacho legítima)
@@ -484,9 +492,11 @@ export function buildUnifiedSatiList(
     const checkin = getCheckinInfo(
       rowKey,
       cde.recibidoEnDeposito,
-      cde.fechaEntregada || cde.fechaRecibidoDeposito,
+      cde.fechaRecibidoDeposito || cde.fechaEntregada,
       undefined,
       cde.estado,
+      cde.idOrden,
+      cde.idOrdenAsu,
       cde.idOrden
     );
 
