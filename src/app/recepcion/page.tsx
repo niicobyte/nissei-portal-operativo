@@ -39,6 +39,8 @@ import {
   UserCheck,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
+import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
+import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import {
   RecepcionTicket,
@@ -189,7 +191,8 @@ export default function RecepcionDashboardPage() {
   const [transitFilter, setTransitFilter] = useState<TransitFilter>("TODOS");
   const [recibidosDateFilter, setRecibidosDateFilter] = useState<RecibidosDateFilter>("TODAS");
   const [statusFilter, setStatusFilter] = useState("TODOS");
-  const [componentFilter, setComponentFilter] = useState("TODOS");
+  const [categoryFamily, setCategoryFamily] = useState("TODOS");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"ID_DESC" | "ID_ASC" | "CLIENTE_ASC" | "MARCA_ASC">("ID_DESC");
   const [currentPage, setCurrentPage] = useState(1);
@@ -898,22 +901,16 @@ ${accText}`;
     ];
   }, [scopeTickets]);
 
-  // Opciones dinámicas para CleanSelect de Categorías
-  const componentOptions = useMemo<CleanSelectOption[]>(() => {
+  // Conteo de categorías normalizadas para filtro jerárquico con buscador
+  const categoryCounts = useMemo<CategoryCountItem[]>(() => {
     const counts: Record<string, number> = {};
     scopeTickets.forEach((t) => {
-      const c = (t.tipoComponente || "OTRO").trim().toUpperCase();
-      counts[c] = (counts[c] || 0) + 1;
+      const c = normalizeComponentName(t.tipoComponente || "OTRO");
+      if (c) counts[c] = (counts[c] || 0) + 1;
     });
-    const sorted = Object.keys(counts).sort((a, b) => a.localeCompare(b));
-    return [
-      { value: "TODOS", label: "Todas las categorías", count: scopeTickets.length },
-      ...sorted.map((c) => ({
-        value: c,
-        label: c,
-        count: counts[c],
-      })),
-    ];
+    return Object.entries(counts)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => a.category.localeCompare(b.category, "es"));
   }, [scopeTickets]);
 
   // Opciones de ordenamiento
@@ -952,10 +949,10 @@ ${accText}`;
       );
     }
 
-    // 3. Filtro de Categoría / Componente
-    if (componentFilter !== "TODOS") {
-      result = result.filter(
-        (t) => (t.tipoComponente || "").trim().toUpperCase() === componentFilter.trim().toUpperCase()
+    // 3. Filtro Jerárquico de Categoría / Rubro
+    if (categoryFamily !== "TODOS" || selectedCategories.length > 0) {
+      result = result.filter((t) =>
+        matchesCategoryFilter(t.tipoComponente, categoryFamily, selectedCategories)
       );
     }
 
@@ -998,7 +995,8 @@ ${accText}`;
     transitFilter,
     recibidosDateFilter,
     statusFilter,
-    componentFilter,
+    categoryFamily,
+    selectedCategories,
     searchTerm,
     sortBy,
   ]);
@@ -1011,7 +1009,8 @@ ${accText}`;
     transitFilter,
     recibidosDateFilter,
     statusFilter,
-    componentFilter,
+    categoryFamily,
+    selectedCategories,
     searchTerm,
     sortBy,
   ]);
@@ -1476,7 +1475,8 @@ ${accText}`;
                     setTransitFilter("TODOS");
                     setRecibidosDateFilter("TODAS");
                     setStatusFilter("TODOS");
-                    setComponentFilter("TODOS");
+                    setCategoryFamily("TODOS");
+                    setSelectedCategories([]);
                     setCurrentPage(1);
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -1701,15 +1701,17 @@ ${accText}`;
               className="w-56"
             />
 
-            {/* Filtro de Componente / Categoría con CleanSelect */}
-            <CleanSelect
-              options={componentOptions}
-              value={componentFilter}
-              onChange={(val) => {
-                setComponentFilter(val);
+            {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
+            <CategoryFilterSelect
+              categories={categoryCounts}
+              totalCount={scopeTickets.length}
+              selectedFamily={categoryFamily}
+              selectedCategories={selectedCategories}
+              onChange={(famId, cats) => {
+                setCategoryFamily(famId);
+                setSelectedCategories(cats);
                 setCurrentPage(1);
               }}
-              className="w-56"
             />
 
             {/* Ordenamiento */}
@@ -1725,12 +1727,13 @@ ${accText}`;
             />
 
             {/* Resetear Filtros */}
-            {(statusFilter !== "TODOS" || componentFilter !== "TODOS" || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
+            {(statusFilter !== "TODOS" || categoryFamily !== "TODOS" || selectedCategories.length > 0 || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
               <button
                 type="button"
                 onClick={() => {
                   setStatusFilter("TODOS");
-                  setComponentFilter("TODOS");
+                  setCategoryFamily("TODOS");
+                  setSelectedCategories([]);
                   setTransitFilter("TODOS");
                   setRecibidosDateFilter("TODAS");
                   setSearchTerm("");

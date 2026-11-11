@@ -20,55 +20,13 @@ import { addTicketAsync, fetchTicketsFromMySQL, getStoredTickets, RecepcionTicke
 import { fetchReparacionesFromMySQL, getStoredReparaciones, OrdenReparacion } from "@/data/tallerReparacionesData";
 import {
   CATEGORY_FAMILIES,
+  CategoryFamily,
   TOP_SATI_BRANDS,
-  CategoryFamily
+  findCategoryFamily,
 } from "@/data/recepcionCategories";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 import { CleanDatePicker } from "@/components/common/CleanDatePicker";
-
-function findFamilyForComponent(tipo: string): CategoryFamily | undefined {
-  if (!tipo) return undefined;
-  const upper = tipo.toUpperCase().trim();
-  const exact = CATEGORY_FAMILIES.find((f) =>
-    f.components.some((c) => c === upper)
-  );
-  if (exact) return exact;
-  const partial = CATEGORY_FAMILIES.find((f) =>
-    f.components.some((c) => upper.includes(c) || c.includes(upper))
-  );
-  if (partial) return partial;
-  if (
-    upper.includes("NOTEBOOK") ||
-    upper.includes("PC") ||
-    upper.includes("GPU") ||
-    upper.includes("MACBOOK")
-  ) {
-    return CATEGORY_FAMILIES.find((f) => f.id === "COMPUTACION");
-  }
-  if (upper.includes("ASPIRAD") || upper.includes("ROBOT")) {
-    return CATEGORY_FAMILIES.find((f) => f.id === "LIMPIEZA");
-  }
-  if (
-    upper.includes("CELULAR") ||
-    upper.includes("IPHONE") ||
-    upper.includes("TABLET") ||
-    upper.includes("IPAD")
-  ) {
-    return CATEGORY_FAMILIES.find((f) => f.id === "TELEFONIA");
-  }
-  if (upper.includes("RELOJ") || upper.includes("WATCH")) {
-    return CATEGORY_FAMILIES.find((f) => f.id === "WEARABLES");
-  }
-  if (
-    upper.includes("AUDIO") ||
-    upper.includes("PARLANTE") ||
-    upper.includes("AURICULAR")
-  ) {
-    return CATEGORY_FAMILIES.find((f) => f.id === "AUDIO");
-  }
-  return undefined;
-}
 
 export default function NuevoIngresoRetornoPage() {
   const router = useRouter();
@@ -157,8 +115,8 @@ export default function NuevoIngresoRetornoPage() {
       const comp = (match.tipoComponente || "").trim().toUpperCase();
       if (comp) {
         setTipoComponente(comp);
-        const fam = findFamilyForComponent(comp);
-        if (fam) {
+        const fam = findCategoryFamily(comp);
+        if (fam && fam.id !== "OTROS") {
           setSelectedFamilyId(fam.id);
         }
       }

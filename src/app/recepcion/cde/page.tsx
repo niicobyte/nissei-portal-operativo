@@ -34,6 +34,8 @@ import {
   Unlink,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
+import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
+import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
 import {
   RecepcionCdeTicket,
   INITIAL_RECEPCION_CDE_DATA,
@@ -201,7 +203,8 @@ export default function RecepcionCdeDashboardPage() {
   const [viewScope, setViewScope] = useState<ViewScope>("DANESA");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("TODOS");
-  const [componentFilter, setComponentFilter] = useState("TODOS");
+  const [categoryFamily, setCategoryFamily] = useState("TODOS");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [transitFilter, setTransitFilter] = useState<"TODOS" | "EN_TRANSITO" | "RECIBIDOS" | "SIN_CRUCE">("TODOS");
   const [recibidosDateFilter, setRecibidosDateFilter] = useState<RecibidosDateFilter>("TODAS");
   const [currentPage, setCurrentPage] = useState(1);
@@ -611,21 +614,16 @@ export default function RecepcionCdeDashboardPage() {
     });
   }, [tickets, viewScope]);
 
-  // Lista única de componentes para filtro según el ámbito
-  const componentOptions = useMemo<CleanSelectOption[]>(() => {
-    const setComp = new Set<string>();
+  // Conteo de categorías normalizadas para filtro jerárquico con buscador
+  const categoryCounts = useMemo<CategoryCountItem[]>(() => {
+    const counts: Record<string, number> = {};
     scopeTickets.forEach((t) => {
-      if (t.tipoComponente) setComp.add(t.tipoComponente);
+      const c = normalizeComponentName(t.tipoComponente || "OTRO");
+      if (c) counts[c] = (counts[c] || 0) + 1;
     });
-    const sorted = Array.from(setComp).sort();
-    return [
-      { value: "TODOS", label: "Todas las categorías", count: scopeTickets.length },
-      ...sorted.map((c) => ({
-        value: c,
-        label: c,
-        count: scopeTickets.filter((t) => t.tipoComponente === c).length,
-      })),
-    ];
+    return Object.entries(counts)
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => a.category.localeCompare(b.category, "es"));
   }, [scopeTickets]);
 
   // Lista única de estados según el ámbito activo
@@ -672,9 +670,11 @@ export default function RecepcionCdeDashboardPage() {
       result = result.filter((t) => getTicketDisplayStatus(t) === statusFilter);
     }
 
-    // 3. Filtro de Categoría de Componente
-    if (componentFilter !== "TODOS") {
-      result = result.filter((t) => t.tipoComponente === componentFilter);
+    // 3. Filtro Jerárquico de Categoría / Rubro
+    if (categoryFamily !== "TODOS" || selectedCategories.length > 0) {
+      result = result.filter((t) =>
+        matchesCategoryFilter(t.tipoComponente, categoryFamily, selectedCategories)
+      );
     }
 
     // 4. Filtro de Tránsito / Recibidos en Depósito / Sin Cruce
@@ -708,7 +708,7 @@ export default function RecepcionCdeDashboardPage() {
     }
 
     return result;
-  }, [scopeTickets, statusFilter, componentFilter, transitFilter, recibidosDateFilter, searchTerm]);
+  }, [scopeTickets, statusFilter, categoryFamily, selectedCategories, transitFilter, recibidosDateFilter, searchTerm]);
 
   // Conteo dinámico según el ámbito para las pestañas de tránsito y recepción
   const scopeEnTransito = useMemo(() => {
@@ -1575,7 +1575,8 @@ export default function RecepcionCdeDashboardPage() {
                     setTransitFilter("TODOS");
                     setRecibidosDateFilter("TODAS");
                     setStatusFilter("TODOS");
-                    setComponentFilter("TODOS");
+                    setCategoryFamily("TODOS");
+                    setSelectedCategories([]);
                     setCurrentPage(1);
                   }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -1778,24 +1779,27 @@ export default function RecepcionCdeDashboardPage() {
               className="w-56"
             />
 
-            {/* Filtro de Componente con CleanSelect */}
-            <CleanSelect
-              options={componentOptions}
-              value={componentFilter}
-              onChange={(val) => {
-                setComponentFilter(val);
+            {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
+            <CategoryFilterSelect
+              categories={categoryCounts}
+              totalCount={scopeTickets.length}
+              selectedFamily={categoryFamily}
+              selectedCategories={selectedCategories}
+              onChange={(famId, cats) => {
+                setCategoryFamily(famId);
+                setSelectedCategories(cats);
                 setCurrentPage(1);
               }}
-              className="w-56"
             />
 
             {/* Resetear Filtros */}
-            {(statusFilter !== "TODOS" || componentFilter !== "TODOS" || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
+            {(statusFilter !== "TODOS" || categoryFamily !== "TODOS" || selectedCategories.length > 0 || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
               <button
                 type="button"
                 onClick={() => {
                   setStatusFilter("TODOS");
-                  setComponentFilter("TODOS");
+                  setCategoryFamily("TODOS");
+                  setSelectedCategories([]);
                   setTransitFilter("TODOS");
                   setRecibidosDateFilter("TODAS");
                   setSearchTerm("");
