@@ -1,4 +1,14 @@
 // Datos reales de Recepción Post-Venta & Retornos SATI - NISSEI Sucursal Ciudad del Este
+import {
+  collapseSpacesTrim,
+  createEmptyDepurationStats,
+  evaluateRawSatiRow,
+  isSameNormalizedText,
+  mergeSatiDuplicateFields,
+  normalizeSatiRowFields,
+  type SatiDepurationStats,
+} from '../lib/satiRawDepurator';
+
 export interface RecepcionTicket {
   idOrden: string;
   codigoProducto: string;
@@ -27625,6 +27635,7 @@ export interface ResultadoCargaCSV {
   cambios: CambioEstadoCSV[];
   nuevasOrdenesTickets?: RecepcionTicket[];
   changedOrNewTickets?: RecepcionTicket[];
+  depurationStats?: SatiDepurationStats;
 }
 
 /**
@@ -27758,6 +27769,7 @@ export function procesarActualizacionCSV(
       cambios: [],
       nuevasOrdenesTickets: [],
       changedOrNewTickets: [],
+      depurationStats: createEmptyDepurationStats(),
     };
   }
 
@@ -27850,6 +27862,8 @@ export function procesarActualizacionCSV(
   const hasExplicitHeader = headerRowIdx !== -1;
   const startRowIndex = hasExplicitHeader ? headerRowIdx + 1 : 0;
 
+  const depurationStats = createEmptyDepurationStats();
+
   if (rows.length <= startRowIndex) {
     return {
       updatedTickets: baseTickets,
@@ -27860,6 +27874,7 @@ export function procesarActualizacionCSV(
       cambios: [],
       nuevasOrdenesTickets: [],
       changedOrNewTickets: [],
+      depurationStats,
     };
   }
 
@@ -27876,6 +27891,153 @@ export function procesarActualizacionCSV(
           ? 5
           : 1;
 
+  // Fase 1: Depuración, filtrado histórico (>= 29403), exclusión de palabras/paréntesis, normalización y deduplicación
+  type RawCleanAsuEntry = {
+    idOrden: string;
+    estado: string;
+    codigoProducto: string;
+    cliente: string;
+    mensaje: string;
+    fechaIngreso: string;
+    fechaEntregada?: string;
+    fechaVenta?: string;
+    tipoComponente: string;
+    marca: string;
+    modelo: string;
+    serial: string;
+  };
+  const cleanIncomingMap = new Map<string, RawCleanAsuEntry>();
+
+  for (let r = startRowIndex; r < rows.length; r++) {
+    const row = rows[r];
+    const rawId = (row[effectiveIdxId] || '').replace(/^#/, '').trim();
+    const rawNuevoEstado =
+      collapseSpacesTrim(row[effectiveIdxEstado]) || (isSati12Cols ? 'En Asignacion' : '');
+    const effClienteRaw =
+      idxCliente !== -1
+        ? row[idxCliente] || ''
+        : isSati12Cols
+          ? row[2] || ''
+          : !hasExplicitHeader && row.length >= 2
+            ? row[1] || ''
+            : '';
+
+    const evaluation = evaluateRawSatiRow(rawId, effClienteRaw);
+    if (evaluation.reason === 'SIN_ID') continue;
+
+    // Órdenes >= 100000 pertenecen a Casa Matriz CDE, no a Sucursal ASU
+    if (evaluation.origen === 'CDE') {
+      if (evaluation.reason === 'ID_HISTORICO_CDE') {
+        depurationStats.descartadasHistoricasCde++;
+      }
+      continue;
+    }
+
+    depurationStats.totalRawFilas++;
+
+    if (!evaluation.keep) {
+      if (evaluation.reason === 'ID_HISTORICO_ASU') {
+        depurationStats.descartadasHistoricasAsu++;
+      } else if (evaluation.reason === 'PALABRA_EXCLUIDA') {
+        depurationStats.descartadasFiltroCliente++;
+      } else if (evaluation.reason === 'PARENTESIS_EXCLUIDO') {
+        depurationStats.descartadasParentesis++;
+      }
+      continue;
+    }
+
+    if (!rawNuevoEstado) continue;
+
+    const effCodigo =
+      idxCodigo !== -1 ? row[idxCodigo] || '' : isSati12Cols ? row[1] || '' : '';
+    const effMensajeRaw =
+      idxMensaje !== -1 ? row[idxMensaje] || '' : isSati12Cols ? row[3] || '' : '';
+    const effFechaIngreso =
+      idxFechaIngreso !== -1
+        ? row[idxFechaIngreso] || ''
+        : isSati12Cols
+          ? row[4] || ''
+          : !hasExplicitHeader && row.length >= 3
+            ? row[2] || ''
+            : '';
+    const effFechaEntregada = pickBestDateCell(
+      row,
+      idxFechaEntregada,
+      idxFechaTransportadora,
+      isSati12Cols || (!hasExplicitHeader && row.length >= 4),
+      isSati12Cols ? 5 : 3
+    );
+    const effFechaVenta =
+      idxFechaVenta !== -1
+        ? row[idxFechaVenta] || ''
+        : isSati12Cols
+          ? row[6] || ''
+          : !hasExplicitHeader && row.length >= 5
+            ? row[4] || ''
+            : '';
+    const effTipoCompRaw =
+      idxTipoComponente !== -1
+        ? row[idxTipoComponente] || ''
+        : isSati12Cols
+          ? row[8] || ''
+          : !hasExplicitHeader && row.length >= 7
+            ? row[6] || ''
+            : 'GENERAL';
+    const effMarcaRaw =
+      idxMarca !== -1
+        ? row[idxMarca] || ''
+        : isSati12Cols
+          ? row[9] || ''
+          : !hasExplicitHeader && row.length >= 8
+            ? row[7] || ''
+            : '';
+    const effModeloRaw =
+      idxModelo !== -1
+        ? row[idxModelo] || ''
+        : isSati12Cols
+          ? row[10] || ''
+          : !hasExplicitHeader && row.length >= 9
+            ? row[8] || ''
+            : '';
+    const effSerialRaw =
+      idxSerial !== -1 ? row[idxSerial] || '' : isSati12Cols ? row[11] || '' : '';
+
+    const { normalized, camposModificados } = normalizeSatiRowFields({
+      cliente: effClienteRaw,
+      marca: effMarcaRaw,
+      modelo: effModeloRaw,
+      serial: effSerialRaw,
+      tipoComponente: effTipoCompRaw || 'GENERAL',
+      mensaje: effMensajeRaw,
+    });
+    depurationStats.camposNormalizados += camposModificados;
+
+    const entry: RawCleanAsuEntry = {
+      idOrden: evaluation.cleanId,
+      estado: rawNuevoEstado,
+      codigoProducto: collapseSpacesTrim(effCodigo),
+      cliente: normalized.cliente,
+      mensaje: normalized.mensaje,
+      fechaIngreso: collapseSpacesTrim(effFechaIngreso),
+      fechaEntregada: effFechaEntregada ? collapseSpacesTrim(effFechaEntregada) : undefined,
+      fechaVenta: effFechaVenta ? collapseSpacesTrim(effFechaVenta) : undefined,
+      tipoComponente: normalized.tipoComponente || 'General',
+      marca: normalized.marca,
+      modelo: normalized.modelo,
+      serial: normalized.serial,
+    };
+
+    const existingDup = cleanIncomingMap.get(entry.idOrden);
+    if (existingDup) {
+      cleanIncomingMap.set(entry.idOrden, mergeSatiDuplicateFields(existingDup, entry));
+      depurationStats.duplicadosFusionados++;
+    } else {
+      cleanIncomingMap.set(entry.idOrden, entry);
+    }
+  }
+
+  depurationStats.totalValidas = cleanIncomingMap.size;
+
   // Mapa rápido por idOrden
   const ticketMap = new Map<string, number>();
   baseTickets.forEach((t, index) => {
@@ -27885,41 +28047,30 @@ export function procesarActualizacionCSV(
   const cambios: CambioEstadoCSV[] = [];
   const nuevasOrdenes: RecepcionTicket[] = [];
   const changedOrNewMap = new Map<string, RecepcionTicket>();
-  let totalFilasLeidas = 0;
+  const totalFilasLeidas = cleanIncomingMap.size;
   let totalSinCambios = 0;
 
-  for (let r = startRowIndex; r < rows.length; r++) {
-    const row = rows[r];
-    const rawId = (row[effectiveIdxId] || '').replace(/^#/, '').trim();
-    const rawNuevoEstado = (row[effectiveIdxEstado] || '').trim() || (isSati12Cols ? 'En Asignacion' : '');
-
-    if (!rawId || !rawNuevoEstado) continue;
-    // Órdenes >= 100000 pertenecen a Casa Matriz CDE, no a Sucursal ASU
-    if (/^\d+$/.test(rawId) && parseInt(rawId, 10) >= 100000) continue;
-    totalFilasLeidas++;
-
+  for (const inc of cleanIncomingMap.values()) {
+    const rawId = inc.idOrden;
+    const rawNuevoEstado = inc.estado;
     const existingIndex = ticketMap.get(rawId);
 
     if (existingIndex !== undefined) {
       const actual = baseTickets[existingIndex];
       const estadoAnterior = (actual.estado || '').trim();
-      const fechaEntregadaCSV = pickBestDateCell(
-        row,
-        idxFechaEntregada,
-        idxFechaTransportadora,
-        isSati12Cols,
-        5
-      );
-      const mensajeCSV =
-        idxMensaje !== -1 && row[idxMensaje]
-          ? row[idxMensaje].trim()
-          : isSati12Cols && row[3]
-            ? row[3].trim()
-            : undefined;
+      const fechaEntregadaCSV = inc.fechaEntregada;
+      const mensajeCSV = inc.mensaje || undefined;
+      const effectiveCliente = inc.cliente || actual.cliente;
+      const effectiveMarca = inc.marca || actual.marca;
+      const effectiveModelo = inc.modelo || actual.modelo;
+      const effectiveSerial = inc.serial || actual.serial;
+      const effectiveTipo =
+        inc.tipoComponente && inc.tipoComponente.toUpperCase() !== 'GENERAL'
+          ? inc.tipoComponente
+          : actual.tipoComponente;
 
       // Comprobar si el estado cambió (comparación insensible a mayúsculas/minúsculas o cambio real de estado)
-      const cambioEstado =
-        estadoAnterior.toLowerCase() !== rawNuevoEstado.toLowerCase();
+      const cambioEstado = !isSameNormalizedText(estadoAnterior, rawNuevoEstado);
 
       if (cambioEstado) {
         const isDelivered = rawNuevoEstado.toLowerCase().includes('entregada');
@@ -27930,6 +28081,11 @@ export function procesarActualizacionCSV(
 
         const updatedTicket: RecepcionTicket = {
           ...actual,
+          cliente: effectiveCliente,
+          marca: effectiveMarca,
+          modelo: effectiveModelo,
+          serial: effectiveSerial,
+          tipoComponente: effectiveTipo,
           estado: rawNuevoEstado,
           fechaEntregada: fechaEntregadaCSV || actual.fechaEntregada,
           mensaje: mensajeCSV !== undefined && mensajeCSV !== '' ? mensajeCSV : actual.mensaje,
@@ -27941,22 +28097,37 @@ export function procesarActualizacionCSV(
 
         cambios.push({
           idOrden: rawId,
-          cliente: actual.cliente,
-          equipo: `${actual.tipoComponente || ''} ${actual.marca || ''} ${actual.modelo || ''}`.trim(),
+          cliente: updatedTicket.cliente,
+          equipo: `${updatedTicket.tipoComponente || ''} ${updatedTicket.marca || ''} ${updatedTicket.modelo || ''}`.trim(),
           estadoAnterior,
           estadoNuevo: rawNuevoEstado,
           fechaEntregada: updatedTicket.fechaEntregada,
         });
       } else {
-        // Si no cambió el estado pero sí se completó fechaEntregada o mensaje en el CSV, lo enriquecemos silenciosamente
-        if (
-          (fechaEntregadaCSV && fechaEntregadaCSV !== actual.fechaEntregada) ||
-          (mensajeCSV && mensajeCSV !== actual.mensaje)
-        ) {
+        // Si no cambió el estado pero se completó fecha/mensaje o se normalizó cliente/marca/modelo/serial/tipo, actualizamos silenciosamente
+        const cambioFecha = Boolean(
+          fechaEntregadaCSV && fechaEntregadaCSV !== actual.fechaEntregada
+        );
+        const cambioMensaje = Boolean(
+          mensajeCSV && !isSameNormalizedText(mensajeCSV, actual.mensaje)
+        );
+        const cambioMetadata =
+          (actual.cliente || '') !== effectiveCliente ||
+          (actual.marca || '') !== effectiveMarca ||
+          (actual.modelo || '') !== effectiveModelo ||
+          (actual.serial || '') !== effectiveSerial ||
+          (actual.tipoComponente || '') !== effectiveTipo;
+
+        if (cambioFecha || cambioMensaje || cambioMetadata) {
           const enrichedLocal: RecepcionTicket = {
             ...actual,
+            cliente: effectiveCliente,
+            marca: effectiveMarca,
+            modelo: effectiveModelo,
+            serial: effectiveSerial,
+            tipoComponente: effectiveTipo,
             fechaEntregada: fechaEntregadaCSV || actual.fechaEntregada,
-            mensaje: mensajeCSV || actual.mensaje,
+            mensaje: cambioMensaje ? (mensajeCSV || actual.mensaje) : actual.mensaje,
           };
           baseTickets[existingIndex] = enrichedLocal;
           changedOrNewMap.set(rawId, enrichedLocal);
@@ -27965,32 +28136,6 @@ export function procesarActualizacionCSV(
       }
     } else {
       // Orden que NO estaba en Recepción: se carga automáticamente al dashboard y se agrega a MySQL
-      const effCodigo =
-        idxCodigo !== -1 ? row[idxCodigo] : isSati12Cols ? row[1] : '';
-      const effCliente =
-        idxCliente !== -1 ? row[idxCliente] : isSati12Cols ? row[2] : !hasExplicitHeader && row.length >= 2 ? row[1] : '';
-      const effMensaje =
-        idxMensaje !== -1 ? row[idxMensaje] : isSati12Cols ? row[3] : '';
-      const effFechaIngreso =
-        idxFechaIngreso !== -1 ? row[idxFechaIngreso] : isSati12Cols ? row[4] : !hasExplicitHeader && row.length >= 3 ? row[2] : '';
-      const effFechaEntregada = pickBestDateCell(
-        row,
-        idxFechaEntregada,
-        idxFechaTransportadora,
-        isSati12Cols || (!hasExplicitHeader && row.length >= 4),
-        isSati12Cols ? 5 : 3
-      );
-      const effFechaVenta =
-        idxFechaVenta !== -1 ? row[idxFechaVenta] : isSati12Cols ? row[6] : !hasExplicitHeader && row.length >= 5 ? row[4] : '';
-      const effTipoComp =
-        idxTipoComponente !== -1 ? row[idxTipoComponente] : isSati12Cols ? row[8] : !hasExplicitHeader && row.length >= 7 ? row[6] : 'GENERAL';
-      const effMarca =
-        idxMarca !== -1 ? row[idxMarca] : isSati12Cols ? row[9] : !hasExplicitHeader && row.length >= 8 ? row[7] : '';
-      const effModelo =
-        idxModelo !== -1 ? row[idxModelo] : isSati12Cols ? row[10] : !hasExplicitHeader && row.length >= 9 ? row[8] : '';
-      const effSerial =
-        idxSerial !== -1 ? row[idxSerial] : isSati12Cols ? row[11] : '';
-
       const isDelivered = rawNuevoEstado.toLowerCase().includes('entregada');
       recordStoredId(NEW_INGRESOS_STORAGE_KEY, rawId);
       if (isDelivered) {
@@ -27999,17 +28144,17 @@ export function procesarActualizacionCSV(
 
       const nuevoTicket: RecepcionTicket = {
         idOrden: rawId,
-        codigoProducto: (effCodigo || '').trim(),
-        cliente: (effCliente || 'Cliente SATI').trim(),
-        mensaje: (effMensaje || '').trim(),
-        fechaIngreso: (effFechaIngreso || new Date().toLocaleDateString('es-PY')).trim(),
-        fechaEntregada: effFechaEntregada ? effFechaEntregada.trim() : undefined,
-        fechaVenta: effFechaVenta ? effFechaVenta.trim() : undefined,
+        codigoProducto: inc.codigoProducto,
+        cliente: inc.cliente || 'Cliente SATI',
+        mensaje: inc.mensaje,
+        fechaIngreso: inc.fechaIngreso || new Date().toLocaleDateString('es-PY'),
+        fechaEntregada: inc.fechaEntregada,
+        fechaVenta: inc.fechaVenta,
         estado: rawNuevoEstado,
-        tipoComponente: (effTipoComp || 'GENERAL').trim(),
-        marca: (effMarca || '').trim(),
-        modelo: (effModelo || '').trim(),
-        serial: effSerial && effSerial.trim() ? effSerial.trim() : 'SIN SERIAL VISIBLE',
+        tipoComponente: inc.tipoComponente || 'General',
+        marca: inc.marca,
+        modelo: inc.modelo,
+        serial: inc.serial || 'SIN SERIAL VISIBLE',
         esNuevoIngreso: true,
         esEntregadoReciente: isDelivered,
       };
@@ -28141,6 +28286,7 @@ export function procesarActualizacionCSV(
     cambios,
     nuevasOrdenesTickets: nuevasOrdenes,
     changedOrNewTickets,
+    depurationStats,
   };
 }
 
@@ -28163,9 +28309,10 @@ export async function sincronizarRecepcionCsvOnline(
     skipBackgroundSync: true,
   });
 
-  if (resCalculo.totalFilasLeidas === 0) {
+  const totalRaw = resCalculo.depurationStats?.totalRawFilas ?? 0;
+  if (resCalculo.totalFilasLeidas === 0 && totalRaw === 0) {
     throw new Error(
-      'No se detectaron órdenes válidas en el archivo CSV. Verifique el formato SATI exportado.'
+      'No se detectaron órdenes válidas en el archivo CSV/Excel. Verifique el formato SATI exportado.'
     );
   }
 

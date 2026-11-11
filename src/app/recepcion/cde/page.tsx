@@ -67,6 +67,7 @@ import {
   fetchTicketsFromMySQL,
   sincronizarRecepcionCsvOnline,
 } from "@/data/recepcionData";
+import { SatiDepurationSummary } from "@/components/SatiDepurationSummary";
 import {
   crossMatchCdeWithAsu,
   buildUnifiedSatiList,
@@ -391,10 +392,35 @@ export default function RecepcionCdeDashboardPage() {
       const text = await readSpreadsheetAsCsvText(file);
       const parsed = classifyAndParseSatiCsv(text);
 
-      if (parsed.totalRows === 0) {
+      if (parsed.totalRows === 0 && parsed.depurationStats.totalRawFilas === 0) {
         throw new Error(
           "No se detectaron órdenes válidas en el archivo. Verifique que sea un archivo .csv o Excel (.xlsx) exportado de SATI con columnas de orden."
         );
+      }
+
+      if (parsed.totalRows === 0 && parsed.depurationStats.totalRawFilas > 0) {
+        const nowStr = new Date().toLocaleTimeString("es-PY", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        setCsvReport({
+          updatedTickets: [],
+          totalFilasLeidas: 0,
+          totalActualizadas: 0,
+          totalNuevas: 0,
+          totalSinCambios: 0,
+          totalEnTransitoNuevos: 0,
+          cambios: [],
+          depurationStats: parsed.depurationStats,
+          fileName: file.name,
+          timestamp: nowStr,
+          origenLabel: "SATI Crudo (Depurado)",
+        });
+        showToast(
+          `Se analizaron ${parsed.depurationStats.totalRawFilas.toLocaleString()} fila(s) crudas y todas fueron omitidas por depuración automática (históricas / filtros de cliente / paréntesis).`
+        );
+        return;
       }
 
       const hasAsu = parsed.asuRows.length > 0;
@@ -472,6 +498,7 @@ export default function RecepcionCdeDashboardPage() {
         totalNuevas,
         totalSinCambios,
         totalEnTransitoNuevos,
+        depurationStats: parsed.depurationStats,
         cambios: combinedCambios,
         fileName: file.name,
         timestamp: nowStr,
@@ -1331,6 +1358,8 @@ export default function RecepcionCdeDashboardPage() {
                 </strong>
               </div>
             </div>
+
+            <SatiDepurationSummary stats={csvReport.depurationStats} />
 
             {/* Tabla detallada de las órdenes que cambiaron de estado */}
             {csvReport.cambios.length > 0 && (

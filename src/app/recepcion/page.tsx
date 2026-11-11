@@ -43,6 +43,7 @@ import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/Cat
 import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { readSpreadsheetAsCsvText, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
+import { SatiDepurationSummary } from "@/components/SatiDepurationSummary";
 import {
   RecepcionTicket,
   INITIAL_RECEPCION_DATA,
@@ -352,10 +353,33 @@ export default function RecepcionDashboardPage() {
       const text = await readSpreadsheetAsCsvText(file);
       const parsed = classifyAndParseSatiCsv(text);
 
-      if (parsed.totalRows === 0) {
+      if (parsed.totalRows === 0 && parsed.depurationStats.totalRawFilas === 0) {
         throw new Error(
           "No se detectaron órdenes válidas en el archivo. Verifique que sea un archivo .csv o Excel (.xlsx) exportado de SATI con columnas de orden."
         );
+      }
+
+      if (parsed.totalRows === 0 && parsed.depurationStats.totalRawFilas > 0) {
+        const nowStr = new Date().toLocaleTimeString("es-PY", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+        setCsvReport({
+          updatedTickets: tickets,
+          totalFilasLeidas: 0,
+          totalActualizadas: 0,
+          totalNuevas: 0,
+          totalSinCambios: 0,
+          cambios: [],
+          depurationStats: parsed.depurationStats,
+          fileName: file.name,
+          timestamp: nowStr,
+        });
+        showToast(
+          `Se analizaron ${parsed.depurationStats.totalRawFilas.toLocaleString()} fila(s) crudas y todas fueron omitidas por depuración automática (históricas / filtros de cliente / paréntesis).`
+        );
+        return;
       }
 
       const hasAsu = parsed.asuRows.length > 0;
@@ -390,6 +414,7 @@ export default function RecepcionDashboardPage() {
         totalNuevas: (resAsu?.totalNuevas ?? 0) + (resCde?.totalNuevas ?? 0),
         totalSinCambios:
           (resAsu?.totalSinCambios ?? 0) + (resCde?.totalSinCambios ?? 0),
+        depurationStats: parsed.depurationStats,
         cambios: [
           ...(resAsu?.cambios ?? []),
           ...(resCde?.cambios ?? []).map((c) => ({
@@ -1215,6 +1240,8 @@ ${accText}`;
                 </strong>
               </div>
             </div>
+
+            <SatiDepurationSummary stats={csvReport.depurationStats} />
 
             {/* Tabla detallada de las órdenes que cambiaron de estado o se agregaron */}
             {csvReport.cambios.length > 0 && (

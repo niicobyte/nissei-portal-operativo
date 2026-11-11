@@ -1,4 +1,15 @@
 // Datos SATI Casa Matriz CDE (recepcion-cde.csv) y Monitoreo de Depósito Danesa
+import {
+  collapseSpacesTrim,
+  createEmptyDepurationStats,
+  evaluateRawSatiRow,
+  isSameNormalizedText,
+  mergeSatiDuplicateFields,
+  normalizeSatiRowFields,
+  SATI_MIN_ID_CDE,
+  type SatiDepurationStats,
+} from '../lib/satiRawDepurator';
+
 export interface RecepcionCdeTicket {
   idOrden: string;
   codigoProducto: string;
@@ -104,15 +115,24 @@ export interface SatiCsvClassification {
   asuRows: RecepcionCdeTicket[];
   cdeRows: RecepcionCdeTicket[];
   totalRows: number;
+  depurationStats: SatiDepurationStats;
 }
 
 /**
- * Parsea un archivo CSV con las 12 columnas exactas de SATI, soportando delimitadores
- * por coma (,), punto y coma (;) o tabulación (\t), con soporte de BOM UTF-8 y comillas dobles.
+ * Parsea y depura automáticamente un archivo CSV/Excel exportado de SATI:
+ * - Filtra históricos (< 29403 en ASU, < 125650 en CDE)
+ * - Excluye palabras de cliente ('drop', 'emap', '10807', 'code 100 sa', 'farma 10', 'dream', 'drem', 'py-pjc', 'py-sg', 'py/sg')
+ * - Excluye paréntesis distintos a (JC) y (ATCN) en cliente
+ * - Deduplica órdenes repetidas conservando los datos más completos
+ * - Normaliza cliente, marca, modelo, serial y tipoComponente
  */
-function parseAllSatiCsvRows(csvContent: string): RecepcionCdeTicket[] {
+function parseAndDepurateSatiCsvRows(csvContent: string): {
+  rows: RecepcionCdeTicket[];
+  stats: SatiDepurationStats;
+} {
+  const stats = createEmptyDepurationStats();
   const cleanText = csvContent.replace(/^\uFEFF/, '').trim();
-  if (!cleanText) return [];
+  if (!cleanText) return { rows: [], stats };
 
   // Detección automática del delimitador principal en las primeras 5 líneas
   const firstLineEnd = cleanText.indexOf('\n');
@@ -181,7 +201,7 @@ function parseAllSatiCsvRows(csvContent: string): RecepcionCdeTicket[] {
     }
   }
 
-  const result: RecepcionCdeTicket[] = [];
+  const dedupMap = new Map<string, RecepcionCdeTicket>();
   let colMap: Record<string, number> = {
     idOrden: 0,
     codigoProducto: 1,
@@ -204,7 +224,7 @@ function parseAllSatiCsvRows(csvContent: string): RecepcionCdeTicket[] {
     if (cells.length < 2) continue;
 
     // Detección dinámica y robusta de cabecera (soporta filas de título previas en XLSX/CSV)
-    if (!headerDetected && i < 6 && result.length === 0) {
+    if (!headerDetected && i < 6 && stats.totalRawFilas === 0) {
       const headerIndex: Record<string, number> = {};
       cells.forEach((header, idx) => {
         const h = header
@@ -300,59 +320,104 @@ function parseAllSatiCsvRows(csvContent: string): RecepcionCdeTicket[] {
       return idx !== undefined && idx >= 0 && cells[idx] !== undefined ? cells[idx].trim() : '';
     };
 
-    const idOrden = getVal('idOrden').replace(/^#/, '');
-    if (!idOrden) continue;
-    if (!headerDetected && i < 5 && !/\d/.test(idOrden)) continue;
+    const rawId = getVal('idOrden').replace(/^#/, '');
+    if (!rawId) continue;
+    if (!headerDetected && i < 5 && !/\d/.test(rawId)) continue;
 
-    const codigoProducto = getVal('codigoProducto');
-    const cliente = getVal('cliente');
-    const mensaje = getVal('mensaje');
-    const fechaIngreso = getVal('fechaIngreso');
-    const primaryFechaEntregada = getVal('fechaEntregada');
-    const fallbackFechaTransportadora = getVal('fechaTransportadora');
+    const rawCliente = getVal('cliente');
+    const evaluation = evaluateRawSatiRow(rawId, rawCliente);
+    if (evaluation.reason === 'SIN_ID') continue;
+
+    stats.totalRawFilas++;
+
+    if (!evaluation.keep) {
+      if (
+        evaluation.reason === 'ID_HISTORICO_ASU'
+      ) {
+        stats.descartadasHistoricasAsu++;
+      } else if (evaluation.reason === 'ID_HISTORICO_CDE') {
+        stats.descartadasHistoricasCde++;
+      } else if (evaluation.reason === 'PALABRA_EXCLUIDA') {
+        stats.descartadasFiltroCliente++;
+      } else if (evaluation.reason === 'PARENTESIS_EXCLUIDO') {
+        stats.descartadasParentesis++;
+      }
+      continue;
+    }
+
+    const idOrden = evaluation.cleanId;
+    const codigoProducto = collapseSpacesTrim(getVal('codigoProducto'));
+    const rawMensaje = getVal('mensaje');
+    const fechaIngreso = collapseSpacesTrim(getVal('fechaIngreso'));
+    const primaryFechaEntregada = collapseSpacesTrim(getVal('fechaEntregada'));
+    const fallbackFechaTransportadora = collapseSpacesTrim(getVal('fechaTransportadora'));
     const fechaEntregada = isFechaValida(primaryFechaEntregada)
       ? primaryFechaEntregada
       : isFechaValida(fallbackFechaTransportadora)
         ? fallbackFechaTransportadora
         : primaryFechaEntregada;
-    const fechaVenta = getVal('fechaVenta');
-    const estado = getVal('estado') || 'En Asignacion';
-    const tipoComponente = getVal('tipoComponente') || 'GENERAL';
-    const marca = getVal('marca');
-    const modelo = getVal('modelo');
-    const serial = getVal('serial');
+    const fechaVenta = collapseSpacesTrim(getVal('fechaVenta'));
+    const estado = collapseSpacesTrim(getVal('estado')) || 'En Asignacion';
+    const rawTipoComponente = getVal('tipoComponente') || 'GENERAL';
+    const rawMarca = getVal('marca');
+    const rawModelo = getVal('modelo');
+    const rawSerial = getVal('serial');
 
-    result.push({
+    const { normalized, camposModificados } = normalizeSatiRowFields({
+      cliente: rawCliente,
+      marca: rawMarca,
+      modelo: rawModelo,
+      serial: rawSerial,
+      tipoComponente: rawTipoComponente,
+      mensaje: rawMensaje,
+    });
+    stats.camposNormalizados += camposModificados;
+
+    const cleanTicket: RecepcionCdeTicket = {
       idOrden,
       codigoProducto,
-      cliente,
-      mensaje,
+      cliente: normalized.cliente,
+      mensaje: normalized.mensaje,
       fechaIngreso,
       fechaEntregada,
       fechaVenta,
       estado,
-      tipoComponente,
-      modelo,
-      marca,
-      serial,
+      tipoComponente: normalized.tipoComponente || 'General',
+      modelo: normalized.modelo,
+      marca: normalized.marca,
+      serial: normalized.serial,
       diasResolucion: calcularDiasResolucion(fechaIngreso, fechaEntregada),
-      esDanesa: isTicketDanesa(cliente),
-    });
+      esDanesa: isTicketDanesa(normalized.cliente),
+      origen: evaluation.origen,
+    };
+
+    const dedupKey = `${evaluation.origen}:${idOrden}`;
+    const prev = dedupMap.get(dedupKey);
+    if (prev) {
+      const merged = mergeSatiDuplicateFields(prev, cleanTicket);
+      merged.diasResolucion = calcularDiasResolucion(merged.fechaIngreso, merged.fechaEntregada);
+      merged.esDanesa = isTicketDanesa(merged.cliente);
+      merged.origen = evaluation.origen;
+      dedupMap.set(dedupKey, merged);
+      stats.duplicadosFusionados++;
+    } else {
+      dedupMap.set(dedupKey, cleanTicket);
+    }
   }
 
-  return result;
+  const rowsClean = Array.from(dedupMap.values());
+  stats.totalValidas = rowsClean.length;
+  return { rows: rowsClean, stats };
 }
 
 export function classifyAndParseSatiCsv(csvContent: string): SatiCsvClassification {
-  const allRows = parseAllSatiCsvRows(csvContent);
+  const { rows: allRows, stats } = parseAndDepurateSatiCsvRows(csvContent);
   const asuRows: RecepcionCdeTicket[] = [];
   const cdeRows: RecepcionCdeTicket[] = [];
 
   for (const row of allRows) {
-    const isNumericId = /^\d+$/.test(row.idOrden);
-    const numOrden = isNumericId ? parseInt(row.idOrden, 10) : NaN;
-    if (isNumericId && numOrden < 100000) {
-      asuRows.push({ ...row, origen: 'ASU' });
+    if (row.origen === 'ASU') {
+      asuRows.push(row);
     } else {
       cdeRows.push({ ...row, origen: 'CDE' });
     }
@@ -362,6 +427,7 @@ export function classifyAndParseSatiCsv(csvContent: string): SatiCsvClassificati
     asuRows,
     cdeRows,
     totalRows: asuRows.length + cdeRows.length,
+    depurationStats: stats,
   };
 }
 
@@ -699,6 +765,8 @@ export interface ResultadoCargaCdeCSV {
   totalSinCambios: number;
   totalEnTransitoNuevos: number;
   cambios: CambioEstadoCde[];
+  changedOrNewTickets?: RecepcionCdeTicket[];
+  depurationStats?: SatiDepurationStats;
 }
 
 export function procesarActualizacionCdeCSV(
@@ -706,12 +774,13 @@ export function procesarActualizacionCdeCSV(
   currentTickets: RecepcionCdeTicket[],
   options?: { skipBackgroundSync?: boolean }
 ): ResultadoCargaCdeCSV {
-  const incoming = parseRecepcionCdeCSV(csvContent);
+  const classified = classifyAndParseSatiCsv(csvContent);
+  const incoming = classified.cdeRows;
   const currentMap = new Map<string, RecepcionCdeTicket>();
   currentTickets
     .filter((t) => {
       const num = parseInt(t.idOrden, 10);
-      return isNaN(num) || num >= 100000;
+      return isNaN(num) || num >= SATI_MIN_ID_CDE;
     })
     .forEach((t) => currentMap.set(t.idOrden, t));
 
@@ -720,6 +789,7 @@ export function procesarActualizacionCdeCSV(
 
   const cambios: CambioEstadoCde[] = [];
   const updatedList: RecepcionCdeTicket[] = [];
+  const changedOrNewTickets: RecepcionCdeTicket[] = [];
   const seenIds = new Set<string>();
 
   let totalSinCambios = 0;
@@ -747,9 +817,24 @@ export function procesarActualizacionCdeCSV(
           ? (existing.fechaEntregada || '').trim()
           : (inc.fechaEntregada || existing.fechaEntregada || '').trim();
       const effectiveMensaje = (inc.mensaje || '').trim() || (existing.mensaje || '').trim();
-      const cambioEstado = existing.estado.trim() !== inc.estado.trim();
+      const effectiveTipo =
+        inc.tipoComponente && inc.tipoComponente.toUpperCase() !== 'GENERAL'
+          ? inc.tipoComponente
+          : existing.tipoComponente;
+      const effectiveCliente = inc.cliente || existing.cliente;
+      const effectiveMarca = inc.marca || existing.marca;
+      const effectiveModelo = inc.modelo || existing.modelo;
+      const effectiveSerial = inc.serial || existing.serial;
+
+      const cambioEstado = !isSameNormalizedText(existing.estado, inc.estado);
       const cambioEntrega = (existing.fechaEntregada || '').trim() !== effectiveFechaEntregada;
-      const cambioMensaje = (existing.mensaje || '').trim() !== effectiveMensaje;
+      const cambioMensaje = !isSameNormalizedText(existing.mensaje, effectiveMensaje);
+      const cambioMetadata =
+        (existing.cliente || '') !== effectiveCliente ||
+        (existing.marca || '') !== effectiveMarca ||
+        (existing.modelo || '') !== effectiveModelo ||
+        (existing.serial || '') !== effectiveSerial ||
+        (existing.tipoComponente || '') !== effectiveTipo;
 
       if (cambioEstado || cambioEntrega || cambioMensaje) {
         if (enTransito && !existing.estado.toLowerCase().includes('entregada')) {
@@ -758,8 +843,8 @@ export function procesarActualizacionCdeCSV(
 
         cambios.push({
           idOrden: inc.idOrden,
-          cliente: inc.cliente || existing.cliente,
-          equipo: `${inc.marca || existing.marca} ${inc.modelo || existing.modelo}`.trim() || inc.tipoComponente || existing.tipoComponente,
+          cliente: effectiveCliente,
+          equipo: `${effectiveMarca} ${effectiveModelo}`.trim() || effectiveTipo,
           estadoAnterior: existing.estado,
           estadoNuevo: inc.estado,
           fechaEntregada: effectiveFechaEntregada,
@@ -767,24 +852,40 @@ export function procesarActualizacionCdeCSV(
           enTransito,
         });
 
-        updatedList.push({
+        const updatedRow: RecepcionCdeTicket = {
           ...existing,
           ...inc,
           codigoProducto: inc.codigoProducto || existing.codigoProducto,
-          cliente: inc.cliente || existing.cliente,
+          cliente: effectiveCliente,
           mensaje: effectiveMensaje,
           fechaIngreso: inc.fechaIngreso || existing.fechaIngreso,
           fechaEntregada: effectiveFechaEntregada,
           fechaVenta: inc.fechaVenta || existing.fechaVenta,
-          tipoComponente: inc.tipoComponente && inc.tipoComponente !== 'GENERAL' ? inc.tipoComponente : existing.tipoComponente,
-          marca: inc.marca || existing.marca,
-          modelo: inc.modelo || existing.modelo,
-          serial: inc.serial || existing.serial,
+          tipoComponente: effectiveTipo,
+          marca: effectiveMarca,
+          modelo: effectiveModelo,
+          serial: effectiveSerial,
           diasResolucion: calcularDiasResolucion(inc.fechaIngreso || existing.fechaIngreso, effectiveFechaEntregada),
           esDanesa,
           recibidoEnDeposito: Boolean(existing.rowKey && checkins[existing.rowKey] || existing.recibidoEnDeposito),
           esEstadoCambiadoReciente: true,
-        });
+        };
+        updatedList.push(updatedRow);
+        changedOrNewTickets.push(updatedRow);
+      } else if (cambioMetadata) {
+        // Pulido silencioso de normalización (Título/Acrónimos/Mayúsculas en serial) sin alertas de cambio de estado
+        totalSinCambios++;
+        const polishedRow: RecepcionCdeTicket = {
+          ...existing,
+          cliente: effectiveCliente,
+          tipoComponente: effectiveTipo,
+          marca: effectiveMarca,
+          modelo: effectiveModelo,
+          serial: effectiveSerial,
+          esDanesa,
+        };
+        updatedList.push(polishedRow);
+        changedOrNewTickets.push(polishedRow);
       } else {
         totalSinCambios++;
         updatedList.push(existing);
@@ -805,32 +906,34 @@ export function procesarActualizacionCdeCSV(
         enTransito,
       });
 
-      updatedList.push({
+      const newRow: RecepcionCdeTicket = {
         ...inc,
         diasResolucion: calcularDiasResolucion(inc.fechaIngreso, inc.fechaEntregada),
         esDanesa,
         recibidoEnDeposito: false,
         esNuevoIngreso: true,
-      });
+      };
+      updatedList.push(newRow);
+      changedOrNewTickets.push(newRow);
     }
   }
 
   currentTickets.forEach((t) => {
     const num = parseInt(t.idOrden, 10);
-    if ((isNaN(num) || num >= 100000) && !seenIds.has(t.idOrden)) {
+    if ((isNaN(num) || num >= SATI_MIN_ID_CDE) && !seenIds.has(t.idOrden)) {
       updatedList.push(t);
     }
   });
 
   saveCdeTickets(updatedList);
 
-  if (typeof window !== 'undefined' && !options?.skipBackgroundSync) {
+  if (typeof window !== 'undefined' && !options?.skipBackgroundSync && changedOrNewTickets.length > 0) {
     fetch('/api/db', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'BULK_UPDATE_CDE_CSV',
-        tickets: updatedList,
+        tickets: changedOrNewTickets,
       }),
     }).catch((err) => console.error('[MySQL Error Bulk CDE CSV Update]', err));
   }
@@ -846,6 +949,8 @@ export function procesarActualizacionCdeCSV(
     totalSinCambios,
     totalEnTransitoNuevos,
     cambios,
+    changedOrNewTickets,
+    depurationStats: classified.depurationStats,
   };
 }
 
@@ -860,7 +965,7 @@ export async function sincronizarCdeCsvOnline(
   let base = currentTickets && currentTickets.length > 0
     ? currentTickets.filter((t) => {
         const n = parseInt(t.idOrden, 10);
-        return isNaN(n) || n >= 100000;
+        return isNaN(n) || n >= SATI_MIN_ID_CDE;
       })
     : getStoredCdeTickets();
 
@@ -872,19 +977,21 @@ export async function sincronizarCdeCsvOnline(
     skipBackgroundSync: true,
   });
 
-  if (resCalculo.totalFilasLeidas === 0) {
+  const totalRaw = resCalculo.depurationStats?.totalRawFilas ?? 0;
+  if (resCalculo.totalFilasLeidas === 0 && totalRaw === 0) {
     throw new Error(
-      "No se detectaron órdenes válidas en el archivo CSV. Verifique que sea un archivo .csv exportado de SATI con columnas de orden."
+      "No se detectaron órdenes válidas en el archivo CSV/Excel. Verifique que sea exportado de SATI con columnas de orden."
     );
   }
 
-  if (typeof window !== "undefined") {
+  const ticketsToPersist = resCalculo.changedOrNewTickets ?? [];
+  if (typeof window !== "undefined" && ticketsToPersist.length > 0) {
     const resp = await fetch("/api/db", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "BULK_UPDATE_CDE_CSV",
-        tickets: resCalculo.updatedTickets,
+        tickets: ticketsToPersist,
       }),
     });
 
