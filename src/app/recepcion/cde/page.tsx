@@ -1867,14 +1867,19 @@ export default function RecepcionCdeDashboardPage() {
                   <th className="py-3 px-3 text-center">Días Taller</th>
                   <th className="py-3 px-3">Estado</th>
                   <th className="py-3 px-3">Dictamen / Informe Técnico</th>
-                  <th className="py-3 px-3 text-center">Llegada Depósito</th>
+                  {viewScope !== "CLIENTES_CDE" && (
+                    <th className="py-3 px-3 text-center">Llegada Depósito</th>
+                  )}
                   <th className="py-3 px-3 text-right">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {paginatedTickets.length === 0 ? (
                   <tr>
-                    <td colSpan={12} className="py-12 text-center text-zinc-500">
+                    <td
+                      colSpan={viewScope === "CLIENTES_CDE" ? 11 : 12}
+                      className="py-12 text-center text-zinc-500"
+                    >
                       <Package className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
                       <p className="font-semibold text-sm text-zinc-700">No se encontraron órdenes con los filtros actuales.</p>
                       <p className="text-xs text-zinc-400 mt-0.5">Pruebe modificando los términos de búsqueda o el selector de ámbito.</p>
@@ -2111,51 +2116,53 @@ export default function RecepcionCdeDashboardPage() {
                           </p>
                         </td>
 
-                        {/* Llegada a Depósito / Confirmación en Sucursal */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
-                          {(() => {
-                            const isRecibido = isTicketRecibido(ticket);
-                            const fechaMostrar = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || "";
-                            return (
-                              <div className="flex flex-col items-center gap-0.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleToggleCheckin(ticket)}
-                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
-                                    isRecibido
-                                      ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                                      : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
-                                  }`}
-                                  title={
-                                    isRecibido
-                                      ? "Recibido · Listo para que retire el cliente (Click para desmarcar llegada)"
-                                      : "Haga click para confirmar llegada de esta unidad a depósito"
-                                  }
-                                >
-                                  {isRecibido ? (
-                                    <>
-                                      <Check className="w-3 h-3 stroke-[3]" />
-                                      <span>Listo retiro</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Box className="w-3 h-3" />
-                                      <span>Confirmar</span>
-                                    </>
-                                  )}
-                                </button>
-                                {isRecibido && fechaMostrar && (
-                                  <span
-                                    className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
-                                    title={`Fecha de entrega / despacho para seguimiento: ${fechaMostrar}`}
+                        {/* Llegada a Depósito / Confirmación en Sucursal (oculta para Clientes CDE) */}
+                        {viewScope !== "CLIENTES_CDE" && (
+                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                            {(() => {
+                              const isRecibido = isTicketRecibido(ticket);
+                              const fechaMostrar = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || "";
+                              return (
+                                <div className="flex flex-col items-center gap-0.5">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleToggleCheckin(ticket)}
+                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
+                                      isRecibido
+                                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                        : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
+                                    }`}
+                                    title={
+                                      isRecibido
+                                        ? "Recibido · Listo para que retire el cliente (Click para desmarcar llegada)"
+                                        : "Haga click para confirmar llegada de esta unidad a depósito"
+                                    }
                                   >
-                                    {fechaMostrar}
-                                  </span>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </td>
+                                    {isRecibido ? (
+                                      <>
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                        <span>Listo retiro</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Box className="w-3 h-3" />
+                                        <span>Confirmar</span>
+                                      </>
+                                    )}
+                                  </button>
+                                  {isRecibido && fechaMostrar && (
+                                    <span
+                                      className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
+                                      title={`Fecha de entrega / despacho para seguimiento: ${fechaMostrar}`}
+                                    >
+                                      {fechaMostrar}
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                          </td>
+                        )}
 
                         {/* Acción / Ver Detalle */}
                         <td className="py-3 px-3 text-right whitespace-nowrap">
@@ -2522,8 +2529,8 @@ export default function RecepcionCdeDashboardPage() {
                 </div>
               </div>
 
-              {/* Botón y Estado Directo de Recepción en Sucursal ("y un boton solo para recibido") */}
-              {(() => {
+              {/* Botón y Estado Directo de Recepción en Sucursal (omitido para Clientes CDE) */}
+              {viewScope !== "CLIENTES_CDE" && (() => {
                 const isRecibidoModal = isTicketRecibido(selectedTicket);
                 const fechaModalMostrar = selectedTicket.fechaEntregada || selectedTicket.fechaRecibidoDeposito || "";
                 return (
