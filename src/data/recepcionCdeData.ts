@@ -90,11 +90,17 @@ export function isTicketDanesa(cliente?: string): boolean {
   return cliente.toLowerCase().includes('danesa');
 }
 
+export interface SatiCsvClassification {
+  asuRows: RecepcionCdeTicket[];
+  cdeRows: RecepcionCdeTicket[];
+  totalRows: number;
+}
+
 /**
  * Parsea un archivo CSV con las 12 columnas exactas de SATI, soportando delimitadores
  * por coma (,), punto y coma (;) o tabulación (\t), con soporte de BOM UTF-8 y comillas dobles.
  */
-export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
+function parseAllSatiCsvRows(csvContent: string): RecepcionCdeTicket[] {
   const cleanText = csvContent.replace(/^\uFEFF/, '').trim();
   if (!cleanText) return [];
 
@@ -183,7 +189,7 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
 
   for (let i = 0; i < rows.length; i++) {
     const cells = rows[i];
-    if (cells.length < 3) continue;
+    if (cells.length < 2) continue;
 
     // Detección dinámica y robusta de cabecera
     if (i === 0) {
@@ -195,21 +201,30 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
           .replace(/[\u0300-\u036f]/g, "")
           .replace(/[^a-z0-9]/g, "");
 
-        if (h.includes("idorden") || h === "orden" || h === "id" || h === "nroorden") headerIndex.idOrden = idx;
+        if (
+          h.includes("idorden") ||
+          h === "orden" ||
+          h === "id" ||
+          h === "nroorden" ||
+          h === "norden" ||
+          h === "nrodeorden" ||
+          h === "ticket"
+        )
+          headerIndex.idOrden = idx;
         else if (h.includes("codigo") || h === "cod" || h.includes("sku") || h.includes("producto")) headerIndex.codigoProducto = idx;
         else if (h.includes("cliente") || h.includes("titular")) headerIndex.cliente = idx;
         else if (h.includes("mensaje") || h.includes("obs") || h.includes("dictamen") || h.includes("falla")) headerIndex.mensaje = idx;
         else if (h.includes("fechaingreso") || h === "ingreso" || h.includes("fechaentrada")) headerIndex.fechaIngreso = idx;
         else if (h.includes("fechaentreg") || h === "entrega" || h === "entregada" || h.includes("despacho")) headerIndex.fechaEntregada = idx;
         else if (h.includes("fechaventa") || h === "venta") headerIndex.fechaVenta = idx;
-        else if (h.includes("estado") || h === "status") headerIndex.estado = idx;
+        else if (h.includes("estado") || h === "status" || h === "situacion") headerIndex.estado = idx;
         else if (h.includes("componente") || h.includes("categoria") || h.includes("tipo")) headerIndex.tipoComponente = idx;
         else if (h.includes("marca")) headerIndex.marca = idx;
         else if (h.includes("modelo")) headerIndex.modelo = idx;
         else if (h.includes("serial") || h === "serie" || h === "sn" || h.includes("nroserie")) headerIndex.serial = idx;
       });
 
-      if (Object.keys(headerIndex).length >= 4) {
+      if (Object.keys(headerIndex).length >= 2) {
         colMap = { ...colMap, ...headerIndex };
         continue;
       }
@@ -222,9 +237,7 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
 
     const idOrden = getVal('idOrden').replace(/^#/, '');
     if (!idOrden) continue;
-    // CDE maneja órdenes a partir de 125000 (o >= 100000). Descartar órdenes de sucursal que vengan en el CSV.
-    const numOrden = parseInt(idOrden, 10);
-    if (!isNaN(numOrden) && numOrden < 100000) continue;
+    if (i === 0 && !/\d/.test(idOrden)) continue;
 
     const codigoProducto = getVal('codigoProducto');
     const cliente = getVal('cliente');
@@ -257,6 +270,32 @@ export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
   }
 
   return result;
+}
+
+export function classifyAndParseSatiCsv(csvContent: string): SatiCsvClassification {
+  const allRows = parseAllSatiCsvRows(csvContent);
+  const asuRows: RecepcionCdeTicket[] = [];
+  const cdeRows: RecepcionCdeTicket[] = [];
+
+  for (const row of allRows) {
+    const isNumericId = /^\d+$/.test(row.idOrden);
+    const numOrden = isNumericId ? parseInt(row.idOrden, 10) : NaN;
+    if (isNumericId && numOrden < 100000) {
+      asuRows.push({ ...row, origen: 'ASU' });
+    } else {
+      cdeRows.push({ ...row, origen: 'CDE' });
+    }
+  }
+
+  return {
+    asuRows,
+    cdeRows,
+    totalRows: asuRows.length + cdeRows.length,
+  };
+}
+
+export function parseRecepcionCdeCSV(csvContent: string): RecepcionCdeTicket[] {
+  return classifyAndParseSatiCsv(csvContent).cdeRows;
 }
 
 // v3: invalida la caché anterior que tenía columnas desplazadas por comas dentro del Mensaje

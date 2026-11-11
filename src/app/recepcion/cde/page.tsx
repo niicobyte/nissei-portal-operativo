@@ -44,7 +44,10 @@ import {
   toggleCheckinDeposito,
   procesarActualizacionCdeCSV,
   sincronizarCdeCsvOnline,
+  classifyAndParseSatiCsv,
+  isTicketDanesa,
   ResultadoCargaCdeCSV,
+  CambioEstadoCde,
   isFechaValida,
   isDespachoCoherente,
   fetchCdeTicketsFromMySQL,
@@ -56,7 +59,11 @@ import {
   saveSatiCrossMatchLocal,
   removeSatiCrossMatchLocal,
 } from "@/data/recepcionCdeData";
-import { getStoredTickets, fetchTicketsFromMySQL } from "@/data/recepcionData";
+import {
+  getStoredTickets,
+  fetchTicketsFromMySQL,
+  sincronizarRecepcionCsvOnline,
+} from "@/data/recepcionData";
 import {
   crossMatchCdeWithAsu,
   buildUnifiedSatiList,
@@ -222,7 +229,7 @@ export default function RecepcionCdeDashboardPage() {
   const [isUploadingCSV, setIsUploadingCSV] = useState(false);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
   const [csvReport, setCsvReport] = useState<
-    (ResultadoCargaCdeCSV & { fileName: string; timestamp: string }) | null
+    (ResultadoCargaCdeCSV & { fileName: string; timestamp: string; origenLabel?: string }) | null
   >(null);
 
   const refreshCdeAndAsuFromCloud = async () => {
@@ -366,7 +373,7 @@ export default function RecepcionCdeDashboardPage() {
     }
   };
 
-  // Manejar carga de archivo CSV para actualizar órdenes CDE y sincronizar a MySQL
+  // Manejar carga de archivo CSV (detecta automáticamente órdenes de ASU, CDE o ambos) y sincronizar a MySQL
   const handleCSVFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -374,20 +381,75 @@ export default function RecepcionCdeDashboardPage() {
     setIsUploadingCSV(true);
     try {
       const text = await file.text();
-      // Sincronización obligatoria directa a MySQL en Railway (procesa solo CDE >= 100000)
-      const resultado = await sincronizarCdeCsvOnline(text);
-      const asuTickets = await fetchTicketsFromMySQL().catch(() => getStoredTickets());
+      const parsed = classifyAndParseSatiCsv(text);
+
+      if (parsed.totalRows === 0) {
+        throw new Error(
+          "No se detectaron órdenes válidas en el archivo CSV. Verifique que sea un archivo .csv exportado de SATI con columnas de orden."
+        );
+      }
+
+      const hasAsu = parsed.asuRows.length > 0;
+      const hasCde = parsed.cdeRows.length > 0;
+
+      const [resAsu, resCde] = await Promise.all([
+        hasAsu ? sincronizarRecepcionCsvOnline(text) : Promise.resolve(null),
+        hasCde ? sincronizarCdeCsvOnline(text) : Promise.resolve(null),
+      ]);
+
+      const [asuTickets, cdeTickets] = await Promise.all([
+        resAsu
+          ? Promise.resolve(resAsu.updatedTickets)
+          : fetchTicketsFromMySQL().catch(() => getStoredTickets()),
+        resCde
+          ? Promise.resolve(resCde.updatedTickets)
+          : fetchCdeTicketsFromMySQL().catch(() => getStoredCdeTickets()),
+      ]);
+
       const checkins = getStoredCdeCheckins();
       const overrides = getStoredSatiOverrides();
       const cross = getStoredSatiCrossMatches();
       const unified = buildUnifiedSatiList(
-        resultado.updatedTickets,
+        cdeTickets,
         asuTickets,
         checkins,
         overrides,
         cross
       );
       setTickets(unified);
+
+      if (hasAsu && !hasCde) {
+        setViewScope((prev) => (prev === "CLIENTES_CDE" ? "DANESA" : prev));
+      }
+
+      const cambiosCde = resCde?.cambios ?? [];
+      const cambiosAsu: CambioEstadoCde[] = (resAsu?.cambios ?? []).map((c) => ({
+        idOrden: c.idOrden,
+        cliente: c.cliente,
+        equipo: c.equipo,
+        estadoAnterior: c.estadoAnterior,
+        estadoNuevo: c.estadoNuevo,
+        fechaEntregada: c.fechaEntregada,
+        esDanesa: isTicketDanesa(c.cliente),
+        enTransito: false,
+      }));
+      const combinedCambios = [...cambiosCde, ...cambiosAsu];
+
+      const totalFilasLeidas =
+        (resAsu?.totalFilasLeidas ?? 0) + (resCde?.totalFilasLeidas ?? 0);
+      const totalActualizadas =
+        (resAsu?.totalActualizadas ?? 0) + (resCde?.totalActualizadas ?? 0);
+      const totalNuevas = (resAsu?.totalNuevas ?? 0) + (resCde?.totalNuevas ?? 0);
+      const totalSinCambios =
+        (resAsu?.totalSinCambios ?? 0) + (resCde?.totalSinCambios ?? 0);
+      const totalEnTransitoNuevos = resCde?.totalEnTransitoNuevos ?? 0;
+
+      const origenLabel =
+        hasAsu && hasCde
+          ? "Unificado ASU + CDE"
+          : hasAsu
+            ? "SATI ASU"
+            : "Casa Matriz CDE";
 
       const nowStr = new Date().toLocaleTimeString("es-PY", {
         hour: "2-digit",
@@ -396,26 +458,40 @@ export default function RecepcionCdeDashboardPage() {
       });
 
       setCsvReport({
-        ...resultado,
+        updatedTickets: cdeTickets,
+        totalFilasLeidas,
+        totalActualizadas,
+        totalNuevas,
+        totalSinCambios,
+        totalEnTransitoNuevos,
+        cambios: combinedCambios,
         fileName: file.name,
         timestamp: nowStr,
+        origenLabel,
       });
 
-      const totalModificadas = resultado.totalActualizadas + resultado.totalNuevas;
+      const totalModificadas = totalActualizadas + totalNuevas;
       if (totalModificadas > 0) {
         showToast(
-          `CSV SATI CDE procesado: ${resultado.totalActualizadas} orden(es) actualizaron su estado${
-            resultado.totalNuevas > 0 ? ` y ${resultado.totalNuevas} nueva(s)` : ""
-          } (${resultado.totalEnTransitoNuevos} pasaron a En Tránsito por transportadora).`
+          `CSV ${origenLabel} procesado: ${totalActualizadas} orden(es) actualizaron su estado${
+            totalNuevas > 0 ? ` y ${totalNuevas} nueva(s)` : ""
+          }${
+            totalEnTransitoNuevos > 0
+              ? ` (${totalEnTransitoNuevos} pasaron a En Tránsito por transportadora)`
+              : ""
+          }.`
         );
       } else {
         showToast(
-          `CSV verificado (${resultado.totalFilasLeidas.toLocaleString()} órdenes): No se detectaron cambios de estado.`
+          `CSV ${origenLabel} verificado (${totalFilasLeidas.toLocaleString()} órdenes): No se detectaron cambios de estado.`
         );
       }
     } catch (err: unknown) {
-      console.error("Error al procesar o sincronizar el archivo CSV CDE:", err);
-      const msg = err instanceof Error ? err.message : "Error al procesar o sincronizar el archivo CSV.";
+      console.error("Error al procesar o sincronizar el archivo CSV SATI:", err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Error al procesar o sincronizar el archivo CSV.";
       showToast(msg);
     } finally {
       setIsUploadingCSV(false);
@@ -1142,7 +1218,7 @@ export default function RecepcionCdeDashboardPage() {
               onClick={() => fileInputRef.current?.click()}
               disabled={isUploadingCSV}
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer"
-              title="Subir archivo CSV para actualizar órdenes de CDE automáticamente"
+              title="Subir archivo CSV para actualizar órdenes de SATI (ASU o CDE) automáticamente"
             >
               <span className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center">
                 <Upload className="w-3.5 h-3.5" />
@@ -1194,7 +1270,7 @@ export default function RecepcionCdeDashboardPage() {
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-sm sm:text-base font-extrabold text-zinc-900">
                       {csvReport.cambios.length > 0
-                        ? `¡Actualización completada! Se detectaron ${csvReport.cambios.length} cambio(s) en el CSV de Casa Matriz CDE`
+                        ? `¡Actualización completada! Se detectaron ${csvReport.cambios.length} cambio(s) en el CSV de ${csvReport.origenLabel || "Casa Matriz CDE"}`
                         : "Archivo CSV verificado: No se detectaron cambios de estado"}
                     </h3>
                     <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-white border border-zinc-200 text-zinc-600">

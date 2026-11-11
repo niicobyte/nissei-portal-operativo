@@ -27636,7 +27636,14 @@ function parseCSVText(csvText: string): string[][] {
   const firstLine = firstLineEnd !== -1 ? cleanText.slice(0, firstLineEnd) : cleanText;
   const semicolonCount = (firstLine.match(/;/g) || []).length;
   const commaCount = (firstLine.match(/,/g) || []).length;
-  const delimiter = semicolonCount > commaCount ? ';' : ',';
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+
+  let delimiter = ',';
+  if (semicolonCount > commaCount && semicolonCount > tabCount) {
+    delimiter = ';';
+  } else if (tabCount > commaCount && tabCount > semicolonCount) {
+    delimiter = '\t';
+  }
 
   const rows: string[][] = [];
   let currentRow: string[] = [];
@@ -27713,7 +27720,7 @@ export function procesarActualizacionCSV(
   const baseTickets = currentTickets ? [...currentTickets] : [...getStoredTickets()];
   const rows = parseCSVText(csvText);
 
-  if (rows.length < 2) {
+  if (rows.length === 0) {
     return {
       updatedTickets: baseTickets,
       totalFilasLeidas: 0,
@@ -27729,37 +27736,76 @@ export function procesarActualizacionCSV(
   const headers = rows[0].map(normalizeHeader);
 
   const idxIdOrden = headers.findIndex((h) =>
-    ['idorden', 'orden', 'nroorden', 'id', 'ticket', 'nrodeorden'].includes(h)
+    ['idorden', 'orden', 'nroorden', 'id', 'ticket', 'nrodeorden'].includes(h) || h.includes('idorden')
   );
   const idxEstado = headers.findIndex((h) =>
-    ['estado', 'status', 'estadosati', 'situacion'].includes(h)
+    ['estado', 'status', 'estadosati', 'situacion'].includes(h) || h.includes('estado')
   );
-  const idxCliente = headers.findIndex((h) => ['cliente', 'nombrecliente', 'usuario'].includes(h));
+  const idxCliente = headers.findIndex((h) =>
+    ['cliente', 'nombrecliente', 'usuario', 'titular'].includes(h) || h.includes('cliente')
+  );
   const idxFechaIngreso = headers.findIndex((h) =>
-    ['fechaingreso', 'ingreso', 'fecharecepcion'].includes(h)
+    ['fechaingreso', 'ingreso', 'fecharecepcion', 'fechaentrada'].includes(h) || h.includes('fechaingreso')
   );
   const idxFechaEntregada = headers.findIndex((h) =>
-    ['fechaentregada', 'fechaentrega', 'entregada', 'entregado'].includes(h)
+    ['fechaentregada', 'fechaentrega', 'entregada', 'entregado', 'despacho'].includes(h) || h.includes('fechaentreg')
   );
-  const idxFechaVenta = headers.findIndex((h) => ['fechaventa', 'venta', 'fechafactura'].includes(h));
+  const idxFechaVenta = headers.findIndex((h) =>
+    ['fechaventa', 'venta', 'fechafactura'].includes(h) || h.includes('fechaventa')
+  );
   const idxTipoComponente = headers.findIndex((h) =>
-    ['tipocomponente', 'componente', 'categoria', 'tipo', 'producto'].includes(h)
+    ['tipocomponente', 'componente', 'categoria', 'tipo', 'producto'].includes(h) || h.includes('componente')
   );
-  const idxMarca = headers.findIndex((h) => ['marca', 'brand'].includes(h));
-  const idxModelo = headers.findIndex((h) => ['modelo', 'model', 'descripcion'].includes(h));
+  const idxMarca = headers.findIndex((h) => h === 'marca' || h === 'brand' || h.includes('marca'));
+  const idxModelo = headers.findIndex((h) => h === 'modelo' || h === 'model' || h === 'descripcion' || h.includes('modelo'));
   const idxSerial = headers.findIndex((h) =>
-    ['serial', 'serie', 'nroserie', 'sn', 'numeroserie'].includes(h)
+    ['serial', 'serie', 'nroserie', 'sn', 'numeroserie'].includes(h) || h.includes('serial')
   );
   const idxCodigo = headers.findIndex((h) =>
-    ['codigoproducto', 'codigo', 'sku', 'codproducto'].includes(h)
+    ['codigoproducto', 'codigo', 'sku', 'codproducto', 'cod'].includes(h) || h.includes('codigo')
   );
   const idxMensaje = headers.findIndex((h) =>
-    ['mensaje', 'observaciones', 'observacion', 'detalle', 'nota'].includes(h)
+    ['mensaje', 'observaciones', 'observacion', 'detalle', 'nota', 'dictamen', 'falla'].includes(h) || h.includes('mensaje')
   );
 
-  // Si no tiene cabeceras explícitas pero la primera columna es numérica, asumimos orden estándar: idOrden(0), Estado(5) o Estado(1)
+  const firstCellCleaned = (rows[0][0] || '').replace(/^#/, '').trim();
+  const isFirstCellNumericOrder = /^\d+$/.test(firstCellCleaned);
+  const matchedHeadersCount = [
+    idxIdOrden,
+    idxEstado,
+    idxCliente,
+    idxFechaIngreso,
+    idxFechaEntregada,
+    idxCodigo,
+    idxMensaje,
+  ].filter((idx) => idx !== -1).length;
+  const hasExplicitHeader = !isFirstCellNumericOrder && matchedHeadersCount >= 2;
+  const startRowIndex = hasExplicitHeader ? 1 : 0;
+
+  if (rows.length <= startRowIndex) {
+    return {
+      updatedTickets: baseTickets,
+      totalFilasLeidas: 0,
+      totalActualizadas: 0,
+      totalNuevas: 0,
+      totalSinCambios: 0,
+      cambios: [],
+      nuevasOrdenesTickets: [],
+      changedOrNewTickets: [],
+    };
+  }
+
+  // Fallback exacto al formato SATI de 12 columnas cuando falta cabecera o alguna columna
+  const isSati12Cols = (rows[startRowIndex]?.length || rows[0].length) >= 8;
   const effectiveIdxId = idxIdOrden !== -1 ? idxIdOrden : 0;
-  const effectiveIdxEstado = idxEstado !== -1 ? idxEstado : rows[0].length >= 6 ? 5 : 1;
+  const effectiveIdxEstado =
+    idxEstado !== -1
+      ? idxEstado
+      : isSati12Cols
+        ? 7
+        : rows[0].length >= 6
+          ? 5
+          : 1;
 
   // Mapa rápido por idOrden
   const ticketMap = new Map<string, number>();
@@ -27773,12 +27819,14 @@ export function procesarActualizacionCSV(
   let totalFilasLeidas = 0;
   let totalSinCambios = 0;
 
-  for (let r = 1; r < rows.length; r++) {
+  for (let r = startRowIndex; r < rows.length; r++) {
     const row = rows[r];
     const rawId = (row[effectiveIdxId] || '').replace(/^#/, '').trim();
-    const rawNuevoEstado = (row[effectiveIdxEstado] || '').trim();
+    const rawNuevoEstado = (row[effectiveIdxEstado] || '').trim() || (isSati12Cols ? 'En Asignacion' : '');
 
     if (!rawId || !rawNuevoEstado) continue;
+    // Órdenes >= 100000 pertenecen a Casa Matriz CDE, no a Sucursal ASU
+    if (/^\d+$/.test(rawId) && parseInt(rawId, 10) >= 100000) continue;
     totalFilasLeidas++;
 
     const existingIndex = ticketMap.get(rawId);
@@ -27789,9 +27837,15 @@ export function procesarActualizacionCSV(
       const fechaEntregadaCSV =
         idxFechaEntregada !== -1 && row[idxFechaEntregada]
           ? row[idxFechaEntregada].trim()
-          : undefined;
+          : isSati12Cols && row[5]
+            ? row[5].trim()
+            : undefined;
       const mensajeCSV =
-        idxMensaje !== -1 && row[idxMensaje] ? row[idxMensaje].trim() : undefined;
+        idxMensaje !== -1 && row[idxMensaje]
+          ? row[idxMensaje].trim()
+          : isSati12Cols && row[3]
+            ? row[3].trim()
+            : undefined;
 
       // Comprobar si el estado cambió (comparación insensible a mayúsculas/minúsculas o cambio real de estado)
       const cambioEstado =
@@ -27841,17 +27895,26 @@ export function procesarActualizacionCSV(
       }
     } else {
       // Orden que NO estaba en Recepción: se carga automáticamente al dashboard y se agrega a MySQL
-      const effCliente = idxCliente !== -1 ? row[idxCliente] : row.length >= 2 ? row[1] : '';
+      const effCodigo =
+        idxCodigo !== -1 ? row[idxCodigo] : isSati12Cols ? row[1] : '';
+      const effCliente =
+        idxCliente !== -1 ? row[idxCliente] : isSati12Cols ? row[2] : row.length >= 2 ? row[1] : '';
+      const effMensaje =
+        idxMensaje !== -1 ? row[idxMensaje] : isSati12Cols ? row[3] : '';
       const effFechaIngreso =
-        idxFechaIngreso !== -1 ? row[idxFechaIngreso] : row.length >= 3 ? row[2] : '';
+        idxFechaIngreso !== -1 ? row[idxFechaIngreso] : isSati12Cols ? row[4] : row.length >= 3 ? row[2] : '';
       const effFechaEntregada =
-        idxFechaEntregada !== -1 ? row[idxFechaEntregada] : row.length >= 4 ? row[3] : '';
+        idxFechaEntregada !== -1 ? row[idxFechaEntregada] : isSati12Cols ? row[5] : row.length >= 4 ? row[3] : '';
       const effFechaVenta =
-        idxFechaVenta !== -1 ? row[idxFechaVenta] : row.length >= 5 ? row[4] : '';
+        idxFechaVenta !== -1 ? row[idxFechaVenta] : isSati12Cols ? row[6] : row.length >= 5 ? row[4] : '';
       const effTipoComp =
-        idxTipoComponente !== -1 ? row[idxTipoComponente] : row.length >= 7 ? row[6] : 'GENERAL';
-      const effMarca = idxMarca !== -1 ? row[idxMarca] : row.length >= 8 ? row[7] : '';
-      const effModelo = idxModelo !== -1 ? row[idxModelo] : row.length >= 9 ? row[8] : '';
+        idxTipoComponente !== -1 ? row[idxTipoComponente] : isSati12Cols ? row[8] : row.length >= 7 ? row[6] : 'GENERAL';
+      const effMarca =
+        idxMarca !== -1 ? row[idxMarca] : isSati12Cols ? row[9] : row.length >= 8 ? row[7] : '';
+      const effModelo =
+        idxModelo !== -1 ? row[idxModelo] : isSati12Cols ? row[10] : row.length >= 9 ? row[8] : '';
+      const effSerial =
+        idxSerial !== -1 ? row[idxSerial] : isSati12Cols ? row[11] : '';
 
       const isDelivered = rawNuevoEstado.toLowerCase() === 'entregada';
       recordStoredId(NEW_INGRESOS_STORAGE_KEY, rawId);
@@ -27861,9 +27924,9 @@ export function procesarActualizacionCSV(
 
       const nuevoTicket: RecepcionTicket = {
         idOrden: rawId,
-        codigoProducto: idxCodigo !== -1 ? (row[idxCodigo] || '').trim() : '',
+        codigoProducto: (effCodigo || '').trim(),
         cliente: (effCliente || 'Cliente SATI').trim(),
-        mensaje: idxMensaje !== -1 ? (row[idxMensaje] || '').trim() : '',
+        mensaje: (effMensaje || '').trim(),
         fechaIngreso: (effFechaIngreso || new Date().toLocaleDateString('es-PY')).trim(),
         fechaEntregada: effFechaEntregada ? effFechaEntregada.trim() : undefined,
         fechaVenta: effFechaVenta ? effFechaVenta.trim() : undefined,
@@ -27871,8 +27934,7 @@ export function procesarActualizacionCSV(
         tipoComponente: (effTipoComp || 'GENERAL').trim(),
         marca: (effMarca || '').trim(),
         modelo: (effModelo || '').trim(),
-        serial:
-          idxSerial !== -1 && row[idxSerial] ? row[idxSerial].trim() : 'SIN SERIAL VISIBLE',
+        serial: effSerial && effSerial.trim() ? effSerial.trim() : 'SIN SERIAL VISIBLE',
         esNuevoIngreso: true,
         esEntregadoReciente: isDelivered,
       };

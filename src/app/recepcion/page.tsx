@@ -62,6 +62,8 @@ import {
   isTicketDanesa,
   parseFechaDMY,
   getStoredCdeTickets,
+  classifyAndParseSatiCsv,
+  sincronizarCdeCsvOnline,
   fetchCdeTicketsFromMySQL,
   getStoredCdeCheckins,
   getStoredSatiOverrides,
@@ -340,20 +342,58 @@ export default function RecepcionDashboardPage() {
     setIsUploadingCSV(true);
     try {
       const text = await file.text();
-      // Sincronización obligatoria directa a MySQL en la nube (Railway)
-      const resultado = await sincronizarRecepcionCsvOnline(text, tickets);
-      const cdeTickets = getStoredCdeTickets();
+      const parsed = classifyAndParseSatiCsv(text);
+
+      if (parsed.totalRows === 0) {
+        throw new Error(
+          "No se detectaron órdenes válidas en el archivo CSV. Verifique que sea un archivo .csv exportado de SATI con columnas de orden."
+        );
+      }
+
+      const hasAsu = parsed.asuRows.length > 0;
+      const hasCde = parsed.cdeRows.length > 0;
+
+      // Sincronización obligatoria directa a MySQL en la nube (Railway) según alcance (ASU, CDE o unificado)
+      const [resAsu, resCde] = await Promise.all([
+        hasAsu ? sincronizarRecepcionCsvOnline(text, tickets) : Promise.resolve(null),
+        hasCde ? sincronizarCdeCsvOnline(text) : Promise.resolve(null),
+      ]);
+
+      const updatedAsu = resAsu ? resAsu.updatedTickets : tickets;
+      const cdeTickets = resCde ? resCde.updatedTickets : getStoredCdeTickets();
       const checkins = getStoredCdeCheckins();
       const overrides = getStoredSatiOverrides();
       const cross = getStoredSatiCrossMatches();
       const enriched = crossMatchAsuWithCde(
-        resultado.updatedTickets,
+        updatedAsu,
         cdeTickets,
         checkins,
         overrides,
         cross
       );
       setTickets(enriched);
+
+      const resultado = {
+        updatedTickets: updatedAsu,
+        totalFilasLeidas:
+          (resAsu?.totalFilasLeidas ?? 0) + (resCde?.totalFilasLeidas ?? 0),
+        totalActualizadas:
+          (resAsu?.totalActualizadas ?? 0) + (resCde?.totalActualizadas ?? 0),
+        totalNuevas: (resAsu?.totalNuevas ?? 0) + (resCde?.totalNuevas ?? 0),
+        totalSinCambios:
+          (resAsu?.totalSinCambios ?? 0) + (resCde?.totalSinCambios ?? 0),
+        cambios: [
+          ...(resAsu?.cambios ?? []),
+          ...(resCde?.cambios ?? []).map((c) => ({
+            idOrden: c.idOrden,
+            cliente: c.cliente,
+            equipo: c.equipo,
+            estadoAnterior: c.estadoAnterior,
+            estadoNuevo: c.estadoNuevo,
+            fechaEntregada: c.fechaEntregada,
+          })),
+        ],
+      };
 
       const nowStr = new Date().toLocaleTimeString("es-PY", {
         hour: "2-digit",
