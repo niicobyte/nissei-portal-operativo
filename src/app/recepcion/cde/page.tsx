@@ -32,7 +32,9 @@ import {
   Edit3,
   Plus,
   Unlink,
+  Printer,
 } from "lucide-react";
+import { SatiThermalPrintModal } from "@/components/common/SatiThermalPrintModal";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { OrderSearchInput } from "@/components/common/OrderSearchInput";
@@ -428,6 +430,8 @@ export default function RecepcionCdeDashboardPage() {
     setNotification(msg);
     setTimeout(() => setNotification(null), 5500);
   };
+
+  const [showPrintModal, setShowPrintModal] = useState<RecepcionCdeTicket | null>(null);
 
   // Sincronizar y consolidar todas las órdenes recibidas, checkins y overrides con MySQL en la nube
   const handleSyncAllToCloud = async () => {
@@ -2347,16 +2351,26 @@ export default function RecepcionCdeDashboardPage() {
                           </td>
                         )}
 
-                        {/* Acción / Ver Detalle */}
+                        {/* Acción / Ver Detalle e Imprimir Comprobante */}
                         <td className="py-3 px-3 text-right whitespace-nowrap">
-                          <button
-                            type="button"
-                            onClick={() => handleOpenTicketModal(ticket)}
-                            className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer"
-                            title="Ver detalles completos de la orden SATI"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </button>
+                          <div className="inline-flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenTicketModal(ticket)}
+                              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer"
+                              title="Ver detalles completos de la orden SATI"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowPrintModal(ticket)}
+                              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer"
+                              title="Imprimir Comprobante SATI (Térmica calibrable)"
+                            >
+                              <Printer className="w-4 h-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -2779,18 +2793,27 @@ export default function RecepcionCdeDashboardPage() {
             </div>
 
             <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
-              {!isEditingModal ? (
+              <div className="flex items-center gap-2">
+                {!isEditingModal && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingModal(true)}
+                    className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-zinc-200"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-zinc-600" />
+                    <span>Editar Fechas y Órdenes</span>
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setIsEditingModal(true)}
+                  onClick={() => setShowPrintModal(selectedTicket)}
                   className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-zinc-200"
+                  title="Imprimir Comprobante térmico calibrable de esta orden"
                 >
-                  <Edit3 className="w-3.5 h-3.5 text-zinc-600" />
-                  <span>Editar Fechas y Órdenes</span>
+                  <Printer className="w-3.5 h-3.5 text-zinc-700" />
+                  <span>Imprimir Comprobante</span>
                 </button>
-              ) : (
-                <div />
-              )}
+              </div>
               <button
                 type="button"
                 onClick={() => setSelectedTicket(null)}
@@ -2934,6 +2957,23 @@ export default function RecepcionCdeDashboardPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Modal de Impresión de Comprobante SATI Térmico Calibrable */}
+      {showPrintModal && (
+        <SatiThermalPrintModal
+          data={{
+            idOrden: showPrintModal.idOrdenAsu || showPrintModal.idOrden,
+            codigoProducto: showPrintModal.codigoProducto,
+            cliente: showPrintModal.clienteAsu || showPrintModal.cliente,
+            equipo: `${showPrintModal.marca || ""} ${showPrintModal.modelo || ""}`.trim(),
+            serial: showPrintModal.serial,
+            estado: showPrintModal.estadoAsu || showPrintModal.estado,
+            informeTecnico: formatSatiSentenceCase(showPrintModal.mensaje),
+            subtitulo: "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI",
+          }}
+          onClose={() => setShowPrintModal(null)}
+        />
       )}
 
       </main>

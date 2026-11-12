@@ -90,6 +90,7 @@ import {
 import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
+import { SatiThermalPrintModal } from "@/components/common/SatiThermalPrintModal";
 import { getActiveUser, verifyDepositoPassword, verifyAdminPassword, authenticate } from "@/data/authData";
 import { useRouter } from "next/navigation";
 
@@ -3059,77 +3060,22 @@ ${dictamen.accText}`;
           </div>
         )}
 
-        {/* Modal de Impresión de Boleta */}
+        {/* Modal de Impresión de Boleta / Comprobante Térmico Calibrable */}
         {showPrintModal && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 border border-[#e5e5e5]">
-              <div className="text-center border-b border-[#e5e5e5] pb-3">
-                <h2 className="text-xl font-black text-[#121212]">Nissei Post-Venta</h2>
-                <div className="mt-2 inline-block px-3 py-1 bg-[#eeeeee] font-mono text-xs rounded font-bold">
-                  COMPROBANTE DEL SERVICIO POST - VENTA NISSEI
-                </div>
-              </div>
-
-              <div className="text-xs space-y-2 font-mono">
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">Nº ORDEN:</span>
-                  <span className="font-bold">#{showPrintModal.idOrden}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">CÓDIGO PROD:</span>
-                  <span className="font-bold">{showPrintModal.codigoProducto || "N/A"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">CLIENTE:</span>
-                  <span className="font-semibold">{showPrintModal.cliente}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">EQUIPO:</span>
-                  <span>{showPrintModal.marca} {showPrintModal.modelo}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">Nº SERIE:</span>
-                  <span>{showPrintModal.serial || "S/N"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-[#888888]">ESTADO:</span>
-                  <span className="font-bold uppercase">{showPrintModal.estado}</span>
-                </div>
-                {showPrintModal.accesorios && (
-                  <div className="border-t border-dashed border-[#cccccc] pt-2 flex justify-between gap-2">
-                    <span className="text-[#888888]">ACCESORIOS:</span>
-                    <span className="font-semibold text-right max-w-[240px] text-[11px]">
-                      {showPrintModal.accesorios}
-                    </span>
-                  </div>
-                )}
-                <div className="border-t border-dashed border-[#cccccc] pt-2">
-                  <span className="text-[#888888] block mb-1">INFORME TÉCNICO:</span>
-                  <span className="text-[11px] font-sans text-slate-700 block leading-tight">
-                    {formatSatiSentenceCase(showPrintModal.mensaje) || "Sin observaciones."}
-                  </span>
-                </div>
-              </div>
-
-              <div className="pt-6 border-t border-[#e5e5e5] flex justify-between items-center">
-                <button
-                  onClick={() => setShowPrintModal(null)}
-                  className="px-4 py-2 border border-[#e5e5e5] rounded-xl text-xs font-semibold text-[#555555]"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={() => {
-                    window.print();
-                  }}
-                  className="px-5 py-2 bg-[#121212] text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm hover:bg-black"
-                >
-                  <Printer className="w-4 h-4" />
-                  Imprimir Comprobante
-                </button>
-              </div>
-            </div>
-          </div>
+          <SatiThermalPrintModal
+            data={{
+              idOrden: showPrintModal.idOrden,
+              codigoProducto: showPrintModal.codigoProducto,
+              cliente: showPrintModal.cliente,
+              equipo: `${showPrintModal.marca || ""} ${showPrintModal.modelo || ""}`.trim(),
+              serial: showPrintModal.serial,
+              estado: showPrintModal.estado,
+              accesorios: showPrintModal.accesorios,
+              informeTecnico: formatSatiSentenceCase(showPrintModal.mensaje),
+              subtitulo: "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI",
+            }}
+            onClose={() => setShowPrintModal(null)}
+          />
         )}
 
       </div>
