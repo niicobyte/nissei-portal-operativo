@@ -20,10 +20,9 @@ import {
   FileSpreadsheet,
   Send,
   Database,
-  QrCode,
-  ScanBarcode,
 } from "lucide-react";
 import { BarcodeScannerModal } from "@/components/common/BarcodeScannerModal";
+import { ScanButton } from "@/components/common/ScanButton";
 import {
   CATALOGO_HARDWARE_REAL,
   LISTA_VENDEDORES_REALES,
@@ -1006,15 +1005,11 @@ export default function NuevoIngresoMontajePage() {
                       placeholder="Ej: 966.565 ó 001-002-0045892"
                       className="w-full min-w-0 text-xs sm:text-sm font-mono border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none font-bold text-zinc-900"
                     />
-                    <button
-                      type="button"
+                    <ScanButton
                       onClick={() => setScannerTarget({ mode: "nro_reg" })}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-900 bg-zinc-900 hover:bg-black text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
+                      icon="barcode"
                       title="Abrir cámara para escanear solo Código de Barras"
-                    >
-                      <ScanBarcode className="w-4 h-4 text-emerald-400" />
-                      <span>Escanear</span>
-                    </button>
+                    />
                   </div>
                 </div>
 
@@ -1270,15 +1265,11 @@ export default function NuevoIngresoMontajePage() {
                         placeholder="Escanear o escribir UPC / EAN para autocompletar o vincular al SKU..."
                         className="w-full min-w-0 text-xs font-mono font-bold bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
                       />
-                      <button
-                        type="button"
+                      <ScanButton
                         onClick={() => setScannerTarget({ mode: "upc" })}
-                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-900 bg-zinc-900 hover:bg-black text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
+                        icon="barcode"
                         title="Abrir cámara para escanear el UPC o código de barras del producto"
-                      >
-                        <QrCode className="w-4 h-4 text-emerald-400" />
-                        <span>Escanear</span>
-                      </button>
+                      />
                     </div>
                     <datalist id="upcs-list">
                       {currentCatalog
@@ -1366,15 +1357,11 @@ export default function NuevoIngresoMontajePage() {
                         placeholder="Escanear serial físico o dejar vacío (se asignará N/A)..."
                         className="w-full min-w-0 text-xs font-mono bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
                       />
-                      <button
-                        type="button"
+                      <ScanButton
                         onClick={() => setScannerTarget({ mode: "new" })}
-                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-900 bg-zinc-900 hover:bg-black text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
+                        icon="qr"
                         title="Abrir cámara para escanear Código de Barras o código QR"
-                      >
-                        <QrCode className="w-4 h-4 text-emerald-400" />
-                        <span>Escanear</span>
-                      </button>
+                      />
                     </div>
                   </div>
 
@@ -1467,14 +1454,12 @@ export default function NuevoIngresoMontajePage() {
                                 placeholder="N/A o escanee serial..."
                                 className="w-full min-w-0 text-xs font-mono border border-zinc-200 rounded px-2 py-1 focus:border-zinc-900 outline-none"
                               />
-                              <button
-                                type="button"
+                              <ScanButton
                                 onClick={() => setScannerTarget({ mode: "row", index })}
-                                className="p-1.5 rounded border border-zinc-200 bg-zinc-50 hover:bg-zinc-900 hover:text-white hover:border-zinc-900 text-zinc-700 transition-colors cursor-pointer shrink-0"
+                                icon="barcode"
+                                compact
                                 title="Escanear QR o Código de barras con cámara"
-                              >
-                                <ScanBarcode className="w-3.5 h-3.5" />
-                              </button>
+                              />
                             </div>
                           </td>
                           <td className="py-2.5 px-2 text-right">

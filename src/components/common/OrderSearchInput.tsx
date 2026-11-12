@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { Search, ScanBarcode, X } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { BarcodeScannerModal } from "@/components/common/BarcodeScannerModal";
+import { ScanButton } from "@/components/common/ScanButton";
 
 interface OrderSearchInputProps {
   value: string;
@@ -45,15 +46,10 @@ export function OrderSearchInput({
           )}
         </div>
 
-        <button
-          type="button"
+        <ScanButton
           onClick={() => setScannerOpen(true)}
-          className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-zinc-50 hover:bg-zinc-100 focus-visible:bg-white border border-zinc-200 hover:border-zinc-400 focus-visible:border-zinc-900 rounded-xl text-xs font-medium text-zinc-700 hover:text-zinc-900 outline-none transition-all cursor-pointer shrink-0"
           title="Escanear código de barras para buscar"
-        >
-          <ScanBarcode className="w-4 h-4 text-zinc-500 shrink-0" />
-          <span>Escanear</span>
-        </button>
+        />
       </div>
 
       <BarcodeScannerModal
