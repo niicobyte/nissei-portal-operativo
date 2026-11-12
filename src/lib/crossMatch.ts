@@ -1208,7 +1208,7 @@ export function buildUnifiedSatiList(
       fechaIngresoCde: matchedCde?.fechaIngreso || "",
       fechaEntregada: fechaDespachoCde,         // Despacho CDE legítimo o vacío
       fechaVenta: asu.fechaVenta || matchedCde?.fechaVenta || "",
-      estado: matchedCde?.estado || asu.estado || "En Asignacion",
+      estado: asu.estado || "En Asignacion",
       tipoComponente: asu.tipoComponente || matchedCde?.tipoComponente || "",
       marca: asu.marca || matchedCde?.marca || "",
       modelo: asu.modelo || matchedCde?.modelo || "",
@@ -1221,6 +1221,7 @@ export function buildUnifiedSatiList(
       idOrdenCde: matchedCde?.idOrden,           // Nº Orden CDE vinculado
       clienteAsu: asu.cliente,
       estadoAsu: asu.estado,
+      estadoCde: matchedCde?.estado,
       matchReason: manualCdeTicket ? "Cruce Manual Confirmado" : matchedCde?.matchReason,
       origen: "ASU",
       rowKey,
@@ -1255,6 +1256,7 @@ export function buildUnifiedSatiList(
       fechaIngresoCde: cde.fechaIngreso || "",
       clienteAsu: cde.clienteAsu || linkedAsu?.cliente || "",
       estadoAsu: cde.estadoAsu || linkedAsu?.estado || "",
+      estadoCde: cde.estado,
       idOrdenCde: cde.idOrden,
       idOrdenAsu: cde.idOrdenAsu,
       recibidoEnDeposito: checkin.recibido,

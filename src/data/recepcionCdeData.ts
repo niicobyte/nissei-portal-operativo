@@ -42,6 +42,7 @@ export interface RecepcionCdeTicket {
   fechaIngresoAsu?: string;
   fechaIngresoCde?: string;
   estadoAsu?: string;
+  estadoCde?: string;
   matchReason?: string;
   origen?: "ASU" | "CDE";
   rowKey?: string;

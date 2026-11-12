@@ -154,51 +154,69 @@ function isTicketSinCruce(t: RecepcionCdeTicket): boolean {
  * Determina el estado técnico unificado que se muestra en pantalla.
  */
 function getTicketDisplayStatus(t: RecepcionCdeTicket): string {
-  const est = (t.estado || "").trim();
-  const estLower = est.toLowerCase();
-  const estAsuRaw = (t.estadoAsu || "").trim();
-  const estAsu = estAsuRaw.toLowerCase();
+  const numId = parseInt(t.idOrden, 10);
+  const esFilaAsu = t.origen === "ASU" || (!t.origen && !isNaN(numId) && numId < 100000);
 
-  // 0. Preservar dictámenes "Sin Reparo" (ej. "Entregada Sin Reparo") antes de reglas genéricas de "Entregada"
+  if (esFilaAsu) {
+    const estAsuRaw = (t.estadoAsu || t.estado || "").trim();
+    const estAsu = estAsuRaw.toLowerCase();
+    const estCdeRaw = (t.estadoCde || "").trim();
+    const estCde = estCdeRaw.toLowerCase();
+
+    // 0. Preservar "Sin Reparo" y estados reales locales de ASU por encima del estado de CDE
+    if (estAsu.includes("sin reparo")) {
+      return estAsuRaw || "Sin Reparo";
+    }
+    if (estAsu.includes("entregada")) {
+      return "Entregada";
+    }
+    if (estAsu.includes("qc") || estAsu.includes("control de calidad")) {
+      return "Control de Calidad (QC)";
+    }
+    if (estAsu.includes("reparada")) {
+      return "Reparada";
+    }
+
+    // Para envíos internos Danesa SA aún en espera en ASU, conservar dictamen de CDE si corresponde
+    if (t.esDanesa) {
+      if (estCde.includes("sin reparo")) {
+        return estCdeRaw || "Sin Reparo";
+      }
+      const tieneDespachoValido =
+        isFechaValida(t.fechaEntregada) && isDespachoCoherente(t.fechaIngreso, t.fechaEntregada);
+      const tieneDetalleReparacion = Boolean(
+        (t.mensaje || "").toLowerCase().includes("repar") ||
+        (t.mensaje || "").toLowerCase().includes("cambio") ||
+        (t.mensaje || "").toLowerCase().includes("ok") ||
+        (t.mensaje || "").toLowerCase().includes("pieza") ||
+        (t.mensaje || "").toLowerCase().includes("funcional")
+      );
+      if (tieneDespachoValido && tieneDetalleReparacion) {
+        return "Reparada";
+      }
+    }
+
+    return estAsuRaw || "En Asignacion";
+  }
+
+  // Fila nativa de CDE (#125000+)
+  const est = (t.estadoCde || t.estado || "").trim();
+  const estLower = est.toLowerCase();
+
   if (estLower.includes("sin reparo")) {
     return est || "Sin Reparo";
   }
-  if (estAsu.includes("sin reparo")) {
-    return estAsuRaw || "Sin Reparo";
-  }
-
-  // 1. Si en ASU ya fue entregada al cliente final
-  if (estAsu.includes("entregada") || (!t.esDanesa && estLower.includes("entregada"))) {
-    return "Entregada";
-  }
-
-  // Validación de despacho legítimo y coherente
-  const tieneDespachoValido =
-    isFechaValida(t.fechaEntregada) && isDespachoCoherente(t.fechaIngreso, t.fechaEntregada);
-
-  // 2. Si ya fue confirmada o resuelta como Reparada
-  const esReparada = estAsu.includes("reparada") || estLower.includes("reparada");
-  const tieneDetalleReparacion = Boolean(
-    (t.mensaje || "").toLowerCase().includes("repar") ||
-    (t.mensaje || "").toLowerCase().includes("cambio") ||
-    (t.mensaje || "").toLowerCase().includes("ok") ||
-    (t.mensaje || "").toLowerCase().includes("pieza") ||
-    (t.mensaje || "").toLowerCase().includes("funcional")
-  );
-
-  if (esReparada || (tieneDespachoValido && tieneDetalleReparacion)) {
-    return "Reparada";
-  }
-
   if (estLower.includes("entregada")) {
     return "Entregada";
   }
-
   if (estLower.includes("qc") || estLower.includes("control de calidad")) {
     return "Control de Calidad (QC)";
   }
+  if (estLower.includes("reparada")) {
+    return "Reparada";
+  }
 
-  return t.estadoAsu || t.estado || "En Asignacion";
+  return est || "En Asignacion";
 }
 
 export default function RecepcionCdeDashboardPage() {
@@ -572,9 +590,11 @@ export default function RecepcionCdeDashboardPage() {
     };
 
     const esEntregada = (t: RecepcionCdeTicket) => {
-      const est = (t.estado || "").toLowerCase();
-      const estAsu = (t.estadoAsu || "").toLowerCase();
-      return t.recibidoEnDeposito || estAsu.includes("entregada") || est.includes("entregada");
+      const isAsu = t.origen === "ASU" || (!t.origen && parseInt(t.idOrden, 10) < 100000);
+      if (isAsu) {
+        return (t.estadoAsu || t.estado || "").toLowerCase().includes("entregada");
+      }
+      return (t.estadoCde || t.estado || "").toLowerCase().includes("entregada");
     };
 
     // Tránsito por transportadora y recepción en depósito (Danesa SA)
