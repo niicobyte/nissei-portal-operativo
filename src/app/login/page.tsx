@@ -181,8 +181,8 @@ function LoginForm() {
   };
 
   return (
-    <main className="min-h-screen bg-[#fbf9f9] py-8 sm:py-12 2xl:py-20 px-4 sm:px-6 lg:px-8 flex items-center justify-center">
-      <div className="max-w-4xl 2xl:max-w-5xl w-full space-y-6 sm:space-y-8">
+    <main className="min-h-dvh bg-[#fbf9f9] py-6 sm:py-10 2xl:py-16 px-3 sm:px-6 lg:px-8 flex items-center justify-center">
+      <div className="max-w-4xl 2xl:max-w-5xl 3xl:max-w-6xl w-full space-y-6 sm:space-y-8">
         
         {/* Cabecera NISSEI */}
         <div className="text-center space-y-2">

@@ -151,7 +151,7 @@ export function CleanSelect({
         <div
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
-          } mt-1.5 ${dropdownWidth || (isFull ? "w-full" : "w-64")} min-w-[200px] max-h-72 overflow-y-auto bg-white rounded-xl border border-zinc-200 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150`}
+          } mt-1.5 ${dropdownWidth || (isFull ? "w-full" : "w-64")} min-w-[180px] max-w-[calc(100vw-1.5rem)] max-h-[min(18rem,55dvh)] overflow-y-auto bg-white rounded-xl border border-zinc-200 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150`}
         >
           {searchable && (
             <div className="p-1 border-b border-zinc-100 mb-1 sticky top-0 bg-white/95 backdrop-blur-xs z-10">

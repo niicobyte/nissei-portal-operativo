@@ -539,7 +539,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6">
-      <div className={`bg-white w-full max-w-7xl h-[92vh] rounded-2xl border border-zinc-200 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${isSessionLocked ? "blur-md pointer-events-none select-none opacity-25" : ""}`}>
+      <div className={`bg-white w-full max-w-7xl 3xl:max-w-[1800px] h-[92dvh] rounded-2xl border border-zinc-200 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${isSessionLocked ? "blur-md pointer-events-none select-none opacity-25" : ""}`}>
         {/* Cabecera del Visor de Base de Datos */}
         <div className="bg-zinc-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-800">
           <div className="flex items-center gap-3">

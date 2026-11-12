@@ -599,8 +599,8 @@ export default function NuevoIngresoMontajePage() {
 
   return (
     <AuthGuard requiredModule="montajes">
-      <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16">
-      <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8">
+      <main className="min-h-dvh bg-[#fbf9f9] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10">
+      <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 min-w-0">
         
         {/* Cabecera con Botón Volver Mejorado */}
         <div className="flex items-center justify-between pb-4 border-b border-zinc-200 gap-2 flex-wrap">

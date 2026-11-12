@@ -268,7 +268,7 @@ export function CleanDatePicker({
         <div
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
-          } mt-2 w-72 sm:w-80 bg-white rounded-2xl border border-zinc-200 shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 select-none`}
+          } mt-2 w-[min(20rem,calc(100vw-1.5rem))] bg-white rounded-2xl border border-zinc-200 shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 select-none`}
         >
           {/* Cabecera: Flechas y Mes/Año */}
           <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-zinc-100">

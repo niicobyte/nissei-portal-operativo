@@ -1214,13 +1214,13 @@ export default function RecepcionCdeDashboardPage() {
 
   return (
     <AuthGuard requiredModule="deposito.danesa">
-      <main className="min-h-screen bg-[#fbf9f9] text-[#121212] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16 font-sans">
-      <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8">
+      <main className="min-h-dvh bg-[#fbf9f9] text-[#121212] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10 font-sans">
+      <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 min-w-0">
 
         {/* Notificación Toast Flotante */}
         {notification && (
-          <div className="fixed top-5 right-5 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg border border-zinc-700 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg border border-zinc-700 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{notification}</span>
           </div>
         )}
@@ -1607,7 +1607,7 @@ export default function RecepcionCdeDashboardPage() {
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
 
             {/* Selector de Ámbito con las 4 pestañas solicitadas */}
-            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 flex-wrap">
+            <div className="w-full lg:w-auto flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 flex-wrap">
               {(
                 [
                   {
@@ -1666,7 +1666,7 @@ export default function RecepcionCdeDashboardPage() {
             </div>
 
             {/* Buscador de Órdenes */}
-            <div className="relative w-full lg:w-96">
+            <div className="relative w-full lg:w-96 xl:w-[26rem] min-w-0">
               <Search className="w-4 h-4 absolute left-3 top-2.5 text-zinc-400" />
               <input
                 type="text"
@@ -1692,7 +1692,7 @@ export default function RecepcionCdeDashboardPage() {
           {/* Filtros Secundarios con CleanSelect */}
           <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
             {/* Filtro de Tránsito / Recibidos (visible para todos los ámbitos: Danesa, Clientes ASU, Clientes CDE y Todos) */}
-            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs">
+            <div className="flex flex-wrap items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs max-w-full">
               <button
                 type="button"
                 onClick={() => {
@@ -2315,8 +2315,8 @@ export default function RecepcionCdeDashboardPage() {
 
       {/* Modal de Detalle y Edición de Orden SATI */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 border border-zinc-200 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2.5 sm:p-4 animate-in fade-in">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain">
             <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
               <div>
                 <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Roboto, Roboto_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -15,6 +15,12 @@ const robotoMono = Roboto_Mono({
   display: "swap",
   variable: "--font-roboto-mono",
 });
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "NISSEI Portal Operativo | Taller & Post-Venta CDE",
@@ -40,7 +46,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className={`${roboto.className} min-h-screen bg-[#fbf9f9] text-[#121212] antialiased selection:bg-[#e2e2e2] selection:text-[#121212]`}>
+      <body className={`${roboto.className} min-h-dvh bg-[#fbf9f9] text-[#121212] antialiased selection:bg-[#e2e2e2] selection:text-[#121212]`}>
         {children}
       </body>
     </html>

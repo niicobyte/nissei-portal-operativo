@@ -382,13 +382,13 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
 
   return (
     <AuthGuard requiredModule="reparaciones">
-      <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16">
-      <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8">
+      <main className="min-h-dvh bg-[#fbf9f9] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10">
+      <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 min-w-0">
         
         {/* Notificación Toast */}
         {toastMessage && (
-          <div className="fixed top-5 right-5 z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg border border-zinc-700 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+          <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg border border-zinc-700 flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
             <span>{toastMessage}</span>
           </div>
         )}
@@ -1121,8 +1121,8 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
         {/* MODAL: VER DETALLE COMPLETO DE LA ORDEN (OJITO)                */}
         {/* ============================================================== */}
         {selectedOrdenDetail && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4">
-            <div className="bg-white rounded-2xl max-w-lg 2xl:max-w-2xl w-full p-5 sm:p-6 shadow-2xl space-y-4 border border-[#e5e5e5] max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2.5 sm:p-4">
+            <div className="bg-white rounded-2xl max-w-lg 2xl:max-w-2xl w-full p-4 sm:p-6 shadow-2xl space-y-4 border border-[#e5e5e5] max-h-[92dvh] overflow-y-auto overscroll-contain">
               <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
                 <div>
                   <span className="text-[11px] font-mono text-[#888888] uppercase">DETALLE DE ORDEN EN TALLER SATI</span>
@@ -1311,8 +1311,8 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
         {/* MODAL: ASIGNAR TÉCNICO & DETALLAR FALLA A CHEQUEAR (ADMIN)     */}
         {/* ============================================================== */}
         {assignModal && (
-          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-            <div className="bg-white rounded-xl max-w-lg w-full p-5 sm:p-6 shadow-xl space-y-4 border border-zinc-200 max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2.5 sm:p-4">
+            <div className="bg-white rounded-xl max-w-lg w-full p-4 sm:p-6 shadow-xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain">
               <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-lg bg-zinc-900 text-white flex items-center justify-center">

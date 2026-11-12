@@ -492,8 +492,8 @@ export default function TecnicosDashboardPage() {
 
   return (
     <AuthGuard requiredModule="montajes">
-      <main className="min-h-screen bg-[#fbf9f9] py-6 sm:py-8 2xl:py-12 px-3 sm:px-6 lg:px-8 2xl:px-16 print:min-h-0 print:bg-white print:p-0">
-      <div className="max-w-7xl 2xl:max-w-[1700px] 3xl:max-w-[2200px] mx-auto space-y-6 2xl:space-y-8 print:hidden">
+      <main className="min-h-dvh bg-[#fbf9f9] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10 print:min-h-0 print:bg-white print:p-0">
+      <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 print:hidden min-w-0">
         
         {/* Cabecera unificada con Sincronización en la Nube y Carga CSV a MySQL */}
         <HeaderActions
@@ -1335,7 +1335,7 @@ export default function TecnicosDashboardPage() {
       {selectedOrderForCert && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block">
           <style media="print">{buildThermalPrintCss(thermalSettings)}</style>
-          <div className="bg-white rounded-xl w-full max-w-md p-4 sm:p-5 shadow-2xl space-y-3.5 border border-zinc-200 max-h-[92vh] overflow-y-auto print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
+          <div className="bg-white rounded-xl w-full max-w-md p-4 sm:p-5 shadow-2xl space-y-3.5 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
 
             <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-2.5 print:hidden">
               <div className="min-w-0">
