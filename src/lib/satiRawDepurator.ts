@@ -2,8 +2,10 @@
 // Reemplaza la depuración manual en Google Sheets / Apps Script permitiendo importar Excel (.xlsx/.xls) o CSV crudo directo del ERP.
 
 export const SATI_MIN_ID_ASU = 29403;
-export const SATI_MIN_ID_CDE = 125650;
+export const SATI_MIN_ID_CDE = 125600;
 export const SATI_CDE_RANGE_START = 100000;
+
+export type SatiSheetScope = 'ASU' | 'CDE' | 'MIXED';
 
 export const SATI_EXCLUDED_CLIENT_KEYWORDS = [
   'drop',
@@ -117,6 +119,51 @@ export interface SatiPreparedSheetInput {
   csvText: string;
   preSkippedHistoricasAsu: number;
   preSkippedHistoricasCde: number;
+  scope?: SatiSheetScope;
+}
+
+/**
+ * Determina si una hoja o archivo SATI corresponde únicamente a ASU, únicamente a CDE
+ * (cuando incluye todo el historial desde #1 hasta #130k+ atravesando el rango 45k..99k)
+ * o a una mezcla ya consolidada ASU+CDE.
+ */
+export function detectSatiSheetScope(
+  idValues: Iterable<unknown>,
+  hintName?: string
+): SatiSheetScope {
+  let hasCdeHigh = false;
+  let gapMidCount = 0;
+
+  for (const val of idValues) {
+    if (val === null || val === undefined) continue;
+    let numId: number;
+    if (typeof val === 'number') {
+      if (!Number.isInteger(val) || val <= 0) continue;
+      numId = val;
+    } else {
+      const clean = String(val).replace(/^#/, '').trim();
+      if (!/^\d+$/.test(clean)) continue;
+      numId = parseInt(clean, 10);
+    }
+
+    if (numId >= SATI_CDE_RANGE_START) {
+      hasCdeHigh = true;
+    } else if (numId >= 45000) {
+      gapMidCount++;
+    }
+  }
+
+  if (!hasCdeHigh) {
+    return 'ASU';
+  }
+
+  const hintLow = (hintName || '').toLowerCase();
+  const hintsCdeOnly = /\bcde\b/.test(hintLow) && !/\basu\b/.test(hintLow);
+  if (gapMidCount >= 5 || (hintsCdeOnly && gapMidCount > 0)) {
+    return 'CDE';
+  }
+
+  return 'MIXED';
 }
 
 export function yieldToBrowser(): Promise<void> {
@@ -189,7 +236,8 @@ export function collapseMensajeSpaces(raw?: string | null): string {
  */
 export function evaluateRawSatiRow(
   rawId?: string | null,
-  rawCliente?: string | null
+  rawCliente?: string | null,
+  scope: SatiSheetScope = 'MIXED'
 ): {
   keep: boolean;
   cleanId: string;
@@ -198,13 +246,19 @@ export function evaluateRawSatiRow(
 } {
   const cleanId = String(rawId || '').replace(/^#/, '').trim();
   if (!cleanId || !/\d/.test(cleanId)) {
-    return { keep: false, cleanId: '', origen: 'ASU', reason: 'SIN_ID' };
+    return { keep: false, cleanId: '', origen: scope === 'CDE' ? 'CDE' : 'ASU', reason: 'SIN_ID' };
   }
 
   const isNumericId = /^\d+$/.test(cleanId);
   const numId = isNumericId ? parseInt(cleanId, 10) : NaN;
   const origen: 'ASU' | 'CDE' =
-    isNumericId && numId < SATI_CDE_RANGE_START ? 'ASU' : 'CDE';
+    scope === 'CDE'
+      ? 'CDE'
+      : scope === 'ASU'
+        ? 'ASU'
+        : isNumericId && numId < SATI_CDE_RANGE_START
+          ? 'ASU'
+          : 'CDE';
 
   if (isNumericId) {
     if (origen === 'ASU' && numId < SATI_MIN_ID_ASU) {

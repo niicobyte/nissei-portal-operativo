@@ -3,8 +3,10 @@ import {
   SATI_CDE_RANGE_START,
   SATI_MIN_ID_ASU,
   SATI_MIN_ID_CDE,
+  detectSatiSheetScope,
   yieldToBrowser,
   type SatiPreparedSheetInput,
+  type SatiSheetScope,
 } from "./satiRawDepurator";
 
 export const SPREADSHEET_FILE_ACCEPT =
@@ -160,7 +162,10 @@ function detectHeaderAndIdColumn(rows: SpreadsheetRows): {
   return { headerRowIdx: -1, idColIdx: -1 };
 }
 
-function classifyHistoricalOrderSkip(rawCell: unknown): "ASU" | "CDE" | null {
+function classifyHistoricalOrderSkip(
+  rawCell: unknown,
+  scope: SatiSheetScope = "MIXED"
+): "ASU" | "CDE" | null {
   if (rawCell === null || rawCell === undefined) return null;
   let numId: number;
   if (typeof rawCell === "number") {
@@ -171,6 +176,12 @@ function classifyHistoricalOrderSkip(rawCell: unknown): "ASU" | "CDE" | null {
     if (!/^\d+$/.test(clean)) return null;
     numId = parseInt(clean, 10);
   }
+  if (scope === "CDE") {
+    return numId < SATI_MIN_ID_CDE ? "CDE" : null;
+  }
+  if (scope === "ASU") {
+    return numId < SATI_MIN_ID_ASU ? "ASU" : null;
+  }
   if (numId < SATI_CDE_RANGE_START) {
     return numId < SATI_MIN_ID_ASU ? "ASU" : null;
   }
@@ -178,12 +189,26 @@ function classifyHistoricalOrderSkip(rawCell: unknown): "ASU" | "CDE" | null {
 }
 
 /**
- * Convierte una hoja Excel en CSV compacto pre-filtrando filas históricas (<29403 ASU / <125650 CDE)
+ * Convierte una hoja Excel en CSV compacto pre-filtrando filas históricas (<29403 ASU / <125600 CDE)
  * antes de formatear fechas o serializar celdas, cediendo el hilo al navegador cada 10,000 filas.
  */
-async function rowsToPreparedSatiAsync(rows: SpreadsheetRows): Promise<SatiPreparedSheetInput> {
+async function rowsToPreparedSatiAsync(
+  rows: SpreadsheetRows,
+  hintName?: string
+): Promise<SatiPreparedSheetInput> {
   const { headerRowIdx, idColIdx } = detectHeaderAndIdColumn(rows);
   const canQuickSkip = headerRowIdx !== -1 && idColIdx !== -1;
+
+  const scope: SatiSheetScope = canQuickSkip
+    ? detectSatiSheetScope(
+        (function* () {
+          for (let r = headerRowIdx + 1; r < rows.length; r++) {
+            yield rows[r]?.[idColIdx];
+          }
+        })(),
+        hintName
+      )
+    : "MIXED";
 
   const lines: string[] = [];
   let preSkippedHistoricasAsu = 0;
@@ -198,7 +223,7 @@ async function rowsToPreparedSatiAsync(rows: SpreadsheetRows): Promise<SatiPrepa
     if (!Array.isArray(row) || row.length === 0) continue;
 
     if (canQuickSkip && r > headerRowIdx) {
-      const skipBranch = classifyHistoricalOrderSkip(row[idColIdx]);
+      const skipBranch = classifyHistoricalOrderSkip(row[idColIdx], scope);
       if (skipBranch === "ASU") {
         preSkippedHistoricasAsu++;
         continue;
@@ -226,6 +251,7 @@ async function rowsToPreparedSatiAsync(rows: SpreadsheetRows): Promise<SatiPrepa
     csvText: lines.join("\n"),
     preSkippedHistoricasAsu,
     preSkippedHistoricasCde,
+    scope,
   };
 }
 
@@ -275,10 +301,13 @@ function detectDelimiterQuick(sampleLine: string): string {
  * Pre-filtra CSV gigantes (> 4,000 líneas) en bloques sin bloquear el navegador,
  * eliminando órdenes históricas antes de invocar al parser completo.
  */
-async function csvTextToPreparedSatiAsync(rawText: string): Promise<SatiPreparedSheetInput> {
+async function csvTextToPreparedSatiAsync(
+  rawText: string,
+  hintName?: string
+): Promise<SatiPreparedSheetInput> {
   const clean = rawText.replace(/^\uFEFF/, "");
   if (!clean.trim()) {
-    return { csvText: "", preSkippedHistoricasAsu: 0, preSkippedHistoricasCde: 0 };
+    return { csvText: "", preSkippedHistoricasAsu: 0, preSkippedHistoricasCde: 0, scope: "MIXED" };
   }
 
   const rawLines = clean.split(/\r?\n/);
@@ -308,7 +337,7 @@ async function csvTextToPreparedSatiAsync(rawText: string): Promise<SatiPrepared
   if (buf) records.push(buf);
 
   if (records.length === 0) {
-    return { csvText: "", preSkippedHistoricasAsu: 0, preSkippedHistoricasCde: 0 };
+    return { csvText: "", preSkippedHistoricasAsu: 0, preSkippedHistoricasCde: 0, scope: "MIXED" };
   }
 
   const delimiter = detectDelimiterQuick(records[0]);
@@ -324,6 +353,15 @@ async function csvTextToPreparedSatiAsync(rawText: string): Promise<SatiPrepared
     return { csvText: clean, preSkippedHistoricasAsu: 0, preSkippedHistoricasCde: 0 };
   }
 
+  const idCells = new Array<string>(records.length);
+  for (let i = headerRowIdx + 1; i < records.length; i++) {
+    if (i > 0 && i % 20000 === 0) {
+      await yieldToBrowser();
+    }
+    idCells[i] = extractCsvCellAt(records[i], delimiter, idColIdx);
+  }
+  const scope = detectSatiSheetScope(idCells.slice(headerRowIdx + 1), hintName);
+
   const kept: string[] = [];
   let preSkippedHistoricasAsu = 0;
   let preSkippedHistoricasCde = 0;
@@ -334,8 +372,7 @@ async function csvTextToPreparedSatiAsync(rawText: string): Promise<SatiPrepared
     }
     const rec = records[i];
     if (i > headerRowIdx) {
-      const idCell = extractCsvCellAt(rec, delimiter, idColIdx);
-      const skipBranch = classifyHistoricalOrderSkip(idCell);
+      const skipBranch = classifyHistoricalOrderSkip(idCells[i], scope);
       if (skipBranch === "ASU") {
         preSkippedHistoricasAsu++;
         continue;
@@ -352,6 +389,7 @@ async function csvTextToPreparedSatiAsync(rawText: string): Promise<SatiPrepared
     csvText: kept.join("\n"),
     preSkippedHistoricasAsu,
     preSkippedHistoricasCde,
+    scope,
   };
 }
 
@@ -403,7 +441,7 @@ export async function readMultipleSpreadsheetsForSati(
           : [[...sheets].sort((a, b) => b.data.length - a.data.length)[0]];
 
       for (const sheet of sheetsToRead) {
-        const prepared = await rowsToPreparedSatiAsync(sheet.data);
+        const prepared = await rowsToPreparedSatiAsync(sheet.data, `${file.name} ${sheet.sheet}`);
         if (
           prepared.csvText.trim() ||
           prepared.preSkippedHistoricasAsu > 0 ||
@@ -423,7 +461,7 @@ export async function readMultipleSpreadsheetsForSati(
           textToPrep = converted;
         }
       }
-      const prepared = await csvTextToPreparedSatiAsync(textToPrep);
+      const prepared = await csvTextToPreparedSatiAsync(textToPrep, file.name);
       if (
         prepared.csvText.trim() ||
         prepared.preSkippedHistoricasAsu > 0 ||

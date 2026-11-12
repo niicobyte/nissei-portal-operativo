@@ -534,6 +534,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
+    // 6b. Depurar IDs contaminados fuera del rango real de ASU (por ejemplo 32551..99999 filtrados desde CDE)
+    if (action === "PRUNE_RECEPCION_BY_IDS") {
+      const ids: string[] = Array.isArray(body.ids)
+        ? body.ids
+            .map((v: unknown) => String(v ?? "").trim())
+            .filter((s: string) => s.length > 0 && s.length <= 64)
+        : [];
+
+      let deletedCount = 0;
+      const BATCH_SIZE = 500;
+      for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+        const batch = ids.slice(i, i + BATCH_SIZE);
+        const placeholders = batch.map(() => "?").join(",");
+        await pool.query(
+          "DELETE FROM recepcion_tickets WHERE id_orden IN (" + placeholders + ")",
+          batch
+        );
+        await pool.query(
+          "DELETE FROM taller_reparaciones WHERE id_orden IN (" + placeholders + ")",
+          batch
+        );
+        deletedCount += batch.length;
+      }
+
+      if (body.skipReturnData) {
+        return NextResponse.json({ ok: true, deletedCount });
+      }
+      const data = await dbGetRecepcionTickets();
+      return NextResponse.json({ ok: true, deletedCount, data });
+    }
+
     // 7. Agregar nueva orden de Montaje de PC
     if (action === "ADD_MONTAJE") {
       const { orden } = body;

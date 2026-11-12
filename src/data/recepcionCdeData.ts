@@ -2,6 +2,7 @@
 import {
   collapseSpacesTrim,
   createEmptyDepurationStats,
+  detectSatiSheetScope,
   evaluateRawSatiRow,
   isSameNormalizedText,
   mergeDepurationStats,
@@ -11,6 +12,7 @@ import {
   yieldToBrowser,
   type SatiDepurationStats,
   type SatiPreparedSheetInput,
+  type SatiSheetScope,
 } from '../lib/satiRawDepurator';
 
 export interface RecepcionCdeTicket {
@@ -119,23 +121,28 @@ export interface SatiCsvClassification {
   cdeRows: RecepcionCdeTicket[];
   totalRows: number;
   depurationStats: SatiDepurationStats;
+  reconcileFullAsu?: boolean;
 }
 
 /**
  * Parsea y depura automáticamente un archivo CSV/Excel exportado de SATI:
- * - Filtra históricos (< 29403 en ASU, < 125650 en CDE)
+ * - Filtra históricos (< 29403 en ASU, < 125600 en CDE)
  * - Excluye palabras de cliente ('drop', 'emap', '10807', 'code 100 sa', 'farma 10', 'dream', 'drem', 'py-pjc', 'py-sg', 'py/sg')
  * - Excluye paréntesis distintos a (JC) y (ATCN) en cliente
  * - Deduplica órdenes repetidas conservando los datos más completos
  * - Normaliza cliente, marca, modelo, serial y tipoComponente
  */
-function parseAndDepurateSatiCsvRows(csvContent: string): {
+function parseAndDepurateSatiCsvRows(
+  csvContent: string,
+  explicitScope?: SatiSheetScope
+): {
   rows: RecepcionCdeTicket[];
   stats: SatiDepurationStats;
+  scope: SatiSheetScope;
 } {
   const stats = createEmptyDepurationStats();
   const cleanText = csvContent.replace(/^\uFEFF/, '').trim();
-  if (!cleanText) return { rows: [], stats };
+  if (!cleanText) return { rows: [], stats, scope: explicitScope || 'MIXED' };
 
   // Detección automática del delimitador principal en las primeras 5 líneas
   const firstLineEnd = cleanText.indexOf('\n');
@@ -221,6 +228,7 @@ function parseAndDepurateSatiCsvRows(csvContent: string): {
     serial: 11,
   };
   let headerDetected = false;
+  let resolvedScope: SatiSheetScope | undefined = explicitScope;
 
   for (let i = 0; i < rows.length; i++) {
     const cells = rows[i];
@@ -327,8 +335,19 @@ function parseAndDepurateSatiCsvRows(csvContent: string): {
     if (!rawId) continue;
     if (!headerDetected && i < 5 && !/\d/.test(rawId)) continue;
 
+    if (!resolvedScope) {
+      const idIdx = colMap.idOrden;
+      resolvedScope = detectSatiSheetScope(
+        (function* () {
+          for (let k = i; k < rows.length; k++) {
+            yield rows[k]?.[idIdx];
+          }
+        })()
+      );
+    }
+
     const rawCliente = getVal('cliente');
-    const evaluation = evaluateRawSatiRow(rawId, rawCliente);
+    const evaluation = evaluateRawSatiRow(rawId, rawCliente, resolvedScope);
     if (evaluation.reason === 'SIN_ID') continue;
 
     stats.totalRawFilas++;
@@ -410,11 +429,14 @@ function parseAndDepurateSatiCsvRows(csvContent: string): {
 
   const rowsClean = Array.from(dedupMap.values());
   stats.totalValidas = rowsClean.length;
-  return { rows: rowsClean, stats };
+  return { rows: rowsClean, stats, scope: resolvedScope || 'MIXED' };
 }
 
-export function classifyAndParseSatiCsv(csvContent: string): SatiCsvClassification {
-  const { rows: allRows, stats } = parseAndDepurateSatiCsvRows(csvContent);
+export function classifyAndParseSatiCsv(
+  csvContent: string,
+  explicitScope?: SatiSheetScope
+): SatiCsvClassification {
+  const { rows: allRows, stats, scope } = parseAndDepurateSatiCsvRows(csvContent, explicitScope);
   const asuRows: RecepcionCdeTicket[] = [];
   const cdeRows: RecepcionCdeTicket[] = [];
 
@@ -431,6 +453,8 @@ export function classifyAndParseSatiCsv(csvContent: string): SatiCsvClassificati
     cdeRows,
     totalRows: asuRows.length + cdeRows.length,
     depurationStats: stats,
+    reconcileFullAsu:
+      scope === 'ASU' && stats.descartadasHistoricasAsu >= 1000 && asuRows.length >= 200,
   };
 }
 
@@ -540,18 +564,26 @@ export async function classifyAndParseMultiSatiPreparedAsync(
   const asuMap = new Map<string, RecepcionCdeTicket>();
   const cdeMap = new Map<string, RecepcionCdeTicket>();
   let stats = createEmptyDepurationStats();
+  let sawFullRawAsu = false;
 
   for (const input of inputs) {
     await yieldToBrowser();
     const part =
       input.csvText && input.csvText.trim()
-        ? classifyAndParseSatiCsv(input.csvText)
+        ? classifyAndParseSatiCsv(input.csvText, input.scope)
         : {
             asuRows: [],
             cdeRows: [],
             totalRows: 0,
             depurationStats: createEmptyDepurationStats(),
           };
+    if (
+      (input.scope === 'ASU' || part.reconcileFullAsu) &&
+      input.preSkippedHistoricasAsu + part.depurationStats.descartadasHistoricasAsu >= 1000 &&
+      part.asuRows.length >= 200
+    ) {
+      sawFullRawAsu = true;
+    }
     stats = mergeClassifiedPartIntoMaps(
       part,
       asuMap,
@@ -571,6 +603,7 @@ export async function classifyAndParseMultiSatiPreparedAsync(
     cdeRows,
     totalRows: stats.totalValidas,
     depurationStats: stats,
+    reconcileFullAsu: sawFullRawAsu,
   };
 }
 

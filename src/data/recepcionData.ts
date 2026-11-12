@@ -2,10 +2,13 @@
 import {
   collapseSpacesTrim,
   createEmptyDepurationStats,
+  detectSatiSheetScope,
   evaluateRawSatiRow,
   isSameNormalizedText,
   mergeSatiDuplicateFields,
   normalizeSatiRowFields,
+  SATI_CDE_RANGE_START,
+  SATI_MIN_ID_ASU,
   type SatiDepurationStats,
 } from '../lib/satiRawDepurator';
 import type { SatiCsvClassification } from './recepcionCdeData';
@@ -27636,6 +27639,7 @@ export interface ResultadoCargaCSV {
   cambios: CambioEstadoCSV[];
   nuevasOrdenesTickets?: RecepcionTicket[];
   changedOrNewTickets?: RecepcionTicket[];
+  prunedIds?: string[];
   depurationStats?: SatiDepurationStats;
 }
 
@@ -27748,6 +27752,38 @@ function pickBestDateCell(
   return primary || undefined;
 }
 
+function computeStaleContaminatedAsuIds(
+  tickets: RecepcionTicket[],
+  validAsuSet: ReadonlySet<string>
+): Set<string> {
+  let maxValidId = 0;
+  for (const id of validAsuSet) {
+    const clean = id.replace(/^#/, '').trim();
+    if (/^\d+$/.test(clean)) {
+      const n = parseInt(clean, 10);
+      if (n < SATI_CDE_RANGE_START && n > maxValidId) {
+        maxValidId = n;
+      }
+    }
+  }
+  const stale = new Set<string>();
+  if (maxValidId < SATI_MIN_ID_ASU) return stale;
+
+  for (const t of tickets) {
+    const raw = String(t.idOrden || '').trim();
+    const clean = raw.replace(/^#/, '');
+    if (!/^\d+$/.test(clean)) continue;
+    const n = parseInt(clean, 10);
+    if (n < SATI_MIN_ID_ASU || n >= SATI_CDE_RANGE_START) continue;
+    if (validAsuSet.has(raw) || validAsuSet.has(clean)) continue;
+    // Purga registros filtrados/descartados dentro del rango ASU y todo registro > maxValidId+20 (ej. #32551..#99999 filtrados desde CDE)
+    if (n <= maxValidId || n > maxValidId + 20) {
+      stale.add(raw);
+    }
+  }
+  return stale;
+}
+
 /**
  * Procesa un archivo CSV de Recepción SATI, compara cada orden con el estado actual del dashboard,
  * actualiza automáticamente los estados que hayan cambiado y devuelve el resumen completo.
@@ -27757,7 +27793,8 @@ export function procesarActualizacionCSV(
   currentTickets?: RecepcionTicket[],
   options?: { skipBackgroundSync?: boolean }
 ): ResultadoCargaCSV {
-  const baseTickets = currentTickets ? [...currentTickets] : [...getStoredTickets()];
+  let baseTickets = currentTickets ? [...currentTickets] : [...getStoredTickets()];
+  const prunedSet = new Set<string>();
 
   type RawCleanAsuEntry = {
     idOrden: string;
@@ -27793,6 +27830,16 @@ export function procesarActualizacionCSV(
         modelo: row.modelo,
         serial: row.serial,
       });
+    }
+    if (csvText.reconcileFullAsu && cleanIncomingMap.size > 0) {
+      const detectedStale = computeStaleContaminatedAsuIds(
+        baseTickets,
+        new Set(cleanIncomingMap.keys())
+      );
+      if (detectedStale.size > 0) {
+        for (const id of detectedStale) prunedSet.add(id);
+        baseTickets = baseTickets.filter((t) => !prunedSet.has(String(t.idOrden).trim()));
+      }
     }
   } else {
   const rows = parseCSVText(csvText);
@@ -27927,6 +27974,14 @@ export function procesarActualizacionCSV(
           ? 5
           : 1;
 
+  const resolvedFallbackScope = detectSatiSheetScope(
+    (function* () {
+      for (let r = startRowIndex; r < rows.length; r++) {
+        yield rows[r]?.[effectiveIdxId];
+      }
+    })()
+  );
+
   for (let r = startRowIndex; r < rows.length; r++) {
     const row = rows[r];
     const rawId = (row[effectiveIdxId] || '').replace(/^#/, '').trim();
@@ -27941,7 +27996,7 @@ export function procesarActualizacionCSV(
             ? row[1] || ''
             : '';
 
-    const evaluation = evaluateRawSatiRow(rawId, effClienteRaw);
+    const evaluation = evaluateRawSatiRow(rawId, effClienteRaw, resolvedFallbackScope);
     if (evaluation.reason === 'SIN_ID') continue;
 
     // Órdenes >= 100000 pertenecen a Casa Matriz CDE, no a Sucursal ASU
@@ -28131,16 +28186,22 @@ export function procesarActualizacionCSV(
         const cambioMensaje = Boolean(
           mensajeCSV && !isSameNormalizedText(mensajeCSV, actual.mensaje)
         );
+        const effectiveFechaIngreso = inc.fechaIngreso || actual.fechaIngreso;
+        const effectiveCodigo = inc.codigoProducto || actual.codigoProducto;
         const cambioMetadata =
           (actual.cliente || '') !== effectiveCliente ||
           (actual.marca || '') !== effectiveMarca ||
           (actual.modelo || '') !== effectiveModelo ||
           (actual.serial || '') !== effectiveSerial ||
-          (actual.tipoComponente || '') !== effectiveTipo;
+          (actual.tipoComponente || '') !== effectiveTipo ||
+          (actual.fechaIngreso || '') !== effectiveFechaIngreso ||
+          (actual.codigoProducto || '') !== effectiveCodigo;
 
         if (cambioFecha || cambioMensaje || cambioMetadata) {
           const enrichedLocal: RecepcionTicket = {
             ...actual,
+            codigoProducto: effectiveCodigo,
+            fechaIngreso: effectiveFechaIngreso,
             cliente: effectiveCliente,
             marca: effectiveMarca,
             modelo: effectiveModelo,
@@ -28197,8 +28258,9 @@ export function procesarActualizacionCSV(
   const finalTickets =
     nuevasOrdenes.length > 0 ? [...nuevasOrdenes, ...baseTickets] : baseTickets;
   const changedOrNewTickets = Array.from(changedOrNewMap.values());
+  const prunedIds = Array.from(prunedSet);
 
-  if (cambios.length > 0 || nuevasOrdenes.length > 0 || changedOrNewTickets.length > 0) {
+  if (cambios.length > 0 || nuevasOrdenes.length > 0 || changedOrNewTickets.length > 0 || prunedIds.length > 0) {
     saveTickets(finalTickets);
 
     // Sincronizar también el espejo local de taller_reparaciones para que el Visor MySQL y Taller reflejen las nuevas órdenes y estados
@@ -28207,8 +28269,11 @@ export function procesarActualizacionCSV(
         const TALLER_KEY = 'nissei_taller_reparaciones_v7_clean';
         const rawTaller = localStorage.getItem(TALLER_KEY);
         if (rawTaller) {
-          const tallerList = JSON.parse(rawTaller);
+          let tallerList = JSON.parse(rawTaller);
           if (Array.isArray(tallerList)) {
+            if (prunedSet.size > 0) {
+              tallerList = tallerList.filter((item: any) => !prunedSet.has(String(item.idOrden).trim()));
+            }
             const tallerMap = new Map<string, number>();
             tallerList.forEach((item: any, idx: number) => {
               tallerMap.set(String(item.idOrden).trim(), idx);
@@ -28306,6 +28371,7 @@ export function procesarActualizacionCSV(
     cambios,
     nuevasOrdenesTickets: nuevasOrdenes,
     changedOrNewTickets,
+    prunedIds,
     depurationStats,
   };
 }
@@ -28345,6 +28411,37 @@ export async function sincronizarRecepcionCsvOnline(
       (c) => c.estadoAnterior !== 'NO ESTABA EN RECEPCIÓN (NUEVA)'
     );
     const nuevasList = resCalculo.nuevasOrdenesTickets || [];
+
+    const prunedList = resCalculo.prunedIds || [];
+    let finalCloudData: RecepcionTicket[] | null = null;
+
+    if (prunedList.length > 0) {
+      const PRUNE_CHUNK = 500;
+      const hasUpsertsAfterPrune =
+        ticketsToPersist.length > 0 || cambiosList.length > 0 || nuevasList.length > 0;
+      for (let i = 0; i < prunedList.length; i += PRUNE_CHUNK) {
+        const chunk = prunedList.slice(i, i + PRUNE_CHUNK);
+        const isLastPrune = i + PRUNE_CHUNK >= prunedList.length;
+        const resp = await fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'PRUNE_RECEPCION_BY_IDS',
+            ids: chunk,
+            skipReturnData: hasUpsertsAfterPrune || !isLastPrune,
+          }),
+        });
+        const json = await resp.json().catch(() => null);
+        if (!resp.ok || !json?.ok) {
+          throw new Error(
+            json?.error || 'No se pudo limpiar registros históricos contaminados en MySQL.'
+          );
+        }
+        if (!hasUpsertsAfterPrune && isLastPrune && Array.isArray(json.data)) {
+          finalCloudData = json.data as RecepcionTicket[];
+        }
+      }
+    }
 
     if (ticketsToPersist.length > 0 || cambiosList.length > 0 || nuevasList.length > 0) {
       // Dividir en lotes compactos de 400 elementos (~250 KB/POST) para evitar cortes de body (>10 MB) en Middleware o proxy HTTP
@@ -28393,7 +28490,6 @@ export async function sincronizarRecepcionCsvOnline(
         });
       }
 
-      let finalCloudData: RecepcionTicket[] | null = null;
       for (let i = 0; i < postQueue.length; i++) {
         const isLastChunk = i === postQueue.length - 1;
         const payload = postQueue[i];
@@ -28420,14 +28516,14 @@ export async function sincronizarRecepcionCsvOnline(
           finalCloudData = json.data as RecepcionTicket[];
         }
       }
+    }
 
-      if (finalCloudData && finalCloudData.length > 0) {
-        const enriched = applyCloudRecepcionTickets(finalCloudData);
-        return {
-          ...resCalculo,
-          updatedTickets: enriched,
-        };
-      }
+    if (finalCloudData && finalCloudData.length > 0) {
+      const enriched = applyCloudRecepcionTickets(finalCloudData);
+      return {
+        ...resCalculo,
+        updatedTickets: enriched,
+      };
     }
   }
 
