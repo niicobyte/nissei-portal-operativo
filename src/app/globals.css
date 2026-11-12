@@ -410,7 +410,7 @@ samp {
   animation: cpuBenchAura 2.4s ease-in-out infinite;
 }
 
-/* Impresión térmica compacta (80mm / 58mm) para stickers de Taller de Montajes */
+/* Impresión térmica compacta (80mm / 58mm) para comprobantes y stickers */
 @media print {
   html {
     font-size: 16px !important;
@@ -432,10 +432,15 @@ samp {
     print-color-adjust: exact;
   }
 
-  body.thermal-80mm-print main {
-    min-height: 0 !important;
-    height: auto !important;
-    background: #ffffff !important;
+  /* Si está activo el modo térmico, ocultar el flujo de la aplicación para no generar hojas extra */
+  body.thermal-80mm-print main,
+  body.thermal-80mm-print header,
+  body.thermal-80mm-print nav,
+  body.thermal-80mm-print footer {
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
   }

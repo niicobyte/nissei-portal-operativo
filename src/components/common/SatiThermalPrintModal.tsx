@@ -76,7 +76,7 @@ export function SatiThermalPrintModal({
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block animate-in fade-in">
       <style media="print">{buildThermalPrintCss(thermalSettings)}</style>
 
-      {/* Estilos especiales para ultra negro en impresión térmica */}
+      {/* Estilos especiales para ultra negro y aislamiento en impresión térmica */}
       <style>{`
         .thermal-ultra-black {
           color: #000000 !important;

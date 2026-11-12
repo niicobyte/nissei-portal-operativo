@@ -118,16 +118,34 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
       margin: ${settings.marginMm}mm;
     }
     @media print {
+      /* 1. Ocultar absolutamente todos los elementos en la página */
+      body.thermal-80mm-print * {
+        visibility: hidden !important;
+      }
+
+      /* 2. Rescatar y hacer visibles EXCLUSIVAMENTE el contenedor térmico y sus hijos */
+      body.thermal-80mm-print #thermal-sticker-wrapper,
+      body.thermal-80mm-print #thermal-sticker-wrapper * {
+        visibility: visible !important;
+      }
+
+      /* 3. Posicionar el comprobante en la esquina superior izquierda exacta de la hoja térmica */
       body.thermal-80mm-print #thermal-sticker-wrapper {
+        position: fixed !important;
+        left: 0 !important;
+        top: 0 !important;
+        right: 0 !important;
         width: ${contentWidthMm}mm !important;
         max-width: ${contentWidthMm}mm !important;
-        margin-left: auto !important;
-        margin-right: auto !important;
+        margin: 0 auto !important;
         padding: 0 !important;
         overflow: visible !important;
         transform: ${settings.offsetXMm !== 0 ? `translateX(${settings.offsetXMm}mm)` : "none"} !important;
+        z-index: 999999 !important;
       }
+
       body.thermal-80mm-print #thermal-sticker-80mm {
+        display: block !important;
         width: ${scaledInnerMm}mm !important;
         max-width: none !important;
         margin: 0 !important;
