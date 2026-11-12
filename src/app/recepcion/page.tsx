@@ -95,6 +95,156 @@ import { useRouter } from "next/navigation";
 
 const ITEMS_PER_PAGE = 25;
 
+/**
+ * Estados operativos principales compartidos entre el filtro de estados,
+ * el selector de cambio rápido dentro del detalle (ojito) y las notificaciones.
+ */
+const ESTADOS_RECEPCION_CORE = [
+  "Asignada",
+  "En Asignacion",
+  "En Reparación",
+  "Entregada",
+  "Pendiente por repuesto",
+  "QC",
+  "Reparada",
+] as const;
+
+interface EstadoVisualConfig {
+  badgeClass: string;
+  inactiveBtnClass: string;
+  activeBtnClass: string;
+  isDanger?: boolean;
+  isDelivered?: boolean;
+  readyForPickup: boolean;
+  whatsappHeader: string;
+  whatsappBody: string;
+}
+
+const DEFAULT_ESTADO_VISUAL: EstadoVisualConfig = {
+  badgeClass: "bg-zinc-100 text-zinc-700 border-zinc-200",
+  inactiveBtnClass: "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-400",
+  activeBtnClass: "bg-zinc-900 text-white border-zinc-900 shadow-xs ring-2 ring-zinc-300",
+  readyForPickup: false,
+  whatsappHeader: "Actualización del estado en taller",
+  whatsappBody: "El equipo se encuentra bajo gestión del sector de Post-Venta.",
+};
+
+function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
+  const norm = (estado || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  if (norm === "entregada") {
+    return {
+      badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+      inactiveBtnClass: "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100",
+      activeBtnClass: "bg-emerald-700 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-200",
+      isDelivered: true,
+      readyForPickup: true,
+      whatsappHeader: "✅ *ENTREGADA*",
+      whatsappBody: "Confirmamos que el equipo figura como entregado conforme en el sector de Post-Venta.",
+    };
+  }
+  if (norm === "reparada") {
+    return {
+      badgeClass: "bg-sky-50 text-sky-700 border-sky-200",
+      inactiveBtnClass: "bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100",
+      activeBtnClass: "bg-sky-700 text-white border-sky-700 shadow-xs ring-2 ring-sky-200",
+      readyForPickup: true,
+      whatsappHeader: "✅ *REPARADO CON ÉXITO*",
+      whatsappBody: "El equipo fue reparado satisfactoriamente, superó las pruebas técnicas y está listo para ser retirado.",
+    };
+  }
+  if (norm === "qc" || norm.includes("control de calidad")) {
+    return {
+      badgeClass: "bg-purple-50 text-purple-700 border-purple-200",
+      inactiveBtnClass: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
+      activeBtnClass: "bg-purple-700 text-white border-purple-700 shadow-xs ring-2 ring-purple-200",
+      readyForPickup: true,
+      whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
+      whatsappBody: "El equipo se encuentra en etapa final de pruebas y control de calidad en Post-Venta.",
+    };
+  }
+  if (norm.includes("pendiente") && norm.includes("repuesto")) {
+    return {
+      badgeClass: "bg-orange-50 text-orange-800 border-orange-200",
+      inactiveBtnClass: "bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100",
+      activeBtnClass: "bg-orange-600 text-white border-orange-600 shadow-xs ring-2 ring-orange-200",
+      readyForPickup: false,
+      whatsappHeader: "⏳ *PENDIENTE POR REPUESTO*",
+      whatsappBody: "El equipo se encuentra en espera de llegada/disponibilidad de repuesto para completar su reparación.",
+    };
+  }
+  if (norm.includes("reparacion")) {
+    return {
+      badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
+      inactiveBtnClass: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
+      activeBtnClass: "bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200",
+      readyForPickup: false,
+      whatsappHeader: "🔧 *EN REPARACIÓN*",
+      whatsappBody: "El equipo se encuentra en proceso de diagnóstico e intervención técnica en taller.",
+    };
+  }
+  if (norm === "asignada") {
+    return {
+      badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200",
+      inactiveBtnClass: "bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100",
+      activeBtnClass: "bg-indigo-700 text-white border-indigo-700 shadow-xs ring-2 ring-indigo-200",
+      readyForPickup: false,
+      whatsappHeader: "👨‍🔧 *ASIGNADA A TÉCNICO*",
+      whatsappBody: "La orden ya fue asignada a un técnico especialista para su revisión.",
+    };
+  }
+  if (norm.includes("en asignacion")) {
+    return {
+      badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
+      inactiveBtnClass: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100",
+      activeBtnClass: "bg-slate-700 text-white border-slate-700 shadow-xs ring-2 ring-slate-300",
+      readyForPickup: false,
+      whatsappHeader: "📋 *EN ASIGNACIÓN*",
+      whatsappBody: "La orden fue registrada y aguarda asignación al equipo técnico.",
+    };
+  }
+  if (norm.includes("sin reparo") || norm.includes("liquidacion") || norm.includes("rechaz")) {
+    return {
+      badgeClass: "bg-rose-50 text-rose-700 border-rose-200",
+      inactiveBtnClass: "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100",
+      activeBtnClass: "bg-rose-700 text-white border-rose-700 shadow-xs ring-2 ring-rose-200",
+      isDanger: norm.includes("sin reparo"),
+      readyForPickup: norm.includes("sin reparo"),
+      whatsappHeader: `⚠️ *${(estado || "SIN REPARO").toUpperCase()}*`,
+      whatsappBody: "Se requiere gestión comercial, autorización o retiro según el dictamen técnico informado.",
+    };
+  }
+  if (norm.includes("presupuest")) {
+    return {
+      badgeClass: "bg-cyan-50 text-cyan-800 border-cyan-200",
+      inactiveBtnClass: "bg-cyan-50 text-cyan-800 border-cyan-200 hover:bg-cyan-100",
+      activeBtnClass: "bg-cyan-700 text-white border-cyan-700 shadow-xs ring-2 ring-cyan-200",
+      readyForPickup: false,
+      whatsappHeader: `💰 *${(estado || "PRESUPUESTADA").toUpperCase()}*`,
+      whatsappBody: "Se emitió el presupuesto correspondiente y aguarda confirmación del cliente.",
+    };
+  }
+  if (norm.includes("stock")) {
+    return {
+      badgeClass: "bg-zinc-100 text-zinc-700 border-zinc-300",
+      inactiveBtnClass: "bg-zinc-100 text-zinc-700 border-zinc-300 hover:bg-zinc-200",
+      activeBtnClass: "bg-zinc-800 text-white border-zinc-800 shadow-xs ring-2 ring-zinc-300",
+      readyForPickup: false,
+      whatsappHeader: `📦 *${(estado || "ENVIADO STOCK").toUpperCase()}*`,
+      whatsappBody: "El equipo fue derivado internamente a Stock.",
+    };
+  }
+
+  return {
+    ...DEFAULT_ESTADO_VISUAL,
+    whatsappHeader: `📌 *${(estado || "EN PROCESO").toUpperCase()}*`,
+  };
+}
+
 type ViewScope = "DANESA" | "CLIENTES_ASU" | "TODOS";
 type TransitFilter = "TODOS" | "EN_CAMINO" | "INGRESADO_CDE" | "FALTA_INGRESAR" | "RECIBIDOS";
 type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
@@ -625,10 +775,14 @@ export default function RecepcionDashboardPage() {
     );
   };
 
-  // Actualizar estado de una orden (ej: Entregar, Reparada, Pasar a QC, En Taller)
+  // Actualizar estado de una orden sincronizado con el filtro y modal
   const handleCambiarEstado = (idOrden: string, nuevoEstado: string) => {
-    const isDelivered = nuevoEstado.toLowerCase() === "entregada";
-    const nowDate = new Date().toLocaleDateString("es-PY");
+    const isDelivered = nuevoEstado.trim().toLowerCase() === "entregada";
+    const nowDate = new Date().toLocaleDateString("es-PY", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
     const accFinal =
       modalAccessoriesList.length > 0
         ? modalAccessoriesList.join(", ")
@@ -657,11 +811,13 @@ export default function RecepcionDashboardPage() {
     showToast(`Orden #${idOrden} actualizada a estado: ${nuevoEstado}`);
   };
 
-  // Generar mensaje con el mismo formato de Nuevo Ingreso y enviar al grupo de Recepción
+  // Generar mensaje con el estado exacto seleccionado y detalle técnico para enviar al grupo de Recepción
   const generarMensajeWhatsAppRecepcion = (ticket: RecepcionTicket) => {
-    const estLower = (ticket.estado || "").toLowerCase();
+    const estadoActual = (ticket.estado || "En Asignacion").trim();
+    const estLower = estadoActual.toLowerCase();
     const msgRaw = (ticket.mensaje || "").trim();
     const msgUpper = msgRaw.toUpperCase();
+    const estadoConfig = getEstadoVisualConfig(estadoActual);
 
     // Separar detalle técnico y accesorios si existen en el mensaje o en el campo accesorios
     let detalleTexto = msgRaw;
@@ -678,42 +834,47 @@ export default function RecepcionDashboardPage() {
       accText = "Sin accesorios adicionales";
     }
 
-    let statusText = "";
-    if (
-      msgUpper.includes("SIN DEFECTO") ||
-      msgUpper.includes("NO PRESENTA FALLA")
-    ) {
-      statusText =
-        "ℹ️ *SIN DEFECTO COMPROBADO*\nEl equipo superó el ciclo de pruebas continuas de 48hs sin reproducir la falla indicada. Conserva su garantía de fábrica.";
-    } else if (
+    const tieneSinDefecto =
+      msgUpper.includes("SIN DEFECTO") || msgUpper.includes("NO PRESENTA FALLA");
+    const tieneSinReparo =
       msgUpper.includes("SIN REPARO") ||
       msgUpper.includes("NC") ||
       msgUpper.includes("CAMBIO POR NUEVO") ||
       msgUpper.includes("RECHAZA") ||
       estLower.includes("sin reparo") ||
       estLower.includes("no reparado") ||
-      estLower.includes("rma")
-    ) {
+      estLower.includes("rma");
+
+    let statusText = "";
+    if (tieneSinDefecto) {
+      statusText =
+        "ℹ️ *SIN DEFECTO COMPROBADO*\nEl equipo superó el ciclo de pruebas continuas de 48hs sin reproducir la falla indicada. Conserva su garantía de fábrica.";
+    } else if (tieneSinReparo) {
       statusText =
         "⚠️ *NO REPARADO / DERIVADO A RMA*\nSe requiere gestión de garantía con fabricante o emisión de nota de crédito comercial.";
-    } else if (estLower === "reparada" || estLower === "entregada" || estLower === "qc") {
-      statusText =
-        "✅ *REPARADO CON ÉXITO*\nEl equipo superó satisfactoriamente las pruebas de control de calidad y está listo para ser retirado.";
     } else {
-      statusText = `🔧 *EN GESTIÓN DE TALLER (${ticket.estado || "En proceso"})*\nEl equipo se encuentra en evaluación técnica en el sector de Post-Venta.`;
+      statusText = `${estadoConfig.whatsappHeader}\n${estadoConfig.whatsappBody}`;
     }
 
     if (detalleTexto && !detalleTexto.toUpperCase().includes("SIN DETALLES ADICIONALES")) {
       statusText += `\n📝 *Detalle:* ${detalleTexto}`;
     }
 
-    return `El equipo de *${ticket.cliente || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
+    const introLine =
+      estLower === "entregada"
+        ? `Confirmación de entrega del equipo de *${ticket.cliente || "Cliente"}* en el sector de Post-Venta`
+        : estadoConfig.readyForPickup || tieneSinDefecto || tieneSinReparo
+        ? `El equipo de *${ticket.cliente || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro`
+        : `Actualización del servicio técnico para el equipo de *${ticket.cliente || "Cliente"}* en el sector de Post-Venta`;
+
+    return `${introLine}
 
 📋 *Orden SATI:* #${ticket.idOrden}
 🏷️ *Cód. Producto:* ${ticket.codigoProducto || "N/A"}
 💻 *Equipo:* ${ticket.marca} ${ticket.modelo || "Equipo"}
 📦 *Categoría:* ${ticket.tipoComponente || "GENERAL"}
 🔢 *Serie:* ${ticket.serial && ticket.serial !== "S/N" && !ticket.serial.toUpperCase().includes("SIN SERIAL") ? ticket.serial : "SIN SERIAL"}
+📌 *Estado:* ${estadoActual}
 
 📊 *Dictamen Técnico:*
 ${statusText}
@@ -1036,9 +1197,12 @@ ${accText}`;
     [scopeRecibidosList]
   );
 
-  // Opciones dinámicas para CleanSelect de Estados
+  // Opciones dinámicas para CleanSelect de Estados (unificadas con el modal de detalle)
   const statusOptions = useMemo<CleanSelectOption[]>(() => {
     const counts: Record<string, number> = {};
+    ESTADOS_RECEPCION_CORE.forEach((st) => {
+      counts[st] = 0;
+    });
     scopeTickets.forEach((t) => {
       const st = (t.estado || "En Asignacion").trim();
       if (viewScope === "CLIENTES_ASU" && isEstadoInternoNoCliente(st)) {
@@ -1046,7 +1210,7 @@ ${accText}`;
       }
       counts[st] = (counts[st] || 0) + 1;
     });
-    const sorted = Object.keys(counts).sort((a, b) => a.localeCompare(b));
+    const sorted = Object.keys(counts).sort((a, b) => a.localeCompare(b, "es"));
     return [
       { value: "TODOS", label: "Todos los estados", count: scopeTickets.length },
       ...sorted.map((st) => ({
@@ -1056,6 +1220,19 @@ ${accText}`;
       })),
     ];
   }, [scopeTickets, viewScope]);
+
+  // Mismos estados exactos para seleccionar dentro del modal del ojito
+  const modalStatusOptions = useMemo<string[]>(() => {
+    const list = statusOptions
+      .filter((opt) => opt.value !== "TODOS")
+      .map((opt) => opt.value);
+    const current = (selectedTicket?.estado || "").trim();
+    if (current && !list.some((st) => st.toLowerCase() === current.toLowerCase())) {
+      list.push(current);
+      list.sort((a, b) => a.localeCompare(b, "es"));
+    }
+    return list;
+  }, [statusOptions, selectedTicket]);
 
   // Conteo de categorías normalizadas para filtro jerárquico con buscador
   const categoryCounts = useMemo<CategoryCountItem[]>(() => {
@@ -1168,20 +1345,14 @@ ${accText}`;
   }, [filteredTickets, currentPage]);
 
   const getStatusBadge = (estado: string, fechaEntrega?: string) => {
-    const e = (estado || "").toLowerCase();
-    if (e.includes("sin reparo")) {
-      return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
-          <ShieldAlert className="w-3 h-3 text-rose-600" />
-          <span>{estado}</span>
-        </span>
-      );
-    }
-    if (e === "entregada") {
+    const label = (estado || "Pendiente").trim();
+    const visual = getEstadoVisualConfig(label);
+
+    if (visual.isDelivered) {
       return (
         <div className="inline-flex flex-col items-start gap-0.5">
-          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-            Entregada
+          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${visual.badgeClass}`}>
+            {label}
           </span>
           {fechaEntrega && (
             <span
@@ -1194,44 +1365,11 @@ ${accText}`;
         </div>
       );
     }
-    if (e === "reparada") {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-sky-50 text-sky-700 border border-sky-200">
-          Reparada (Lista)
-        </span>
-      );
-    }
-    if (e.includes("reparación") || e.includes("asignad")) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
-          En Reparación
-        </span>
-      );
-    }
-    if (e === "qc") {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-50 text-purple-700 border border-purple-200">
-          En QC
-        </span>
-      );
-    }
-    if (e.includes("stock")) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-700 border border-zinc-300">
-          Enviado Stock
-        </span>
-      );
-    }
-    if (e.includes("liquidacion")) {
-      return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-rose-50 text-rose-700 border border-rose-200">
-          Liquidación
-        </span>
-      );
-    }
+
     return (
-      <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-zinc-100 text-zinc-700 border border-zinc-200">
-        {estado || "Pendiente"}
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${visual.badgeClass}`}>
+        {visual.isDanger && <ShieldAlert className="w-3 h-3 text-rose-600" />}
+        <span>{label}</span>
       </span>
     );
   };
@@ -2514,34 +2652,36 @@ ${accText}`;
                   </div>
                 </div>
 
-                {/* Acciones de cambio de estado en el modal */}
-                <div className="p-3 bg-[#fdfdfd] border border-[#e5e5e5] rounded-xl flex items-center justify-between gap-2">
-                  <span className="text-xs font-semibold text-[#555555]">Cambiar estado:</span>
+                {/* Acciones de cambio de estado en el modal (sincronizado con el filtro de estados) */}
+                <div className="p-3 bg-[#fdfdfd] border border-[#e5e5e5] rounded-xl space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-semibold text-[#555555]">
+                      Cambiar estado:
+                    </span>
+                    <span className="text-[11px] text-zinc-400">
+                      Se incluirá al notificar al cliente
+                    </span>
+                  </div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <button
-                      onClick={() => handleCambiarEstado(selectedTicket.idOrden, "Entregada")}
-                      className="px-2.5 py-1 text-xs font-semibold bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg transition-colors"
-                    >
-                      ✓ Entregada
-                    </button>
-                    <button
-                      onClick={() => handleCambiarEstado(selectedTicket.idOrden, "Reparada")}
-                      className="px-2.5 py-1 text-xs font-semibold bg-sky-700 hover:bg-sky-800 text-white rounded-lg transition-colors"
-                    >
-                      Reparada
-                    </button>
-                    <button
-                      onClick={() => handleCambiarEstado(selectedTicket.idOrden, "QC")}
-                      className="px-2.5 py-1 text-xs font-semibold bg-purple-700 hover:bg-purple-800 text-white rounded-lg transition-colors"
-                    >
-                      Pasar a QC
-                    </button>
-                    <button
-                      onClick={() => handleCambiarEstado(selectedTicket.idOrden, "En Reparación")}
-                      className="px-2.5 py-1 text-xs font-semibold bg-amber-700 hover:bg-amber-800 text-white rounded-lg transition-colors"
-                    >
-                      En Taller
-                    </button>
+                    {modalStatusOptions.map((st) => {
+                      const isActive =
+                        (selectedTicket.estado || "").trim().toLowerCase() ===
+                        st.trim().toLowerCase();
+                      const visual = getEstadoVisualConfig(st);
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          onClick={() => handleCambiarEstado(selectedTicket.idOrden, st)}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                            isActive ? visual.activeBtnClass : visual.inactiveBtnClass
+                          }`}
+                        >
+                          {isActive && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
+                          <span>{st}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
