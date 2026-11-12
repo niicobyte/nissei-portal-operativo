@@ -124,9 +124,19 @@ function matchesRecibidosDate(ticket: RecepcionCdeTicket, filter: RecibidosDateF
 }
 
 /**
+ * Identifica si una orden corresponde al ámbito de Clientes CDE
+ * (órdenes directas de Casa Matriz CDE, excluyendo Danesa SA y Clientes ASU).
+ */
+function isTicketClienteCde(t: RecepcionCdeTicket): boolean {
+  return !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000);
+}
+
+/**
  * Determina si una orden está confirmada físicamente como recibida en depósito sucursal.
+ * Solo aplica a órdenes de Clientes ASU y Danesa SA (no Clientes CDE).
  */
 function isTicketRecibido(t: RecepcionCdeTicket): boolean {
+  if (isTicketClienteCde(t)) return false;
   if ((t as any).desmarcadoManual) return false;
   return Boolean(t.recibidoEnDeposito);
 }
@@ -676,9 +686,7 @@ export default function RecepcionCdeDashboardPage() {
         !isEstadoInternoNoCliente(t.estadoAsu || t.estado) &&
         !isEstadoInternoNoCliente(getTicketDisplayStatus(t))
     );
-    const clientesCdeTickets = tickets.filter(
-      (t) => !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000)
-    );
+    const clientesCdeTickets = tickets.filter(isTicketClienteCde);
 
     const scopeTickets =
       viewScope === "DANESA"
@@ -760,9 +768,7 @@ export default function RecepcionCdeDashboardPage() {
           !isEstadoInternoNoCliente(getTicketDisplayStatus(t))
       );
     } else if (viewScope === "CLIENTES_CDE") {
-      list = tickets.filter(
-        (t) => !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000)
-      );
+      list = tickets.filter(isTicketClienteCde);
     } else {
       list = tickets;
     }
@@ -1819,21 +1825,23 @@ export default function RecepcionCdeDashboardPage() {
                 />
                 <span>En camino ({scopeEnTransito})</span>
               </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTransitFilter("RECIBIDOS");
-                  setCurrentPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  transitFilter === "RECIBIDOS"
-                    ? "bg-emerald-600 text-white font-bold shadow-xs"
-                    : "text-emerald-700 hover:bg-emerald-100/60"
-                }`}
-              >
-                <Check className="w-3 h-3" />
-                <span>Recibidos ({scopeRecibidosCount})</span>
-              </button>
+              {viewScope !== "CLIENTES_CDE" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransitFilter("RECIBIDOS");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    transitFilter === "RECIBIDOS"
+                      ? "bg-emerald-600 text-white font-bold shadow-xs"
+                      : "text-emerald-700 hover:bg-emerald-100/60"
+                  }`}
+                >
+                  <Check className="w-3 h-3" />
+                  <span>Recibidos ({scopeRecibidosCount})</span>
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {
@@ -1851,8 +1859,8 @@ export default function RecepcionCdeDashboardPage() {
               </button>
             </div>
 
-            {/* Filtro de Fecha de Recepción (Hoy / Ayer / etc.) cuando se selecciona Recibidos */}
-            {transitFilter === "RECIBIDOS" && (
+            {/* Filtro de Fecha de Recepción (Hoy / Ayer / etc.) cuando se selecciona Recibidos (solo ASU y Danesa) */}
+            {viewScope !== "CLIENTES_CDE" && transitFilter === "RECIBIDOS" && (
               <div className="flex items-center gap-1 bg-emerald-50/80 p-1 rounded-xl border border-emerald-200 text-xs flex-wrap">
                 <span className="text-[11px] font-bold text-emerald-900 px-2 flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-emerald-700" />
@@ -2284,10 +2292,17 @@ export default function RecepcionCdeDashboardPage() {
                           })()}
                         </td>
 
-                        {/* Llegada a Depósito / Confirmación en Sucursal (oculta para Clientes CDE) */}
+                        {/* Llegada a Depósito / Confirmación en Sucursal (solo Clientes ASU y Danesa SA) */}
                         {viewScope !== "CLIENTES_CDE" && (
                           <td className="py-3 px-3 text-center whitespace-nowrap">
-                            {(() => {
+                            {isTicketClienteCde(ticket) ? (
+                              <span
+                                className="text-zinc-300 font-mono"
+                                title="Llegada Depósito solo aplica a Clientes ASU y Danesa SA"
+                              >
+                                —
+                              </span>
+                            ) : (() => {
                               const isRecibido = isTicketRecibido(ticket);
                               const fechaMostrar = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || "";
                               return (
@@ -2531,18 +2546,20 @@ export default function RecepcionCdeDashboardPage() {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
-                      Fecha de Recibido en ASU (Sucursal):
-                    </label>
-                    <input
-                      type="text"
-                      value={editForm.fechaRecibidoAsu}
-                      onChange={(e) => setEditForm((prev) => ({ ...prev, fechaRecibidoAsu: e.target.value }))}
-                      placeholder="DD/MM/AAAA o DD/MM/AAAA HH:mm"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
-                    />
-                  </div>
+                  {!isTicketClienteCde(selectedTicket) && (
+                    <div>
+                      <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                        Fecha de Recibido en ASU (Sucursal):
+                      </label>
+                      <input
+                        type="text"
+                        value={editForm.fechaRecibidoAsu}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, fechaRecibidoAsu: e.target.value }))}
+                        placeholder="DD/MM/AAAA o DD/MM/AAAA HH:mm"
+                        className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-200">
@@ -2639,28 +2656,30 @@ export default function RecepcionCdeDashboardPage() {
                     {selectedTicket.fechaEntregada || "Pendiente de cierre en CDE"}
                   </span>
                 </div>
-                <div>
-                  <span className="text-zinc-500 block text-[11px]">Fecha de Recibido ASU</span>
-                  {(() => {
-                    const esRecib = isTicketRecibido(selectedTicket);
-                    const fechaRec =
-                      selectedTicket.fechaRecibidoDeposito ||
-                      (esRecib ? selectedTicket.fechaEntregada : null);
-                    if (fechaRec) {
+                {!isTicketClienteCde(selectedTicket) && (
+                  <div>
+                    <span className="text-zinc-500 block text-[11px]">Fecha de Recibido ASU</span>
+                    {(() => {
+                      const esRecib = isTicketRecibido(selectedTicket);
+                      const fechaRec =
+                        selectedTicket.fechaRecibidoDeposito ||
+                        (esRecib ? selectedTicket.fechaEntregada : null);
+                      if (fechaRec) {
+                        return (
+                          <span className="text-emerald-700 font-mono font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                            <span>{fechaRec}</span>
+                          </span>
+                        );
+                      }
                       return (
-                        <span className="text-emerald-700 font-mono font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>{fechaRec}</span>
+                        <span className="text-zinc-400 font-mono text-[11px] italic">
+                          Pendiente de recepción
                         </span>
                       );
-                    }
-                    return (
-                      <span className="text-zinc-400 font-mono text-[11px] italic">
-                        Pendiente de recepción
-                      </span>
-                    );
-                  })()}
-                </div>
+                    })()}
+                  </div>
+                )}
                 <div>
                   <span className="text-zinc-500 block text-[11px]">Fecha de Venta</span>
                   <span className="text-zinc-800 font-mono">{selectedTicket.fechaVenta || "No registrada"}</span>
@@ -2697,8 +2716,8 @@ export default function RecepcionCdeDashboardPage() {
                 </div>
               </div>
 
-              {/* Botón y Estado Directo de Recepción en Sucursal (omitido para Clientes CDE) */}
-              {viewScope !== "CLIENTES_CDE" && (() => {
+              {/* Botón y Estado Directo de Recepción en Sucursal (solo Clientes ASU y Danesa SA) */}
+              {!isTicketClienteCde(selectedTicket) && (() => {
                 const isRecibidoModal = isTicketRecibido(selectedTicket);
                 const fechaModalMostrar = selectedTicket.fechaEntregada || selectedTicket.fechaRecibidoDeposito || "";
                 return (
