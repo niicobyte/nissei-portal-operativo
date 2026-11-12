@@ -40,6 +40,7 @@ import {
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
+import { OrderSearchInput } from "@/components/common/OrderSearchInput";
 import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { readMultipleSpreadsheetsForSati, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
@@ -1668,28 +1669,14 @@ ${accText}`;
               ))}
             </div>
 
-            {/* Buscador de Órdenes */}
-            <div className="relative w-full lg:w-96 xl:w-[26rem] min-w-0">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-zinc-400" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                placeholder="Buscar por ID Orden (ASU o CDE), Serial, Modelo, Cliente..."
-                className="w-full pl-9 pr-8 py-2 bg-zinc-50 hover:bg-zinc-100/70 focus:bg-white border border-zinc-200 focus:border-zinc-900 rounded-xl text-xs outline-none transition-all placeholder:text-zinc-400"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm("")}
-                  className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 cursor-pointer"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
+            {/* Buscador de Órdenes + Escáner de Código de Barras */}
+            <OrderSearchInput
+              value={searchTerm}
+              onChange={(val) => {
+                setSearchTerm(val);
+                setCurrentPage(1);
+              }}
+            />
           </div>
 
           {/* Filtros Secundarios con Flujo de Tránsito y CleanSelect */}
