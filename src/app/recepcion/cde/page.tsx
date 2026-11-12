@@ -1268,31 +1268,6 @@ export default function RecepcionCdeDashboardPage() {
               className="hidden"
             />
 
-            {/* Botón Sincronizar Nube / MySQL Online */}
-            <button
-              type="button"
-              onClick={handleSyncAllToCloud}
-              disabled={isSyncingCloud}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer disabled:opacity-60"
-              title="Sincronizar y consolidar todos los estados recibidos y cambios en MySQL en la nube"
-            >
-              <span
-                className={`w-6 h-6 rounded flex items-center justify-center text-white ${
-                  isSyncingCloud ? "bg-amber-600" : "bg-indigo-600"
-                }`}
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCloud ? "animate-spin" : ""}`} />
-              </span>
-              <div className="text-left leading-tight">
-                <strong className="block text-xs font-bold text-zinc-900">
-                  {isSyncingCloud ? "Sincronizando..." : "Sincronizar Nube"}
-                </strong>
-                <span className="text-[11px] text-zinc-500 font-normal">
-                  {isSyncingCloud ? "Guardando en MySQL" : "Guardar en MySQL"}
-                </span>
-              </div>
-            </button>
-
             {/* Botón idéntico al de Recepción con icono verde y dos líneas de texto (soporta 1 o varios archivos a la vez) */}
             <button
               type="button"
