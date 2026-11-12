@@ -245,7 +245,140 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   };
 }
 
+interface DictamenQcOption {
+  id: string;
+  label: string;
+  whatsappHeader: string;
+  whatsappBody: string;
+  readyForPickup: boolean;
+  chipInactive: string;
+  chipActive: string;
+}
+
+const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
+  {
+    id: "AUTO",
+    label: "Automático (según estado)",
+    whatsappHeader: "",
+    whatsappBody: "",
+    readyForPickup: false,
+    chipInactive: "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100",
+    chipActive: "bg-zinc-900 text-white border-zinc-900 shadow-xs ring-2 ring-zinc-300",
+  },
+  {
+    id: "REPARADO",
+    label: "Reparado con éxito",
+    whatsappHeader: "✅ *REPARADO CON ÉXITO*",
+    whatsappBody:
+      "El equipo fue reparado satisfactoriamente, superó las pruebas técnicas y está listo para ser retirado.",
+    readyForPickup: true,
+    chipInactive: "bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100",
+    chipActive: "bg-sky-700 text-white border-sky-700 shadow-xs ring-2 ring-sky-200",
+  },
+  {
+    id: "QC_PRUEBAS",
+    label: "Control de Calidad (QC)",
+    whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
+    whatsappBody:
+      "El equipo se encuentra en fase final de pruebas de verificación y control de calidad.",
+    readyForPickup: true,
+    chipInactive: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
+    chipActive: "bg-purple-700 text-white border-purple-700 shadow-xs ring-2 ring-purple-200",
+  },
+  {
+    id: "SIN_DEFECTO",
+    label: "Sin defectos / Normal",
+    whatsappHeader: "ℹ️ *SIN DEFECTO COMPROBADO*",
+    whatsappBody:
+      "El equipo funciona dentro de los parámetros normales de fábrica y no reprodujo la falla reportada. Conserva su garantía vigente.",
+    readyForPickup: true,
+    chipInactive: "bg-cyan-50 text-cyan-800 border-cyan-200 hover:bg-cyan-100",
+    chipActive: "bg-cyan-700 text-white border-cyan-700 shadow-xs ring-2 ring-cyan-200",
+  },
+  {
+    id: "SIN_REPARO_REPUESTO",
+    label: "Sin reparo · Falta de repuesto",
+    whatsappHeader: "⏳ *SIN REPARO POR FALTA DE REPUESTO*",
+    whatsappBody:
+      "No fue posible completar la reparación por falta de disponibilidad del repuesto requerido. Corresponde gestión de cambio / nota de crédito o retiro.",
+    readyForPickup: true,
+    chipInactive: "bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100",
+    chipActive: "bg-orange-600 text-white border-orange-600 shadow-xs ring-2 ring-orange-200",
+  },
+  {
+    id: "SIN_REPARO_IRREPARABLE",
+    label: "Sin reparo · No reparable",
+    whatsappHeader: "❌ *SIN REPARO · NO REPARABLE*",
+    whatsappBody:
+      "El diagnóstico técnico determinó que el daño no es reparable. Se deriva a gestión de garantía, cambio comercial o retiro.",
+    readyForPickup: true,
+    chipInactive: "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100",
+    chipActive: "bg-rose-700 text-white border-rose-700 shadow-xs ring-2 ring-rose-200",
+  },
+  {
+    id: "MALA_MANIPULACION",
+    label: "Mala manipulación (Cliente)",
+    whatsappHeader: "🚫 *MALA MANIPULACIÓN / FUERA DE GARANTÍA*",
+    whatsappBody:
+      "Se constató daño físico, golpe, humedad o manipulación indebida por parte del cliente, por lo que no aplica cobertura de garantía de fábrica.",
+    readyForPickup: true,
+    chipInactive: "bg-red-50 text-red-800 border-red-200 hover:bg-red-100",
+    chipActive: "bg-red-700 text-white border-red-700 shadow-xs ring-2 ring-red-200",
+  },
+  {
+    id: "RMA_NC",
+    label: "Derivado a RMA / Nota de crédito",
+    whatsappHeader: "⚠️ *DERIVADO A RMA / NOTA DE CRÉDITO*",
+    whatsappBody:
+      "El equipo fue derivado a gestión de garantía con fabricante/importador para cambio o emisión de nota de crédito comercial.",
+    readyForPickup: true,
+    chipInactive: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
+    chipActive: "bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200",
+  },
+  {
+    id: "PRESUPUESTO_PENDIENTE",
+    label: "Presupuesto · Aguarda aprobación",
+    whatsappHeader: "💰 *PRESUPUESTO EMITIDO · AGUARDA APROBACIÓN*",
+    whatsappBody:
+      "La reparación se encuentra fuera de garantía y se emitió presupuesto técnico aguardando aprobación del cliente.",
+    readyForPickup: false,
+    chipInactive: "bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100",
+    chipActive: "bg-teal-700 text-white border-teal-700 shadow-xs ring-2 ring-teal-200",
+  },
+  {
+    id: "PRESUPUESTO_RECHAZADO",
+    label: "Presupuesto rechazado",
+    whatsappHeader: "↩️ *PRESUPUESTO RECHAZADO*",
+    whatsappBody:
+      "El presupuesto informado no fue aprobado; el equipo se encuentra disponible para retiro sin reparar.",
+    readyForPickup: true,
+    chipInactive: "bg-stone-100 text-stone-800 border-stone-300 hover:bg-stone-200",
+    chipActive: "bg-stone-700 text-white border-stone-700 shadow-xs ring-2 ring-stone-300",
+  },
+  {
+    id: "DESGASTE_NATURAL",
+    label: "Desgaste natural / Consumible",
+    whatsappHeader: "🔋 *DESGASTE NATURAL / CONSUMIBLE*",
+    whatsappBody:
+      "La incidencia corresponde a desgaste normal de uso o componente consumible fuera de cobertura de garantía.",
+    readyForPickup: true,
+    chipInactive: "bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100",
+    chipActive: "bg-yellow-600 text-white border-yellow-600 shadow-xs ring-2 ring-yellow-200",
+  },
+  {
+    id: "GARANTIA_VENCIDA",
+    label: "Garantía vencida",
+    whatsappHeader: "📅 *GARANTÍA VENCIDA*",
+    whatsappBody:
+      "El equipo superó el período de garantía oficial vigente; disponible servicio particular bajo presupuesto o retiro.",
+    readyForPickup: true,
+    chipInactive: "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200",
+    chipActive: "bg-slate-700 text-white border-slate-700 shadow-xs ring-2 ring-slate-300",
+  },
+];
+
 interface DictamenRecepcionResult {
+  dictamenId: string;
   estadoActual: string;
   estadoConfig: EstadoVisualConfig;
   header: string;
@@ -264,12 +397,15 @@ interface DictamenRecepcionResult {
 function resolveDictamenRecepcion(
   estado?: string,
   mensaje?: string,
-  accesorios?: string
+  accesorios?: string,
+  dictamenTipo?: string
 ): DictamenRecepcionResult {
   const estadoActual = (estado || "En Asignacion").trim();
-  const estLower = estadoActual.toLowerCase();
+  const estNorm = estadoActual
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
   const msgRaw = (mensaje || "").trim();
-  const msgUpper = msgRaw.toUpperCase();
   const estadoConfig = getEstadoVisualConfig(estadoActual);
 
   let detalleTexto = msgRaw;
@@ -287,34 +423,84 @@ function resolveDictamenRecepcion(
     detalleTexto = "";
   }
 
-  const tieneSinDefecto =
-    msgUpper.includes("SIN DEFECTO") || msgUpper.includes("NO PRESENTA FALLA");
-  const tieneSinReparo =
-    msgUpper.includes("SIN REPARO") ||
-    msgUpper.includes("NC") ||
-    msgUpper.includes("CAMBIO POR NUEVO") ||
-    msgUpper.includes("RECHAZA") ||
-    estLower.includes("sin reparo") ||
-    estLower.includes("no reparado") ||
-    estLower.includes("rma");
+  // 1. Selección explícita de Dictamen QC desde el modal (prioridad absoluta)
+  const explicitOption =
+    dictamenTipo && dictamenTipo !== "AUTO"
+      ? DICTAMEN_QC_OPTIONS.find((opt) => opt.id === dictamenTipo)
+      : undefined;
+
+  if (explicitOption) {
+    return {
+      dictamenId: explicitOption.id,
+      estadoActual,
+      estadoConfig,
+      header: explicitOption.whatsappHeader,
+      headerPlain: explicitOption.whatsappHeader.replace(/\*/g, ""),
+      body: explicitOption.whatsappBody,
+      detalleTexto,
+      accText,
+      sourceLabel: `Dictamen QC: "${explicitOption.label}"`,
+      readyForPickup: explicitOption.readyForPickup,
+    };
+  }
+
+  // 2. Modo Automático: primero evaluar estados explícitos de SATI y luego frases exactas (sin subcadenas como "funcional" -> "NC")
+  const esEstadoCerradoReparado =
+    estNorm === "reparada" || estNorm === "entregada";
+
+  const msgNorm = msgRaw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  const tieneSinDefectoTexto =
+    /\b(?:sin\s+defecto(?:s)?|no\s+presenta\s+falla(?:s)?|funcionamiento\s+normal)\b/i.test(
+      msgNorm
+    );
+  const tieneMalaManipulacionTexto =
+    /\b(?:mala\s+manipulacion|mal\s+uso|golpeado|sulfatad[oa]|ingreso\s+de\s+liquido)\b/i.test(
+      msgNorm
+    );
+  const tieneSinReparoRepuestoEstado =
+    estNorm.includes("sin reparo") && estNorm.includes("repuesto");
+  const tieneSinReparoIrreparableEstado =
+    estNorm.includes("sin reparo") && estNorm.includes("no reparable");
+  const tieneSinReparoEstado = estNorm.includes("sin reparo");
+  const tieneSinReparoTextoExacto =
+    !esEstadoCerradoReparado &&
+    /\b(?:sin\s+reparo|no\s+reparable|no\s+reparado|cambio\s+por\s+nuevo|nota\s+de\s+credito|n\/?c|rma)\b/i.test(
+      msgNorm
+    );
 
   let header = estadoConfig.whatsappHeader;
   let body = estadoConfig.whatsappBody;
-  let sourceLabel = `Estado "${estadoActual}" + Informe Técnico`;
+  let sourceLabel = `Automático · Estado "${estadoActual}"`;
+  let readyForPickup = estadoConfig.readyForPickup;
 
-  if (tieneSinDefecto) {
-    header = "ℹ️ *SIN DEFECTO COMPROBADO*";
-    body =
-      "El equipo superó el ciclo de pruebas continuas de 48hs sin reproducir la falla indicada. Conserva su garantía de fábrica.";
-    sourceLabel = 'Detectado en Informe Técnico ("Sin defecto / No presenta falla")';
-  } else if (tieneSinReparo) {
-    header = "⚠️ *NO REPARADO / DERIVADO A RMA*";
-    body =
-      "Se requiere gestión de garantía con fabricante o emisión de nota de crédito comercial.";
-    sourceLabel = 'Detectado en Estado / Informe Técnico ("Sin reparo / NC / RMA")';
+  const pickOption = (id: string, reason: string) => {
+    const opt = DICTAMEN_QC_OPTIONS.find((o) => o.id === id);
+    if (!opt) return;
+    header = opt.whatsappHeader;
+    body = opt.whatsappBody;
+    readyForPickup = opt.readyForPickup;
+    sourceLabel = reason;
+  };
+
+  if (tieneSinReparoRepuestoEstado) {
+    pickOption("SIN_REPARO_REPUESTO", `Automático · Estado "${estadoActual}"`);
+  } else if (tieneSinReparoIrreparableEstado) {
+    pickOption("SIN_REPARO_IRREPARABLE", `Automático · Estado "${estadoActual}"`);
+  } else if (tieneSinReparoEstado) {
+    pickOption("RMA_NC", `Automático · Estado "${estadoActual}"`);
+  } else if (tieneMalaManipulacionTexto) {
+    pickOption("MALA_MANIPULACION", 'Detectado en Informe Técnico ("Mala manipulación / Daño físico")');
+  } else if (tieneSinDefectoTexto) {
+    pickOption("SIN_DEFECTO", 'Detectado en Informe Técnico ("Sin defectos / Normal")');
+  } else if (tieneSinReparoTextoExacto) {
+    pickOption("RMA_NC", 'Detectado en Informe Técnico ("Sin reparo / RMA / N/C")');
   }
 
   return {
+    dictamenId: "AUTO",
     estadoActual,
     estadoConfig,
     header,
@@ -323,7 +509,7 @@ function resolveDictamenRecepcion(
     detalleTexto,
     accText,
     sourceLabel,
-    readyForPickup: estadoConfig.readyForPickup || tieneSinDefecto || tieneSinReparo,
+    readyForPickup,
   };
 }
 
@@ -446,6 +632,7 @@ export default function RecepcionDashboardPage() {
   // Modales y notificaciones
   const [selectedTicket, setSelectedTicket] = useState<RecepcionTicket | null>(null);
   const [modalMensaje, setModalMensaje] = useState<string>("");
+  const [modalDictamenTipo, setModalDictamenTipo] = useState<string>("AUTO");
   const [modalAccesorios, setModalAccesorios] = useState<string>("");
   const [modalAccessoriesList, setModalAccessoriesList] = useState<string[]>([]);
   const [modalNewAccessory, setModalNewAccessory] = useState<string>("");
@@ -454,6 +641,7 @@ export default function RecepcionDashboardPage() {
   const pendingModalDraftRef = useRef<{
     idOrden: string;
     modalMensaje: string;
+    modalDictamenTipo?: string;
     modalAccessoriesList: string[];
     modalNewAccessory: string;
   } | null>(null);
@@ -470,6 +658,7 @@ export default function RecepcionDashboardPage() {
       const pending = pendingModalDraftRef.current;
       if (pending && pending.idOrden === selectedTicket.idOrden) {
         setModalMensaje(pending.modalMensaje);
+        setModalDictamenTipo(pending.modalDictamenTipo || selectedTicket.dictamenTipo || "AUTO");
         setModalAccessoriesList(pending.modalAccessoriesList);
         setModalAccesorios(pending.modalAccessoriesList.join(", "));
         setModalNewAccessory(pending.modalNewAccessory);
@@ -489,6 +678,7 @@ export default function RecepcionDashboardPage() {
       }
 
       setModalMensaje(cleanMsg);
+      setModalDictamenTipo(selectedTicket.dictamenTipo || "AUTO");
       setModalAccesorios(accRaw);
       setModalAccessoriesList(parseAccesoriosString(accRaw));
       setModalNewAccessory("");
@@ -592,6 +782,7 @@ export default function RecepcionDashboardPage() {
       currentPage?: number;
       selectedTicketId?: string | null;
       modalMensaje?: string;
+      modalDictamenTipo?: string;
       modalAccessoriesList?: string[];
       modalNewAccessory?: string;
     }>("recepcion_workspace");
@@ -614,6 +805,7 @@ export default function RecepcionDashboardPage() {
           pendingModalDraftRef.current = {
             idOrden: matched.idOrden,
             modalMensaje: draft.modalMensaje || "",
+            modalDictamenTipo: draft.modalDictamenTipo || matched.dictamenTipo || "AUTO",
             modalAccessoriesList: Array.isArray(draft.modalAccessoriesList)
               ? draft.modalAccessoriesList
               : [],
@@ -653,6 +845,7 @@ export default function RecepcionDashboardPage() {
     currentPage,
     selectedTicketId: selectedTicket?.idOrden || null,
     modalMensaje,
+    modalDictamenTipo,
     modalAccessoriesList,
     modalNewAccessory,
   });
@@ -672,6 +865,7 @@ export default function RecepcionDashboardPage() {
     currentPage,
     selectedTicket,
     modalMensaje,
+    modalDictamenTipo,
     modalAccessoriesList,
     modalNewAccessory,
   ]);
@@ -834,7 +1028,7 @@ export default function RecepcionDashboardPage() {
     }
   };
 
-  // Guardar notas o comentarios del informe técnico y accesorios de la orden
+  // Guardar notas o comentarios del informe técnico, dictamen y accesorios de la orden
   const handleGuardarMensaje = () => {
     if (!selectedTicket) return;
     const accFinal =
@@ -845,16 +1039,42 @@ export default function RecepcionDashboardPage() {
     const updated = updateTicketDetails(selectedTicket.idOrden, {
       mensaje: modalMensaje,
       accesorios: accFinal,
+      dictamenTipo: modalDictamenTipo,
     });
     setTickets(updated);
     setSelectedTicket({
       ...selectedTicket,
       mensaje: modalMensaje,
       accesorios: accFinal,
+      dictamenTipo: modalDictamenTipo,
     });
     showToast(
       `Detalles técnicos y accesorios de la orden #${selectedTicket.idOrden} guardados correctamente.`
     );
+  };
+
+  // Actualizar dictamen técnico / resolución QC de una orden en vivo
+  const handleCambiarDictamen = (idOrden: string, dictamenId: string) => {
+    setModalDictamenTipo(dictamenId);
+    const accFinal =
+      modalAccessoriesList.length > 0
+        ? modalAccessoriesList.join(", ")
+        : modalAccesorios.trim();
+
+    const updated = updateTicketDetails(idOrden, {
+      dictamenTipo: dictamenId,
+      mensaje: modalMensaje,
+      accesorios: accFinal,
+    });
+    setTickets(updated);
+    if (selectedTicket && selectedTicket.idOrden === idOrden) {
+      setSelectedTicket({
+        ...selectedTicket,
+        dictamenTipo: dictamenId,
+        mensaje: modalMensaje,
+        accesorios: accFinal,
+      });
+    }
   };
 
   // Actualizar estado de una orden sincronizado con el filtro y modal
@@ -874,6 +1094,7 @@ export default function RecepcionDashboardPage() {
       estado: nuevoEstado,
       mensaje: modalMensaje,
       accesorios: accFinal,
+      dictamenTipo: modalDictamenTipo,
       fechaEntregada: isDelivered
         ? selectedTicket?.fechaEntregada || nowDate
         : selectedTicket?.fechaEntregada,
@@ -885,6 +1106,7 @@ export default function RecepcionDashboardPage() {
         estado: nuevoEstado,
         mensaje: modalMensaje,
         accesorios: accFinal,
+        dictamenTipo: modalDictamenTipo,
         fechaEntregada: isDelivered
           ? selectedTicket.fechaEntregada || nowDate
           : selectedTicket.fechaEntregada,
@@ -893,12 +1115,13 @@ export default function RecepcionDashboardPage() {
     showToast(`Orden #${idOrden} actualizada a estado: ${nuevoEstado}`);
   };
 
-  // Generar mensaje con el estado exacto seleccionado y detalle técnico para enviar al grupo de Recepción
+  // Generar mensaje con el estado exacto seleccionado, dictamen QC y detalle técnico para enviar al grupo de Recepción
   const generarMensajeWhatsAppRecepcion = (ticket: RecepcionTicket) => {
     const dictamen = resolveDictamenRecepcion(
       ticket.estado,
       ticket.mensaje,
-      ticket.accesorios
+      ticket.accesorios,
+      ticket.dictamenTipo
     );
     const estLower = dictamen.estadoActual.toLowerCase();
 
@@ -981,19 +1204,26 @@ ${dictamen.accText}`;
       return;
     }
 
-    // Si el mensaje o accesorios en el modal fueron modificados, guardarlos antes de notificar
+    // Si el mensaje, accesorios o dictamen en el modal fueron modificados, guardarlos antes de notificar
     let currentTicket = ticket;
     if (selectedTicket && selectedTicket.idOrden === ticket.idOrden) {
       if (
         modalMensaje !== ticket.mensaje ||
-        accFinal !== (ticket.accesorios || "")
+        accFinal !== (ticket.accesorios || "") ||
+        modalDictamenTipo !== (ticket.dictamenTipo || "AUTO")
       ) {
         const updated = updateTicketDetails(ticket.idOrden, {
           mensaje: modalMensaje,
           accesorios: accFinal,
+          dictamenTipo: modalDictamenTipo,
         });
         setTickets(updated);
-        currentTicket = { ...ticket, mensaje: modalMensaje, accesorios: accFinal };
+        currentTicket = {
+          ...ticket,
+          mensaje: modalMensaje,
+          accesorios: accFinal,
+          dictamenTipo: modalDictamenTipo,
+        };
         setSelectedTicket(currentTicket);
       }
     }
@@ -2732,7 +2962,7 @@ ${dictamen.accText}`;
                   </div>
                 </div>
 
-                {/* Vista previa en vivo del Dictamen Técnico que se enviará por WhatsApp */}
+                {/* Selector de Dictamen Técnico / Resolución QC + Vista previa en vivo para WhatsApp */}
                 {(() => {
                   const accPreview =
                     modalAccessoriesList.length > 0
@@ -2741,19 +2971,41 @@ ${dictamen.accText}`;
                   const preview = resolveDictamenRecepcion(
                     selectedTicket.estado,
                     modalMensaje,
-                    accPreview
+                    accPreview,
+                    modalDictamenTipo
                   );
                   return (
-                    <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-1.5">
+                    <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-2.5">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">
-                          Dictamen Técnico (Vista previa WhatsApp)
+                          Dictamen Técnico · Resolución QC (WhatsApp)
                         </span>
                         <span className="text-[10px] font-mono text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
                           {preview.sourceLabel}
                         </span>
                       </div>
-                      <div className="text-xs text-zinc-800 space-y-1 bg-white/80 p-2.5 rounded-lg border border-emerald-100">
+
+                      {/* Selector rápido de resoluciones QC */}
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {DICTAMEN_QC_OPTIONS.map((opt) => {
+                          const selected = modalDictamenTipo === opt.id;
+                          return (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
+                              className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer ${
+                                selected ? opt.chipActive : opt.chipInactive
+                              }`}
+                            >
+                              {selected && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
+                              <span>{opt.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <div className="text-xs text-zinc-800 space-y-1 bg-white/90 p-2.5 rounded-lg border border-emerald-100">
                         <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
                         <p className="text-zinc-600 leading-relaxed">{preview.body}</p>
                         {preview.detalleTexto ? (
