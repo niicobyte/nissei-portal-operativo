@@ -169,6 +169,7 @@ export default function NuevoIngresoMontajePage() {
   );
   const [customSerial, setCustomSerial] = useState("");
   const [skuMatchNotice, setSkuMatchNotice] = useState<string | null>(null);
+  const [componentError, setComponentError] = useState<string | null>(null);
   const [scannerTarget, setScannerTarget] = useState<
     | { mode: "nro_reg" }
     | { mode: "upc" }
@@ -341,6 +342,7 @@ export default function NuevoIngresoMontajePage() {
 
   // Autocompletado inteligente por UPC / Código de Barras -> completa SKU, Categoría y Descripción
   const handleUpcChange = (upcVal: string, scannedFormatLabel?: string) => {
+    setComponentError(null);
     setCustomUpc(upcVal);
     const clean = normalizeUpcCode(upcVal);
     if (!clean) {
@@ -373,6 +375,7 @@ export default function NuevoIngresoMontajePage() {
 
   // Autocompletado inteligente al escribir o seleccionar SKU
   const handleSkuChange = (skuVal: string) => {
+    setComponentError(null);
     setCustomSku(skuVal);
     const clean = skuVal.trim();
     if (!clean) {
@@ -416,6 +419,7 @@ export default function NuevoIngresoMontajePage() {
 
   // Autocompletado inverso si se escribe o selecciona la descripción
   const handleDescChange = (descVal: string) => {
+    setComponentError(null);
     setCustomDesc(descVal);
     const clean = descVal.trim();
     if (!clean) return;
@@ -437,59 +441,78 @@ export default function NuevoIngresoMontajePage() {
   };
 
   // Agregar componente a la tabla y aprender SKU / UPC en MySQL si corresponde
-  const handleAddComponent = () => {
-    if (!customDesc.trim()) {
-      alert("Por favor ingrese la descripción del componente o un SKU/UPC válido.");
-      return;
+  const handleAddComponent = (): boolean => {
+    setComponentError(null);
+
+    const cleanUpc = normalizeUpcCode(customUpc);
+    const cleanSku = customSku.trim();
+    const cleanDesc = customDesc.trim();
+
+    if (!cleanUpc) {
+      setComponentError("El campo UPC / Código de Barras es obligatorio.");
+      document.getElementById("component-upc")?.focus();
+      return false;
     }
 
-    const cleanSku = customSku.trim();
-    const cleanUpc = normalizeUpcCode(customUpc);
-    const cleanDesc = customDesc.trim();
-    const assignedSku = cleanSku || `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
+    if (!isRealSku(cleanSku)) {
+      setComponentError("El campo SKU (Código) es obligatorio.");
+      document.getElementById("component-sku")?.focus();
+      return false;
+    }
+
+    if (!customCategory) {
+      setComponentError("La Categoría del componente es obligatoria.");
+      return false;
+    }
+
+    if (!cleanDesc) {
+      setComponentError("La Descripción del Hardware es obligatoria.");
+      document.getElementById("component-desc")?.focus();
+      return false;
+    }
+
+    const finalSerial = customSerial.trim() || "N/A";
 
     const newComponent: ComponenteMontaje = {
-      sku: assignedSku,
-      ...(cleanUpc ? { upc: cleanUpc } : {}),
+      sku: cleanSku,
+      upc: cleanUpc,
       descripcion: cleanDesc,
-      seriales: customSerial.trim() || "Sin serial visible",
+      seriales: finalSerial,
       categoria: customCategory,
     };
 
     setComponents((prev) => [...prev, newComponent]);
 
     let learnedNotice: string | null = null;
-    if (isRealSku(cleanSku)) {
-      const existing = skuCatalog.find(
-        (c) => c.sku.toLowerCase() === cleanSku.toLowerCase()
-      );
-      const existingUpc = normalizeUpcCode(existing?.upc);
-      const upcChanged = Boolean(cleanUpc) && existingUpc.toLowerCase() !== cleanUpc.toLowerCase();
+    const existing = skuCatalog.find(
+      (c) => c.sku.toLowerCase() === cleanSku.toLowerCase()
+    );
+    const existingUpc = normalizeUpcCode(existing?.upc);
+    const upcChanged = Boolean(cleanUpc) && existingUpc.toLowerCase() !== cleanUpc.toLowerCase();
 
-      if (
-        !existing ||
-        existing.descripcion.toLowerCase() !== cleanDesc.toLowerCase() ||
-        existing.categoria !== customCategory ||
-        upcChanged
-      ) {
-        const finalUpc = cleanUpc || existingUpc;
-        const newItem: SkuCatalogItem = {
-          sku: cleanSku,
-          ...(finalUpc ? { upc: finalUpc } : {}),
-          descripcion: cleanDesc,
-          categoria: customCategory,
-          fuente: "MANUAL",
-        };
-        setSkuCatalog((prev) => mergeSkuCatalogItems(prev, [newItem]));
-        learnedNotice = existing && upcChanged
-          ? `UPC ${cleanUpc} vinculado al SKU ${cleanSku} y guardado en MySQL para futuros montajes.`
-          : `Nuevo SKU ${cleanSku}${finalUpc ? ` (UPC ${finalUpc})` : ""} guardado en catálogo MySQL para futuros montajes.`;
-        void saveSkusToCatalogOnline([newItem]).then((res) => {
-          if (res.items.length > 0) {
-            setSkuCatalog(res.items);
-          }
-        });
-      }
+    if (
+      !existing ||
+      existing.descripcion.toLowerCase() !== cleanDesc.toLowerCase() ||
+      existing.categoria !== customCategory ||
+      upcChanged
+    ) {
+      const finalUpc = cleanUpc || existingUpc;
+      const newItem: SkuCatalogItem = {
+        sku: cleanSku,
+        ...(finalUpc ? { upc: finalUpc } : {}),
+        descripcion: cleanDesc,
+        categoria: customCategory,
+        fuente: "MANUAL",
+      };
+      setSkuCatalog((prev) => mergeSkuCatalogItems(prev, [newItem]));
+      learnedNotice = existing && upcChanged
+        ? `UPC ${cleanUpc} vinculado al SKU ${cleanSku} y guardado en MySQL para futuros montajes.`
+        : `Nuevo SKU ${cleanSku}${finalUpc ? ` (UPC ${finalUpc})` : ""} guardado en catálogo MySQL para futuros montajes.`;
+      void saveSkusToCatalogOnline([newItem]).then((res) => {
+        if (res.items.length > 0) {
+          setSkuCatalog(res.items);
+        }
+      });
     }
 
     // Limpiar campos listos para el siguiente componente
@@ -498,6 +521,7 @@ export default function NuevoIngresoMontajePage() {
     setCustomDesc("");
     setCustomSerial("");
     setSkuMatchNotice(learnedNotice);
+    return true;
   };
 
   // Importar lote de SKUs desde archivo CSV o lista pegada hacia MySQL
@@ -586,9 +610,19 @@ export default function NuevoIngresoMontajePage() {
       return;
     }
 
-    // 4. Cantidad de Equipos -> Salta a SKU del componente
+    // 4. Cantidad de Equipos -> Salta a UPC del componente
     if (target.id === "input-cantidad-equipos") {
-      document.getElementById("component-sku")?.focus();
+      document.getElementById("component-upc")?.focus();
+      return;
+    }
+
+    // 4b. UPC del componente -> Si autocompletó SKU y descripción, pasa a serial; si no, a SKU
+    if (target.id === "component-upc") {
+      if (customSku.trim() && customDesc.trim()) {
+        document.getElementById("component-serial")?.focus();
+      } else {
+        document.getElementById("component-sku")?.focus();
+      }
       return;
     }
 
@@ -608,12 +642,11 @@ export default function NuevoIngresoMontajePage() {
       return;
     }
 
-    // 7. Serial del componente -> Si hay descripción, agrega el componente a la orden y vuelve a SKU
+    // 7. Serial del componente -> Intenta agregar componente y vuelve a UPC si se agregó
     if (target.id === "component-serial") {
-      if (customDesc.trim()) {
-        handleAddComponent();
+      if (handleAddComponent()) {
         setTimeout(() => {
-          document.getElementById("component-sku")?.focus();
+          document.getElementById("component-upc")?.focus();
         }, 40);
       }
       return;
@@ -683,6 +716,26 @@ export default function NuevoIngresoMontajePage() {
     const prefix = tipoServicio === "Montaje" ? "MNT" : "EXP";
     const newId = `${prefix}-${cleanReg.slice(0, 7)}`;
 
+    const normalizedComponents: ComponenteMontaje[] = components.map((c) => ({
+      ...c,
+      seriales: String(c.seriales || "").trim() || "N/A",
+    }));
+
+    const missingMeta = normalizedComponents.some(
+      (c) =>
+        !normalizeUpcCode(c.upc) ||
+        !isRealSku(c.sku) ||
+        !c.categoria ||
+        !String(c.descripcion || "").trim()
+    );
+    if (missingMeta) {
+      setFormError(
+        "Todos los componentes de la orden deben tener UPC, SKU, Categoría y Descripción del Hardware completos."
+      );
+      setIsSubmitting(false);
+      return;
+    }
+
     const newOrder: OrdenMontajeReal = {
       id: newId,
       nro_reg: nroRegistroInterno.trim(),
@@ -700,7 +753,7 @@ export default function NuevoIngresoMontajePage() {
       prioridad: priority,
       consumoEstimado: tipoServicio === "Montaje" ? "550W" : undefined,
       observaciones: observations.trim(),
-      componentes: components
+      componentes: normalizedComponents,
     };
 
     // Guardar en almacenamiento local y confirmar persistencia en MySQL en la nube
@@ -1205,7 +1258,7 @@ export default function NuevoIngresoMontajePage() {
                   {/* UPC / EAN arriba del SKU (autocompleta SKU/Descripción y se vincula en MySQL) */}
                   <div className="sm:col-span-12">
                     <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
-                      UPC / Código de Barras del Producto (Opcional)
+                      UPC / Código de Barras del Producto *
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -1302,7 +1355,7 @@ export default function NuevoIngresoMontajePage() {
                   {/* Serial / IMEI */}
                   <div className="sm:col-span-8">
                     <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
-                      Serial Físico / IMEI (Opcional)
+                      Serial Físico / IMEI (Opcional · vacío = N/A)
                     </label>
                     <div className="flex items-center gap-2">
                       <input
@@ -1310,7 +1363,7 @@ export default function NuevoIngresoMontajePage() {
                         type="text"
                         value={customSerial}
                         onChange={(e) => setCustomSerial(e.target.value)}
-                        placeholder="Escanear serial físico o dejar en blanco si no tiene..."
+                        placeholder="Escanear serial físico o dejar vacío (se asignará N/A)..."
                         className="w-full min-w-0 text-xs font-mono bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
                       />
                       <button
@@ -1329,8 +1382,8 @@ export default function NuevoIngresoMontajePage() {
                   <div className="sm:col-span-4 flex items-end">
                     <button
                       type="button"
-                      onClick={handleAddComponent}
-                      className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-4 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-sm transition-colors"
+                      onClick={() => handleAddComponent()}
+                      className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-4 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
                     >
                       <Plus className="w-3.5 h-3.5" />
                       <span>+ Agregar a la Orden</span>
@@ -1338,6 +1391,14 @@ export default function NuevoIngresoMontajePage() {
                   </div>
 
                 </div>
+
+                {/* Error de campos obligatorios del componente */}
+                {componentError && (
+                  <div className="text-[11px] font-mono text-rose-800 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                    <span>{componentError}</span>
+                  </div>
+                )}
 
                 {/* Aviso visual de coincidencia automática */}
                 {skuMatchNotice && (
@@ -1398,7 +1459,12 @@ export default function NuevoIngresoMontajePage() {
                                 type="text"
                                 value={item.seriales}
                                 onChange={(e) => handleUpdateComponentField(index, "seriales", e.target.value)}
-                                placeholder="Sin serial visible o escanee..."
+                                onBlur={(e) => {
+                                  if (!e.target.value.trim()) {
+                                    handleUpdateComponentField(index, "seriales", "N/A");
+                                  }
+                                }}
+                                placeholder="N/A o escanee serial..."
                                 className="w-full min-w-0 text-xs font-mono border border-zinc-200 rounded px-2 py-1 focus:border-zinc-900 outline-none"
                               />
                               <button
