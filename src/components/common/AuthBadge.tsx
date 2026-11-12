@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, LogOut, Key, ChevronDown, ShieldAlert, ArrowRight, Trash2, RefreshCw } from "lucide-react";
@@ -33,9 +33,28 @@ function isAuthorizedForModule(
 
 export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthBadgeProps) {
   const router = useRouter();
+  const containerRef = useRef<HTMLDivElement>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [menuStyle, setMenuStyle] = useState<{ left: number; width: number }>({ left: 0, width: 232 });
+
+  const updateMenuPosition = useCallback(() => {
+    if (typeof window === "undefined" || !containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const margin = 12;
+    const width = Math.min(240, window.innerWidth - margin * 2);
+    // Preferir alinear al borde derecho en escritorio, pero ajustar dentro del viewport en móviles
+    const rightAlignedScreenLeft = rect.right - width;
+    const clampedScreenLeft =
+      rightAlignedScreenLeft >= margin
+        ? Math.min(rightAlignedScreenLeft, window.innerWidth - width - margin)
+        : Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin));
+    setMenuStyle({
+      left: Math.round(clampedScreenLeft - rect.left),
+      width: Math.round(width),
+    });
+  }, []);
 
   useEffect(() => {
     setMounted(true);
@@ -45,6 +64,31 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
       router.replace("/login");
     }
   }, [requiredModule, router]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    updateMenuPosition();
+
+    const handlePointerDown = (e: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+
+    window.addEventListener("resize", updateMenuPosition);
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown, { passive: true });
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen, updateMenuPosition]);
 
   const handleLogout = () => {
     logout();
@@ -154,40 +198,50 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
   }
 
   return (
-    <div className="relative">
+    <div ref={containerRef} className="relative">
       <button
-        onClick={() => setMenuOpen(!menuOpen)}
-        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors"
+        type="button"
+        onClick={() => {
+          if (!menuOpen) updateMenuPosition();
+          setMenuOpen((prev) => !prev);
+        }}
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer"
       >
-        <span className="w-6 h-6 rounded bg-zinc-900 text-white font-mono text-[11px] font-bold flex items-center justify-center tracking-tight">
+        <span className="w-6 h-6 rounded bg-zinc-900 text-white font-mono text-[11px] font-bold flex items-center justify-center tracking-tight shrink-0">
           {user.avatar}
         </span>
         <div className="text-left leading-tight hidden sm:block">
           <strong className="block text-xs font-bold text-zinc-900">{user.nombre}</strong>
           <span className="text-[11px] text-zinc-500 font-normal">{user.badge}</span>
         </div>
-        <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
+        <ChevronDown className={`w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform duration-150 ${menuOpen ? "rotate-180" : ""}`} />
       </button>
 
       {menuOpen && (
-        <div className="absolute right-0 mt-1.5 w-56 bg-white rounded-lg shadow-lg border border-zinc-200 p-1.5 z-50 text-xs space-y-1">
+        <div
+          role="menu"
+          style={{ left: `${menuStyle.left}px`, width: `${menuStyle.width}px` }}
+          className="absolute top-full mt-1.5 bg-white rounded-xl shadow-xl border border-zinc-200 p-1.5 z-50 text-xs space-y-1 max-h-[min(24rem,calc(100dvh-5rem))] overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95 duration-150"
+        >
           <div className="p-2 border-b border-zinc-100 space-y-0.5">
             <span className="text-[11px] text-zinc-400 block font-normal">Sesión activa</span>
-            <div className="font-bold text-zinc-900 flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded bg-zinc-900 text-white font-mono text-[10px] font-bold flex items-center justify-center">
+            <div className="font-bold text-zinc-900 flex items-center gap-1.5 min-w-0">
+              <span className="w-5 h-5 rounded bg-zinc-900 text-white font-mono text-[10px] font-bold flex items-center justify-center shrink-0">
                 {user.avatar}
               </span>
-              <span>{user.nombre}</span>
+              <span className="truncate">{user.nombre}</span>
             </div>
-            <div className="text-[11px] text-zinc-500">{user.badge}</div>
+            <div className="text-[11px] text-zinc-500 truncate">{user.badge}</div>
           </div>
 
           <Link
             href="/login"
             onClick={() => setMenuOpen(false)}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-zinc-100 text-zinc-700 transition-colors"
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-zinc-100 text-zinc-700 transition-colors"
           >
-            <Key className="w-3.5 h-3.5 text-zinc-500" />
+            <Key className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
             <span>Cambiar de perfil</span>
           </Link>
 
@@ -199,10 +253,10 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
                 onSyncMysql();
               }}
               disabled={isSyncingMysql}
-              className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-indigo-50 text-indigo-700 transition-colors text-left cursor-pointer font-medium"
+              className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-indigo-50 text-indigo-700 transition-colors text-left cursor-pointer font-medium"
               title="Guarda todos los estados recibidos y cambios de órdenes en la base de datos MySQL online"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 ${isSyncingMysql ? "animate-spin" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 text-indigo-600 shrink-0 ${isSyncingMysql ? "animate-spin" : ""}`} />
               <span>{isSyncingMysql ? "Sincronizando..." : "Sincronizar con MySQL"}</span>
             </button>
           )}
@@ -210,18 +264,19 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
           <button
             type="button"
             onClick={handleClearLocalData}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-zinc-100 text-zinc-700 transition-colors text-left cursor-pointer"
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-zinc-100 text-zinc-700 transition-colors text-left cursor-pointer"
             title="Borra la memoria temporal de este navegador y fuerza la recarga 100% directa desde MySQL"
           >
-            <Trash2 className="w-3.5 h-3.5 text-zinc-500" />
+            <Trash2 className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
             <span>Limpiar residuos locales</span>
           </button>
 
           <button
+            type="button"
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-2.5 py-1.5 rounded hover:bg-rose-50 text-rose-700 transition-colors text-left"
+            className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-rose-50 text-rose-700 transition-colors text-left cursor-pointer font-medium"
           >
-            <LogOut className="w-3.5 h-3.5 text-rose-600" />
+            <LogOut className="w-3.5 h-3.5 text-rose-600 shrink-0" />
             <span>Cerrar sesión</span>
           </button>
         </div>
