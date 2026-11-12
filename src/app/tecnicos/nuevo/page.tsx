@@ -570,7 +570,7 @@ export default function NuevoIngresoMontajePage() {
       );
     } else if (mysqlPending) {
       setCloudSyncWarning(
-        `Orden #${newOrder.id} enviada a WhatsApp (${MONTAJES_WHATSAPP_GROUP_ID}), pero MySQL aún no confirmó. Pulse "Sincronizar Nube".`
+        `Orden #${newOrder.id} enviada a WhatsApp (${MONTAJES_WHATSAPP_GROUP_ID}), pero MySQL aún no confirmó. Reintente recargar la página.`
       );
     } else if (!whatsappSent) {
       setCloudSyncWarning(

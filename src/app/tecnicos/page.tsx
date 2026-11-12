@@ -20,9 +20,6 @@ import {
   Layers,
   ArrowRight,
   Plus,
-  RefreshCw,
-  Upload,
-  FileSpreadsheet,
   X,
   Send,
   AlertCircle,
@@ -32,9 +29,6 @@ import {
 import {
   getStoredMontajes,
   fetchMontajesFromMySQL,
-  syncMontajesToCloud,
-  sincronizarMontajesCsvOnline,
-  ResultadoCargaMontajesCSV,
   updateMontajeStage,
   updateMontajeTecnico,
   updateMontajeEstado,
@@ -93,15 +87,9 @@ export default function TecnicosDashboardPage() {
   const [selectedOrderForCert, setSelectedOrderForCert] = useState<OrdenMontajeReal | null>(null);
   const [notification, setNotification] = useState<string | null>(null);
 
-  // Sincronización con MySQL en la nube y carga de CSV
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // Estados de interacción y notificaciones
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isSyncingCloud, setIsSyncingCloud] = useState(false);
-  const [isUploadingCSV, setIsUploadingCSV] = useState(false);
   const [isSendingWhatsApp, setIsSendingWhatsApp] = useState(false);
-  const [csvReport, setCsvReport] = useState<
-    (ResultadoCargaMontajesCSV & { fileName: string; timestamp: string }) | null
-  >(null);
 
   // Filtros interactivos
   const [searchTerm, setSearchTerm] = useState("");
@@ -212,64 +200,6 @@ export default function TecnicosDashboardPage() {
       showToast("Error de red al conectar con el envío de WhatsApp.");
     } finally {
       setIsSendingWhatsApp(false);
-    }
-  };
-
-  // Guardar y sincronizar órdenes de montaje con MySQL en la nube
-  const handleSyncAllToCloud = async () => {
-    setIsSyncingCloud(true);
-    try {
-      const { data, totalSubidos } = await syncMontajesToCloud(montajes);
-      setMontajes(data);
-      showToast(
-        totalSubidos > 0
-          ? `¡Sincronización con MySQL completada! ${totalSubidos} orden(es) guardada(s) y ${data.length} sincronizada(s) en la nube.`
-          : `¡Nube sincronizada! ${data.length} orden(es) de montaje actualizadas desde MySQL.`
-      );
-    } catch (err: unknown) {
-      console.error("Error sincronizando montajes con MySQL:", err);
-      const msg = err instanceof Error ? err.message : "Error al conectar con MySQL en la nube.";
-      showToast(`${msg} Reintente en unos instantes.`);
-    } finally {
-      setIsSyncingCloud(false);
-    }
-  };
-
-  // Importar archivo CSV de Montajes y subir directamente a MySQL en la nube
-  const handleCSVFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsUploadingCSV(true);
-    try {
-      const text = await file.text();
-      const resultado = await sincronizarMontajesCsvOnline(text, montajes);
-      setMontajes(resultado.updatedList);
-
-      const nowTime = new Date().toLocaleTimeString("es-PY", {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-
-      setCsvReport({
-        ...resultado,
-        fileName: file.name,
-        timestamp: nowTime,
-      });
-
-      const totalProcesados = resultado.totalActualizadas + resultado.totalNuevas;
-      showToast(
-        totalProcesados > 0
-          ? `CSV subido y guardado en MySQL: ${resultado.totalActualizadas} actualizada(s), ${resultado.totalNuevas} nueva(s).`
-          : `CSV verificado (${resultado.totalFilasLeidas} filas): Todas las órdenes ya están sincronizadas con la nube.`
-      );
-    } catch (err: unknown) {
-      console.error("Error procesando CSV de montajes:", err);
-      const msg = err instanceof Error ? err.message : "Error al leer el archivo CSV.";
-      showToast(msg);
-    } finally {
-      setIsUploadingCSV(false);
-      if (e.target) e.target.value = "";
     }
   };
 
@@ -495,149 +425,13 @@ export default function TecnicosDashboardPage() {
       <main className="min-h-dvh bg-[#fbf9f9] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10 print:min-h-0 print:bg-white print:p-0">
       <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 print:hidden min-w-0">
         
-        {/* Cabecera unificada con Sincronización en la Nube y Carga CSV a MySQL */}
+        {/* Cabecera unificada */}
         <HeaderActions
           title="Taller de Montajes & Ensambles de PC"
           subtitle="Control integral de armado de PC & Expansiones de notebooks con asignación de técnicos"
           activeModule="tecnicos"
           hideBadge
-          onSyncMysql={handleSyncAllToCloud}
-          isSyncingMysql={isSyncingCloud}
-          extraActions={
-            <>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,text/csv"
-                onChange={handleCSVFileChange}
-                className="hidden"
-              />
-
-              {/* Botón Sincronizar Nube / Guardar en MySQL */}
-              <button
-                type="button"
-                onClick={handleSyncAllToCloud}
-                disabled={isSyncingCloud}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer disabled:opacity-60"
-                title="Guardar todos los cambios locales de montajes y sincronizar con MySQL en la nube"
-              >
-                <span
-                  className={`w-6 h-6 rounded flex items-center justify-center text-white ${
-                    isSyncingCloud ? "bg-amber-600" : "bg-indigo-600"
-                  }`}
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${isSyncingCloud ? "animate-spin" : ""}`} />
-                </span>
-                <div className="text-left leading-tight">
-                  <strong className="block text-xs font-bold text-zinc-900">
-                    {isSyncingCloud ? "Sincronizando..." : "Sincronizar Nube"}
-                  </strong>
-                  <span className="text-[11px] text-zinc-500 font-normal">
-                    {isSyncingCloud ? "Guardando en MySQL" : "Guardar en MySQL"}
-                  </span>
-                </div>
-              </button>
-
-              {/* Botón Subir CSV de Montajes a la Nube */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploadingCSV}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer disabled:opacity-60"
-                title="Subir archivo CSV de montajes para actualizar órdenes y guardarlas en MySQL"
-              >
-                <span className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center">
-                  <Upload className="w-3.5 h-3.5" />
-                </span>
-                <div className="text-left leading-tight">
-                  <strong className="block text-xs font-bold text-zinc-900">
-                    {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV · Montajes"}
-                  </strong>
-                  <span className="text-[11px] text-zinc-500 font-normal">
-                    {isUploadingCSV ? "Sincronizando online" : "Actualizar en MySQL"}
-                  </span>
-                </div>
-              </button>
-            </>
-          }
         />
-
-        {/* Panel de Reporte de Carga CSV y Sincronización en la Nube */}
-        {csvReport && (
-          <section
-            className={`rounded-xl border p-4 sm:p-5 shadow-sm space-y-4 ${
-              csvReport.cambios.length > 0
-                ? "bg-emerald-50/70 border-emerald-200"
-                : "bg-zinc-100/80 border-zinc-300"
-            }`}
-          >
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div
-                  className={`p-2 rounded-lg shrink-0 ${
-                    csvReport.cambios.length > 0
-                      ? "bg-emerald-600 text-white"
-                      : "bg-zinc-800 text-white"
-                  }`}
-                >
-                  <FileSpreadsheet className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm font-bold text-zinc-900">
-                      {csvReport.cambios.length > 0
-                        ? `¡Sincronización CSV completada! ${csvReport.cambios.length} registro(s) guardados en MySQL`
-                        : "Archivo CSV verificado: Las órdenes ya coinciden con la nube"}
-                    </h3>
-                    <span className="text-[11px] font-mono bg-white px-2 py-0.5 rounded border border-zinc-200 text-zinc-600">
-                      {csvReport.fileName} · {csvReport.timestamp}
-                    </span>
-                  </div>
-                  <p className="text-xs text-zinc-600 mt-0.5">
-                    {csvReport.cambios.length > 0
-                      ? `Se actualizaron ${csvReport.totalActualizadas} orden(es) y se incorporaron ${csvReport.totalNuevas} nueva(s) en la tabla oficial y en MySQL.`
-                      : `Se analizaron ${csvReport.totalFilasLeidas} fila(s) del archivo CSV sin diferencias pendientes.`}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setCsvReport(null)}
-                className="self-end sm:self-center p-1.5 text-zinc-400 hover:text-zinc-900 rounded-lg hover:bg-white/80 cursor-pointer"
-                title="Cerrar reporte CSV"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
-              <div className="bg-white p-2.5 rounded-lg border border-zinc-200/80">
-                <span className="text-[11px] text-zinc-500 block">Filas leídas en CSV</span>
-                <strong className="text-base font-extrabold text-zinc-900 tabular-nums">
-                  {csvReport.totalFilasLeidas}
-                </strong>
-              </div>
-              <div className="bg-white p-2.5 rounded-lg border border-emerald-200">
-                <span className="text-[11px] text-emerald-700 font-medium block">Actualizadas en Nube</span>
-                <strong className="text-base font-extrabold text-emerald-700 tabular-nums">
-                  {csvReport.totalActualizadas}
-                </strong>
-              </div>
-              <div className="bg-white p-2.5 rounded-lg border border-sky-200">
-                <span className="text-[11px] text-sky-700 font-medium block">Nuevas Agregadas</span>
-                <strong className="text-base font-extrabold text-sky-700 tabular-nums">
-                  {csvReport.totalNuevas}
-                </strong>
-              </div>
-              <div className="bg-white p-2.5 rounded-lg border border-zinc-200/80">
-                <span className="text-[11px] text-zinc-500 block">Sin Cambios</span>
-                <strong className="text-base font-extrabold text-zinc-600 tabular-nums">
-                  {csvReport.totalSinCambios}
-                </strong>
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* 5 KPIs Principales Basados en los Datos Reales de montaje.csv */}
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 2xl:gap-6">
