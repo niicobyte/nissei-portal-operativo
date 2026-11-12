@@ -1148,11 +1148,32 @@ export default function RecepcionCdeDashboardPage() {
     const lower = displayStatus.toLowerCase();
 
     if (lower === "entregada") {
+      const esFilaAsu =
+        ticket.origen === "ASU" ||
+        (!ticket.origen && !isNaN(parseInt(ticket.idOrden, 10)) && parseInt(ticket.idOrden, 10) < 100000);
+      const fechaEntregaMostrar = esFilaAsu
+        ? (isFechaValida(ticket.fechaEntregadaAsu) ? ticket.fechaEntregadaAsu : "") ||
+          (isFechaValida(ticket.fechaRecibidoDeposito) ? ticket.fechaRecibidoDeposito : "") ||
+          (isFechaValida(ticket.fechaEntregada) ? ticket.fechaEntregada : "")
+        : (isFechaValida(ticket.fechaEntregada) ? ticket.fechaEntregada : "") ||
+          (isFechaValida(ticket.fechaEntregadaAsu) ? ticket.fechaEntregadaAsu : "") ||
+          (isFechaValida(ticket.fechaRecibidoDeposito) ? ticket.fechaRecibidoDeposito : "");
+
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-          <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-          <span>Entregada</span>
-        </span>
+        <div className="inline-flex flex-col items-center gap-0.5">
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+            <span>Entregada</span>
+          </span>
+          {fechaEntregaMostrar && (
+            <span
+              className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
+              title={`Fecha de entrega al cliente: ${fechaEntregaMostrar}`}
+            >
+              {fechaEntregaMostrar}
+            </span>
+          )}
+        </div>
       );
     }
 

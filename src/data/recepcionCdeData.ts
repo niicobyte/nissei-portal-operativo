@@ -22,6 +22,7 @@ export interface RecepcionCdeTicket {
   mensaje: string;
   fechaIngreso: string;
   fechaEntregada?: string;
+  fechaEntregadaAsu?: string;
   fechaVenta?: string;
   estado: string;
   tipoComponente: string;

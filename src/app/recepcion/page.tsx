@@ -1049,7 +1049,7 @@ ${accText}`;
     return filteredTickets.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredTickets, currentPage]);
 
-  const getStatusBadge = (estado: string) => {
+  const getStatusBadge = (estado: string, fechaEntrega?: string) => {
     const e = (estado || "").toLowerCase();
     if (e.includes("sin reparo")) {
       return (
@@ -1061,9 +1061,19 @@ ${accText}`;
     }
     if (e === "entregada") {
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
-          Entregada
-        </span>
+        <div className="inline-flex flex-col items-start gap-0.5">
+          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+            Entregada
+          </span>
+          {fechaEntrega && (
+            <span
+              className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
+              title={`Fecha de entrega al cliente: ${fechaEntrega}`}
+            >
+              {fechaEntrega}
+            </span>
+          )}
+        </div>
       );
     }
     if (e === "reparada") {
@@ -1958,7 +1968,7 @@ ${accText}`;
 
                       {/* Estado */}
                       <td className="py-3 px-4 whitespace-nowrap">
-                        {getStatusBadge(ticket.estado)}
+                        {getStatusBadge(ticket.estado, ticket.fechaEntregada || ticket.fechaRecibidoDeposito)}
                       </td>
 
                       {/* Acciones */}

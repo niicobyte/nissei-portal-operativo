@@ -1207,6 +1207,7 @@ export function buildUnifiedSatiList(
       fechaIngresoAsu: asu.fechaIngreso || "",
       fechaIngresoCde: matchedCde?.fechaIngreso || "",
       fechaEntregada: fechaDespachoCde,         // Despacho CDE legítimo o vacío
+      fechaEntregadaAsu: isFechaValida(asu.fechaEntregada) ? asu.fechaEntregada : "",
       fechaVenta: asu.fechaVenta || matchedCde?.fechaVenta || "",
       estado: asu.estado || "En Asignacion",
       tipoComponente: asu.tipoComponente || matchedCde?.tipoComponente || "",
@@ -1254,6 +1255,7 @@ export function buildUnifiedSatiList(
       ...cde,
       fechaIngresoAsu: cde.fechaIngresoAsu || linkedAsu?.fechaIngreso || "",
       fechaIngresoCde: cde.fechaIngreso || "",
+      fechaEntregadaAsu: (linkedAsu && isFechaValida(linkedAsu.fechaEntregada)) ? linkedAsu.fechaEntregada : cde.fechaEntregadaAsu || "",
       clienteAsu: cde.clienteAsu || linkedAsu?.cliente || "",
       estadoAsu: cde.estadoAsu || linkedAsu?.estado || "",
       estadoCde: cde.estado,
