@@ -65,6 +65,7 @@ import {
   saveSatiTicketOverride,
   saveSatiCrossMatchLocal,
   isTicketDanesa,
+  isEstadoInternoNoCliente,
   parseFechaDMY,
   getStoredCdeTickets,
   classifyAndParseMultiSatiPreparedAsync,
@@ -808,12 +809,16 @@ ${accText}`;
   };
 
   // Segmentación por ámbito (Danesa SA / Clientes ASU / Todos)
+  // En Clientes ASU nunca se incluyen órdenes con estados internos (Enviado a destrucción, Enviado a stock, Liquidación, Vendido)
+  const isClienteAsuValido = (t: RecepcionTicket) =>
+    !isTicketDanesa(t.cliente) && !isEstadoInternoNoCliente(t.estado);
+
   const scopeTickets = useMemo(() => {
     if (viewScope === "DANESA") {
       return tickets.filter((t) => isTicketDanesa(t.cliente));
     }
     if (viewScope === "CLIENTES_ASU") {
-      return tickets.filter((t) => !isTicketDanesa(t.cliente));
+      return tickets.filter(isClienteAsuValido);
     }
     return tickets;
   }, [tickets, viewScope]);
@@ -824,7 +829,7 @@ ${accText}`;
     [tickets]
   );
   const totalClientesAsu = useMemo(
-    () => tickets.filter((t) => !isTicketDanesa(t.cliente)).length,
+    () => tickets.filter(isClienteAsuValido).length,
     [tickets]
   );
   const totalUniversal = tickets.length;
@@ -926,6 +931,9 @@ ${accText}`;
     const counts: Record<string, number> = {};
     scopeTickets.forEach((t) => {
       const st = (t.estado || "En Asignacion").trim();
+      if (viewScope === "CLIENTES_ASU" && isEstadoInternoNoCliente(st)) {
+        return;
+      }
       counts[st] = (counts[st] || 0) + 1;
     });
     const sorted = Object.keys(counts).sort((a, b) => a.localeCompare(b));
@@ -937,7 +945,7 @@ ${accText}`;
         count: counts[st],
       })),
     ];
-  }, [scopeTickets]);
+  }, [scopeTickets, viewScope]);
 
   // Conteo de categorías normalizadas para filtro jerárquico con buscador
   const categoryCounts = useMemo<CategoryCountItem[]>(() => {

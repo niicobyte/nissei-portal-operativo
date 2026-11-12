@@ -118,6 +118,31 @@ export function isTicketDanesa(cliente?: string): boolean {
   return cliente.toLowerCase().includes('danesa');
 }
 
+/**
+ * Estados internos/operativos que no corresponden a clientes finales en Clientes ASU:
+ * - Enviado a destruccion / Enviado Destruccion
+ * - Enviado a stock / Enviado Stock
+ * - Liquidacion / Liquidación
+ * - Vendido / Vendida
+ */
+export function isEstadoInternoNoCliente(estado?: string): boolean {
+  if (!estado) return false;
+  const norm = estado
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!norm) return false;
+
+  return (
+    norm.includes('destruccion') ||
+    (norm.includes('enviado') && norm.includes('stock')) ||
+    norm.includes('liquidacion') ||
+    /\bvendid[oa]\b/.test(norm)
+  );
+}
+
 export interface SatiCsvClassification {
   asuRows: RecepcionCdeTicket[];
   cdeRows: RecepcionCdeTicket[];

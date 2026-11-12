@@ -50,6 +50,7 @@ import {
   sincronizarCdeCsvOnline,
   classifyAndParseMultiSatiPreparedAsync,
   isTicketDanesa,
+  isEstadoInternoNoCliente,
   ResultadoCargaCdeCSV,
   CambioEstadoCde,
   isFechaValida,
@@ -567,7 +568,11 @@ export default function RecepcionCdeDashboardPage() {
     const totalUniversal = tickets.length;
     const danesaTickets = tickets.filter((t) => t.esDanesa);
     const clientesAsuTickets = tickets.filter(
-      (t) => !t.esDanesa && (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000)
+      (t) =>
+        !t.esDanesa &&
+        (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000) &&
+        !isEstadoInternoNoCliente(t.estadoAsu || t.estado) &&
+        !isEstadoInternoNoCliente(getTicketDisplayStatus(t))
     );
     const clientesCdeTickets = tickets.filter(
       (t) => !t.esDanesa && (t.origen === "CDE" || parseInt(t.idOrden, 10) >= 125000)
@@ -646,7 +651,11 @@ export default function RecepcionCdeDashboardPage() {
       list = tickets.filter((t) => t.esDanesa);
     } else if (viewScope === "CLIENTES_ASU") {
       list = tickets.filter(
-        (t) => !t.esDanesa && (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000)
+        (t) =>
+          !t.esDanesa &&
+          (t.origen === "ASU" || parseInt(t.idOrden, 10) < 125000) &&
+          !isEstadoInternoNoCliente(t.estadoAsu || t.estado) &&
+          !isEstadoInternoNoCliente(getTicketDisplayStatus(t))
       );
     } else if (viewScope === "CLIENTES_CDE") {
       list = tickets.filter(
@@ -696,9 +705,10 @@ export default function RecepcionCdeDashboardPage() {
       const st = getTicketDisplayStatus(t);
       const lower = st.toLowerCase();
 
-      // Si es ámbito de clientes, quitar estados exclusivos de Danesa SA
+      // Si es ámbito de clientes, quitar estados internos no correspondientes a clientes finales
       if (isClientes) {
         if (
+          isEstadoInternoNoCliente(st) ||
           lower.startsWith("enviado") ||
           lower.includes("liquidacion") ||
           lower.includes("liquidación")

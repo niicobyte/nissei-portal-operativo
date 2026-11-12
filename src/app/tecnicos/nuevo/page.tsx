@@ -20,7 +20,10 @@ import {
   FileSpreadsheet,
   Send,
   Database,
+  QrCode,
+  ScanBarcode,
 } from "lucide-react";
+import { BarcodeScannerModal } from "@/components/common/BarcodeScannerModal";
 import {
   CATALOGO_HARDWARE_REAL,
   LISTA_VENDEDORES_REALES,
@@ -135,6 +138,9 @@ export default function NuevoIngresoMontajePage() {
   );
   const [customSerial, setCustomSerial] = useState("");
   const [skuMatchNotice, setSkuMatchNotice] = useState<string | null>(null);
+  const [scannerTarget, setScannerTarget] = useState<
+    { mode: "new" } | { mode: "row"; index: number } | null
+  >(null);
 
   // 4. APARTADO DE TÉCNICO RESPONSABLE & PRIORIDAD
   const [assignedTech, setAssignedTech] = useState<"Nicolas Solis" | "Magaly Yegros" | "Juan Ronnebeck">(
@@ -1041,14 +1047,25 @@ export default function NuevoIngresoMontajePage() {
                     <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
                       Serial Físico / IMEI (Opcional)
                     </label>
-                    <input
-                      id="component-serial"
-                      type="text"
-                      value={customSerial}
-                      onChange={(e) => setCustomSerial(e.target.value)}
-                      placeholder="Escanear serial físico o dejar en blanco si no tiene..."
-                      className="w-full text-xs font-mono bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
-                    />
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="component-serial"
+                        type="text"
+                        value={customSerial}
+                        onChange={(e) => setCustomSerial(e.target.value)}
+                        placeholder="Escanear serial físico o dejar en blanco si no tiene..."
+                        className="w-full min-w-0 text-xs font-mono bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setScannerTarget({ mode: "new" })}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-900 bg-zinc-900 hover:bg-black text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
+                        title="Abrir cámara para escanear Código de Barras o código QR"
+                      >
+                        <QrCode className="w-4 h-4 text-emerald-400" />
+                        <span>Escanear</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Botón Agregar */}
@@ -1113,14 +1130,24 @@ export default function NuevoIngresoMontajePage() {
                           <td className="py-2.5 px-3 font-medium text-zinc-900 min-w-[220px]">
                             {item.descripcion}
                           </td>
-                          <td className="py-2.5 px-3 min-w-[160px]">
-                            <input
-                              type="text"
-                              value={item.seriales}
-                              onChange={(e) => handleUpdateComponentField(index, "seriales", e.target.value)}
-                              placeholder="Sin serial visible o escanee..."
-                              className="w-full text-xs font-mono border border-zinc-200 rounded px-2 py-1 focus:border-zinc-900 outline-none"
-                            />
+                          <td className="py-2.5 px-3 min-w-[180px]">
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="text"
+                                value={item.seriales}
+                                onChange={(e) => handleUpdateComponentField(index, "seriales", e.target.value)}
+                                placeholder="Sin serial visible o escanee..."
+                                className="w-full min-w-0 text-xs font-mono border border-zinc-200 rounded px-2 py-1 focus:border-zinc-900 outline-none"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setScannerTarget({ mode: "row", index })}
+                                className="p-1.5 rounded border border-zinc-200 bg-zinc-50 hover:bg-zinc-900 hover:text-white hover:border-zinc-900 text-zinc-700 transition-colors cursor-pointer shrink-0"
+                                title="Escanear QR o Código de barras con cámara"
+                              >
+                                <ScanBarcode className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
                           </td>
                           <td className="py-2.5 px-2 text-right">
                             <button
@@ -1326,6 +1353,20 @@ export default function NuevoIngresoMontajePage() {
           </div>
 
         </form>
+
+        <BarcodeScannerModal
+          isOpen={scannerTarget !== null}
+          onClose={() => setScannerTarget(null)}
+          onDetected={(code, formatLabel) => {
+            if (scannerTarget?.mode === "row") {
+              handleUpdateComponentField(scannerTarget.index, "seriales", code);
+            } else {
+              setCustomSerial(code);
+              setSkuMatchNotice(`Serial escaneado (${formatLabel}): ${code}`);
+            }
+            setScannerTarget(null);
+          }}
+        />
 
       </div>
     </main>
