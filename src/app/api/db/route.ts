@@ -602,8 +602,9 @@ export async function POST(req: NextRequest) {
         ]
       );
       const skusOrden = Array.isArray(orden.componentes)
-        ? orden.componentes.map((c: { sku?: string; descripcion?: string; categoria?: string }) => ({
+        ? orden.componentes.map((c: { sku?: string; upc?: string; descripcion?: string; categoria?: string }) => ({
             sku: c?.sku || "",
+            upc: c?.upc || undefined,
             descripcion: c?.descripcion || "",
             categoria: c?.categoria || "OTROS",
             fuente: "ORDEN",
@@ -720,10 +721,11 @@ export async function POST(req: NextRequest) {
         }
 
         const learnedSkus = ordenes.flatMap(
-          (orden: { componentes?: { sku?: string; descripcion?: string; categoria?: string }[] }) =>
+          (orden: { componentes?: { sku?: string; upc?: string; descripcion?: string; categoria?: string }[] }) =>
             Array.isArray(orden?.componentes)
               ? orden.componentes.map((c) => ({
                   sku: c?.sku || "",
+                  upc: c?.upc || undefined,
                   descripcion: c?.descripcion || "",
                   categoria: c?.categoria || "OTROS",
                   fuente: "ORDEN",

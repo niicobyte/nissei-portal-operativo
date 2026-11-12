@@ -15,17 +15,18 @@ import {
 import { BrowserCodeReader, BrowserMultiFormatReader, IScannerControls } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 
+export type ScannerMode = "all" | "barcode";
+
 interface BarcodeScannerModalProps {
   isOpen: boolean;
+  scanMode?: ScannerMode;
   title?: string;
   subtitle?: string;
   onClose: () => void;
   onDetected: (code: string, formatLabel: string) => void;
 }
 
-const SUPPORTED_FORMATS = [
-  BarcodeFormat.QR_CODE,
-  BarcodeFormat.DATA_MATRIX,
+const BARCODE_1D_FORMATS = [
   BarcodeFormat.CODE_128,
   BarcodeFormat.CODE_39,
   BarcodeFormat.CODE_93,
@@ -35,13 +36,22 @@ const SUPPORTED_FORMATS = [
   BarcodeFormat.UPC_E,
   BarcodeFormat.ITF,
   BarcodeFormat.CODABAR,
-  BarcodeFormat.PDF_417,
-  BarcodeFormat.AZTEC,
 ];
 
-function createConfiguredReader(): BrowserMultiFormatReader {
+const ALL_SUPPORTED_FORMATS = [
+  BarcodeFormat.QR_CODE,
+  BarcodeFormat.DATA_MATRIX,
+  BarcodeFormat.PDF_417,
+  BarcodeFormat.AZTEC,
+  ...BARCODE_1D_FORMATS,
+];
+
+function createConfiguredReader(scanMode: ScannerMode = "all"): BrowserMultiFormatReader {
   const hints = new Map<DecodeHintType, unknown>();
-  hints.set(DecodeHintType.POSSIBLE_FORMATS, SUPPORTED_FORMATS);
+  hints.set(
+    DecodeHintType.POSSIBLE_FORMATS,
+    scanMode === "barcode" ? BARCODE_1D_FORMATS : ALL_SUPPORTED_FORMATS
+  );
   hints.set(DecodeHintType.TRY_HARDER, true);
   return new BrowserMultiFormatReader(hints, {
     delayBetweenScanAttempts: 120,
@@ -76,11 +86,22 @@ function formatBarcodeLabel(format: BarcodeFormat): string {
 
 export function BarcodeScannerModal({
   isOpen,
-  title = "Escanear Serial (QR / Código de Barras)",
-  subtitle = "Apuntá la cámara a la etiqueta del componente. Detecta automáticamente QR, DataMatrix y códigos de barras.",
+  scanMode = "all",
+  title,
+  subtitle,
   onClose,
   onDetected,
 }: BarcodeScannerModalProps) {
+  const resolvedTitle =
+    title ??
+    (scanMode === "barcode"
+      ? "Escanear Código de Barras"
+      : "Escanear Serial (QR / Código de Barras)");
+  const resolvedSubtitle =
+    subtitle ??
+    (scanMode === "barcode"
+      ? "Apuntá la cámara al código de barras. Solo lectura de códigos de barras lineales."
+      : "Apuntá la cámara a la etiqueta del componente. Detecta automáticamente QR, DataMatrix y códigos de barras.");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
   const controlsRef = useRef<IScannerControls | null>(null);
@@ -142,7 +163,7 @@ export function BarcodeScannerModal({
       }
 
       try {
-        const reader = createConfiguredReader();
+        const reader = createConfiguredReader(scanMode);
         const constraints: MediaStreamConstraints = {
           audio: false,
           video: activeDeviceId
@@ -231,7 +252,7 @@ export function BarcodeScannerModal({
       cancelled = true;
       stopCamera();
     };
-  }, [isOpen, activeDeviceId, onDetected, stopCamera]);
+  }, [isOpen, activeDeviceId, scanMode, onDetected, stopCamera]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -273,7 +294,7 @@ export function BarcodeScannerModal({
     const objectUrl = URL.createObjectURL(file);
 
     try {
-      const reader = createConfiguredReader();
+      const reader = createConfiguredReader(scanMode);
       const result = await reader.decodeFromImageUrl(objectUrl);
       const rawText = (result.getText() || "").trim();
       if (rawText) {
@@ -285,7 +306,9 @@ export function BarcodeScannerModal({
       }
     } catch {
       setErrorMessage(
-        "No se detectó ningún código QR ni código de barras nítido en la imagen. Probá enfocando más cerca de la etiqueta."
+        scanMode === "barcode"
+          ? "No se detectó ningún código de barras nítido en la imagen. Probá enfocando más cerca del código."
+          : "No se detectó ningún código QR ni código de barras nítido en la imagen. Probá enfocando más cerca de la etiqueta."
       );
     } finally {
       URL.revokeObjectURL(objectUrl);
@@ -305,8 +328,8 @@ export function BarcodeScannerModal({
               <Camera className="w-4 h-4" />
             </span>
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-zinc-900 leading-tight">{title}</h3>
-              <p className="text-[11px] text-zinc-500 mt-0.5 leading-snug">{subtitle}</p>
+              <h3 className="text-sm font-bold text-zinc-900 leading-tight">{resolvedTitle}</h3>
+              <p className="text-[11px] text-zinc-500 mt-0.5 leading-snug">{resolvedSubtitle}</p>
             </div>
           </div>
           <button
@@ -397,10 +420,12 @@ export function BarcodeScannerModal({
                 <ScanBarcode className="w-3 h-3 text-zinc-700" />
                 Barras 1D
               </span>
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 font-mono">
-                <QrCode className="w-3 h-3 text-zinc-700" />
-                QR / DataMatrix
-              </span>
+              {scanMode !== "barcode" && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 font-mono">
+                  <QrCode className="w-3 h-3 text-zinc-700" />
+                  QR / DataMatrix
+                </span>
+              )}
             </div>
 
             <div>

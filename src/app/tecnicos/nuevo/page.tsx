@@ -44,6 +44,8 @@ import {
   mergeSkuCatalogItems,
   extractSkusFromOrders,
   isRealSku,
+  findSkuByUpc,
+  normalizeUpcCode,
   formatMontajeWhatsAppMessage,
 } from "@/data/montajesData";
 import { setCloudSyncWarning } from "@/lib/cloudSync";
@@ -130,7 +132,8 @@ export default function NuevoIngresoMontajePage() {
   const [isImportingSkus, setIsImportingSkus] = useState(false);
   const [skuImportFeedback, setSkuImportFeedback] = useState<string | null>(null);
 
-  // Estados para el ingreso de componente (manual con autocompletado por SKU)
+  // Estados para el ingreso de componente (manual con autocompletado por UPC / SKU)
+  const [customUpc, setCustomUpc] = useState("");
   const [customSku, setCustomSku] = useState("");
   const [customDesc, setCustomDesc] = useState("");
   const [customCategory, setCustomCategory] = useState<ComponenteMontaje["categoria"]>(
@@ -139,7 +142,11 @@ export default function NuevoIngresoMontajePage() {
   const [customSerial, setCustomSerial] = useState("");
   const [skuMatchNotice, setSkuMatchNotice] = useState<string | null>(null);
   const [scannerTarget, setScannerTarget] = useState<
-    { mode: "new" } | { mode: "row"; index: number } | null
+    | { mode: "nro_reg" }
+    | { mode: "upc" }
+    | { mode: "new" }
+    | { mode: "row"; index: number }
+    | null
   >(null);
 
   // 4. APARTADO DE TÉCNICO RESPONSABLE & PRIORIDAD
@@ -205,11 +212,44 @@ export default function NuevoIngresoMontajePage() {
     setCustomCategory(tipo === "Montaje" ? "PROCESADOR" : "NOTEBOOK");
     setCustomSku("");
     setCustomDesc("");
+    setCustomUpc("");
     setCustomSerial("");
     setSkuMatchNotice(null);
   };
 
-  // Autocompletado inteligente cuando se escribe o selecciona el SKU
+  // Autocompletado inteligente por UPC / Código de Barras -> completa SKU, Categoría y Descripción
+  const handleUpcChange = (upcVal: string, scannedFormatLabel?: string) => {
+    setCustomUpc(upcVal);
+    const clean = normalizeUpcCode(upcVal);
+    if (!clean) {
+      if (!customSku.trim()) setSkuMatchNotice(null);
+      return;
+    }
+
+    const found = findSkuByUpc(skuCatalog, clean);
+    if (found) {
+      setCustomSku(found.sku);
+      setCustomCategory(found.categoria);
+      setCustomDesc(found.descripcion);
+      setSkuMatchNotice(
+        `${scannedFormatLabel ? `UPC escaneado (${scannedFormatLabel}) · ` : ""}Vinculado al SKU ${found.sku}: [${found.categoria}] ${found.descripcion}`
+      );
+    } else if (isRealSku(customSku)) {
+      setSkuMatchNotice(
+        `${scannedFormatLabel ? `UPC escaneado (${scannedFormatLabel}) · ` : ""}Al agregar, el UPC ${clean} se vinculará al SKU ${customSku.trim()} en MySQL.`
+      );
+    } else if (scannedFormatLabel) {
+      setSkuMatchNotice(
+        `UPC escaneado (${scannedFormatLabel}): ${clean} — Ingrese o seleccione el SKU abajo para vincularlo en MySQL.`
+      );
+    } else if (!customSku.trim()) {
+      setSkuMatchNotice(
+        "UPC aún no vinculado: ingrese o elija el SKU abajo para asociarlo en MySQL."
+      );
+    }
+  };
+
+  // Autocompletado inteligente al escribir o seleccionar SKU
   const handleSkuChange = (skuVal: string) => {
     setCustomSku(skuVal);
     const clean = skuVal.trim();
@@ -220,10 +260,14 @@ export default function NuevoIngresoMontajePage() {
 
     // Buscar en catálogo unificado (oficial + MySQL catalogo_sku + órdenes históricas)
     const found = skuCatalog.find((c) => c.sku.toLowerCase() === clean.toLowerCase());
+    const enteredUpc = normalizeUpcCode(customUpc);
 
     if (found) {
       setCustomCategory(found.categoria);
       setCustomDesc(found.descripcion);
+      if (found.upc && !enteredUpc) {
+        setCustomUpc(found.upc);
+      }
       const originTag =
         found.fuente === "OFICIAL"
           ? "Catálogo oficial"
@@ -232,7 +276,17 @@ export default function NuevoIngresoMontajePage() {
             : found.fuente === "ORDEN"
               ? "Orden previa MySQL"
               : "Guardado en MySQL";
-      setSkuMatchNotice(`${originTag}: [${found.categoria}] ${found.descripcion}`);
+      const upcNote =
+        enteredUpc && normalizeUpcCode(found.upc).toLowerCase() !== enteredUpc.toLowerCase()
+          ? ` · Al agregar se vinculará UPC ${enteredUpc}`
+          : found.upc
+            ? ` · UPC ${found.upc}`
+            : "";
+      setSkuMatchNotice(`${originTag}: [${found.categoria}] ${found.descripcion}${upcNote}`);
+    } else if (enteredUpc) {
+      setSkuMatchNotice(
+        `Al agregar, el nuevo SKU ${clean} quedará guardado con UPC ${enteredUpc} en MySQL.`
+      );
     } else {
       setSkuMatchNotice(null);
     }
@@ -251,23 +305,30 @@ export default function NuevoIngresoMontajePage() {
     if (found) {
       setCustomSku(found.sku);
       setCustomCategory(found.categoria);
-      setSkuMatchNotice(`SKU asignado automáticamente: ${found.sku}`);
+      if (found.upc && !normalizeUpcCode(customUpc)) {
+        setCustomUpc(found.upc);
+      }
+      setSkuMatchNotice(
+        `SKU asignado automáticamente: ${found.sku}${found.upc ? ` (UPC ${found.upc})` : ""}`
+      );
     }
   };
 
-  // Agregar componente a la tabla y aprender SKU nuevo en MySQL si corresponde
+  // Agregar componente a la tabla y aprender SKU / UPC en MySQL si corresponde
   const handleAddComponent = () => {
     if (!customDesc.trim()) {
-      alert("Por favor ingrese la descripción del componente o un SKU válido.");
+      alert("Por favor ingrese la descripción del componente o un SKU/UPC válido.");
       return;
     }
 
     const cleanSku = customSku.trim();
+    const cleanUpc = normalizeUpcCode(customUpc);
     const cleanDesc = customDesc.trim();
     const assignedSku = cleanSku || `SKU-${Math.floor(100000 + Math.random() * 900000)}`;
 
     const newComponent: ComponenteMontaje = {
       sku: assignedSku,
+      ...(cleanUpc ? { upc: cleanUpc } : {}),
       descripcion: cleanDesc,
       seriales: customSerial.trim() || "Sin serial visible",
       categoria: customCategory,
@@ -280,19 +341,27 @@ export default function NuevoIngresoMontajePage() {
       const existing = skuCatalog.find(
         (c) => c.sku.toLowerCase() === cleanSku.toLowerCase()
       );
+      const existingUpc = normalizeUpcCode(existing?.upc);
+      const upcChanged = Boolean(cleanUpc) && existingUpc.toLowerCase() !== cleanUpc.toLowerCase();
+
       if (
         !existing ||
         existing.descripcion.toLowerCase() !== cleanDesc.toLowerCase() ||
-        existing.categoria !== customCategory
+        existing.categoria !== customCategory ||
+        upcChanged
       ) {
+        const finalUpc = cleanUpc || existingUpc;
         const newItem: SkuCatalogItem = {
           sku: cleanSku,
+          ...(finalUpc ? { upc: finalUpc } : {}),
           descripcion: cleanDesc,
           categoria: customCategory,
           fuente: "MANUAL",
         };
         setSkuCatalog((prev) => mergeSkuCatalogItems(prev, [newItem]));
-        learnedNotice = `Nuevo SKU ${cleanSku} guardado en catálogo MySQL para futuros montajes.`;
+        learnedNotice = existing && upcChanged
+          ? `UPC ${cleanUpc} vinculado al SKU ${cleanSku} y guardado en MySQL para futuros montajes.`
+          : `Nuevo SKU ${cleanSku}${finalUpc ? ` (UPC ${finalUpc})` : ""} guardado en catálogo MySQL para futuros montajes.`;
         void saveSkusToCatalogOnline([newItem]).then((res) => {
           if (res.items.length > 0) {
             setSkuCatalog(res.items);
@@ -302,6 +371,7 @@ export default function NuevoIngresoMontajePage() {
     }
 
     // Limpiar campos listos para el siguiente componente
+    setCustomUpc("");
     setCustomSku("");
     setCustomDesc("");
     setCustomSerial("");
@@ -732,15 +802,26 @@ export default function NuevoIngresoMontajePage() {
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Nro. Registro / Interno *
                   </label>
-                  <input
-                    id="input-nro-registro"
-                    type="text"
-                    required
-                    value={nroRegistroInterno}
-                    onChange={(e) => setNroRegistroInterno(e.target.value)}
-                    placeholder="Ej: 966.565 ó 001-002-0045892"
-                    className="w-full text-xs sm:text-sm font-mono border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none font-bold text-zinc-900"
-                  />
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="input-nro-registro"
+                      type="text"
+                      required
+                      value={nroRegistroInterno}
+                      onChange={(e) => setNroRegistroInterno(e.target.value)}
+                      placeholder="Ej: 966.565 ó 001-002-0045892"
+                      className="w-full min-w-0 text-xs sm:text-sm font-mono border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none font-bold text-zinc-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setScannerTarget({ mode: "nro_reg" })}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-900 bg-zinc-900 hover:bg-black text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
+                      title="Abrir cámara para escanear solo Código de Barras"
+                    >
+                      <ScanBarcode className="w-4 h-4 text-emerald-400" />
+                      <span>Escanear</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* Fecha de Facturación */}
@@ -929,7 +1010,7 @@ export default function NuevoIngresoMontajePage() {
                         Importar SKUs al Catálogo Maestro MySQL
                       </h3>
                       <p className="text-[11px] text-zinc-600">
-                        Subí un archivo CSV o pegá una lista (<code className="font-mono">SKU, Descripción, Categoría</code>). Se sincroniza en la nube para cualquier PC.
+                        Subí un archivo CSV o pegá una lista (<code className="font-mono">SKU, Descripción, Categoría, UPC</code>). Se sincroniza en la nube para cualquier PC.
                       </p>
                     </div>
                     <button
@@ -975,12 +1056,47 @@ export default function NuevoIngresoMontajePage() {
                     Cargar Componente a la Orden:
                   </span>
                   <span className="text-[11px] text-zinc-500 font-mono">
-                    Escriba el SKU o elija de las sugerencias
+                    Escanee el UPC o escriba el SKU
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
-                  
+                  {/* UPC / EAN arriba del SKU (autocompleta SKU/Descripción y se vincula en MySQL) */}
+                  <div className="sm:col-span-12">
+                    <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
+                      UPC / Código de Barras del Producto (Opcional)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        id="component-upc"
+                        type="text"
+                        list="upcs-list"
+                        value={customUpc}
+                        onChange={(e) => handleUpcChange(e.target.value)}
+                        placeholder="Escanear o escribir UPC / EAN para autocompletar o vincular al SKU..."
+                        className="w-full min-w-0 text-xs font-mono font-bold bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setScannerTarget({ mode: "upc" })}
+                        className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-zinc-900 bg-zinc-900 hover:bg-black text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer shrink-0"
+                        title="Abrir cámara para escanear el UPC o código de barras del producto"
+                      >
+                        <QrCode className="w-4 h-4 text-emerald-400" />
+                        <span>Escanear</span>
+                      </button>
+                    </div>
+                    <datalist id="upcs-list">
+                      {currentCatalog
+                        .filter((c) => c.upc)
+                        .map((c) => (
+                          <option key={`${c.sku}-${c.upc}`} value={c.upc}>
+                            SKU {c.sku} · {c.descripcion}
+                          </option>
+                        ))}
+                    </datalist>
+                  </div>
+
                   {/* SKU con datalist de autocompletado */}
                   <div className="sm:col-span-3">
                     <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
@@ -1120,7 +1236,12 @@ export default function NuevoIngresoMontajePage() {
                       {components.map((item, index) => (
                         <tr key={index} className="hover:bg-zinc-50/50 transition-colors">
                           <td className="py-2.5 px-3 font-mono font-bold text-zinc-900 whitespace-nowrap">
-                            {item.sku}
+                            <span>{item.sku}</span>
+                            {item.upc && (
+                              <span className="block text-[10px] font-normal text-zinc-500">
+                                UPC: {item.upc}
+                              </span>
+                            )}
                           </td>
                           <td className="py-2.5 px-3 whitespace-nowrap">
                             <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-100 text-zinc-700 border border-zinc-200">
@@ -1356,9 +1477,28 @@ export default function NuevoIngresoMontajePage() {
 
         <BarcodeScannerModal
           isOpen={scannerTarget !== null}
+          scanMode={scannerTarget?.mode === "nro_reg" ? "barcode" : "all"}
+          title={
+            scannerTarget?.mode === "nro_reg"
+              ? "Escanear Nro. Registro / Interno (Barras)"
+              : scannerTarget?.mode === "upc"
+                ? "Escanear UPC / Código de Producto"
+                : "Escanear Serial (QR / Código de Barras)"
+          }
+          subtitle={
+            scannerTarget?.mode === "nro_reg"
+              ? "Apuntá la cámara al código de barras del número de registro o comprobante."
+              : scannerTarget?.mode === "upc"
+                ? "Apuntá la cámara al código UPC de la caja para completar el SKU automáticamente o vincularlo."
+                : "Apuntá la cámara a la etiqueta del componente. Detecta automáticamente QR, DataMatrix y códigos de barras."
+          }
           onClose={() => setScannerTarget(null)}
           onDetected={(code, formatLabel) => {
-            if (scannerTarget?.mode === "row") {
+            if (scannerTarget?.mode === "nro_reg") {
+              setNroRegistroInterno(code);
+            } else if (scannerTarget?.mode === "upc") {
+              handleUpcChange(code, formatLabel);
+            } else if (scannerTarget?.mode === "row") {
               handleUpdateComponentField(scannerTarget.index, "seriales", code);
             } else {
               setCustomSerial(code);

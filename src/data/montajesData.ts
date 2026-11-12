@@ -3,6 +3,7 @@
 
 export interface ComponenteMontaje {
   sku: string;
+  upc?: string;
   descripcion: string;
   seriales: string;
   categoria:
@@ -1483,6 +1484,7 @@ export async function sincronizarMontajesCsvOnline(
 
 export interface SkuCatalogItem {
   sku: string;
+  upc?: string;
   descripcion: string;
   categoria: ComponenteMontaje["categoria"];
   fuente?: "OFICIAL" | "ORDEN" | "MANUAL" | "CSV";
@@ -1516,6 +1518,43 @@ export function isRealSku(sku: string | undefined | null): boolean {
   return true;
 }
 
+/**
+ * Normaliza un código UPC/EAN descartando placeholders inválidos.
+ */
+export function normalizeUpcCode(upc: string | undefined | null): string {
+  const clean = String(upc || "").trim();
+  if (clean.length < 4) return "";
+  if (/^(n\/a|s\/n|na|sin\s*upc|-+)$/i.test(clean)) return "";
+  return clean;
+}
+
+/**
+ * Busca en el catálogo un SKU cuyo UPC coincida exactamente o por equivalencia UPC-A (12 dígitos) / EAN-13 (0 + 12 dígitos).
+ */
+export function findSkuByUpc(
+  catalog: SkuCatalogItem[],
+  rawUpc: string | undefined | null
+): SkuCatalogItem | undefined {
+  const clean = normalizeUpcCode(rawUpc);
+  if (!clean) return undefined;
+
+  const lower = clean.toLowerCase();
+  const exact = catalog.find(
+    (c) => normalizeUpcCode(c.upc).toLowerCase() === lower
+  );
+  if (exact) return exact;
+
+  if (/^\d{12,13}$/.test(clean)) {
+    const padded = clean.padStart(13, "0");
+    return catalog.find((c) => {
+      const candidate = normalizeUpcCode(c.upc);
+      return /^\d{12,13}$/.test(candidate) && candidate.padStart(13, "0") === padded;
+    });
+  }
+
+  return undefined;
+}
+
 export function normalizeCategoriaSku(
   rawCat: string | undefined,
   descripcion: string,
@@ -1547,9 +1586,11 @@ export function extractSkusFromOrders(orders: OrdenMontajeReal[]): SkuCatalogIte
     for (const c of ord.componentes) {
       const sku = String(c.sku || "").trim();
       const desc = String(c.descripcion || "").trim();
+      const upc = normalizeUpcCode(c.upc);
       if (!isRealSku(sku) || !desc) continue;
       extracted.push({
         sku,
+        ...(upc ? { upc } : {}),
         descripcion: desc,
         categoria: normalizeCategoriaSku(c.categoria, desc, ord.tipo_servicio === "Expansion" ? "Expansion" : "Montaje"),
         fuente: "ORDEN",
@@ -1561,7 +1602,7 @@ export function extractSkusFromOrders(orders: OrdenMontajeReal[]): SkuCatalogIte
 
 /**
  * Unifica múltiples listas de SKUs conservando un único registro por SKU (case-insensitive).
- * Las listas posteriores tienen mayor prioridad para enriquecer descripción/categoría.
+ * Las listas posteriores tienen mayor prioridad para enriquecer descripción/categoría/UPC.
  */
 export function mergeSkuCatalogItems(...lists: SkuCatalogItem[][]): SkuCatalogItem[] {
   const map = new Map<string, SkuCatalogItem>();
@@ -1573,8 +1614,10 @@ export function mergeSkuCatalogItems(...lists: SkuCatalogItem[][]): SkuCatalogIt
       if (!isRealSku(sku) || !desc) continue;
       const key = sku.toLowerCase();
       const existing = map.get(key);
+      const upc = normalizeUpcCode(item?.upc) || normalizeUpcCode(existing?.upc);
       map.set(key, {
         sku: existing?.sku || sku,
+        ...(upc ? { upc } : {}),
         descripcion: desc || existing?.descripcion || "",
         categoria: normalizeCategoriaSku(item.categoria, desc),
         fuente: item.fuente || existing?.fuente || "OFICIAL",
@@ -1648,12 +1691,16 @@ export async function saveSkusToCatalogOnline(
   items: SkuCatalogItem[]
 ): Promise<{ ok: boolean; items: SkuCatalogItem[]; totalGuardados: number; error?: string }> {
   const validItems = items
-    .map((it) => ({
-      sku: String(it.sku || "").trim(),
-      descripcion: String(it.descripcion || "").trim(),
-      categoria: normalizeCategoriaSku(it.categoria, String(it.descripcion || "")),
-      fuente: it.fuente || ("MANUAL" as const),
-    }))
+    .map((it) => {
+      const upc = normalizeUpcCode(it.upc);
+      return {
+        sku: String(it.sku || "").trim(),
+        ...(upc ? { upc } : {}),
+        descripcion: String(it.descripcion || "").trim(),
+        categoria: normalizeCategoriaSku(it.categoria, String(it.descripcion || "")),
+        fuente: it.fuente || ("MANUAL" as const),
+      };
+    })
     .filter((it) => isRealSku(it.sku) && it.descripcion.length > 0);
 
   if (validItems.length === 0) {
@@ -1718,6 +1765,7 @@ export function parseSkuImportText(rawText: string): SkuCatalogItem[] {
 
   const firstHeaders = rows[0].map(normalizeMontajeHeader);
   const idxSkuH = firstHeaders.findIndex((h) => h === "sku" || h === "codigo" || h === "codigoproducto" || h === "cod");
+  const idxUpcH = firstHeaders.findIndex((h) => h === "upc" || h === "ean" || h === "gtin" || h === "codigobarras" || h === "barcode");
   const idxDescH = firstHeaders.findIndex((h) => h.includes("desc") || h.includes("producto") || h.includes("hardware") || h.includes("nombre") || h.includes("equipo"));
   const idxCatH = firstHeaders.findIndex((h) => h.includes("categ") || h === "tipo" || h === "rubro");
 
@@ -1726,6 +1774,7 @@ export function parseSkuImportText(rawText: string): SkuCatalogItem[] {
   const idxSku = hasHeader ? idxSkuH : 0;
   const idxDesc = hasHeader ? idxDescH : 1;
   const idxCat = hasHeader ? idxCatH : 2;
+  const idxUpc = hasHeader ? idxUpcH : 3;
 
   const parsed: SkuCatalogItem[] = [];
   for (let i = startIdx; i < rows.length; i++) {
@@ -1734,10 +1783,12 @@ export function parseSkuImportText(rawText: string): SkuCatalogItem[] {
     const sku = (cells[idxSku] || "").trim();
     const descripcion = (cells[idxDesc] || "").trim();
     const rawCat = idxCat >= 0 ? (cells[idxCat] || "").trim() : "";
+    const upc = idxUpc >= 0 ? normalizeUpcCode(cells[idxUpc]) : "";
     if (!isRealSku(sku) || !descripcion) continue;
 
     parsed.push({
       sku,
+      ...(upc ? { upc } : {}),
       descripcion,
       categoria: normalizeCategoriaSku(rawCat, descripcion),
       fuente: "CSV",

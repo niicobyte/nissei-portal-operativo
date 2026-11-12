@@ -8,6 +8,7 @@ import {
   isRealSku,
   mergeSkuCatalogItems,
   normalizeCategoriaSku,
+  normalizeUpcCode,
 } from "@/data/montajesData";
 import {
   LISTA_TECNICOS,
@@ -417,13 +418,29 @@ export async function ensureDatabaseInitialized(): Promise<void> {
       await pool.query(`
         CREATE TABLE IF NOT EXISTS catalogo_sku (
           sku VARCHAR(80) PRIMARY KEY,
+          upc VARCHAR(80) DEFAULT NULL,
           descripcion VARCHAR(350) NOT NULL,
           categoria VARCHAR(50) NOT NULL DEFAULT 'OTROS',
           fuente VARCHAR(30) NOT NULL DEFAULT 'OFICIAL',
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-          INDEX idx_sku_categoria (categoria)
+          INDEX idx_sku_categoria (categoria),
+          INDEX idx_sku_upc (upc)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
+
+      try {
+        await pool.query(
+          "ALTER TABLE catalogo_sku ADD COLUMN upc VARCHAR(80) DEFAULT NULL"
+        );
+      } catch {
+        // La columna upc ya existe en la tabla
+      }
+
+      try {
+        await pool.query("ALTER TABLE catalogo_sku ADD INDEX idx_sku_upc (upc)");
+      } catch {
+        // El índice idx_sku_upc ya existe en la tabla
+      }
 
       // Limpieza preventiva: recepcion_cde_tickets solo debe contener órdenes reales de CDE (>= 100000)
       await pool.query(
@@ -725,18 +742,22 @@ export async function seedMontajesTable(pool: mysql.Pool): Promise<void> {
  */
 export async function upsertSkusToMySQL(
   pool: mysql.Pool,
-  items: { sku: string; descripcion: string; categoria?: string; fuente?: string }[],
+  items: { sku: string; upc?: string | null; descripcion: string; categoria?: string; fuente?: string }[],
   options?: { overwrite?: boolean }
 ): Promise<number> {
-  const dedup = new Map<string, [string, string, string, string]>();
+  const dedup = new Map<string, [string, string | null, string, string, string]>();
 
   for (const raw of items || []) {
     const sku = String(raw?.sku || "").trim().slice(0, 80);
     const descripcion = String(raw?.descripcion || "").trim().slice(0, 350);
     if (!isRealSku(sku) || !descripcion) continue;
+    const key = sku.toLowerCase();
+    const prevUpc = dedup.get(key)?.[1] || null;
+    const upcClean = normalizeUpcCode(raw?.upc).slice(0, 80);
+    const upc = upcClean || prevUpc;
     const categoria = normalizeCategoriaSku(raw?.categoria, descripcion);
     const fuente = String(raw?.fuente || "MANUAL").trim().slice(0, 30);
-    dedup.set(sku.toLowerCase(), [sku, descripcion, categoria, fuente]);
+    dedup.set(key, [sku, upc, descripcion, categoria, fuente]);
   }
 
   const values = Array.from(dedup.values());
@@ -744,15 +765,17 @@ export async function upsertSkusToMySQL(
 
   const CHUNK_SIZE = 200;
   const sql = options?.overwrite
-    ? `INSERT INTO catalogo_sku (sku, descripcion, categoria, fuente)
+    ? `INSERT INTO catalogo_sku (sku, upc, descripcion, categoria, fuente)
        VALUES ?
        ON DUPLICATE KEY UPDATE
+         upc = COALESCE(NULLIF(VALUES(upc), ''), upc),
          descripcion = VALUES(descripcion),
          categoria = IF(VALUES(categoria) <> 'OTROS', VALUES(categoria), categoria),
          fuente = VALUES(fuente)`
-    : `INSERT INTO catalogo_sku (sku, descripcion, categoria, fuente)
+    : `INSERT INTO catalogo_sku (sku, upc, descripcion, categoria, fuente)
        VALUES ?
        ON DUPLICATE KEY UPDATE
+         upc = COALESCE(NULLIF(VALUES(upc), ''), upc),
          descripcion = IF(LENGTH(descripcion) = 0, VALUES(descripcion), descripcion),
          categoria = IF(categoria = 'OTROS' AND VALUES(categoria) <> 'OTROS', VALUES(categoria), categoria)`;
 
@@ -921,16 +944,20 @@ export async function dbGetCatalogoSku(): Promise<SkuCatalogItem[]> {
   await ensureDatabaseInitialized();
   const pool = getPool();
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    "SELECT sku, descripcion, categoria, fuente, updated_at FROM catalogo_sku ORDER BY updated_at DESC, sku ASC"
+    "SELECT sku, upc, descripcion, categoria, fuente, updated_at FROM catalogo_sku ORDER BY updated_at DESC, sku ASC"
   );
 
-  const dbItems: SkuCatalogItem[] = rows.map((r) => ({
-    sku: String(r.sku || "").trim(),
-    descripcion: String(r.descripcion || "").trim(),
-    categoria: normalizeCategoriaSku(String(r.categoria || ""), String(r.descripcion || "")),
-    fuente: (r.fuente as SkuCatalogItem["fuente"]) || "OFICIAL",
-    updated_at: r.updated_at ? new Date(r.updated_at).toISOString() : undefined,
-  }));
+  const dbItems: SkuCatalogItem[] = rows.map((r) => {
+    const upc = normalizeUpcCode(r.upc ? String(r.upc) : "");
+    return {
+      sku: String(r.sku || "").trim(),
+      ...(upc ? { upc } : {}),
+      descripcion: String(r.descripcion || "").trim(),
+      categoria: normalizeCategoriaSku(String(r.categoria || ""), String(r.descripcion || "")),
+      fuente: (r.fuente as SkuCatalogItem["fuente"]) || "OFICIAL",
+      updated_at: r.updated_at ? new Date(r.updated_at).toISOString() : undefined,
+    };
+  });
 
   const officialItems: SkuCatalogItem[] = CATALOGO_HARDWARE_REAL.map((c) => ({
     sku: c.sku,
