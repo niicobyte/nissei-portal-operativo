@@ -8,7 +8,9 @@ import {
   mergeSatiDuplicateFields,
   normalizeSatiRowFields,
   SATI_MIN_ID_CDE,
+  yieldToBrowser,
   type SatiDepurationStats,
+  type SatiPreparedSheetInput,
 } from '../lib/satiRawDepurator';
 
 export interface RecepcionCdeTicket {
@@ -432,6 +434,53 @@ export function classifyAndParseSatiCsv(csvContent: string): SatiCsvClassificati
   };
 }
 
+function mergeClassifiedPartIntoMaps(
+  part: SatiCsvClassification,
+  asuMap: Map<string, RecepcionCdeTicket>,
+  cdeMap: Map<string, RecepcionCdeTicket>,
+  stats: SatiDepurationStats,
+  preSkippedAsu = 0,
+  preSkippedCde = 0
+): SatiDepurationStats {
+  let updated = mergeDepurationStats(stats, part.depurationStats);
+  const preTotal = preSkippedAsu + preSkippedCde;
+  if (preTotal > 0) {
+    updated.totalRawFilas += preTotal;
+    updated.descartadasHistoricasAsu += preSkippedAsu;
+    updated.descartadasHistoricasCde += preSkippedCde;
+  }
+
+  for (const row of part.asuRows) {
+    const prev = asuMap.get(row.idOrden);
+    if (prev) {
+      const merged = mergeSatiDuplicateFields(prev, row);
+      merged.diasResolucion = calcularDiasResolucion(merged.fechaIngreso, merged.fechaEntregada);
+      merged.esDanesa = isTicketDanesa(merged.cliente);
+      merged.origen = 'ASU';
+      asuMap.set(row.idOrden, merged);
+      updated.duplicadosFusionados++;
+    } else {
+      asuMap.set(row.idOrden, row);
+    }
+  }
+
+  for (const row of part.cdeRows) {
+    const prev = cdeMap.get(row.idOrden);
+    if (prev) {
+      const merged = mergeSatiDuplicateFields(prev, row);
+      merged.diasResolucion = calcularDiasResolucion(merged.fechaIngreso, merged.fechaEntregada);
+      merged.esDanesa = isTicketDanesa(merged.cliente);
+      merged.origen = 'CDE';
+      cdeMap.set(row.idOrden, merged);
+      updated.duplicadosFusionados++;
+    } else {
+      cdeMap.set(row.idOrden, row);
+    }
+  }
+
+  return updated;
+}
+
 /**
  * Consolida y depura múltiples archivos u hojas Excel/CSV SATI cargados a la vez
  * (por ejemplo, ASU.xlsx + CDE.xlsx en una sola selección), unificando estadísticas
@@ -457,35 +506,60 @@ export function classifyAndParseMultiSatiCsv(csvContents: string[]): SatiCsvClas
   for (const content of csvContents) {
     if (!content || !content.trim()) continue;
     const part = classifyAndParseSatiCsv(content);
-    stats = mergeDepurationStats(stats, part.depurationStats);
+    stats = mergeClassifiedPartIntoMaps(part, asuMap, cdeMap, stats);
+  }
 
-    for (const row of part.asuRows) {
-      const prev = asuMap.get(row.idOrden);
-      if (prev) {
-        const merged = mergeSatiDuplicateFields(prev, row);
-        merged.diasResolucion = calcularDiasResolucion(merged.fechaIngreso, merged.fechaEntregada);
-        merged.esDanesa = isTicketDanesa(merged.cliente);
-        merged.origen = 'ASU';
-        asuMap.set(row.idOrden, merged);
-        stats.duplicadosFusionados++;
-      } else {
-        asuMap.set(row.idOrden, row);
-      }
-    }
+  const asuRows = Array.from(asuMap.values());
+  const cdeRows = Array.from(cdeMap.values());
+  stats.totalValidas = asuRows.length + cdeRows.length;
 
-    for (const row of part.cdeRows) {
-      const prev = cdeMap.get(row.idOrden);
-      if (prev) {
-        const merged = mergeSatiDuplicateFields(prev, row);
-        merged.diasResolucion = calcularDiasResolucion(merged.fechaIngreso, merged.fechaEntregada);
-        merged.esDanesa = isTicketDanesa(merged.cliente);
-        merged.origen = 'CDE';
-        cdeMap.set(row.idOrden, merged);
-        stats.duplicadosFusionados++;
-      } else {
-        cdeMap.set(row.idOrden, row);
-      }
-    }
+  return {
+    asuRows,
+    cdeRows,
+    totalRows: stats.totalValidas,
+    depurationStats: stats,
+  };
+}
+
+/**
+ * Versión asíncrona no bloqueante para archivos masivos (32k ASU + 130k CDE simultáneos):
+ * procesa cada hoja pre-filtrada cediendo el hilo entre archivos y suma los contadores históricos.
+ */
+export async function classifyAndParseMultiSatiPreparedAsync(
+  inputs: SatiPreparedSheetInput[]
+): Promise<SatiCsvClassification> {
+  if (inputs.length === 0) {
+    return {
+      asuRows: [],
+      cdeRows: [],
+      totalRows: 0,
+      depurationStats: createEmptyDepurationStats(),
+    };
+  }
+
+  const asuMap = new Map<string, RecepcionCdeTicket>();
+  const cdeMap = new Map<string, RecepcionCdeTicket>();
+  let stats = createEmptyDepurationStats();
+
+  for (const input of inputs) {
+    await yieldToBrowser();
+    const part =
+      input.csvText && input.csvText.trim()
+        ? classifyAndParseSatiCsv(input.csvText)
+        : {
+            asuRows: [],
+            cdeRows: [],
+            totalRows: 0,
+            depurationStats: createEmptyDepurationStats(),
+          };
+    stats = mergeClassifiedPartIntoMaps(
+      part,
+      asuMap,
+      cdeMap,
+      stats,
+      input.preSkippedHistoricasAsu,
+      input.preSkippedHistoricasCde
+    );
   }
 
   const asuRows = Array.from(asuMap.values());

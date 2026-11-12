@@ -113,6 +113,16 @@ export interface SatiDepurationStats {
   camposNormalizados: number;
 }
 
+export interface SatiPreparedSheetInput {
+  csvText: string;
+  preSkippedHistoricasAsu: number;
+  preSkippedHistoricasCde: number;
+}
+
+export function yieldToBrowser(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
 export function createEmptyDepurationStats(): SatiDepurationStats {
   return {
     totalRawFilas: 0,

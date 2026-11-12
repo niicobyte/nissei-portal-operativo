@@ -36,7 +36,8 @@ import {
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
-import { readMultipleSpreadsheetsAsCsvTexts, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
+import { readMultipleSpreadsheetsForSati, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
+import { yieldToBrowser } from "@/lib/satiRawDepurator";
 import {
   RecepcionCdeTicket,
   INITIAL_RECEPCION_CDE_DATA,
@@ -47,7 +48,7 @@ import {
   toggleCheckinDeposito,
   procesarActualizacionCdeCSV,
   sincronizarCdeCsvOnline,
-  classifyAndParseMultiSatiCsv,
+  classifyAndParseMultiSatiPreparedAsync,
   isTicketDanesa,
   ResultadoCargaCdeCSV,
   CambioEstadoCde,
@@ -389,8 +390,8 @@ export default function RecepcionCdeDashboardPage() {
 
     setIsUploadingCSV(true);
     try {
-      const { texts, fileNamesLabel } = await readMultipleSpreadsheetsAsCsvTexts(selectedFiles);
-      const parsed = classifyAndParseMultiSatiCsv(texts);
+      const { preparedSheets, fileNamesLabel } = await readMultipleSpreadsheetsForSati(selectedFiles);
+      const parsed = await classifyAndParseMultiSatiPreparedAsync(preparedSheets);
 
       if (parsed.totalRows === 0 && parsed.depurationStats.totalRawFilas === 0) {
         throw new Error(
@@ -440,6 +441,7 @@ export default function RecepcionCdeDashboardPage() {
           : fetchCdeTicketsFromMySQL().catch(() => getStoredCdeTickets()),
       ]);
 
+      await yieldToBrowser();
       const checkins = getStoredCdeCheckins();
       const overrides = getStoredSatiOverrides();
       const cross = getStoredSatiCrossMatches();

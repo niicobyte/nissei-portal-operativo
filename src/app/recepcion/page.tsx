@@ -42,8 +42,9 @@ import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect"
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
-import { readMultipleSpreadsheetsAsCsvTexts, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
+import { readMultipleSpreadsheetsForSati, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
 import { SatiDepurationSummary } from "@/components/SatiDepurationSummary";
+import { yieldToBrowser } from "@/lib/satiRawDepurator";
 import {
   RecepcionTicket,
   INITIAL_RECEPCION_DATA,
@@ -66,7 +67,7 @@ import {
   isTicketDanesa,
   parseFechaDMY,
   getStoredCdeTickets,
-  classifyAndParseMultiSatiCsv,
+  classifyAndParseMultiSatiPreparedAsync,
   sincronizarCdeCsvOnline,
   fetchCdeTicketsFromMySQL,
   getStoredCdeCheckins,
@@ -350,8 +351,8 @@ export default function RecepcionDashboardPage() {
 
     setIsUploadingCSV(true);
     try {
-      const { texts, fileNamesLabel } = await readMultipleSpreadsheetsAsCsvTexts(selectedFiles);
-      const parsed = classifyAndParseMultiSatiCsv(texts);
+      const { preparedSheets, fileNamesLabel } = await readMultipleSpreadsheetsForSati(selectedFiles);
+      const parsed = await classifyAndParseMultiSatiPreparedAsync(preparedSheets);
 
       if (parsed.totalRows === 0 && parsed.depurationStats.totalRawFilas === 0) {
         throw new Error(
@@ -391,6 +392,7 @@ export default function RecepcionDashboardPage() {
         hasCde ? sincronizarCdeCsvOnline(parsed) : Promise.resolve(null),
       ]);
 
+      await yieldToBrowser();
       const updatedAsu = resAsu ? resAsu.updatedTickets : tickets;
       const cdeTickets = resCde ? resCde.updatedTickets : getStoredCdeTickets();
       const checkins = getStoredCdeCheckins();

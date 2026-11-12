@@ -171,6 +171,9 @@ function tokenizeEquipment(raw: string): string[] {
     .filter((t) => t.length >= 2 && !stopWords.has(t));
 }
 
+const EQUIP_SIM_CACHE = new Map<string, number>();
+const EQUIP_SIM_CACHE_MAX = 30000;
+
 /**
  * Calcula similitud entre dos equipos (Marca + Modelo), tolerando diferencias de mayúsculas,
  * ubicación de marca/modelo y pequeños errores tipográficos (ej. KBHDV34 vs KBDV34).
@@ -181,6 +184,10 @@ export function computeEquipmentSimilarity(
   marcaB?: string,
   modeloB?: string
 ): number {
+  const key = `${marcaA || ""}\x00${modeloA || ""}\x00${marcaB || ""}\x00${modeloB || ""}`;
+  const cached = EQUIP_SIM_CACHE.get(key);
+  if (cached !== undefined) return cached;
+
   const combRawA = getCombinedEquipmentRaw(marcaA, modeloA);
   const combRawB = getCombinedEquipmentRaw(marcaB, modeloB);
   const normCombA = normalizeText(combRawA);
@@ -188,8 +195,14 @@ export function computeEquipmentSimilarity(
   const normModA = normalizeText(modeloA);
   const normModB = normalizeText(modeloB);
 
-  if (!normCombA || !normCombB) return 0;
+  if (!normCombA || !normCombB) {
+    if (EQUIP_SIM_CACHE.size >= EQUIP_SIM_CACHE_MAX) EQUIP_SIM_CACHE.clear();
+    EQUIP_SIM_CACHE.set(key, 0);
+    return 0;
+  }
   if (normCombA === normCombB || (normModA && normModB && normModA === normModB)) {
+    if (EQUIP_SIM_CACHE.size >= EQUIP_SIM_CACHE_MAX) EQUIP_SIM_CACHE.clear();
+    EQUIP_SIM_CACHE.set(key, 1);
     return 1;
   }
 
@@ -244,7 +257,10 @@ export function computeEquipmentSimilarity(
     tokenScore = (2 * matchedWeight) / (tokensA.length + tokensB.length);
   }
 
-  return Math.max(containmentScore, charSimComb, charSimMod, tokenScore);
+  const finalSim = Math.max(containmentScore, charSimComb, charSimMod, tokenScore);
+  if (EQUIP_SIM_CACHE.size >= EQUIP_SIM_CACHE_MAX) EQUIP_SIM_CACHE.clear();
+  EQUIP_SIM_CACHE.set(key, finalSim);
+  return finalSim;
 }
 
 /**
@@ -319,6 +335,76 @@ function extractOrderIds(text?: string): string[] {
   return matches ? matches : [];
 }
 
+function extractSerialTokens(text?: string): string[] {
+  if (!text) return [];
+  const rawTokens = text.match(/[A-Za-z0-9][A-Za-z0-9\-_]{4,}[A-Za-z0-9]/g);
+  if (!rawTokens) return [];
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  for (const tok of rawTokens) {
+    const norm = normalizeSerial(tok);
+    if (norm.length < 6 || !/\d/.test(norm) || seen.has(norm)) continue;
+    seen.add(norm);
+    unique.push(norm);
+  }
+  return unique;
+}
+
+/**
+ * Indexa posibles números de serie mencionados dentro de mensajes/informes en O(N),
+ * evitando exploraciones cuadráticas O(N*M) cuando se cruzan miles de órdenes.
+ */
+function buildSerialMentionMap<T extends { mensaje?: string }>(
+  items: T[]
+): Map<string, T[]> {
+  const map = new Map<string, T[]>();
+  for (const item of items) {
+    for (const norm of extractSerialTokens(item.mensaje)) {
+      let bucket = map.get(norm);
+      if (!bucket) {
+        bucket = [];
+        map.set(norm, bucket);
+      }
+      bucket.push(item);
+    }
+  }
+  return map;
+}
+
+function findSerialMentionMatch<T extends { idOrden: string; fechaIngreso?: string; fechaEntregada?: string }>(
+  sourceMensaje: string | undefined,
+  sourceNormSerial: string,
+  otherBySerial: Map<string, T[]>,
+  otherMentioningSerial: Map<string, T[]>,
+  usedIds: Set<string>,
+  reverseDates: boolean,
+  sourceDate?: string
+): T | null {
+  if (sourceNormSerial.length >= 6 && otherMentioningSerial.has(sourceNormSerial)) {
+    for (const cand of otherMentioningSerial.get(sourceNormSerial)!) {
+      if (usedIds.has(cand.idOrden)) continue;
+      const coherent = reverseDates
+        ? isDespachoCoherente(sourceDate, cand.fechaEntregada)
+        : isDespachoCoherente(cand.fechaIngreso, sourceDate);
+      if (coherent) return cand;
+    }
+  }
+  if (sourceMensaje) {
+    for (const tok of extractSerialTokens(sourceMensaje)) {
+      const candidates = otherBySerial.get(tok);
+      if (!candidates) continue;
+      for (const cand of candidates) {
+        if (usedIds.has(cand.idOrden)) continue;
+        const coherent = reverseDates
+          ? isDespachoCoherente(sourceDate, cand.fechaEntregada)
+          : isDespachoCoherente(cand.fechaIngreso, sourceDate);
+        if (coherent) return cand;
+      }
+    }
+  }
+  return null;
+}
+
 /**
  * Compara dos fechas (cualquier formato soportado por SATI) y devuelve la diferencia en días
  */
@@ -356,68 +442,154 @@ interface MatchableOrder {
   serial?: string;
 }
 
-function getDateDiffOrNull(f1?: string, f2?: string): number | null {
-  if (!isFechaValida(f1) || !isFechaValida(f2)) return null;
-  const d = getDiasDiferenciaFechas(f1, f2);
-  return d === 9999 ? null : d;
+interface CachedDateMeta {
+  valid: boolean;
+  ms: number | null;
+}
+
+const FECHA_META_CACHE = new Map<string, CachedDateMeta>();
+const FECHA_META_CACHE_MAX = 8000;
+const MS_PER_DAY = 1000 * 60 * 60 * 24;
+
+function getDateMeta(fecha?: string): CachedDateMeta {
+  if (!fecha) return { valid: false, ms: null };
+  const cached = FECHA_META_CACHE.get(fecha);
+  if (cached !== undefined) return cached;
+  const parsed = parseFechaDMY(fecha);
+  const meta: CachedDateMeta = {
+    valid: isFechaValida(fecha),
+    ms: parsed ? parsed.getTime() : null,
+  };
+  if (FECHA_META_CACHE.size >= FECHA_META_CACHE_MAX) FECHA_META_CACHE.clear();
+  FECHA_META_CACHE.set(fecha, meta);
+  return meta;
+}
+
+function isDespachoCoherenteFast(asuIngresoMs: number | null, cdeDespachoMs: number | null): boolean {
+  if (asuIngresoMs === null || cdeDespachoMs === null) return true;
+  return (cdeDespachoMs - asuIngresoMs) / MS_PER_DAY >= -1;
+}
+
+function getDateDiffFast(a: CachedDateMeta, b: CachedDateMeta): number | null {
+  if (!a.valid || !b.valid || a.ms === null || b.ms === null) return null;
+  return Math.abs(Math.round((a.ms - b.ms) / MS_PER_DAY));
+}
+
+interface IndexedCand<T extends MatchableOrder> {
+  item: T;
+  used: boolean;
+  exactClient: string;
+  baseClient: string;
+  isDanesa: boolean;
+  cod: string;
+  hasModel: boolean;
+  ingreso: CachedDateMeta;
+  despacho: CachedDateMeta;
+}
+
+function buildIndexedCand<T extends MatchableOrder>(item: T): IndexedCand<T> {
+  return {
+    item,
+    used: false,
+    exactClient: normalizeText(item.cliente),
+    baseClient: normalizeText(stripClientPrefix(item.cliente)),
+    isDanesa: isTicketDanesa(item.cliente),
+    cod: (item.codigoProducto || "").trim(),
+    hasModel: Boolean(normalizeText(item.modelo)),
+    ingreso: getDateMeta(item.fechaIngreso),
+    despacho: getDateMeta(item.fechaEntregada),
+  };
+}
+
+function compactPoolInPlace<T extends MatchableOrder>(pool: IndexedCand<T>[], deadCount: number): void {
+  if (pool.length <= 32 || deadCount * 2 < pool.length) return;
+  let w = 0;
+  for (let i = 0; i < pool.length; i++) {
+    if (!pool[i].used) {
+      pool[w++] = pool[i];
+    }
+  }
+  pool.length = w;
 }
 
 /**
- * Busca el mejor candidato para un cliente particular usando:
- * - Pass 1: nombre de cliente directo ("de una")
- * - Pass 2: probando "(JC) " al principio si no encontró directo
- * Tolerando diferencias de mayúsculas/minúsculas o pequeños typos en marca/modelo (ej. KRAB vs Krab, KBHDV34 vs KBDV34).
+ * Busca el mejor candidato para un cliente particular en una sola pasada:
+ * - Prioriza coincidencia directa de nombre sobre prefijo "(JC)"
+ * - Usa fechas y normalizaciones pre-cacheadas y poda de candidatos ya emparejados
  */
 function findBestClientEquipMatch<T extends MatchableOrder>(
-  source: MatchableOrder,
-  candidatesByBaseClient: Map<string, T[]>,
-  usedIds: Set<string>,
-  getAsuAndCdeDates: (cand: T) => { asuIngreso?: string; cdeDespacho?: string }
-): { match: T; viaJcFallback: boolean; matchedByCode: boolean } | null {
-  const sourceBase = normalizeText(stripClientPrefix(source.cliente));
-  if (sourceBase.length < 4 || isTicketDanesa(source.cliente)) return null;
+  source: IndexedCand<MatchableOrder>,
+  candidatesByBaseClient: Map<string, IndexedCand<T>[]>,
+  reverseDates: boolean
+): { entry: IndexedCand<T>; viaJcFallback: boolean; matchedByCode: boolean } | null {
+  if (source.baseClient.length < 4 || source.isDanesa) return null;
 
-  const pool = candidatesByBaseClient.get(sourceBase) || [];
-  if (pool.length === 0) return null;
+  const pool = candidatesByBaseClient.get(source.baseClient);
+  if (!pool || pool.length === 0) return null;
 
-  const codSource = (source.codigoProducto || "").trim();
+  const codSource = source.cod;
+  const maxDirectCeiling = codSource ? 150 : 100;
 
-  for (const allowJcFallback of [false, true]) {
-    let bestCand: T | null = null;
-    let bestScore = -1;
-    let bestByCode = false;
+  let bestDirect: IndexedCand<T> | null = null;
+  let bestDirectScore = -1;
+  let bestDirectByCode = false;
 
-    for (const cand of pool) {
-      if (usedIds.has(cand.idOrden) || isTicketDanesa(cand.cliente)) continue;
+  let bestJc: IndexedCand<T> | null = null;
+  let bestJcScore = -1;
+  let bestJcByCode = false;
 
-      const clientCheck = clientsMatch(source.cliente, cand.cliente);
-      if (!clientCheck.matched || clientCheck.viaJcFallback !== allowJcFallback) continue;
+  let deadCount = 0;
 
-      const { asuIngreso, cdeDespacho } = getAsuAndCdeDates(cand);
-      if (!isDespachoCoherente(asuIngreso, cdeDespacho)) continue;
-
-      const diffDias = getDateDiffOrNull(source.fechaIngreso, cand.fechaIngreso);
-      if (diffDias !== null && diffDias > 45) continue;
-
-      const codCand = (cand.codigoProducto || "").trim();
-      const sameCodigo = Boolean(codSource && codCand && codSource === codCand);
-      const equipSim = computeEquipmentSimilarity(source.marca, source.modelo, cand.marca, cand.modelo);
-
-      if ((sameCodigo && equipSim >= 0.45) || equipSim >= 0.72) {
-        const score = (sameCodigo ? 50 : 0) + equipSim * 100 - (diffDias !== null ? diffDias * 0.25 : 10);
-        if (score > bestScore) {
-          bestScore = score;
-          bestCand = cand;
-          bestByCode = sameCodigo && equipSim < 0.72;
-        }
-      }
+  for (let i = 0; i < pool.length; i++) {
+    const cand = pool[i];
+    if (cand.used) {
+      deadCount++;
+      continue;
     }
+    if (cand.isDanesa) continue;
 
-    if (bestCand) {
-      return { match: bestCand, viaJcFallback: allowJcFallback, matchedByCode: bestByCode };
+    const coherent = reverseDates
+      ? isDespachoCoherenteFast(source.ingreso.ms, cand.despacho.ms)
+      : isDespachoCoherenteFast(cand.ingreso.ms, source.despacho.ms);
+    if (!coherent) continue;
+
+    const diffDias = getDateDiffFast(source.ingreso, cand.ingreso);
+    if (diffDias !== null && diffDias > 45) continue;
+
+    const viaJc = source.exactClient !== cand.exactClient;
+    const sameCodigo = Boolean(codSource && cand.cod && codSource === cand.cod);
+    const equipSim = computeEquipmentSimilarity(
+      source.item.marca,
+      source.item.modelo,
+      cand.item.marca,
+      cand.item.modelo
+    );
+
+    if ((sameCodigo && equipSim >= 0.45) || equipSim >= 0.72) {
+      const score = (sameCodigo ? 50 : 0) + equipSim * 100 - (diffDias !== null ? diffDias * 0.25 : 10);
+      if (!viaJc) {
+        if (score > bestDirectScore) {
+          bestDirectScore = score;
+          bestDirect = cand;
+          bestDirectByCode = sameCodigo && equipSim < 0.72;
+          if (bestDirectScore >= maxDirectCeiling) break;
+        }
+      } else if (score > bestJcScore) {
+        bestJcScore = score;
+        bestJc = cand;
+        bestJcByCode = sameCodigo && equipSim < 0.72;
+      }
     }
   }
 
+  compactPoolInPlace(pool, deadCount);
+
+  if (bestDirect) {
+    return { entry: bestDirect, viaJcFallback: false, matchedByCode: bestDirectByCode };
+  }
+  if (bestJc) {
+    return { entry: bestJc, viaJcFallback: true, matchedByCode: bestJcByCode };
+  }
   return null;
 }
 
@@ -425,38 +597,53 @@ function findBestClientEquipMatch<T extends MatchableOrder>(
  * Busca el mejor candidato Danesa SA por Código + Similitud de Modelo y fechas próximas
  */
 function findBestDanesaMatch<T extends MatchableOrder>(
-  source: MatchableOrder,
-  candidatesByCodigo: Map<string, T[]>,
-  usedIds: Set<string>,
+  source: IndexedCand<MatchableOrder>,
+  candidatesByCodigo: Map<string, IndexedCand<T>[]>,
   maxDiffDays: number,
-  getAsuAndCdeDates: (cand: T) => { asuIngreso?: string; cdeDespacho?: string }
-): T | null {
-  const cod = (source.codigoProducto || "").trim();
+  reverseDates: boolean
+): IndexedCand<T> | null {
+  const cod = source.cod;
   if (!cod) return null;
-  const pool = candidatesByCodigo.get(cod) || [];
+  const pool = candidatesByCodigo.get(cod);
+  if (!pool || pool.length === 0) return null;
 
-  let bestCand: T | null = null;
+  let bestCand: IndexedCand<T> | null = null;
   let bestScore = -1;
+  let deadCount = 0;
 
-  for (const cand of pool) {
-    if (usedIds.has(cand.idOrden)) continue;
-    const { asuIngreso, cdeDespacho } = getAsuAndCdeDates(cand);
-    if (!isDespachoCoherente(asuIngreso, cdeDespacho)) continue;
+  for (let i = 0; i < pool.length; i++) {
+    const cand = pool[i];
+    if (cand.used) {
+      deadCount++;
+      continue;
+    }
 
-    const diffDias = getDateDiffOrNull(source.fechaIngreso, cand.fechaIngreso);
+    const coherent = reverseDates
+      ? isDespachoCoherenteFast(source.ingreso.ms, cand.despacho.ms)
+      : isDespachoCoherenteFast(cand.ingreso.ms, source.despacho.ms);
+    if (!coherent) continue;
+
+    const diffDias = getDateDiffFast(source.ingreso, cand.ingreso);
     if (diffDias !== null && diffDias > maxDiffDays) continue;
 
-    const equipSim = computeEquipmentSimilarity(source.marca, source.modelo, cand.marca, cand.modelo);
-    const hasBothModels = Boolean(normalizeText(source.modelo) && normalizeText(cand.modelo));
+    const equipSim = computeEquipmentSimilarity(
+      source.item.marca,
+      source.item.modelo,
+      cand.item.marca,
+      cand.item.modelo
+    );
+    const hasBothModels = source.hasModel && cand.hasModel;
     if (!hasBothModels || equipSim >= 0.65) {
       const score = equipSim * 100 - (diffDias !== null ? diffDias * 0.5 : 10);
       if (score > bestScore) {
         bestScore = score;
         bestCand = cand;
+        if (bestScore >= 100) break;
       }
     }
   }
 
+  compactPoolInPlace(pool, deadCount);
   return bestCand;
 }
 
@@ -479,28 +666,31 @@ export function crossMatchCdeWithAsu(
   // Índices de ASU
   const asuBySerial = new Map<string, RecepcionTicket[]>();
   const asuById = new Map<string, RecepcionTicket>();
-  const asuByCodigoDanesa = new Map<string, RecepcionTicket[]>();
-  const asuByBaseClient = new Map<string, RecepcionTicket[]>();
+  const asuEntryById = new Map<string, IndexedCand<RecepcionTicket>>();
+  const asuByCodigoDanesa = new Map<string, IndexedCand<RecepcionTicket>[]>();
+  const asuByBaseClient = new Map<string, IndexedCand<RecepcionTicket>[]>();
   const asuMentioningId = new Map<string, RecepcionTicket[]>();
+  const asuMentioningSerial = buildSerialMentionMap(asuTickets);
 
   for (const a of asuTickets) {
+    const entry = buildIndexedCand(a);
     if (a.idOrden) {
-      asuById.set(a.idOrden.trim(), a);
+      const cleanId = a.idOrden.trim();
+      asuById.set(cleanId, a);
+      asuEntryById.set(cleanId, entry);
     }
     const s = normalizeSerial(a.serial);
     if (s) {
       if (!asuBySerial.has(s)) asuBySerial.set(s, []);
       asuBySerial.get(s)!.push(a);
     }
-    const cod = (a.codigoProducto || "").trim();
-    if (cod && isTicketDanesa(a.cliente)) {
-      if (!asuByCodigoDanesa.has(cod)) asuByCodigoDanesa.set(cod, []);
-      asuByCodigoDanesa.get(cod)!.push(a);
+    if (entry.cod && entry.isDanesa) {
+      if (!asuByCodigoDanesa.has(entry.cod)) asuByCodigoDanesa.set(entry.cod, []);
+      asuByCodigoDanesa.get(entry.cod)!.push(entry);
     }
-    const baseClient = normalizeText(stripClientPrefix(a.cliente));
-    if (baseClient.length >= 4 && !isTicketDanesa(a.cliente)) {
-      if (!asuByBaseClient.has(baseClient)) asuByBaseClient.set(baseClient, []);
-      asuByBaseClient.get(baseClient)!.push(a);
+    if (entry.baseClient.length >= 4 && !entry.isDanesa) {
+      if (!asuByBaseClient.has(entry.baseClient)) asuByBaseClient.set(entry.baseClient, []);
+      asuByBaseClient.get(entry.baseClient)!.push(entry);
     }
     if (a.mensaje) {
       for (const mentioned of extractOrderIds(a.mensaje)) {
@@ -560,28 +750,28 @@ export function crossMatchCdeWithAsu(
       }
     }
 
-    // CRITERIO 3: Serial de CDE mencionado en el Mensaje de ASU
-    if (!match && cdeSerial && cdeSerial.length >= 6) {
-      for (const a of asuTickets) {
-        if (matchedAsuIds.has(a.idOrden)) continue;
-        if (a.mensaje && a.mensaje.toUpperCase().includes(cdeSerial)) {
-          if (isDespachoCoherente(a.fechaIngreso, cde.fechaEntregada)) {
-            match = a;
-            matchReason = "Serial en Informe";
-            break;
-          }
-        }
+    // CRITERIO 3: Serial mencionado en el Informe/Mensaje de cualquiera de los dos lados (lookup O(1) indexado)
+    if (!match) {
+      const hit = findSerialMentionMatch(
+        cde.mensaje,
+        cdeSerial,
+        asuBySerial,
+        asuMentioningSerial,
+        matchedAsuIds,
+        false,
+        cde.fechaEntregada
+      );
+      if (hit) {
+        match = hit;
+        matchReason = "Serial en Informe";
       }
     }
 
     // CRITERIO 4: Cliente Particular + Equipo/Código (prueba nombre directo y luego prefijo "(JC)")
     if (!match && !(cde.esDanesa || isTicketDanesa(cde.cliente))) {
-      const hit = findBestClientEquipMatch(cde, asuByBaseClient, matchedAsuIds, (cand) => ({
-        asuIngreso: cand.fechaIngreso,
-        cdeDespacho: cde.fechaEntregada,
-      }));
+      const hit = findBestClientEquipMatch(buildIndexedCand(cde), asuByBaseClient, false);
       if (hit) {
-        match = hit.match;
+        match = hit.entry.item;
         matchReason = hit.viaJcFallback
           ? "Cliente (JC) & Equipo"
           : hit.matchedByCode
@@ -592,12 +782,9 @@ export function crossMatchCdeWithAsu(
 
     // CRITERIO 5: Mismo Código + Modelo compatible SOLO si cliente es Danesa
     if (!match && (cde.esDanesa || isTicketDanesa(cde.cliente))) {
-      const hit = findBestDanesaMatch(cde, asuByCodigoDanesa, matchedAsuIds, 25, (cand) => ({
-        asuIngreso: cand.fechaIngreso,
-        cdeDespacho: cde.fechaEntregada,
-      }));
+      const hit = findBestDanesaMatch(buildIndexedCand(cde), asuByCodigoDanesa, 25, false);
       if (hit) {
-        match = hit;
+        match = hit.item;
         matchReason = "Código & Modelo";
       }
     }
@@ -606,6 +793,8 @@ export function crossMatchCdeWithAsu(
 
     if (match) {
       matchedAsuIds.add(match.idOrden);
+      const matchedEntry = asuEntryById.get(match.idOrden.trim());
+      if (matchedEntry) matchedEntry.used = true;
       return {
         ...cde,
         idOrdenAsu: match.idOrden,
@@ -655,27 +844,33 @@ export function crossMatchAsuWithCde(
 
   // Índices de CDE
   const cdeById = new Map<string, RecepcionCdeTicket>();
+  const cdeEntryById = new Map<string, IndexedCand<RecepcionCdeTicket>>();
   const cdeBySerial = new Map<string, RecepcionCdeTicket[]>();
-  const cdeByCodigoDanesa = new Map<string, RecepcionCdeTicket[]>();
-  const cdeByBaseClient = new Map<string, RecepcionCdeTicket[]>();
+  const cdeByCodigoDanesa = new Map<string, IndexedCand<RecepcionCdeTicket>[]>();
+  const cdeByBaseClient = new Map<string, IndexedCand<RecepcionCdeTicket>[]>();
   const cdeMentioningId = new Map<string, RecepcionCdeTicket[]>();
+  const cdeMentioningSerial = buildSerialMentionMap(realCdeTickets);
 
   for (const c of realCdeTickets) {
-    if (c.idOrden) cdeById.set(c.idOrden.trim(), c);
+    const entry = buildIndexedCand(c);
+    if (c.esDanesa) entry.isDanesa = true;
+    if (c.idOrden) {
+      const cleanId = c.idOrden.trim();
+      cdeById.set(cleanId, c);
+      cdeEntryById.set(cleanId, entry);
+    }
     const s = normalizeSerial(c.serial);
     if (s) {
       if (!cdeBySerial.has(s)) cdeBySerial.set(s, []);
       cdeBySerial.get(s)!.push(c);
     }
-    const cod = (c.codigoProducto || "").trim();
-    if (cod && (c.esDanesa || isTicketDanesa(c.cliente))) {
-      if (!cdeByCodigoDanesa.has(cod)) cdeByCodigoDanesa.set(cod, []);
-      cdeByCodigoDanesa.get(cod)!.push(c);
+    if (entry.cod && entry.isDanesa) {
+      if (!cdeByCodigoDanesa.has(entry.cod)) cdeByCodigoDanesa.set(entry.cod, []);
+      cdeByCodigoDanesa.get(entry.cod)!.push(entry);
     }
-    const baseClient = normalizeText(stripClientPrefix(c.cliente));
-    if (baseClient.length >= 4 && !(c.esDanesa || isTicketDanesa(c.cliente))) {
-      if (!cdeByBaseClient.has(baseClient)) cdeByBaseClient.set(baseClient, []);
-      cdeByBaseClient.get(baseClient)!.push(c);
+    if (entry.baseClient.length >= 4 && !entry.isDanesa) {
+      if (!cdeByBaseClient.has(entry.baseClient)) cdeByBaseClient.set(entry.baseClient, []);
+      cdeByBaseClient.get(entry.baseClient)!.push(entry);
     }
     if (c.mensaje) {
       for (const mentioned of extractOrderIds(c.mensaje)) {
@@ -744,38 +939,35 @@ export function crossMatchAsuWithCde(
       }
     }
 
-    // CRITERIO 3: Serial de ASU mencionado en el Informe/Mensaje de CDE
-    if (!match && asuSerial && asuSerial.length >= 6) {
-      for (const c of realCdeTickets) {
-        if (matchedCdeIds.has(c.idOrden)) continue;
-        if (c.mensaje && c.mensaje.toUpperCase().includes(asuSerial)) {
-          if (isDespachoCoherente(asu.fechaIngreso, c.fechaEntregada)) {
-            match = c;
-            break;
-          }
-        }
+    // CRITERIO 3: Serial mencionado en el Informe/Mensaje de cualquiera de los dos lados (lookup O(1) indexado)
+    if (!match) {
+      const hit = findSerialMentionMatch(
+        asu.mensaje,
+        asuSerial,
+        cdeBySerial,
+        cdeMentioningSerial,
+        matchedCdeIds,
+        true,
+        asu.fechaIngreso
+      );
+      if (hit) {
+        match = hit;
       }
     }
 
     // CRITERIO 4: Mismo Cliente Particular + Equipo/Código (prueba directo y luego prefijo "(JC)")
     if (!match && !isTicketDanesa(asu.cliente)) {
-      const hit = findBestClientEquipMatch(asu, cdeByBaseClient, matchedCdeIds, (cand) => ({
-        asuIngreso: asu.fechaIngreso,
-        cdeDespacho: cand.fechaEntregada,
-      }));
+      const hit = findBestClientEquipMatch(buildIndexedCand(asu), cdeByBaseClient, true);
       if (hit) {
-        match = hit.match;
+        match = hit.entry.item;
       }
     }
 
     // CRITERIO 5: Mismo Código + Modelo compatible SOLO si cliente es Danesa SA
     if (!match && isTicketDanesa(asu.cliente)) {
-      const hit = findBestDanesaMatch(asu, cdeByCodigoDanesa, matchedCdeIds, 30, (cand) => ({
-        asuIngreso: asu.fechaIngreso,
-        cdeDespacho: cand.fechaEntregada,
-      }));
+      const hit = findBestDanesaMatch(buildIndexedCand(asu), cdeByCodigoDanesa, 30, true);
       if (hit) {
-        match = hit;
+        match = hit.item;
       }
     }
 
@@ -793,6 +985,8 @@ export function crossMatchAsuWithCde(
 
     if (match) {
       matchedCdeIds.add(match.idOrden);
+      const matchedEntry = cdeEntryById.get(match.idOrden.trim());
+      if (matchedEntry) matchedEntry.used = true;
 
       // Verificación de Despacho e Ingreso en CDE
       const tieneDespachoValido =
