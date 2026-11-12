@@ -1469,7 +1469,7 @@ export default function TecnicosDashboardPage() {
                       }`}
                     >
                       <span className="font-mono font-black">
-                        [{formatCategoriaSticker(c.categoria)}]
+                        [{c.sku ? `SKU: ${c.sku}` : formatCategoriaSticker(c.categoria)}]
                       </span>{" "}
                       <span className={thermalSettings.highContrast ? "font-bold" : "font-semibold"}>
                         {c.descripcion}
