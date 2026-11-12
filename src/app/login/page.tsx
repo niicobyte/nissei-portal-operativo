@@ -111,8 +111,8 @@ function LoginForm() {
     if (reason === "inactivity") {
       return {
         tone: "amber" as const,
-        title: "Sesión cerrada por inactividad (15 min)",
-        desc: "Por protocolo de seguridad de la sucursal, la sesión se bloqueó tras 15 minutos sin interacción. Ingrese su clave para continuar.",
+        title: "Sesión cerrada por inactividad",
+        desc: "Por protocolo de seguridad de la sucursal, la sesión se bloqueó tras un período sin interacción. Ingrese su clave para continuar.",
       };
     }
     if (reason === "expired" || reason === "unauthenticated") {

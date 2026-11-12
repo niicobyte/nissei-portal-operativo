@@ -196,7 +196,7 @@ export const AUTH_STORAGE_KEY = "nissei_active_session_v4";
 export const AUTH_COOKIE_NAME = "nissei_sati_token";
 export const ADMIN_HEADER_NAME = "x-sati-admin-auth";
 export const RETURN_TO_STORAGE_KEY = "nissei_pending_return_to_v1";
-export const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos exactos de inactividad estricta
+export const SESSION_TIMEOUT_MS = 60 * 60 * 1000; // 1 hora de inactividad
 
 function sanitizeDeployVersion(deployVersion?: string | null): string {
   return String(deployVersion || "").trim().replace(/[:;\s]/g, "_");
@@ -267,7 +267,7 @@ export function syncSessionCookie(profile: UserProfile | null, deployVersion?: s
       ? `${profile.id}:${profile.passwordHash}:${expiresAt}:${safeDeploy}`
       : `${profile.id}:${profile.passwordHash}:${expiresAt}`;
     // Cookie de sesión (sin max-age persistente) para que expire al cerrar el navegador,
-    // y con timestamp de 15 minutos + deployVersion para invalidar sesiones de deploys anteriores.
+    // y con timestamp de 1 hora + deployVersion para invalidar sesiones de deploys anteriores.
     document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(tokenValue)}; path=/; SameSite=Strict`;
   } catch {
     // Ignore cookie errors in restricted contexts
@@ -333,9 +333,9 @@ export function getActiveUser(): UserProfile | null {
 
     const now = Date.now();
     const lastActive = Number(parsed.lastActive || parsed.ts);
-    // Verificación estricta: Si pasaron más de 15 minutos sin interacción: EXPIRADA
+    // Verificación estricta: Si pasó más del tiempo de inactividad permitido (1 hora): EXPIRADA
     if (now - lastActive > SESSION_TIMEOUT_MS) {
-      console.warn("[AUTH GUARD] Sesión cerrada automáticamente tras 15 minutos de inactividad.");
+      console.warn("[AUTH GUARD] Sesión cerrada automáticamente tras 1 hora de inactividad.");
       logout();
       return null;
     }

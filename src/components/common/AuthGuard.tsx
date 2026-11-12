@@ -168,7 +168,7 @@ export function AuthGuard({ children, requiredModule }: AuthGuardProps) {
     };
   }, [currentUser, forceSaveAndKickToLogin]);
 
-  // 3. Temporizador activo de inactividad (15 minutos continuos sin interacción)
+  // 3. Temporizador activo de inactividad (1 hora continua sin interacción)
   useEffect(() => {
     if (!currentUser) return;
 
@@ -185,7 +185,7 @@ export function AuthGuard({ children, requiredModule }: AuthGuardProps) {
       }
 
       inactivityTimerRef.current = setTimeout(() => {
-        console.warn("[AUTH GUARD] Tiempo límite de 15 minutos alcanzado por inactividad.");
+        console.warn("[AUTH GUARD] Tiempo límite de inactividad alcanzado.");
         forceSaveAndKickToLogin("inactivity", false);
       }, SESSION_TIMEOUT_MS);
     };
