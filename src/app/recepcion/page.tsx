@@ -245,6 +245,88 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   };
 }
 
+interface DictamenRecepcionResult {
+  estadoActual: string;
+  estadoConfig: EstadoVisualConfig;
+  header: string;
+  headerPlain: string;
+  body: string;
+  detalleTexto: string;
+  accText: string;
+  sourceLabel: string;
+  readyForPickup: boolean;
+}
+
+/**
+ * Resuelve de forma única el Dictamen Técnico y los accesorios a mostrar tanto
+ * en la vista previa del modal (ojito) como en el mensaje final de WhatsApp.
+ */
+function resolveDictamenRecepcion(
+  estado?: string,
+  mensaje?: string,
+  accesorios?: string
+): DictamenRecepcionResult {
+  const estadoActual = (estado || "En Asignacion").trim();
+  const estLower = estadoActual.toLowerCase();
+  const msgRaw = (mensaje || "").trim();
+  const msgUpper = msgRaw.toUpperCase();
+  const estadoConfig = getEstadoVisualConfig(estadoActual);
+
+  let detalleTexto = msgRaw;
+  let accText = (accesorios || "").trim();
+  if (!accText && msgRaw.includes("Accesorios:")) {
+    const parts = msgRaw.split(/Accesorios:/i);
+    detalleTexto = parts[0].trim();
+    accText = parts[1].trim();
+  }
+  if (!accText || accText.toLowerCase() === "sin accesorios") {
+    accText = "Sin accesorios adicionales";
+  }
+
+  if (detalleTexto.toUpperCase().includes("SIN DETALLES ADICIONALES")) {
+    detalleTexto = "";
+  }
+
+  const tieneSinDefecto =
+    msgUpper.includes("SIN DEFECTO") || msgUpper.includes("NO PRESENTA FALLA");
+  const tieneSinReparo =
+    msgUpper.includes("SIN REPARO") ||
+    msgUpper.includes("NC") ||
+    msgUpper.includes("CAMBIO POR NUEVO") ||
+    msgUpper.includes("RECHAZA") ||
+    estLower.includes("sin reparo") ||
+    estLower.includes("no reparado") ||
+    estLower.includes("rma");
+
+  let header = estadoConfig.whatsappHeader;
+  let body = estadoConfig.whatsappBody;
+  let sourceLabel = `Estado "${estadoActual}" + Informe Técnico`;
+
+  if (tieneSinDefecto) {
+    header = "ℹ️ *SIN DEFECTO COMPROBADO*";
+    body =
+      "El equipo superó el ciclo de pruebas continuas de 48hs sin reproducir la falla indicada. Conserva su garantía de fábrica.";
+    sourceLabel = 'Detectado en Informe Técnico ("Sin defecto / No presenta falla")';
+  } else if (tieneSinReparo) {
+    header = "⚠️ *NO REPARADO / DERIVADO A RMA*";
+    body =
+      "Se requiere gestión de garantía con fabricante o emisión de nota de crédito comercial.";
+    sourceLabel = 'Detectado en Estado / Informe Técnico ("Sin reparo / NC / RMA")';
+  }
+
+  return {
+    estadoActual,
+    estadoConfig,
+    header,
+    headerPlain: header.replace(/\*/g, ""),
+    body,
+    detalleTexto,
+    accText,
+    sourceLabel,
+    readyForPickup: estadoConfig.readyForPickup || tieneSinDefecto || tieneSinReparo,
+  };
+}
+
 type ViewScope = "DANESA" | "CLIENTES_ASU" | "TODOS";
 type TransitFilter = "TODOS" | "EN_CAMINO" | "INGRESADO_CDE" | "FALTA_INGRESAR" | "RECIBIDOS";
 type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
@@ -813,57 +895,22 @@ export default function RecepcionDashboardPage() {
 
   // Generar mensaje con el estado exacto seleccionado y detalle técnico para enviar al grupo de Recepción
   const generarMensajeWhatsAppRecepcion = (ticket: RecepcionTicket) => {
-    const estadoActual = (ticket.estado || "En Asignacion").trim();
-    const estLower = estadoActual.toLowerCase();
-    const msgRaw = (ticket.mensaje || "").trim();
-    const msgUpper = msgRaw.toUpperCase();
-    const estadoConfig = getEstadoVisualConfig(estadoActual);
+    const dictamen = resolveDictamenRecepcion(
+      ticket.estado,
+      ticket.mensaje,
+      ticket.accesorios
+    );
+    const estLower = dictamen.estadoActual.toLowerCase();
 
-    // Separar detalle técnico y accesorios si existen en el mensaje o en el campo accesorios
-    let detalleTexto = msgRaw;
-    let accText = (ticket.accesorios || "").trim();
-
-    if (!accText) {
-      if (msgRaw.includes("Accesorios:")) {
-        const parts = msgRaw.split(/Accesorios:/i);
-        detalleTexto = parts[0].trim();
-        accText = parts[1].trim();
-      }
-    }
-    if (!accText || accText.toLowerCase() === "sin accesorios") {
-      accText = "Sin accesorios adicionales";
-    }
-
-    const tieneSinDefecto =
-      msgUpper.includes("SIN DEFECTO") || msgUpper.includes("NO PRESENTA FALLA");
-    const tieneSinReparo =
-      msgUpper.includes("SIN REPARO") ||
-      msgUpper.includes("NC") ||
-      msgUpper.includes("CAMBIO POR NUEVO") ||
-      msgUpper.includes("RECHAZA") ||
-      estLower.includes("sin reparo") ||
-      estLower.includes("no reparado") ||
-      estLower.includes("rma");
-
-    let statusText = "";
-    if (tieneSinDefecto) {
-      statusText =
-        "ℹ️ *SIN DEFECTO COMPROBADO*\nEl equipo superó el ciclo de pruebas continuas de 48hs sin reproducir la falla indicada. Conserva su garantía de fábrica.";
-    } else if (tieneSinReparo) {
-      statusText =
-        "⚠️ *NO REPARADO / DERIVADO A RMA*\nSe requiere gestión de garantía con fabricante o emisión de nota de crédito comercial.";
-    } else {
-      statusText = `${estadoConfig.whatsappHeader}\n${estadoConfig.whatsappBody}`;
-    }
-
-    if (detalleTexto && !detalleTexto.toUpperCase().includes("SIN DETALLES ADICIONALES")) {
-      statusText += `\n📝 *Detalle:* ${detalleTexto}`;
+    let statusText = `${dictamen.header}\n${dictamen.body}`;
+    if (dictamen.detalleTexto) {
+      statusText += `\n📝 *Detalle:* ${dictamen.detalleTexto}`;
     }
 
     const introLine =
       estLower === "entregada"
         ? `Confirmación de entrega del equipo de *${ticket.cliente || "Cliente"}* en el sector de Post-Venta`
-        : estadoConfig.readyForPickup || tieneSinDefecto || tieneSinReparo
+        : dictamen.readyForPickup
         ? `El equipo de *${ticket.cliente || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro`
         : `Actualización del servicio técnico para el equipo de *${ticket.cliente || "Cliente"}* en el sector de Post-Venta`;
 
@@ -874,13 +921,13 @@ export default function RecepcionDashboardPage() {
 💻 *Equipo:* ${ticket.marca} ${ticket.modelo || "Equipo"}
 📦 *Categoría:* ${ticket.tipoComponente || "GENERAL"}
 🔢 *Serie:* ${ticket.serial && ticket.serial !== "S/N" && !ticket.serial.toUpperCase().includes("SIN SERIAL") ? ticket.serial : "SIN SERIAL"}
-📌 *Estado:* ${estadoActual}
+📌 *Estado:* ${dictamen.estadoActual}
 
 📊 *Dictamen Técnico:*
 ${statusText}
 
 📦 *Accesorios incluidos:*
-${accText}`;
+${dictamen.accText}`;
   };
 
   const handleAbrirParaNotificar = (ticket: RecepcionTicket) => {
@@ -2684,6 +2731,44 @@ ${accText}`;
                     })}
                   </div>
                 </div>
+
+                {/* Vista previa en vivo del Dictamen Técnico que se enviará por WhatsApp */}
+                {(() => {
+                  const accPreview =
+                    modalAccessoriesList.length > 0
+                      ? modalAccessoriesList.join(", ")
+                      : modalAccesorios;
+                  const preview = resolveDictamenRecepcion(
+                    selectedTicket.estado,
+                    modalMensaje,
+                    accPreview
+                  );
+                  return (
+                    <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-1.5">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">
+                          Dictamen Técnico (Vista previa WhatsApp)
+                        </span>
+                        <span className="text-[10px] font-mono text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                          {preview.sourceLabel}
+                        </span>
+                      </div>
+                      <div className="text-xs text-zinc-800 space-y-1 bg-white/80 p-2.5 rounded-lg border border-emerald-100">
+                        <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
+                        <p className="text-zinc-600 leading-relaxed">{preview.body}</p>
+                        {preview.detalleTexto ? (
+                          <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200">
+                            <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
+                          </p>
+                        ) : (
+                          <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200">
+                            Complete &quot;Informe Técnico / Mensaje de Servicio&quot; arriba para incluir el detalle.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="pt-3 border-t border-[#e5e5e5] flex justify-between items-center">
