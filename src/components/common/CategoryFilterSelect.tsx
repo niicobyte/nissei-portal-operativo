@@ -18,6 +18,7 @@ import {
   normalizeCategoryText,
   normalizeComponentName,
 } from "@/data/recepcionCategories";
+import { useClampedPopover } from "@/lib/popoverPosition";
 
 export interface CategoryCountItem {
   category: string;
@@ -61,12 +62,26 @@ export default function CategoryFilterSelect({
   const [expandedFamilies, setExpandedFamilies] = useState<Record<string, boolean>>({});
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const mainAnchorRef = useRef<HTMLDivElement>(null);
+  const subAnchorRef = useRef<HTMLDivElement>(null);
   const mainSearchInputRef = useRef<HTMLInputElement>(null);
   const subSearchInputRef = useRef<HTMLInputElement>(null);
 
-  // Cerrar desplegables al hacer clic fuera o presionar Escape
+  const { layout: mainLayout, update: updateMainPosition } = useClampedPopover(mainAnchorRef, mainOpen, {
+    preferredWidth: 420,
+    preferAlign: "left",
+    maxPreferredHeight: 500,
+  });
+
+  const { layout: subLayout, update: updateSubPosition } = useClampedPopover(subAnchorRef, subOpen, {
+    preferredWidth: 350,
+    preferAlign: "left",
+    maxPreferredHeight: 420,
+  });
+
+  // Cerrar desplegables al hacer clic/tocar fuera o presionar Escape
   useEffect(() => {
-    function handlePointerDown(e: MouseEvent) {
+    function handlePointerDown(e: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setMainOpen(false);
         setSubOpen(false);
@@ -79,9 +94,11 @@ export default function CategoryFilterSelect({
       }
     }
     document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown, { passive: true });
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
@@ -380,10 +397,11 @@ export default function CategoryFilterSelect({
       className={`relative flex flex-wrap items-center gap-2 ${className}`}
     >
       {/* 1. DESPLEGABLE PRINCIPAL CON BUSCADOR Y ACORDEÓN DE RUBROS */}
-      <div className="relative">
+      <div ref={mainAnchorRef} className="relative">
         <button
           type="button"
           onClick={() => {
+            if (!mainOpen) updateMainPosition();
             setMainOpen((prev) => !prev);
             setSubOpen(false);
           }}
@@ -450,7 +468,14 @@ export default function CategoryFilterSelect({
 
         {/* PANEL DESPLEGABLE PRINCIPAL */}
         {mainOpen && (
-          <div className="absolute left-0 top-full mt-2 w-[360px] sm:w-[420px] max-w-[92vw] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/80 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+          <div
+            style={
+              mainLayout
+                ? { left: `${mainLayout.left}px`, width: `${mainLayout.width}px` }
+                : undefined
+            }
+            className="absolute left-0 top-full mt-2 w-[360px] sm:w-[420px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/80 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150"
+          >
             {/* Buscador fijo en la parte superior */}
             <div className="p-2.5 border-b border-slate-100 bg-slate-50/70">
               <div className="relative flex items-center">
@@ -515,7 +540,14 @@ export default function CategoryFilterSelect({
             )}
 
             {/* Lista con rubros desplegables */}
-            <div className="max-h-[380px] overflow-y-auto p-2 space-y-1">
+            <div
+              style={
+                mainLayout
+                  ? { maxHeight: `${Math.max(150, mainLayout.maxHeight - 135)}px` }
+                  : undefined
+              }
+              className="max-h-[min(380px,52dvh)] overflow-y-auto overscroll-contain p-2 space-y-1"
+            >
               {filteredGroups.length === 0 ? (
                 <div className="py-10 px-4 text-center">
                   <p className="text-xs font-semibold text-slate-700">
@@ -690,10 +722,11 @@ export default function CategoryFilterSelect({
 
       {/* 2. SEGUNDO DESPLEGABLE EN CASCADA (SUBCATEGORÍAS DEL RUBRO ACTIVO) */}
       {activeFamilyGroup && activeFamilyGroup.items.length >= 2 && (
-        <div className="relative">
+        <div ref={subAnchorRef} className="relative">
           <button
             type="button"
             onClick={() => {
+              if (!subOpen) updateSubPosition();
               setSubOpen((prev) => !prev);
               setMainOpen(false);
             }}
@@ -736,7 +769,14 @@ export default function CategoryFilterSelect({
           </button>
 
           {subOpen && (
-            <div className="absolute left-0 top-full mt-2 w-[320px] sm:w-[350px] max-w-[90vw] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/80 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150">
+            <div
+              style={
+                subLayout
+                  ? { left: `${subLayout.left}px`, width: `${subLayout.width}px` }
+                  : undefined
+              }
+              className="absolute left-0 top-full mt-2 w-[320px] sm:w-[350px] max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-200/80 z-50 overflow-hidden animate-in fade-in slide-in-from-top-1 duration-150"
+            >
               <div className="p-2.5 border-b border-slate-100 bg-slate-50/80 space-y-2">
                 <div className="flex items-center justify-between px-0.5">
                   <span className="text-[11px] font-bold text-slate-800 truncate">
@@ -778,7 +818,14 @@ export default function CategoryFilterSelect({
                 </div>
               </div>
 
-              <div className="max-h-[300px] overflow-y-auto p-1.5 space-y-0.5">
+              <div
+                style={
+                  subLayout
+                    ? { maxHeight: `${Math.max(140, subLayout.maxHeight - 105)}px` }
+                    : undefined
+                }
+                className="max-h-[min(300px,46dvh)] overflow-y-auto overscroll-contain p-1.5 space-y-0.5"
+              >
                 {!subSearch && (
                   <button
                     type="button"

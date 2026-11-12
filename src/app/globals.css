@@ -78,12 +78,14 @@ html {
     }
   }
 
-  /* Evita zoom automático en Safari iOS / móviles táctiles al enfocar inputs */
-  @media (hover: none) and (pointer: coarse) {
-    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
-    select,
-    textarea {
-      font-size: max(16px, 1rem);
+  /* Evita zoom automático únicamente en Safari iOS (iPhone/iPad) al enfocar inputs */
+  @supports (-webkit-touch-callout: none) {
+    @media (hover: none) and (pointer: coarse) {
+      input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+      select,
+      textarea {
+        font-size: max(16px, 1rem);
+      }
     }
   }
 

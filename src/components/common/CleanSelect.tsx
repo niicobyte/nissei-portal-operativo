@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { ChevronDown, Check, Search, X } from "lucide-react";
+import { useClampedPopover } from "@/lib/popoverPosition";
 
 export interface CleanSelectOption {
   value: string;
@@ -50,6 +51,21 @@ export function CleanSelect({
 
   const selectedOption = options.find((opt) => opt.value === value);
   const isFull = fullWidth || className.includes("w-full");
+  const preferredPopoverWidth = dropdownWidth?.includes("80")
+    ? 320
+    : dropdownWidth?.includes("72")
+    ? 288
+    : 256;
+
+  const { layout: popoverLayout, update: updatePopoverPosition } = useClampedPopover(
+    containerRef,
+    isOpen,
+    {
+      preferredWidth: preferredPopoverWidth,
+      preferAlign: align,
+      maxPreferredHeight: 288,
+    }
+  );
 
   useEffect(() => {
     if (isOpen && searchable) {
@@ -73,7 +89,7 @@ export function CleanSelect({
   }, [options, searchable, searchQuery]);
 
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
@@ -83,9 +99,11 @@ export function CleanSelect({
     }
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside, { passive: true });
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
     };
   }, [isOpen]);
 
@@ -111,7 +129,10 @@ export function CleanSelect({
     <div ref={containerRef} className={`relative text-left ${isFull ? "w-full block" : "inline-block"}`}>
       <button
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={() => {
+          if (!isOpen) updatePopoverPosition();
+          setIsOpen((prev) => !prev);
+        }}
         className={`inline-flex items-center justify-between gap-2 ${pxClass} ${pyClass} ${textClass} font-semibold rounded-xl border transition-all duration-150 cursor-pointer shadow-sm select-none ${
           isFull ? "w-full" : ""
         } ${
@@ -149,9 +170,20 @@ export function CleanSelect({
 
       {isOpen && (
         <div
+          style={
+            popoverLayout
+              ? isFull
+                ? { maxHeight: `${popoverLayout.maxHeight}px` }
+                : {
+                    left: `${popoverLayout.left}px`,
+                    width: `${popoverLayout.width}px`,
+                    maxHeight: `${popoverLayout.maxHeight}px`,
+                  }
+              : undefined
+          }
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
-          } mt-1.5 ${dropdownWidth || (isFull ? "w-full" : "w-64")} min-w-[180px] max-w-[calc(100vw-1.5rem)] max-h-[min(18rem,55dvh)] overflow-y-auto bg-white rounded-xl border border-zinc-200 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150`}
+          } mt-1.5 ${dropdownWidth || (isFull ? "w-full" : "w-64")} min-w-[180px] max-w-[calc(100vw-1.5rem)] max-h-[min(18rem,55dvh)] overflow-y-auto overscroll-contain bg-white rounded-xl border border-zinc-200 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150`}
         >
           {searchable && (
             <div className="p-1 border-b border-zinc-100 mb-1 sticky top-0 bg-white/95 backdrop-blur-xs z-10">

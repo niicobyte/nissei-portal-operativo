@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X, RotateCcw } from "lucide-react";
+import { useClampedPopover } from "@/lib/popoverPosition";
 
 interface CleanDatePickerProps {
   value: string; // "YYYY-MM-DD" o "DD/MM/YYYY" o ""
@@ -85,6 +86,16 @@ export function CleanDatePicker({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
+  const { layout: popoverLayout, update: updatePopoverPosition } = useClampedPopover(
+    containerRef,
+    isOpen,
+    {
+      preferredWidth: 320,
+      preferAlign: align,
+      maxPreferredHeight: 380,
+    }
+  );
+
   const parsed = useMemo(() => parseInputDate(value), [value]);
 
   const today = useMemo(() => {
@@ -106,7 +117,7 @@ export function CleanDatePicker({
 
   // Click outside y tecla ESC
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
@@ -118,10 +129,12 @@ export function CleanDatePicker({
     }
     if (isOpen) {
       document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside, { passive: true });
       document.addEventListener("keydown", handleKeyDown);
     }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
@@ -244,7 +257,10 @@ export function CleanDatePicker({
       {/* Botón Disparador estilizado al estilo CleanSelect */}
       <button
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
+        onClick={() => {
+          if (!isOpen) updatePopoverPosition();
+          setIsOpen((prev) => !prev);
+        }}
         className={`inline-flex items-center justify-between gap-2 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-150 cursor-pointer shadow-sm select-none ${
           fullWidth ? "w-full" : ""
         } ${
@@ -266,6 +282,11 @@ export function CleanDatePicker({
       {/* Popover Flotante de Calendario estilo CleanSelect / Hallmark */}
       {isOpen && (
         <div
+          style={
+            popoverLayout
+              ? { left: `${popoverLayout.left}px`, width: `${popoverLayout.width}px` }
+              : undefined
+          }
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
           } mt-2 w-[min(20rem,calc(100vw-1.5rem))] bg-white rounded-2xl border border-zinc-200 shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 select-none`}

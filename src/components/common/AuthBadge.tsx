@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock, LogOut, Key, ChevronDown, ShieldAlert, ArrowRight, Trash2, RefreshCw } from "lucide-react";
 import { getActiveUser, logout, UserProfile } from "@/data/authData";
+import { useClampedPopover } from "@/lib/popoverPosition";
 
 interface AuthBadgeProps {
   requiredModule?: "recepcion" | "reparaciones" | "montajes" | "tecnicos" | "deposito.danesa" | "sati-cde";
@@ -37,24 +38,12 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
   const [user, setUser] = useState<UserProfile | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [menuStyle, setMenuStyle] = useState<{ left: number; width: number }>({ left: 0, width: 232 });
 
-  const updateMenuPosition = useCallback(() => {
-    if (typeof window === "undefined" || !containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const margin = 12;
-    const width = Math.min(240, window.innerWidth - margin * 2);
-    // Preferir alinear al borde derecho en escritorio, pero ajustar dentro del viewport en móviles
-    const rightAlignedScreenLeft = rect.right - width;
-    const clampedScreenLeft =
-      rightAlignedScreenLeft >= margin
-        ? Math.min(rightAlignedScreenLeft, window.innerWidth - width - margin)
-        : Math.max(margin, Math.min(rect.left, window.innerWidth - width - margin));
-    setMenuStyle({
-      left: Math.round(clampedScreenLeft - rect.left),
-      width: Math.round(width),
-    });
-  }, []);
+  const { layout: menuLayout, update: updateMenuPosition } = useClampedPopover(containerRef, menuOpen, {
+    preferredWidth: 240,
+    preferAlign: "right",
+    maxPreferredHeight: 380,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -67,7 +56,6 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
 
   useEffect(() => {
     if (!menuOpen) return;
-    updateMenuPosition();
 
     const handlePointerDown = (e: MouseEvent | TouchEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -78,17 +66,15 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
       if (e.key === "Escape") setMenuOpen(false);
     };
 
-    window.addEventListener("resize", updateMenuPosition);
     document.addEventListener("mousedown", handlePointerDown);
     document.addEventListener("touchstart", handlePointerDown, { passive: true });
     document.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener("resize", updateMenuPosition);
       document.removeEventListener("mousedown", handlePointerDown);
       document.removeEventListener("touchstart", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [menuOpen, updateMenuPosition]);
+  }, [menuOpen]);
 
   const handleLogout = () => {
     logout();
@@ -222,8 +208,16 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
       {menuOpen && (
         <div
           role="menu"
-          style={{ left: `${menuStyle.left}px`, width: `${menuStyle.width}px` }}
-          className="absolute top-full mt-1.5 bg-white rounded-xl shadow-xl border border-zinc-200 p-1.5 z-50 text-xs space-y-1 max-h-[min(24rem,calc(100dvh-5rem))] overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95 duration-150"
+          style={
+            menuLayout
+              ? {
+                  left: `${menuLayout.left}px`,
+                  width: `${menuLayout.width}px`,
+                  maxHeight: `${menuLayout.maxHeight}px`,
+                }
+              : undefined
+          }
+          className="absolute top-full mt-1.5 w-60 max-w-[calc(100vw-1.5rem)] bg-white rounded-xl shadow-xl border border-zinc-200 p-1.5 z-50 text-xs space-y-1 max-h-[min(24rem,calc(100dvh-5rem))] overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95 duration-150"
         >
           <div className="p-2 border-b border-zinc-100 space-y-0.5">
             <span className="text-[11px] text-zinc-400 block font-normal">Sesión activa</span>
