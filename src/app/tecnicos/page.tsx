@@ -40,6 +40,11 @@ import {
 } from "@/data/montajesData";
 import { getActiveUser } from "@/data/authData";
 import { consumeCloudSyncWarning } from "@/lib/cloudSync";
+import {
+  saveWorkDraft,
+  loadWorkDraft,
+  useFlushDraftBeforeLogout,
+} from "@/lib/workDrafts";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import {
   ThermalPrintSettings,
@@ -98,6 +103,7 @@ export default function TecnicosDashboardPage() {
   const [vendedorFilter, setVendedorFilter] = useState<string>("TODOS");
   const [thermalSettings, setThermalSettings] = useState<ThermalPrintSettings>(DEFAULT_THERMAL_PRINT_SETTINGS);
   const [showThermalConfig, setShowThermalConfig] = useState(false);
+  const draftHydratedRef = useRef(false);
 
   // Carga reactiva de datos reales desde MySQL + LocalStorage y resincronización automática al enfocar ventana
   useEffect(() => {
@@ -105,7 +111,33 @@ export default function TecnicosDashboardPage() {
     const active = getActiveUser();
     if (!active) return;
 
-    setMontajes(getStoredMontajes());
+    const loadedMontajes = getStoredMontajes();
+    setMontajes(loadedMontajes);
+
+    const draft = loadWorkDraft<{
+      searchTerm?: string;
+      tipoServicioFilter?: "TODOS" | "Montaje" | "Expansion";
+      tecnicoFilter?: string;
+      vendedorFilter?: string;
+      detailOrderId?: string | null;
+      certOrderId?: string | null;
+    }>("tecnicos_workspace");
+
+    if (draft) {
+      if (typeof draft.searchTerm === "string") setSearchTerm(draft.searchTerm);
+      if (draft.tipoServicioFilter) setTipoServicioFilter(draft.tipoServicioFilter);
+      if (draft.tecnicoFilter) setTecnicoFilter(draft.tecnicoFilter);
+      if (draft.vendedorFilter) setVendedorFilter(draft.vendedorFilter);
+      if (draft.detailOrderId) {
+        const ord = loadedMontajes.find((m) => m.id === draft.detailOrderId);
+        if (ord) setSelectedOrderForDetail(ord);
+      }
+      if (draft.certOrderId) {
+        const ord = loadedMontajes.find((m) => m.id === draft.certOrderId);
+        if (ord) setSelectedOrderForCert(ord);
+      }
+    }
+    draftHydratedRef.current = true;
 
     const pendingWarning = consumeCloudSyncWarning();
     if (pendingWarning) {
@@ -139,6 +171,33 @@ export default function TecnicosDashboardPage() {
     window.addEventListener("focus", handleWindowFocus);
     return () => window.removeEventListener("focus", handleWindowFocus);
   }, []);
+
+  const buildTecnicosDraft = () => ({
+    searchTerm,
+    tipoServicioFilter,
+    tecnicoFilter,
+    vendedorFilter,
+    detailOrderId: selectedOrderForDetail?.id || null,
+    certOrderId: selectedOrderForCert?.id || null,
+  });
+
+  useEffect(() => {
+    if (!draftHydratedRef.current) return;
+    saveWorkDraft("tecnicos_workspace", buildTecnicosDraft());
+  }, [
+    searchTerm,
+    tipoServicioFilter,
+    tecnicoFilter,
+    vendedorFilter,
+    selectedOrderForDetail,
+    selectedOrderForCert,
+  ]);
+
+  useFlushDraftBeforeLogout(() => {
+    if (draftHydratedRef.current) {
+      saveWorkDraft("tecnicos_workspace", buildTecnicosDraft());
+    }
+  });
 
   // Activar clase compacta de impresión térmica 80mm mientras está abierto el modal de sticker
   useEffect(() => {

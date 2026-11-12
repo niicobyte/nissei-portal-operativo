@@ -46,6 +46,11 @@ import { readMultipleSpreadsheetsForSati, SPREADSHEET_FILE_ACCEPT } from "@/lib/
 import { SatiDepurationSummary } from "@/components/SatiDepurationSummary";
 import { yieldToBrowser } from "@/lib/satiRawDepurator";
 import {
+  saveWorkDraft,
+  loadWorkDraft,
+  useFlushDraftBeforeLogout,
+} from "@/lib/workDrafts";
+import {
   RecepcionTicket,
   INITIAL_RECEPCION_DATA,
   getStoredTickets,
@@ -212,6 +217,13 @@ export default function RecepcionDashboardPage() {
   const [modalAccessoriesList, setModalAccessoriesList] = useState<string[]>([]);
   const [modalNewAccessory, setModalNewAccessory] = useState<string>("");
   const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const draftHydratedRef = useRef(false);
+  const pendingModalDraftRef = useRef<{
+    idOrden: string;
+    modalMensaje: string;
+    modalAccessoriesList: string[];
+    modalNewAccessory: string;
+  } | null>(null);
 
   const parseAccesoriosString = (raw: string | undefined): string[] => {
     if (!raw) return [];
@@ -222,6 +234,16 @@ export default function RecepcionDashboardPage() {
 
   useEffect(() => {
     if (selectedTicket) {
+      const pending = pendingModalDraftRef.current;
+      if (pending && pending.idOrden === selectedTicket.idOrden) {
+        setModalMensaje(pending.modalMensaje);
+        setModalAccessoriesList(pending.modalAccessoriesList);
+        setModalAccesorios(pending.modalAccessoriesList.join(", "));
+        setModalNewAccessory(pending.modalNewAccessory);
+        pendingModalDraftRef.current = null;
+        return;
+      }
+
       const rawMsg = selectedTicket.mensaje || "";
       let accRaw = selectedTicket.accesorios || "";
       let cleanMsg = rawMsg;
@@ -324,6 +346,52 @@ export default function RecepcionDashboardPage() {
     );
     setTickets(initEnriched);
 
+    // Restaurar filtros y edición de modal pendiente si hubo recarga / actualización de deploy
+    const draft = loadWorkDraft<{
+      viewScope?: ViewScope;
+      transitFilter?: TransitFilter;
+      recibidosDateFilter?: RecibidosDateFilter;
+      statusFilter?: string;
+      categoryFamily?: string;
+      selectedCategories?: string[];
+      searchTerm?: string;
+      sortBy?: "ID_DESC" | "ID_ASC" | "CLIENTE_ASC" | "MARCA_ASC";
+      currentPage?: number;
+      selectedTicketId?: string | null;
+      modalMensaje?: string;
+      modalAccessoriesList?: string[];
+      modalNewAccessory?: string;
+    }>("recepcion_workspace");
+
+    if (draft) {
+      if (draft.viewScope) setViewScope(draft.viewScope);
+      if (draft.transitFilter) setTransitFilter(draft.transitFilter);
+      if (draft.recibidosDateFilter) setRecibidosDateFilter(draft.recibidosDateFilter);
+      if (draft.statusFilter) setStatusFilter(draft.statusFilter);
+      if (draft.categoryFamily) setCategoryFamily(draft.categoryFamily);
+      if (Array.isArray(draft.selectedCategories)) setSelectedCategories(draft.selectedCategories);
+      if (typeof draft.searchTerm === "string") setSearchTerm(draft.searchTerm);
+      if (draft.sortBy) setSortBy(draft.sortBy);
+      if (typeof draft.currentPage === "number" && draft.currentPage >= 1) {
+        setCurrentPage(draft.currentPage);
+      }
+      if (draft.selectedTicketId) {
+        const matched = initEnriched.find((t) => t.idOrden === draft.selectedTicketId);
+        if (matched) {
+          pendingModalDraftRef.current = {
+            idOrden: matched.idOrden,
+            modalMensaje: draft.modalMensaje || "",
+            modalAccessoriesList: Array.isArray(draft.modalAccessoriesList)
+              ? draft.modalAccessoriesList
+              : [],
+            modalNewAccessory: draft.modalNewAccessory || "",
+          };
+          setSelectedTicket(matched);
+        }
+      }
+    }
+    draftHydratedRef.current = true;
+
     const pendingWarning = consumeCloudSyncWarning();
     if (pendingWarning) {
       showToast(pendingWarning);
@@ -339,6 +407,47 @@ export default function RecepcionDashboardPage() {
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
   }, []);
+
+  const buildWorkspaceDraft = () => ({
+    viewScope,
+    transitFilter,
+    recibidosDateFilter,
+    statusFilter,
+    categoryFamily,
+    selectedCategories,
+    searchTerm,
+    sortBy,
+    currentPage,
+    selectedTicketId: selectedTicket?.idOrden || null,
+    modalMensaje,
+    modalAccessoriesList,
+    modalNewAccessory,
+  });
+
+  useEffect(() => {
+    if (!draftHydratedRef.current) return;
+    saveWorkDraft("recepcion_workspace", buildWorkspaceDraft());
+  }, [
+    viewScope,
+    transitFilter,
+    recibidosDateFilter,
+    statusFilter,
+    categoryFamily,
+    selectedCategories,
+    searchTerm,
+    sortBy,
+    currentPage,
+    selectedTicket,
+    modalMensaje,
+    modalAccessoriesList,
+    modalNewAccessory,
+  ]);
+
+  useFlushDraftBeforeLogout(() => {
+    if (draftHydratedRef.current) {
+      saveWorkDraft("recepcion_workspace", buildWorkspaceDraft());
+    }
+  });
 
   const showToast = (msg: string) => {
     setNotification(msg);

@@ -4,34 +4,50 @@ import {
   AUTH_COOKIE_NAME,
   ADMIN_HEADER_NAME,
   UserProfile,
+  isAuthorizedForPath,
 } from "@/data/authData";
 
-function resolveAuthenticatedUser(req: NextRequest): UserProfile | null {
+interface ResolvedSession {
+  user: UserProfile | null;
+  outdatedDeploy: boolean;
+}
+
+function resolveAuthenticatedUser(req: NextRequest): ResolvedSession {
   const rawCookie = req.cookies.get(AUTH_COOKIE_NAME)?.value;
-  if (!rawCookie) return null;
+  if (!rawCookie) return { user: null, outdatedDeploy: false };
 
   try {
     const cookieVal = decodeURIComponent(rawCookie);
-    if (!cookieVal.includes(":")) return null;
+    if (!cookieVal.includes(":")) return { user: null, outdatedDeploy: false };
 
     const parts = cookieVal.split(":");
     const id = parts[0];
     const hash = parts[1];
     const expiresAt = parts[2] ? Number(parts[2]) : null;
+    const cookieDeployId = (parts[3] || "").trim();
 
-    if (!id || !hash) return null;
+    if (!id || !hash) return { user: null, outdatedDeploy: false };
 
     // Si tiene expiración y el tiempo actual superó el límite de inactividad: EXPIRADO
     if (expiresAt && Date.now() > expiresAt) {
-      return null;
+      return { user: null, outdatedDeploy: false };
     }
 
     const found = USER_PROFILES.find(
       (p) => p.id === id && p.passwordHash === hash
     );
-    return found || null;
+    if (!found) return { user: null, outdatedDeploy: false };
+
+    const envDeployId = (process.env.RAILWAY_DEPLOYMENT_ID || "")
+      .trim()
+      .replace(/[:;\s]/g, "_");
+    if (envDeployId && cookieDeployId !== envDeployId) {
+      return { user: null, outdatedDeploy: true };
+    }
+
+    return { user: found, outdatedDeploy: false };
   } catch {
-    return null;
+    return { user: null, outdatedDeploy: false };
   }
 }
 
@@ -42,17 +58,9 @@ function hasValidAdminHeader(req: NextRequest): boolean {
   return Boolean(adminProfile && adminProfile.passwordHash === headerHash);
 }
 
-function isAuthorizedForPath(user: UserProfile, pathname: string): boolean {
-  if (user.role === "ADMIN") return true;
-  if (pathname.startsWith("/recepcion")) return user.role === "RECEPCION" || user.role === "DEPOSITO";
-  if (pathname.startsWith("/reparaciones")) return user.role === "TECNICO";
-  if (pathname.startsWith("/tecnicos")) return user.role === "MONTAJES";
-  return false;
-}
-
 export function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
-  const user = resolveAuthenticatedUser(req);
+  const { pathname, search } = req.nextUrl;
+  const { user, outdatedDeploy } = resolveAuthenticatedUser(req);
 
   // 1. Protección de Endpoints de API (/api/db y /api/whatsapp)
   if (pathname.startsWith("/api/db") || pathname.startsWith("/api/whatsapp")) {
@@ -62,7 +70,10 @@ export function middleware(req: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          error: "Acceso denegado. Debe autenticarse en el portal operativo.",
+          error: outdatedDeploy
+            ? "Portal actualizado. Inicie sesión nuevamente para continuar."
+            : "Acceso denegado. Debe autenticarse en el portal operativo.",
+          outdatedDeploy,
         },
         { status: 401 }
       );
@@ -78,9 +89,10 @@ export function middleware(req: NextRequest) {
   ) {
     if (!user) {
       const loginUrl = new URL("/login", req.url);
-      loginUrl.searchParams.set("reason", "expired");
+      loginUrl.searchParams.set("reason", outdatedDeploy ? "updated" : "expired");
+      loginUrl.searchParams.set("returnTo", `${pathname}${search}`);
       const response = NextResponse.redirect(loginUrl, 307);
-      // Limpiar cookie vencida o ausente de inmediato
+      // Limpiar cookie vencida, ausente o de un deploy anterior
       response.cookies.delete(AUTH_COOKIE_NAME);
       return response;
     }

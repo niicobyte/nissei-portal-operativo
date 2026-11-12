@@ -39,6 +39,11 @@ import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionC
 import { readMultipleSpreadsheetsForSati, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
 import { yieldToBrowser } from "@/lib/satiRawDepurator";
 import {
+  saveWorkDraft,
+  loadWorkDraft,
+  useFlushDraftBeforeLogout,
+} from "@/lib/workDrafts";
+import {
   RecepcionCdeTicket,
   INITIAL_RECEPCION_CDE_DATA,
   getStoredCdeTickets,
@@ -255,6 +260,7 @@ export default function RecepcionCdeDashboardPage() {
 
   // Subida y procesamiento de CSV
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const draftHydratedRef = useRef(false);
   const [isUploadingCSV, setIsUploadingCSV] = useState(false);
   const [isSyncingCloud, setIsSyncingCloud] = useState(false);
   const [csvReport, setCsvReport] = useState<
@@ -297,6 +303,60 @@ export default function RecepcionCdeDashboardPage() {
     const initialUnified = buildUnifiedSatiList(cdeTickets, asuTickets, checkins, overrides, manualCross);
     setTickets(initialUnified);
 
+    const draft = loadWorkDraft<{
+      viewScope?: ViewScope;
+      searchTerm?: string;
+      statusFilter?: string;
+      categoryFamily?: string;
+      selectedCategories?: string[];
+      transitFilter?: "TODOS" | "EN_TRANSITO" | "RECIBIDOS" | "SIN_CRUCE";
+      recibidosDateFilter?: RecibidosDateFilter;
+      currentPage?: number;
+      selectedTicketId?: string | null;
+      isEditingModal?: boolean;
+      editForm?: {
+        idOrdenAsu: string;
+        idOrdenCde: string;
+        fechaIngresoAsu: string;
+        fechaIngresoCde: string;
+        fechaDespachoCde: string;
+        fechaRecibidoAsu: string;
+      };
+      linkingTicketId?: string | null;
+      linkOrderIdInput?: string;
+    }>("recepcion_cde_workspace");
+
+    if (draft) {
+      if (draft.viewScope) setViewScope(draft.viewScope);
+      if (typeof draft.searchTerm === "string") setSearchTerm(draft.searchTerm);
+      if (draft.statusFilter) setStatusFilter(draft.statusFilter);
+      if (draft.categoryFamily) setCategoryFamily(draft.categoryFamily);
+      if (Array.isArray(draft.selectedCategories)) setSelectedCategories(draft.selectedCategories);
+      if (draft.transitFilter) setTransitFilter(draft.transitFilter);
+      if (draft.recibidosDateFilter) setRecibidosDateFilter(draft.recibidosDateFilter);
+      if (typeof draft.currentPage === "number" && draft.currentPage >= 1) {
+        setCurrentPage(draft.currentPage);
+      }
+      if (draft.selectedTicketId) {
+        const matched = initialUnified.find((t) => t.idOrden === draft.selectedTicketId);
+        if (matched) {
+          setSelectedTicket(matched);
+          setIsEditingModal(Boolean(draft.isEditingModal));
+          if (draft.editForm) {
+            setEditForm(draft.editForm);
+          }
+        }
+      }
+      if (draft.linkingTicketId) {
+        const matchedLink = initialUnified.find((t) => t.idOrden === draft.linkingTicketId);
+        if (matchedLink) {
+          setLinkingTicket(matchedLink);
+          setLinkOrderIdInput(draft.linkOrderIdInput || "");
+        }
+      }
+    }
+    draftHydratedRef.current = true;
+
     const pendingWarning = consumeCloudSyncWarning();
     if (pendingWarning) {
       showToast(pendingWarning);
@@ -311,6 +371,47 @@ export default function RecepcionCdeDashboardPage() {
     window.addEventListener("focus", handleFocus);
     return () => window.removeEventListener("focus", handleFocus);
   }, []);
+
+  const buildCdeDraft = () => ({
+    viewScope,
+    searchTerm,
+    statusFilter,
+    categoryFamily,
+    selectedCategories,
+    transitFilter,
+    recibidosDateFilter,
+    currentPage,
+    selectedTicketId: selectedTicket?.idOrden || null,
+    isEditingModal,
+    editForm,
+    linkingTicketId: linkingTicket?.idOrden || null,
+    linkOrderIdInput,
+  });
+
+  useEffect(() => {
+    if (!draftHydratedRef.current) return;
+    saveWorkDraft("recepcion_cde_workspace", buildCdeDraft());
+  }, [
+    viewScope,
+    searchTerm,
+    statusFilter,
+    categoryFamily,
+    selectedCategories,
+    transitFilter,
+    recibidosDateFilter,
+    currentPage,
+    selectedTicket,
+    isEditingModal,
+    editForm,
+    linkingTicket,
+    linkOrderIdInput,
+  ]);
+
+  useFlushDraftBeforeLogout(() => {
+    if (draftHydratedRef.current) {
+      saveWorkDraft("recepcion_cde_workspace", buildCdeDraft());
+    }
+  });
 
   const showToast = (msg: string) => {
     setNotification(msg);

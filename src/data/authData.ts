@@ -195,9 +195,66 @@ export const USER_PROFILES: UserProfile[] = [
 export const AUTH_STORAGE_KEY = "nissei_active_session_v4";
 export const AUTH_COOKIE_NAME = "nissei_sati_token";
 export const ADMIN_HEADER_NAME = "x-sati-admin-auth";
+export const RETURN_TO_STORAGE_KEY = "nissei_pending_return_to_v1";
 export const SESSION_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutos exactos de inactividad estricta
 
-export function syncSessionCookie(profile: UserProfile | null): void {
+function sanitizeDeployVersion(deployVersion?: string | null): string {
+  return String(deployVersion || "").trim().replace(/[:;\s]/g, "_");
+}
+
+export function isValidReturnToPath(path: string | null | undefined): path is string {
+  if (!path || typeof path !== "string") return false;
+  const trimmed = path.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//")) return false;
+  if (trimmed === "/" || trimmed.startsWith("/login") || trimmed.startsWith("/api")) return false;
+  return true;
+}
+
+export function isAuthorizedForPath(user: UserProfile, pathname: string): boolean {
+  const cleanPath = pathname.split("?")[0] || "/";
+  if (user.role === "ADMIN") return true;
+  if (cleanPath.startsWith("/recepcion")) return user.role === "RECEPCION" || user.role === "DEPOSITO";
+  if (cleanPath.startsWith("/reparaciones")) return user.role === "TECNICO";
+  if (cleanPath.startsWith("/tecnicos")) return user.role === "MONTAJES";
+  return false;
+}
+
+export function savePendingReturnTo(path: string): void {
+  if (typeof window === "undefined" || !isValidReturnToPath(path)) return;
+  try {
+    sessionStorage.setItem(RETURN_TO_STORAGE_KEY, path);
+    localStorage.setItem(RETURN_TO_STORAGE_KEY, path);
+  } catch {
+    // Ignorar error de almacenamiento
+  }
+}
+
+export function getPendingReturnTo(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const val =
+      sessionStorage.getItem(RETURN_TO_STORAGE_KEY) ||
+      localStorage.getItem(RETURN_TO_STORAGE_KEY);
+    return isValidReturnToPath(val) ? val : null;
+  } catch {
+    return null;
+  }
+}
+
+export function consumePendingReturnTo(): string | null {
+  const val = getPendingReturnTo();
+  if (typeof window !== "undefined") {
+    try {
+      sessionStorage.removeItem(RETURN_TO_STORAGE_KEY);
+      localStorage.removeItem(RETURN_TO_STORAGE_KEY);
+    } catch {
+      // Ignorar
+    }
+  }
+  return val;
+}
+
+export function syncSessionCookie(profile: UserProfile | null, deployVersion?: string | null): void {
   if (typeof document === "undefined") return;
   try {
     if (!profile) {
@@ -205,9 +262,12 @@ export function syncSessionCookie(profile: UserProfile | null): void {
       return;
     }
     const expiresAt = Date.now() + SESSION_TIMEOUT_MS;
-    const tokenValue = `${profile.id}:${profile.passwordHash}:${expiresAt}`;
+    const safeDeploy = sanitizeDeployVersion(deployVersion ?? getSessionDeployVersion());
+    const tokenValue = safeDeploy
+      ? `${profile.id}:${profile.passwordHash}:${expiresAt}:${safeDeploy}`
+      : `${profile.id}:${profile.passwordHash}:${expiresAt}`;
     // Cookie de sesión (sin max-age persistente) para que expire al cerrar el navegador,
-    // y con timestamp de 15 minutos para que expire por inactividad.
+    // y con timestamp de 15 minutos + deployVersion para invalidar sesiones de deploys anteriores.
     document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(tokenValue)}; path=/; SameSite=Strict`;
   } catch {
     // Ignore cookie errors in restricted contexts
@@ -298,7 +358,60 @@ export function getActiveUser(): UserProfile | null {
   }
 }
 
-export function setActiveUser(profile: UserProfile): void {
+export function getSessionDeployVersion(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    const ver = sanitizeDeployVersion(parsed?.deployVersion);
+    return ver || null;
+  } catch {
+    return null;
+  }
+}
+
+export function updateSessionDeployVersion(deployVersion: string | null | undefined): void {
+  const safeDeploy = sanitizeDeployVersion(deployVersion);
+  if (typeof window === "undefined" || !safeDeploy) return;
+  try {
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.id) return;
+    parsed.deployVersion = safeDeploy;
+    sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+    localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
+
+    const found = USER_PROFILES.find((p) => p.id === parsed.id);
+    if (found) {
+      syncSessionCookie(found, safeDeploy);
+    }
+  } catch {
+    // Ignore
+  }
+}
+
+export async function fetchServerDeployId(timeoutMs = 3000): Promise<string | null> {
+  if (typeof window === "undefined") return null;
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    const res = await fetch("/api/version", {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const json = await res.json().catch(() => null);
+    const clean = sanitizeDeployVersion(json?.deployId);
+    return clean || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setActiveUser(profile: UserProfile, deployVersion?: string | null): void {
   if (typeof window === "undefined") return;
   try {
     const now = Date.now();
@@ -307,6 +420,7 @@ export function setActiveUser(profile: UserProfile): void {
     localStorage.removeItem("nissei_active_session_v2");
     localStorage.removeItem("nissei_active_session_v3");
 
+    const safeDeploy = sanitizeDeployVersion(deployVersion);
     const safeSession = {
       id: profile.id,
       nombre: profile.nombre,
@@ -316,10 +430,11 @@ export function setActiveUser(profile: UserProfile): void {
       badge: profile.badge,
       ts: now,
       lastActive: now,
+      ...(safeDeploy ? { deployVersion: safeDeploy } : {}),
     };
     sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeSession));
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeSession));
-    syncSessionCookie(profile);
+    syncSessionCookie(profile, safeDeploy);
   } catch (e) {
     console.error("Error al guardar sesión activa:", e);
   }

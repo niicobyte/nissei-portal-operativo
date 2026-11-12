@@ -21,6 +21,7 @@ import {
   Truck,
   Clock,
   ShieldAlert,
+  RefreshCw,
 } from "lucide-react";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { AnimatedReceptionBox } from "@/components/common/AnimatedReceptionBox";
@@ -33,6 +34,13 @@ import {
   getActiveUser,
   verifyAdminPassword,
   logout,
+  fetchServerDeployId,
+  updateSessionDeployVersion,
+  savePendingReturnTo,
+  consumePendingReturnTo,
+  getPendingReturnTo,
+  isValidReturnToPath,
+  isAuthorizedForPath,
 } from "@/data/authData";
 import DatabaseViewerModal from "@/components/common/DatabaseViewerModal";
 
@@ -40,6 +48,8 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason");
+  const returnToParam = searchParams.get("returnTo");
+  const deployIdRef = React.useRef<string | null>(null);
 
   // Sector principal seleccionado: "RECEPCION" | "DEPOSITO" | "MONTAJES"
   const [activeSector, setActiveSector] = useState<"RECEPCION" | "DEPOSITO" | "MONTAJES">("RECEPCION");
@@ -62,20 +72,52 @@ function LoginForm() {
   const [dbError, setDbError] = useState<string | null>(null);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
 
-  // Limpieza rigurosa de sesiones expiradas al ingresar a la pantalla de Login
+  // Limpieza rigurosa de sesiones expiradas al ingresar a Login + precarga de deployId y returnTo
   useEffect(() => {
     logout();
-  }, []);
+    void fetchServerDeployId(3000).then((id) => {
+      deployIdRef.current = id;
+    });
+
+    const effectiveReturnTo = isValidReturnToPath(returnToParam)
+      ? returnToParam
+      : getPendingReturnTo();
+    if (effectiveReturnTo) {
+      savePendingReturnTo(effectiveReturnTo);
+      if (effectiveReturnTo.startsWith("/tecnicos")) {
+        setActiveSector("MONTAJES");
+        const prof = USER_PROFILES.find((p) => p.id === "montajes");
+        if (prof) setSelectedProfile(prof);
+      } else if (effectiveReturnTo.startsWith("/recepcion/cde")) {
+        setActiveSector("DEPOSITO");
+        const prof = USER_PROFILES.find((p) => p.id === "deposito.danesa");
+        if (prof) setSelectedProfile(prof);
+      } else if (effectiveReturnTo.startsWith("/recepcion")) {
+        setActiveSector("RECEPCION");
+        const prof = USER_PROFILES.find((p) => p.id === "recepcion");
+        if (prof) setSelectedProfile(prof);
+      }
+    }
+  }, [returnToParam]);
 
   const reasonBanner = (() => {
+    if (reason === "updated") {
+      return {
+        tone: "indigo" as const,
+        title: "Sistema actualizado con los últimos ajustes",
+        desc: "Por seguridad y para aplicar la nueva versión del portal, se cerró tu sesión y se respaldó tu progreso en curso. Al iniciar sesión volverás automáticamente al mismo apartado.",
+      };
+    }
     if (reason === "inactivity") {
       return {
+        tone: "amber" as const,
         title: "Sesión cerrada por inactividad (15 min)",
         desc: "Por protocolo de seguridad de la sucursal, la sesión se bloqueó tras 15 minutos sin interacción. Ingrese su clave para continuar.",
       };
     }
     if (reason === "expired" || reason === "unauthenticated") {
       return {
+        tone: "amber" as const,
         title: "Autenticación requerida",
         desc: "El acceso directo sin contraseña está bloqueado. Ingrese las credenciales de su sector para acceder.",
       };
@@ -103,8 +145,25 @@ function LoginForm() {
   const completeLoginAndSync = async (authUser: UserProfile) => {
     setError(null);
     setSuccess(`Autenticado como ${authUser.nombre}. Sincronizando con MySQL en la nube...`);
+
+    const serverDeployId = deployIdRef.current || (await fetchServerDeployId(2500));
+    if (serverDeployId) {
+      updateSessionDeployVersion(serverDeployId);
+    }
+
     await syncAllModulesFromMySQL(7000).catch(() => {});
-    router.push(authUser.defaultRoute);
+
+    const candidateReturnTo = isValidReturnToPath(returnToParam)
+      ? returnToParam
+      : consumePendingReturnTo();
+    consumePendingReturnTo();
+
+    const targetRoute =
+      candidateReturnTo && isAuthorizedForPath(authUser, candidateReturnTo)
+        ? candidateReturnTo
+        : authUser.defaultRoute;
+
+    router.push(targetRoute);
   };
 
   // Validación automática en tiempo real al escribir la contraseña (sin necesidad de pulsar Enter)
@@ -198,13 +257,35 @@ function LoginForm() {
           </p>
         </div>
 
-        {/* Banner de Sesión Expirada por Seguridad o Inactividad */}
+        {/* Banner de Actualización / Sesión Expirada por Seguridad o Inactividad */}
         {reasonBanner && (
-          <div className="p-4 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex items-start gap-3 text-xs shadow-xs animate-in fade-in duration-300">
-            <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div
+            className={`p-4 rounded-xl border flex items-start gap-3 text-xs shadow-xs animate-in fade-in duration-300 ${
+              reasonBanner.tone === "indigo"
+                ? "bg-indigo-50 border-indigo-300 text-indigo-950"
+                : "bg-amber-50 border-amber-300 text-amber-950"
+            }`}
+          >
+            {reasonBanner.tone === "indigo" ? (
+              <RefreshCw className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+            ) : (
+              <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            )}
             <div>
-              <strong className="block text-xs font-bold text-amber-900">{reasonBanner.title}</strong>
-              <p className="text-[11px] text-amber-800 mt-0.5">{reasonBanner.desc}</p>
+              <strong
+                className={`block text-xs font-bold ${
+                  reasonBanner.tone === "indigo" ? "text-indigo-900" : "text-amber-900"
+                }`}
+              >
+                {reasonBanner.title}
+              </strong>
+              <p
+                className={`text-[11px] mt-0.5 ${
+                  reasonBanner.tone === "indigo" ? "text-indigo-800" : "text-amber-800"
+                }`}
+              >
+                {reasonBanner.desc}
+              </p>
             </div>
           </div>
         )}

@@ -27,3 +27,11 @@
   2. Todas las credenciales deben aislarse en `.env.local` (ignorado en `.gitignore`).
   3. Todas las consultas a base de datos deben utilizar Prepared Statements con `?`.
   4. Ejecutar la auditoría de seguridad preventiva antes de confirmar cambios críticos.
+
+## 4. Cierre de Sesión y Respaldo Automático ante Nuevo Deploy en Railway (Prioridad Máxima)
+- **Regla estricta:** Cada nueva pantalla, formulario o modal operativo debe protegerse con `AuthGuard` y persistir sus borradores/estado de trabajo mediante `src/lib/workDrafts.ts` (`saveWorkDraft`, `loadWorkDraft`, `useFlushDraftBeforeLogout`).
+- Al detectarse un nuevo deploy vía `/api/version` (`AuthGuard` / `middleware.ts`), el sistema debe:
+  1. Guardar automáticamente cualquier modificación o carga en curso del usuario (`FLUSH_DRAFTS_EVENT`).
+  2. Cerrar la sesión activa y expulsar al usuario hacia `/login?reason=updated&returnTo=...` con recarga completa de la nueva versión.
+  3. Tras volver a iniciar sesión, devolver automáticamente al usuario al mismo apartado (`returnTo`) y restaurar su trabajo pendiente con los cambios nuevos aplicados.
+

@@ -51,8 +51,36 @@ import {
 import { setCloudSyncWarning } from "@/lib/cloudSync";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
+import {
+  saveWorkDraft,
+  loadWorkDraft,
+  clearWorkDraft,
+  useFlushDraftBeforeLogout,
+} from "@/lib/workDrafts";
 
 const EXPANSION_PRIORITY_CATS = new Set(["NOTEBOOK", "RAM", "ALMACENAMIENTO"]);
+const TECNICOS_NUEVO_DRAFT_KEY = "tecnicos_nuevo";
+
+interface TecnicosNuevoDraft {
+  salesAgent: string;
+  customSalesAgent: string;
+  salesChannel: "Tienda" | "Ecommerce - Web" | "Empresas / Coorporativo";
+  nroRegistroInterno: string;
+  invoiceDate: string;
+  clientName: string;
+  cantidadEquipos: number;
+  tipoServicio: "Montaje" | "Expansion";
+  components: ComponenteMontaje[];
+  customUpc: string;
+  customSku: string;
+  customDesc: string;
+  customCategory: ComponenteMontaje["categoria"];
+  customSerial: string;
+  assignedTech: "Nicolas Solis" | "Magaly Yegros" | "Juan Ronnebeck";
+  priority: "NORMAL" | "EXPRESS" | "URGENTE";
+  assemblyDate: string;
+  observations: string;
+}
 
 export default function NuevoIngresoMontajePage() {
   const router = useRouter();
@@ -205,6 +233,100 @@ export default function NuevoIngresoMontajePage() {
 
   const [formError, setFormError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [restoredDraftBanner, setRestoredDraftBanner] = useState(false);
+  const draftHydratedRef = useRef(false);
+
+  const buildCurrentDraft = (): TecnicosNuevoDraft => ({
+    salesAgent,
+    customSalesAgent,
+    salesChannel,
+    nroRegistroInterno,
+    invoiceDate,
+    clientName,
+    cantidadEquipos,
+    tipoServicio,
+    components,
+    customUpc,
+    customSku,
+    customDesc,
+    customCategory,
+    customSerial,
+    assignedTech,
+    priority,
+    assemblyDate,
+    observations,
+  });
+
+  // Restaurar borrador en progreso al montar (por recarga o actualización de deploy)
+  useEffect(() => {
+    const saved = loadWorkDraft<TecnicosNuevoDraft>(TECNICOS_NUEVO_DRAFT_KEY);
+    if (saved) {
+      const hasContent =
+        Boolean(saved.nroRegistroInterno?.trim()) ||
+        Boolean(saved.clientName?.trim()) ||
+        Boolean(saved.observations?.trim()) ||
+        Boolean(saved.customUpc?.trim()) ||
+        Boolean(saved.customSku?.trim()) ||
+        Boolean(saved.customDesc?.trim()) ||
+        Boolean(saved.customSerial?.trim()) ||
+        (Array.isArray(saved.components) && saved.components.length > 0);
+
+      if (hasContent) {
+        if (saved.salesAgent) setSalesAgent(saved.salesAgent);
+        if (typeof saved.customSalesAgent === "string") setCustomSalesAgent(saved.customSalesAgent);
+        if (saved.salesChannel) setSalesChannel(saved.salesChannel);
+        if (typeof saved.nroRegistroInterno === "string") setNroRegistroInterno(saved.nroRegistroInterno);
+        if (saved.invoiceDate) setInvoiceDate(saved.invoiceDate);
+        if (typeof saved.clientName === "string") setClientName(saved.clientName);
+        if (typeof saved.cantidadEquipos === "number" && saved.cantidadEquipos >= 1) {
+          setCantidadEquipos(saved.cantidadEquipos);
+        }
+        if (saved.tipoServicio) setTipoServicio(saved.tipoServicio);
+        if (Array.isArray(saved.components)) setComponents(saved.components);
+        if (typeof saved.customUpc === "string") setCustomUpc(saved.customUpc);
+        if (typeof saved.customSku === "string") setCustomSku(saved.customSku);
+        if (typeof saved.customDesc === "string") setCustomDesc(saved.customDesc);
+        if (saved.customCategory) setCustomCategory(saved.customCategory);
+        if (typeof saved.customSerial === "string") setCustomSerial(saved.customSerial);
+        if (saved.assignedTech) setAssignedTech(saved.assignedTech);
+        if (saved.priority) setPriority(saved.priority);
+        if (saved.assemblyDate) setAssemblyDate(saved.assemblyDate);
+        if (typeof saved.observations === "string") setObservations(saved.observations);
+        setRestoredDraftBanner(true);
+      }
+    }
+    draftHydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    if (!draftHydratedRef.current) return;
+    saveWorkDraft(TECNICOS_NUEVO_DRAFT_KEY, buildCurrentDraft());
+  }, [
+    salesAgent,
+    customSalesAgent,
+    salesChannel,
+    nroRegistroInterno,
+    invoiceDate,
+    clientName,
+    cantidadEquipos,
+    tipoServicio,
+    components,
+    customUpc,
+    customSku,
+    customDesc,
+    customCategory,
+    customSerial,
+    assignedTech,
+    priority,
+    assemblyDate,
+    observations,
+  ]);
+
+  useFlushDraftBeforeLogout(() => {
+    if (draftHydratedRef.current) {
+      saveWorkDraft(TECNICOS_NUEVO_DRAFT_KEY, buildCurrentDraft());
+    }
+  });
 
   // Cambiar modalidad y reiniciar valores
   const handleChangeTipoServicio = (tipo: "Montaje" | "Expansion") => {
@@ -583,6 +705,7 @@ export default function NuevoIngresoMontajePage() {
 
     // Guardar en almacenamiento local y confirmar persistencia en MySQL en la nube
     await addMontajeAsync(newOrder);
+    clearWorkDraft(TECNICOS_NUEVO_DRAFT_KEY);
     const mysqlPending = getPendingDirtyMontajeIds().includes(newOrder.id);
 
     // Envío explícito y esperado (await) al Grupo de Montajes vía WhaApi antes de navegar
@@ -698,6 +821,24 @@ export default function NuevoIngresoMontajePage() {
             Carga de órdenes operativas para ensambles de computadoras de escritorio y expansiones de memoria o almacenamiento en notebooks.
           </p>
         </div>
+
+        {restoredDraftBanner && (
+          <div className="p-3.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
+              <span className="font-medium">
+                Se restauró tu carga en progreso automáticamente tras reiniciar sesión.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setRestoredDraftBanner(false)}
+              className="text-[11px] font-semibold text-indigo-700 hover:underline shrink-0 cursor-pointer"
+            >
+              Ocultar
+            </button>
+          </div>
+        )}
 
         {formError && (
           <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">

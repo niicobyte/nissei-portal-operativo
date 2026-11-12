@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   Wrench,
@@ -41,6 +41,11 @@ import { consumeCloudSyncWarning } from "@/lib/cloudSync";
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 import { CleanSelect } from "@/components/common/CleanSelect";
+import {
+  saveWorkDraft,
+  loadWorkDraft,
+  useFlushDraftBeforeLogout,
+} from "@/lib/workDrafts";
 
 export default function TallerReparacionesPage() {
   // Usuario Activo (Por defecto: Admin)
@@ -84,6 +89,7 @@ export default function TallerReparacionesPage() {
     nombreTecnico: string;
     detalleFalla: string;
   } | null>(null);
+  const draftHydratedRef = useRef(false);
 
   const syncReparacionesFromCloud = async (showFeedback = false) => {
     try {
@@ -110,7 +116,68 @@ export default function TallerReparacionesPage() {
     const active = getActiveUser();
     if (!active) return;
 
-    setOrdenes(getStoredReparaciones());
+    const loadedOrdenes = getStoredReparaciones();
+    setOrdenes(loadedOrdenes);
+
+    const draft = loadWorkDraft<{
+      searchTerm?: string;
+      adminTab?: "SIN_ASIGNAR" | "EN_REPARACION" | "FINALIZADAS" | "TODAS";
+      tecnicoFilterStatus?: "TODAS" | "EN_REPARACION" | "FINALIZADAS";
+      adminPage?: number;
+      tecnicoPage?: number;
+      repairOrdenId?: string | null;
+      modalDictamen?: "REPARADO" | "SIN_DEFECTO" | "NO_REPARADO";
+      modalDetalle?: string;
+      modalRepuestos?: string;
+      assignOrdenId?: string | null;
+      assignNombreTecnico?: string;
+      assignDetalleFalla?: string;
+      whatsappOrdenId?: string | null;
+      whatsappMensaje?: string;
+      detailOrdenId?: string | null;
+    }>("reparaciones_workspace");
+
+    if (draft) {
+      if (typeof draft.searchTerm === "string") setSearchTerm(draft.searchTerm);
+      if (draft.adminTab) setAdminTab(draft.adminTab);
+      if (draft.tecnicoFilterStatus) setTecnicoFilterStatus(draft.tecnicoFilterStatus);
+      if (typeof draft.adminPage === "number" && draft.adminPage >= 1) setAdminPage(draft.adminPage);
+      if (typeof draft.tecnicoPage === "number" && draft.tecnicoPage >= 1) setTecnicoPage(draft.tecnicoPage);
+
+      if (draft.repairOrdenId) {
+        const ord = loadedOrdenes.find((o) => o.idOrden === draft.repairOrdenId);
+        if (ord) {
+          setRepairModalOrden(ord);
+          if (draft.modalDictamen) setModalDictamen(draft.modalDictamen);
+          if (typeof draft.modalDetalle === "string") setModalDetalle(draft.modalDetalle);
+          if (typeof draft.modalRepuestos === "string") setModalRepuestos(draft.modalRepuestos);
+        }
+      }
+      if (draft.assignOrdenId) {
+        const ord = loadedOrdenes.find((o) => o.idOrden === draft.assignOrdenId);
+        if (ord) {
+          setAssignModal({
+            orden: ord,
+            nombreTecnico: draft.assignNombreTecnico || LISTA_TECNICOS[0].nombre,
+            detalleFalla: draft.assignDetalleFalla || "",
+          });
+        }
+      }
+      if (draft.whatsappOrdenId) {
+        const ord = loadedOrdenes.find((o) => o.idOrden === draft.whatsappOrdenId);
+        if (ord) {
+          setWhatsappDispatchModal({
+            orden: ord,
+            mensaje: draft.whatsappMensaje || "",
+          });
+        }
+      }
+      if (draft.detailOrdenId) {
+        const ord = loadedOrdenes.find((o) => o.idOrden === draft.detailOrdenId);
+        if (ord) setSelectedOrdenDetail(ord);
+      }
+    }
+    draftHydratedRef.current = true;
 
     const pendingWarning = consumeCloudSyncWarning();
     if (pendingWarning) {
@@ -139,6 +206,48 @@ export default function TallerReparacionesPage() {
 
     return () => window.removeEventListener("focus", handleWindowFocus);
   }, []);
+
+  const buildReparacionesDraft = () => ({
+    searchTerm,
+    adminTab,
+    tecnicoFilterStatus,
+    adminPage,
+    tecnicoPage,
+    repairOrdenId: repairModalOrden?.idOrden || null,
+    modalDictamen,
+    modalDetalle,
+    modalRepuestos,
+    assignOrdenId: assignModal?.orden.idOrden || null,
+    assignNombreTecnico: assignModal?.nombreTecnico || "",
+    assignDetalleFalla: assignModal?.detalleFalla || "",
+    whatsappOrdenId: whatsappDispatchModal?.orden.idOrden || null,
+    whatsappMensaje: whatsappDispatchModal?.mensaje || "",
+    detailOrdenId: selectedOrdenDetail?.idOrden || null,
+  });
+
+  useEffect(() => {
+    if (!draftHydratedRef.current) return;
+    saveWorkDraft("reparaciones_workspace", buildReparacionesDraft());
+  }, [
+    searchTerm,
+    adminTab,
+    tecnicoFilterStatus,
+    adminPage,
+    tecnicoPage,
+    repairModalOrden,
+    modalDictamen,
+    modalDetalle,
+    modalRepuestos,
+    assignModal,
+    whatsappDispatchModal,
+    selectedOrdenDetail,
+  ]);
+
+  useFlushDraftBeforeLogout(() => {
+    if (draftHydratedRef.current) {
+      saveWorkDraft("reparaciones_workspace", buildReparacionesDraft());
+    }
+  });
 
   // Reset de página al buscar o cambiar pestañas
   useEffect(() => {

@@ -1,16 +1,20 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, ShieldAlert, Clock } from "lucide-react";
+import { Lock, ShieldAlert, Clock, RefreshCw } from "lucide-react";
 import {
   getActiveUser,
+  getSessionDeployVersion,
+  fetchServerDeployId,
+  savePendingReturnTo,
   logout,
   touchSession,
   UserProfile,
   SESSION_TIMEOUT_MS,
   AUTH_STORAGE_KEY,
 } from "@/data/authData";
+import { FLUSH_DRAFTS_EVENT } from "@/lib/workDrafts";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -44,17 +48,54 @@ export function AuthGuard({ children, requiredModule }: AuthGuardProps) {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [isDenied, setIsDenied] = useState(false);
   const [isExpired, setIsExpired] = useState(false);
+  const [isUpdatingDeploy, setIsUpdatingDeploy] = useState(false);
 
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const lastTouchRef = useRef<number>(Date.now());
+  const deployKickStartedRef = useRef(false);
 
-  // 1. Verificación inicial de credenciales al montar la página
+  const forceSaveAndKickToLogin = useCallback(
+    (reason: "updated" | "expired" | "inactivity" | "logged_out", hardReload = false) => {
+      if (deployKickStartedRef.current) return;
+      deployKickStartedRef.current = true;
+
+      if (typeof window !== "undefined") {
+        // 1. Solicitar guardado inmediato de borradores en edición antes de cerrar sesión
+        window.dispatchEvent(new CustomEvent(FLUSH_DRAFTS_EVENT));
+        const currentPath = `${window.location.pathname}${window.location.search}`;
+        savePendingReturnTo(currentPath);
+
+        if (reason === "updated") {
+          setIsUpdatingDeploy(true);
+        } else {
+          setIsExpired(true);
+        }
+
+        const targetUrl = `/login?reason=${reason}&returnTo=${encodeURIComponent(currentPath)}`;
+        setTimeout(() => {
+          logout();
+          if (hardReload) {
+            window.location.replace(targetUrl);
+          } else {
+            router.replace(targetUrl);
+          }
+        }, 120);
+        return;
+      }
+
+      logout();
+      router.replace(`/login?reason=${reason}`);
+    },
+    [router]
+  );
+
+  // 1. Verificación inicial de credenciales al montar la página + validación contra último deploy en Railway
   useEffect(() => {
+    let active = true;
     const user = getActiveUser();
     if (!user) {
       setIsChecking(false);
-      setIsExpired(true);
-      router.replace("/login?reason=expired");
+      forceSaveAndKickToLogin("expired", false);
       return;
     }
 
@@ -67,11 +108,67 @@ export function AuthGuard({ children, requiredModule }: AuthGuardProps) {
       return;
     }
 
-    setCurrentUser(user);
-    setIsChecking(false);
-  }, [requiredModule, router]);
+    // Validar versión de deploy inmediatamente antes de habilitar interacción
+    fetchServerDeployId(3500).then((serverDeployId) => {
+      if (!active) return;
+      const sessionDeployId = getSessionDeployVersion();
+      if (serverDeployId && sessionDeployId !== serverDeployId) {
+        setIsChecking(false);
+        forceSaveAndKickToLogin("updated", true);
+        return;
+      }
+      setCurrentUser(user);
+      setIsChecking(false);
+    });
 
-  // 2. Temporizador activo de inactividad (15 minutos continuos sin interacción)
+    return () => {
+      active = false;
+    };
+  }, [requiredModule, router, forceSaveAndKickToLogin]);
+
+  // 2. Monitor continuo de nuevos deploys en Railway (polling + focus + visibilidad)
+  useEffect(() => {
+    if (!currentUser) return;
+
+    let checking = false;
+    const checkLatestDeploy = async () => {
+      if (checking || deployKickStartedRef.current) return;
+      checking = true;
+      try {
+        const serverDeployId = await fetchServerDeployId(3000);
+        const sessionDeployId = getSessionDeployVersion();
+        if (serverDeployId && sessionDeployId !== serverDeployId) {
+          forceSaveAndKickToLogin("updated", true);
+        }
+      } finally {
+        checking = false;
+      }
+    };
+
+    const deployInterval = setInterval(() => {
+      void checkLatestDeploy();
+    }, 15000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void checkLatestDeploy();
+      }
+    };
+    const handleFocusCheck = () => {
+      void checkLatestDeploy();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    window.addEventListener("focus", handleFocusCheck);
+
+    return () => {
+      clearInterval(deployInterval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener("focus", handleFocusCheck);
+    };
+  }, [currentUser, forceSaveAndKickToLogin]);
+
+  // 3. Temporizador activo de inactividad (15 minutos continuos sin interacción)
   useEffect(() => {
     if (!currentUser) return;
 
@@ -89,9 +186,7 @@ export function AuthGuard({ children, requiredModule }: AuthGuardProps) {
 
       inactivityTimerRef.current = setTimeout(() => {
         console.warn("[AUTH GUARD] Tiempo límite de 15 minutos alcanzado por inactividad.");
-        logout();
-        setIsExpired(true);
-        router.replace("/login?reason=inactivity");
+        forceSaveAndKickToLogin("inactivity", false);
       }, SESSION_TIMEOUT_MS);
     };
 
@@ -105,9 +200,7 @@ export function AuthGuard({ children, requiredModule }: AuthGuardProps) {
     // Escuchar cambios de sesión en otras pestañas
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === AUTH_STORAGE_KEY && !e.newValue) {
-        logout();
-        setIsExpired(true);
-        router.replace("/login?reason=logged_out");
+        forceSaveAndKickToLogin("logged_out", false);
       }
     };
     window.addEventListener("storage", handleStorageChange);
@@ -121,7 +214,27 @@ export function AuthGuard({ children, requiredModule }: AuthGuardProps) {
       });
       window.removeEventListener("storage", handleStorageChange);
     };
-  }, [currentUser, router]);
+  }, [currentUser, forceSaveAndKickToLogin]);
+
+  // Pantalla de actualización automática ante nuevo deploy en Railway
+  if (isUpdatingDeploy) {
+    return (
+      <div className="fixed inset-0 z-[9999] bg-[#0c0d0e] flex flex-col items-center justify-center p-6 text-white select-none">
+        <div className="w-16 h-16 rounded-2xl bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center mb-4 shadow-2xl">
+          <RefreshCw className="w-7 h-7 text-indigo-400 animate-spin" />
+        </div>
+        <h2 className="text-lg font-extrabold tracking-tight text-white text-center">
+          Nueva actualización del sistema aplicada
+        </h2>
+        <p className="text-xs text-zinc-400 mt-2 max-w-sm text-center">
+          Guardamos tu progreso actual de forma segura. Al volver a iniciar sesión regresarás automáticamente a este mismo apartado con los nuevos ajustes.
+        </p>
+        <div className="mt-5 text-[11px] font-mono text-indigo-300 bg-indigo-500/10 px-3 py-1.5 rounded-lg border border-indigo-400/20">
+          Cerrando sesión y cargando nueva versión...
+        </div>
+      </div>
+    );
+  }
 
   // Pantalla de bloqueo intrusivo durante la verificación o si no está autenticado
   if (isChecking) {
