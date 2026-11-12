@@ -547,6 +547,8 @@ function matchesRecibidosDate(ticket: RecepcionTicket, filter: RecibidosDateFilt
 }
 
 function isTicketRecibido(t: RecepcionTicket): boolean {
+  const est = (t.estado || "").toLowerCase();
+  if (est.includes("entregada")) return false;
   return Boolean(t.recibidoEnDeposito);
 }
 
@@ -1163,7 +1165,7 @@ ${dictamen.accText}`;
       rawMsg.toLowerCase() === "sin observaciones" ||
       rawMsg.length < 4;
 
-    if (ticket.recibidoEnDeposito) {
+    if (isTicketRecibido(ticket)) {
       showToast(`✅ Orden #${ticket.idOrden}: Recibido · Listo para retiro de cliente.`);
     } else if (esVacio) {
       showToast(`📋 Complete el informe técnico de la orden #${ticket.idOrden} y pulse "Notificar por WhatsApp" para marcar como recibido.`);
@@ -2377,7 +2379,7 @@ ${dictamen.accText}`;
                       <td className="py-3 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="font-bold text-zinc-900 font-mono tabular-nums">#{ticket.idOrden}</span>
-                          {ticket.recibidoEnDeposito ? (
+                          {isTicketRecibido(ticket) ? (
                             <span
                               className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
                               title={`Recibido en depósito: ${ticket.fechaRecibidoDeposito || ''}`}
@@ -2493,7 +2495,7 @@ ${dictamen.accText}`;
                       {/* Acciones */}
                       <td className="py-3 px-4 text-right whitespace-nowrap">
                         <div className="inline-flex items-center gap-1.5">
-                          {ticket.recibidoEnDeposito ? (
+                          {isTicketRecibido(ticket) ? (
                             <button
                               type="button"
                               onClick={() => handleAbrirParaNotificar(ticket)}

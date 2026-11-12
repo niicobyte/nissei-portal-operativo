@@ -371,34 +371,32 @@ function buildSerialMentionMap<T extends { mensaje?: string }>(
   return map;
 }
 
-function findSerialMentionMatch<T extends { idOrden: string; fechaIngreso?: string; fechaEntregada?: string }>(
-  sourceMensaje: string | undefined,
+function findSerialMentionMatch<T extends MatchableOrder>(
+  sourceItem: MatchableOrder,
   sourceNormSerial: string,
   otherBySerial: Map<string, T[]>,
   otherMentioningSerial: Map<string, T[]>,
   usedIds: Set<string>,
-  reverseDates: boolean,
-  sourceDate?: string
+  sourceIsAsu: boolean
 ): T | null {
+  const isCoherent = (cand: T) =>
+    sourceIsAsu
+      ? isOrderPairChronologicallyCoherent(sourceItem, cand)
+      : isOrderPairChronologicallyCoherent(cand, sourceItem);
+
   if (sourceNormSerial.length >= 6 && otherMentioningSerial.has(sourceNormSerial)) {
     for (const cand of otherMentioningSerial.get(sourceNormSerial)!) {
       if (usedIds.has(cand.idOrden)) continue;
-      const coherent = reverseDates
-        ? isDespachoCoherente(sourceDate, cand.fechaEntregada)
-        : isDespachoCoherente(cand.fechaIngreso, sourceDate);
-      if (coherent) return cand;
+      if (isCoherent(cand)) return cand;
     }
   }
-  if (sourceMensaje) {
-    for (const tok of extractSerialTokens(sourceMensaje)) {
+  if (sourceItem.mensaje) {
+    for (const tok of extractSerialTokens(sourceItem.mensaje)) {
       const candidates = otherBySerial.get(tok);
       if (!candidates) continue;
       for (const cand of candidates) {
         if (usedIds.has(cand.idOrden)) continue;
-        const coherent = reverseDates
-          ? isDespachoCoherente(sourceDate, cand.fechaEntregada)
-          : isDespachoCoherente(cand.fechaIngreso, sourceDate);
-        if (coherent) return cand;
+        if (isCoherent(cand)) return cand;
       }
     }
   }
@@ -437,6 +435,7 @@ interface MatchableOrder {
   mensaje?: string;
   fechaIngreso?: string;
   fechaEntregada?: string;
+  estado?: string;
   marca?: string;
   modelo?: string;
   serial?: string;
@@ -465,9 +464,111 @@ function getDateMeta(fecha?: string): CachedDateMeta {
   return meta;
 }
 
-function isDespachoCoherenteFast(asuIngresoMs: number | null, cdeDespachoMs: number | null): boolean {
-  if (asuIngresoMs === null || cdeDespachoMs === null) return true;
-  return (cdeDespachoMs - asuIngresoMs) / MS_PER_DAY >= -1;
+export interface ChronoCoherenceOptions {
+  maxPreIngresoDays?: number;
+  maxPreDespachoDays?: number;
+  maxPostEntregaDays?: number;
+}
+
+function isOrderPairCoherentMeta(
+  asuIngreso: CachedDateMeta,
+  asuEntrega: CachedDateMeta,
+  asuEntregada: boolean,
+  cdeIngreso: CachedDateMeta,
+  cdeDespacho: CachedDateMeta,
+  options: ChronoCoherenceOptions = {}
+): boolean {
+  const {
+    maxPreIngresoDays = 7,
+    maxPreDespachoDays = 1,
+    maxPostEntregaDays = 3,
+  } = options;
+
+  // 1. El despacho CDE no puede ocurrir antes del ingreso de la orden en ASU
+  if (asuIngreso.ms !== null && cdeDespacho.ms !== null) {
+    if ((cdeDespacho.ms - asuIngreso.ms) / MS_PER_DAY < -maxPreDespachoDays) {
+      return false;
+    }
+  }
+
+  // 2. El ingreso en CDE no puede ser semanas/meses anterior a la creación de la orden ASU
+  if (asuIngreso.ms !== null && cdeIngreso.ms !== null) {
+    if ((cdeIngreso.ms - asuIngreso.ms) / MS_PER_DAY < -maxPreIngresoDays) {
+      return false;
+    }
+  }
+
+  // 3. Una orden ASU ya Entregada al cliente no puede vincularse con un ticket CDE posterior
+  if (asuEntregada && asuEntrega.valid && asuEntrega.ms !== null) {
+    if (cdeIngreso.ms !== null && (cdeIngreso.ms - asuEntrega.ms) / MS_PER_DAY > maxPostEntregaDays) {
+      return false;
+    }
+    if (cdeDespacho.ms !== null && (cdeDespacho.ms - asuEntrega.ms) / MS_PER_DAY > maxPostEntregaDays) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Valida coherencia cronológica bidireccional entre una orden ASU y una orden CDE:
+ * evita que órdenes históricas ya entregadas capturen envíos recientes del mismo serial,
+ * y que órdenes nuevas apunten a despachos pasados de visitas anteriores.
+ */
+export function isOrderPairChronologicallyCoherent(
+  asu: Pick<MatchableOrder, "fechaIngreso" | "fechaEntregada" | "estado">,
+  cde: Pick<MatchableOrder, "fechaIngreso" | "fechaEntregada">,
+  options?: ChronoCoherenceOptions
+): boolean {
+  const asuEntregada = (asu.estado || "").toLowerCase().includes("entregada");
+  return isOrderPairCoherentMeta(
+    getDateMeta(asu.fechaIngreso),
+    getDateMeta(asu.fechaEntregada),
+    asuEntregada,
+    getDateMeta(cde.fechaIngreso),
+    getDateMeta(cde.fechaEntregada),
+    options
+  );
+}
+
+/**
+ * Selecciona entre candidatos ya filtrados por ID/Serial aquel cuya línea de tiempo
+ * (fechaIngreso / fechaEntregada) coincide mejor con la orden origen.
+ */
+export function pickBestChronologicalCandidate<T extends MatchableOrder>(
+  source: MatchableOrder,
+  candidates: T[],
+  usedIds: Set<string> | null,
+  sourceIsAsu: boolean,
+  options?: ChronoCoherenceOptions
+): T | null {
+  let best: T | null = null;
+  let bestPenalty = Number.POSITIVE_INFINITY;
+  const srcIng = getDateMeta(source.fechaIngreso);
+
+  for (const cand of candidates) {
+    if (usedIds && usedIds.has(cand.idOrden)) continue;
+    const asu = sourceIsAsu ? source : cand;
+    const cde = sourceIsAsu ? cand : source;
+    if (!isOrderPairChronologicallyCoherent(asu, cde, options)) continue;
+
+    const candIng = getDateMeta(cand.fechaIngreso);
+    let penalty = 30;
+    if (srcIng.ms !== null && candIng.ms !== null) {
+      const signedDays = (candIng.ms - srcIng.ms) / MS_PER_DAY;
+      // En flujo normal ASU recibe primero y CDE ingresa el mismo día o pocos días después
+      const normalFlow = sourceIsAsu ? signedDays >= -1 : signedDays <= 1;
+      penalty = Math.abs(signedDays) + (normalFlow ? 0 : 12);
+    }
+
+    if (penalty < bestPenalty) {
+      bestPenalty = penalty;
+      best = cand;
+    }
+  }
+
+  return best;
 }
 
 function getDateDiffFast(a: CachedDateMeta, b: CachedDateMeta): number | null {
@@ -481,6 +582,7 @@ interface IndexedCand<T extends MatchableOrder> {
   exactClient: string;
   baseClient: string;
   isDanesa: boolean;
+  esEntregada: boolean;
   cod: string;
   hasModel: boolean;
   ingreso: CachedDateMeta;
@@ -494,11 +596,22 @@ function buildIndexedCand<T extends MatchableOrder>(item: T): IndexedCand<T> {
     exactClient: normalizeText(item.cliente),
     baseClient: normalizeText(stripClientPrefix(item.cliente)),
     isDanesa: isTicketDanesa(item.cliente),
+    esEntregada: (item.estado || "").toLowerCase().includes("entregada"),
     cod: (item.codigoProducto || "").trim(),
     hasModel: Boolean(normalizeText(item.modelo)),
     ingreso: getDateMeta(item.fechaIngreso),
     despacho: getDateMeta(item.fechaEntregada),
   };
+}
+
+function isIndexedPairCoherent<T extends MatchableOrder, U extends MatchableOrder>(
+  source: IndexedCand<T>,
+  cand: IndexedCand<U>,
+  sourceIsAsu: boolean
+): boolean {
+  const asu = sourceIsAsu ? source : cand;
+  const cde = sourceIsAsu ? cand : source;
+  return isOrderPairCoherentMeta(asu.ingreso, asu.despacho, asu.esEntregada, cde.ingreso, cde.despacho);
 }
 
 function compactPoolInPlace<T extends MatchableOrder>(pool: IndexedCand<T>[], deadCount: number): void {
@@ -548,10 +661,7 @@ function findBestClientEquipMatch<T extends MatchableOrder>(
     }
     if (cand.isDanesa) continue;
 
-    const coherent = reverseDates
-      ? isDespachoCoherenteFast(source.ingreso.ms, cand.despacho.ms)
-      : isDespachoCoherenteFast(cand.ingreso.ms, source.despacho.ms);
-    if (!coherent) continue;
+    if (!isIndexedPairCoherent(source, cand, reverseDates)) continue;
 
     const diffDias = getDateDiffFast(source.ingreso, cand.ingreso);
     if (diffDias !== null && diffDias > 45) continue;
@@ -618,10 +728,7 @@ function findBestDanesaMatch<T extends MatchableOrder>(
       continue;
     }
 
-    const coherent = reverseDates
-      ? isDespachoCoherenteFast(source.ingreso.ms, cand.despacho.ms)
-      : isDespachoCoherenteFast(cand.ingreso.ms, source.despacho.ms);
-    if (!coherent) continue;
+    if (!isIndexedPairCoherent(source, cand, reverseDates)) continue;
 
     const diffDias = getDateDiffFast(source.ingreso, cand.ingreso);
     if (diffDias !== null && diffDias > maxDiffDays) continue;
@@ -711,16 +818,17 @@ export function crossMatchCdeWithAsu(
 
     const cdeSerial = normalizeSerial(cde.serial);
 
-    // CRITERIO 1: Serial Físico exacto (con validación de coherencia cronológica)
+    // CRITERIO 1: Serial Físico exacto (prioriza coincidencia cronológica más cercana)
     if (cdeSerial && asuBySerial.has(cdeSerial)) {
-      const candidates = asuBySerial.get(cdeSerial)!;
-      for (const cand of candidates) {
-        if (matchedAsuIds.has(cand.idOrden)) continue;
-        if (isDespachoCoherente(cand.fechaIngreso, cde.fechaEntregada)) {
-          match = cand;
-          matchReason = "Serial Físico";
-          break;
-        }
+      const hit = pickBestChronologicalCandidate(
+        cde,
+        asuBySerial.get(cdeSerial)!,
+        matchedAsuIds,
+        false
+      );
+      if (hit) {
+        match = hit;
+        matchReason = "Serial Físico";
       }
     }
 
@@ -731,7 +839,7 @@ export function crossMatchCdeWithAsu(
         if (parseInt(id, 10) < 10000) continue;
         if (asuById.has(id)) {
           const candidate = asuById.get(id)!;
-          if (!matchedAsuIds.has(candidate.idOrden) && isDespachoCoherente(candidate.fechaIngreso, cde.fechaEntregada)) {
+          if (!matchedAsuIds.has(candidate.idOrden) && isOrderPairChronologicallyCoherent(candidate, cde)) {
             match = candidate;
             matchReason = `Ref. en Mensaje (#${id})`;
             break;
@@ -741,25 +849,27 @@ export function crossMatchCdeWithAsu(
     }
 
     if (!match && cde.idOrden && asuMentioningId.has(cde.idOrden.trim())) {
-      for (const candidate of asuMentioningId.get(cde.idOrden.trim())!) {
-        if (!matchedAsuIds.has(candidate.idOrden) && isDespachoCoherente(candidate.fechaIngreso, cde.fechaEntregada)) {
-          match = candidate;
-          matchReason = `Ref. en Mensaje ASU (#${cde.idOrden})`;
-          break;
-        }
+      const hit = pickBestChronologicalCandidate(
+        cde,
+        asuMentioningId.get(cde.idOrden.trim())!,
+        matchedAsuIds,
+        false
+      );
+      if (hit) {
+        match = hit;
+        matchReason = `Ref. en Mensaje ASU (#${cde.idOrden})`;
       }
     }
 
     // CRITERIO 3: Serial mencionado en el Informe/Mensaje de cualquiera de los dos lados (lookup O(1) indexado)
     if (!match) {
       const hit = findSerialMentionMatch(
-        cde.mensaje,
+        cde,
         cdeSerial,
         asuBySerial,
         asuMentioningSerial,
         matchedAsuIds,
-        false,
-        cde.fechaEntregada
+        false
       );
       if (hit) {
         match = hit;
@@ -889,29 +999,50 @@ export function crossMatchAsuWithCde(
     const asuSerial = normalizeSerial(asu.serial);
     let match: RecepcionCdeTicket | null = null;
 
-    // 0. Cruce Manual prioritario
+    // 0. Cruce Manual prioritario (descarta enlaces históricamente imposibles por fechas invertidas)
     const manualCdeId = manualAsuToCde.get(asu.idOrden);
     if (manualCdeId && cdeById.has(manualCdeId)) {
-      match = cdeById.get(manualCdeId)!;
+      const manualCand = cdeById.get(manualCdeId)!;
+      if (
+        !matchedCdeIds.has(manualCand.idOrden) &&
+        isOrderPairChronologicallyCoherent(asu, manualCand, {
+          maxPreIngresoDays: 14,
+          maxPreDespachoDays: 7,
+          maxPostEntregaDays: 7,
+        })
+      ) {
+        match = manualCand;
+      }
     }
 
     // 0.1 Overrides guardados
     if (!match && overrides) {
       const ov = overrides[asu.idOrden] || overrides[`ASU_${asu.idOrden}`];
       if (ov?.idOrdenCde && cdeById.has(ov.idOrdenCde.trim())) {
-        match = cdeById.get(ov.idOrdenCde.trim())!;
+        const ovCand = cdeById.get(ov.idOrdenCde.trim())!;
+        if (
+          !matchedCdeIds.has(ovCand.idOrden) &&
+          isOrderPairChronologicallyCoherent(asu, ovCand, {
+            maxPreIngresoDays: 14,
+            maxPreDespachoDays: 7,
+            maxPostEntregaDays: 7,
+          })
+        ) {
+          match = ovCand;
+        }
       }
     }
 
-    // CRITERIO 1: Serial Físico exacto (con validación de coherencia cronológica)
+    // CRITERIO 1: Serial Físico exacto (prioriza el envío CDE cronológicamente más cercano a esta orden ASU)
     if (!match && asuSerial && cdeBySerial.has(asuSerial)) {
-      const candidates = cdeBySerial.get(asuSerial)!;
-      for (const cand of candidates) {
-        if (matchedCdeIds.has(cand.idOrden)) continue;
-        if (isDespachoCoherente(asu.fechaIngreso, cand.fechaEntregada)) {
-          match = cand;
-          break;
-        }
+      const hit = pickBestChronologicalCandidate(
+        asu,
+        cdeBySerial.get(asuSerial)!,
+        matchedCdeIds,
+        true
+      );
+      if (hit) {
+        match = hit;
       }
     }
 
@@ -922,7 +1053,7 @@ export function crossMatchAsuWithCde(
         if (parseInt(id, 10) < 10000) continue;
         if (cdeById.has(id)) {
           const cand = cdeById.get(id)!;
-          if (!matchedCdeIds.has(cand.idOrden) && isDespachoCoherente(asu.fechaIngreso, cand.fechaEntregada)) {
+          if (!matchedCdeIds.has(cand.idOrden) && isOrderPairChronologicallyCoherent(asu, cand)) {
             match = cand;
             break;
           }
@@ -931,24 +1062,26 @@ export function crossMatchAsuWithCde(
     }
 
     if (!match && asu.idOrden && cdeMentioningId.has(asu.idOrden.trim())) {
-      for (const cand of cdeMentioningId.get(asu.idOrden.trim())!) {
-        if (!matchedCdeIds.has(cand.idOrden) && isDespachoCoherente(asu.fechaIngreso, cand.fechaEntregada)) {
-          match = cand;
-          break;
-        }
+      const hit = pickBestChronologicalCandidate(
+        asu,
+        cdeMentioningId.get(asu.idOrden.trim())!,
+        matchedCdeIds,
+        true
+      );
+      if (hit) {
+        match = hit;
       }
     }
 
     // CRITERIO 3: Serial mencionado en el Informe/Mensaje de cualquiera de los dos lados (lookup O(1) indexado)
     if (!match) {
       const hit = findSerialMentionMatch(
-        asu.mensaje,
+        asu,
         asuSerial,
         cdeBySerial,
         cdeMentioningSerial,
         matchedCdeIds,
-        true,
-        asu.fechaIngreso
+        true
       );
       if (hit) {
         match = hit;
@@ -971,17 +1104,21 @@ export function crossMatchAsuWithCde(
       }
     }
 
-    // Verificar si ya fue confirmado en depósito (Checkin)
-    const checkinInfo =
-      (checkins && (checkins[asu.idOrden] || (match && (checkins[match.idOrden] || checkins[match.rowKey || ''])))) ||
-      null;
-    const isRecibido = Boolean(
-      asu.recibidoEnDeposito || (checkinInfo && checkinInfo.recibido)
-    );
-    const fechaRecibido =
-      checkinInfo?.fecha || asu.fechaRecibidoDeposito || (match && match.fechaRecibidoDeposito) || "";
-
     const esEntregadaAsu = (asu.estado || "").toLowerCase().includes("entregada");
+
+    // Verificar si ya fue confirmado en depósito (Checkin)
+    // Una orden ASU ya entregada al cliente nunca debe heredar un checkin activo desde CDE ni figurar en Listo Retiro
+    const checkinInfo =
+      (checkins &&
+        (checkins[asu.idOrden] ||
+          (!esEntregadaAsu && match && (checkins[match.idOrden] || checkins[match.rowKey || ""])))) ||
+      null;
+    const isRecibido =
+      !esEntregadaAsu &&
+      Boolean(asu.recibidoEnDeposito || (checkinInfo && checkinInfo.recibido));
+    const fechaRecibido = esEntregadaAsu
+      ? asu.fechaRecibidoDeposito || ""
+      : checkinInfo?.fecha || asu.fechaRecibidoDeposito || (match && match.fechaRecibidoDeposito) || "";
 
     if (match) {
       matchedCdeIds.add(match.idOrden);

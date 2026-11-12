@@ -22,6 +22,10 @@ import {
   formatMysqlError,
 } from "@/lib/mysql";
 import { clasificarMensajeCSV } from "@/data/tallerReparacionesData";
+import {
+  isOrderPairChronologicallyCoherent,
+  pickBestChronologicalCandidate,
+} from "@/lib/crossMatch";
 
 export const dynamic = "force-dynamic";
 
@@ -944,19 +948,57 @@ export async function POST(req: NextRequest) {
         [fecha, idOrdenStr]
       ).catch((err) => console.warn("[DB Warning Recepcion Ticket Update]", err));
 
-      // 2. Buscar cruce automático con orden CDE
-      let matchedCdeId: string | null = null;
-
-      // 2a. Verificar si ya existe un cruce previo registrado en sati_cross_matches
-      const [existingMatches]: any = await pool.query(
-        "SELECT id_orden_cde FROM sati_cross_matches WHERE id_orden_asu = ? LIMIT 1",
+      // 2. Buscar cruce automático con orden CDE (con validación cronológica estricta)
+      const [asuMetaRows]: any = await pool.query(
+        "SELECT fecha_ingreso, fecha_entregada, estado FROM recepcion_tickets WHERE id_orden = ? LIMIT 1",
         [idOrdenStr]
       );
-      if (existingMatches && existingMatches.length > 0 && existingMatches[0]?.id_orden_cde) {
-        matchedCdeId = String(existingMatches[0].id_orden_cde).trim();
+      const asuMeta = {
+        idOrden: idOrdenStr,
+        fechaIngreso: asuMetaRows?.[0]?.fecha_ingreso || "",
+        fechaEntregada: asuMetaRows?.[0]?.fecha_entregada || "",
+        estado: asuMetaRows?.[0]?.estado || "",
+      };
+
+      const pickBestCdeRow = (rows: any[]): string | null => {
+        if (!Array.isArray(rows) || rows.length === 0) return null;
+        const cands = rows
+          .filter((r) => r?.id_orden)
+          .map((r) => ({
+            idOrden: String(r.id_orden).trim(),
+            fechaIngreso: r.fecha_ingreso || "",
+            fechaEntregada: r.fecha_entregada || "",
+          }));
+        const best = pickBestChronologicalCandidate(asuMeta, cands, null, true);
+        return best ? best.idOrden : null;
+      };
+
+      let matchedCdeId: string | null = null;
+
+      // 2a. Verificar si ya existe un cruce previo válido en sati_cross_matches
+      const [existingMatches]: any = await pool.query(
+        `SELECT m.id_orden_cde, c.fecha_ingreso, c.fecha_entregada
+         FROM sati_cross_matches m
+         LEFT JOIN recepcion_cde_tickets c ON c.id_orden = m.id_orden_cde
+         WHERE m.id_orden_asu = ?`,
+        [idOrdenStr]
+      );
+      for (const row of existingMatches || []) {
+        const candId = String(row?.id_orden_cde || "").trim();
+        if (!candId) continue;
+        const coherent = isOrderPairChronologicallyCoherent(
+          asuMeta,
+          { fechaIngreso: row.fecha_ingreso || "", fechaEntregada: row.fecha_entregada || "" },
+          { maxPreIngresoDays: 14, maxPreDespachoDays: 7, maxPostEntregaDays: 7 }
+        );
+        if (coherent) {
+          matchedCdeId = candId;
+          break;
+        }
+        await dbDeleteSatiCrossMatch(idOrdenStr, candId).catch(() => {});
       }
 
-      // 2b. Si no hay cruce previo, buscar en recepcion_cde_tickets por número de serie físico válido
+      // 2b. Si no hay cruce previo válido, buscar en recepcion_cde_tickets por serial físico válido
       const isSerialValido =
         serialStr &&
         serialStr.toUpperCase() !== "SIN SERIAL" &&
@@ -965,43 +1007,40 @@ export async function POST(req: NextRequest) {
 
       if (!matchedCdeId && isSerialValido) {
         const [cdeBySerial]: any = await pool.query(
-          `SELECT id_orden FROM recepcion_cde_tickets 
-           WHERE CAST(id_orden AS UNSIGNED) >= 100000 
+          `SELECT id_orden, fecha_ingreso, fecha_entregada FROM recepcion_cde_tickets
+           WHERE CAST(id_orden AS UNSIGNED) >= 100000
              AND (serial = ? OR serial LIKE ?)
-           LIMIT 1`,
+           ORDER BY CAST(id_orden AS UNSIGNED) DESC
+           LIMIT 20`,
           [serialStr, `%${serialStr}%`]
         );
-        if (cdeBySerial && cdeBySerial.length > 0 && cdeBySerial[0]?.id_orden) {
-          matchedCdeId = String(cdeBySerial[0].id_orden).trim();
-        }
+        matchedCdeId = pickBestCdeRow(cdeBySerial);
       }
 
       // 2c. Si aún no cruza, buscar si en el mensaje/dictamen de CDE mencionan la orden ASU
       if (!matchedCdeId) {
         const [cdeByMention]: any = await pool.query(
-          `SELECT id_orden FROM recepcion_cde_tickets 
-           WHERE CAST(id_orden AS UNSIGNED) >= 100000 
+          `SELECT id_orden, fecha_ingreso, fecha_entregada FROM recepcion_cde_tickets
+           WHERE CAST(id_orden AS UNSIGNED) >= 100000
              AND (mensaje LIKE ? OR mensaje LIKE ?)
-           LIMIT 1`,
+           ORDER BY CAST(id_orden AS UNSIGNED) DESC
+           LIMIT 20`,
           [`%#${idOrdenStr}%`, `%${idOrdenStr}%`]
         );
-        if (cdeByMention && cdeByMention.length > 0 && cdeByMention[0]?.id_orden) {
-          matchedCdeId = String(cdeByMention[0].id_orden).trim();
-        }
+        matchedCdeId = pickBestCdeRow(cdeByMention);
       }
 
       // 2d. Si aún no cruza y coincide código de producto + cliente directo
       if (!matchedCdeId && prodCode && cliente && String(cliente).trim().toLowerCase() !== "danesa sa") {
         const [cdeByProdClient]: any = await pool.query(
-          `SELECT id_orden FROM recepcion_cde_tickets
+          `SELECT id_orden, fecha_ingreso, fecha_entregada FROM recepcion_cde_tickets
            WHERE CAST(id_orden AS UNSIGNED) >= 100000
              AND codigo_producto = ? AND cliente = ?
-           LIMIT 1`,
+           ORDER BY CAST(id_orden AS UNSIGNED) DESC
+           LIMIT 20`,
           [prodCode, cliente]
         );
-        if (cdeByProdClient && cdeByProdClient.length > 0 && cdeByProdClient[0]?.id_orden) {
-          matchedCdeId = String(cdeByProdClient[0].id_orden).trim();
-        }
+        matchedCdeId = pickBestCdeRow(cdeByProdClient);
       }
 
       // 3. Si se encontró orden CDE emparejada, actualizarla y persistir el cruce
