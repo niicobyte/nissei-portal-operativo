@@ -562,14 +562,16 @@ export function SatiThermalPrintModal({
                 </span>
               </div>
 
-              <div className="flex justify-between items-start gap-2 pt-0.5">
-                <span className="thermal-label uppercase font-black shrink-0">
-                  CLIENTE:
-                </span>
-                <span className="text-right break-words leading-tight thermal-value font-black">
-                  {data.cliente || "Cliente"}
-                </span>
-              </div>
+              {!isDanesa && (
+                <div className="flex justify-between items-start gap-2 pt-0.5">
+                  <span className="thermal-label uppercase font-black shrink-0">
+                    CLIENTE:
+                  </span>
+                  <span className="text-right break-words leading-tight thermal-value font-black">
+                    {data.cliente || "Cliente"}
+                  </span>
+                </div>
+              )}
 
               <div className="flex justify-between items-start gap-2">
                 <span className="thermal-label uppercase font-black shrink-0">
@@ -584,7 +586,7 @@ export function SatiThermalPrintModal({
                 <span className="thermal-label uppercase font-black">
                   Nº SERIE:
                 </span>
-                <span className="thermal-value font-black">
+                <span className="thermal-value font-black text-right">
                   {data.serial || "S/N"}
                 </span>
               </div>
@@ -594,27 +596,29 @@ export function SatiThermalPrintModal({
                   <span className="thermal-label uppercase font-black">
                     TÉCNICO:
                   </span>
-                  <span className="thermal-value font-black">
+                  <span className="thermal-value font-black text-right">
                     {data.tecnico}
                   </span>
                 </div>
               )}
 
-              <div className="flex justify-between items-center gap-2">
-                <span className="thermal-label uppercase font-black">
-                  ESTADO:
-                </span>
-                <span className="uppercase thermal-ultra-black border-b-2 border-black pb-0.5 font-black">
-                  {data.estado || "En Asignacion"}
-                </span>
-              </div>
+              {!isDanesa && (
+                <div className="flex justify-between items-center gap-2">
+                  <span className="thermal-label uppercase font-black">
+                    ESTADO:
+                  </span>
+                  <span className="uppercase thermal-ultra-black border-b-2 border-black pb-0.5 font-black text-right">
+                    {data.estado || "En Asignacion"}
+                  </span>
+                </div>
+              )}
 
               {data.accesorios && (
-                <div className="border-t-2 border-black border-dashed pt-1.5 flex justify-between items-start gap-2">
+                <div className="border-t-2 border-black border-dashed pt-1.5 flex justify-between items-start gap-2 w-full">
                   <span className="thermal-label uppercase font-black shrink-0">
                     ACCESORIOS:
                   </span>
-                  <span className="text-right break-words text-[11px] leading-tight thermal-value font-black">
+                  <span className="flex-1 text-right break-words text-[11px] leading-tight thermal-value font-black">
                     {data.accesorios}
                   </span>
                 </div>
@@ -676,42 +680,14 @@ export function SatiThermalPrintModal({
                   </div>
                 </div>
               ) : (
-                /* Ficha de Control de Stock Propio (Danesa S.A.) - Reemplaza los 90 días */
-                <div className="border-t-2 border-black border-dashed pt-1.5 space-y-1">
-                  <div className="flex justify-between items-center text-[10.5px] font-mono">
-                    <span className="thermal-label uppercase font-black shrink-0">
-                      ÁMBITO:
-                    </span>
-                    <span className="thermal-value font-black text-right">
-                      STOCK PROPIO (DANESA S.A.)
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-center text-[10.5px] font-mono">
-                    <span className="thermal-label uppercase font-black shrink-0">
-                      INGRESO SUCURSAL:
-                    </span>
-                    <span className="thermal-value font-black text-right">
-                      {policy.fechaIngresoStr}
-                    </span>
-                  </div>
-
-                  {policy.fechaRetornoStr && (
-                    <div className="flex justify-between items-center text-[10.5px] font-mono">
-                      <span className="thermal-label uppercase font-black shrink-0">
-                        RETORNO SUCURSAL:
-                      </span>
-                      <span className="thermal-value font-black text-right border-b border-black">
-                        {policy.fechaRetornoStr}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="border border-black py-0.5 px-1 text-[9px] font-mono font-black text-center uppercase mt-0.5">
-                    {data.estado
-                      ? `ESTADO / DESTINO: ${data.estado.toUpperCase()}`
-                      : "DESTINO INTERNO: REINTEGRO A STOCK / SALÓN"}
-                  </div>
+                /* Ficha de Control de Stock Propio (Danesa S.A.) - Solo Ámbito: STOCK */
+                <div className="border-t-2 border-black border-dashed pt-1.5 flex justify-between items-center text-[10.5px] font-mono">
+                  <span className="thermal-label uppercase font-black shrink-0">
+                    ÁMBITO:
+                  </span>
+                  <span className="thermal-value font-black text-right">
+                    STOCK
+                  </span>
                 </div>
               )}
             </div>
