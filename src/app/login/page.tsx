@@ -81,49 +81,65 @@ function LoginForm() {
   // Telemetría en vivo para cada sector operativo (mostrada en los botones de acceso)
   const [telemetry, setTelemetry] = useState({
     recepcion: {
-      ingresosHoy: 18,
-      ingresosSub: "+4 última hora",
-      notificaciones: 5,
-      listosEntrega: 7,
+      ingresosHoy: 0,
+      ingresosSub: "Hoy en ASU",
+      notificaciones: 0,
+      notificacionesSub: "Whapi WhatsApp",
+      listosEntrega: 0,
     },
     deposito: {
-      enCamino: 61,
-      enCde: 109,
-      recibidosAsu: 142,
+      enCamino: 0,
+      enCde: 0,
+      recibidosAsu: 0,
     },
     montajes: {
-      enCola: 8,
-      enColaSub: "2 Prioridad VIP",
-      enBanco: 4,
-      finalizados: 12,
+      enCola: 0,
+      enColaSub: "En espera",
+      enBanco: 0,
+      finalizados: 0,
     },
   });
 
   useEffect(() => {
     try {
-      // 1. Recepción Post-Venta
+      // 1. Recepción Post-Venta (Métricas reales y transparentes sin topes ficticios)
       const recTickets = getStoredTickets();
+      const checkins = getStoredCdeCheckins();
       let hoyCount = 0;
       let notifCount = 0;
       let listosCount = 0;
 
       if (Array.isArray(recTickets) && recTickets.length > 0) {
-        const todayDmy = new Date().toLocaleDateString("es-PY");
+        const now = new Date();
+        const d = String(now.getDate()).padStart(2, "0");
+        const m = String(now.getMonth() + 1).padStart(2, "0");
+        const y = String(now.getFullYear());
+        const todayStr = `${d}/${m}/${y}`;
+
+        // Ingresos reales registrados con fecha de hoy
         hoyCount = recTickets.filter((t) => {
-          if (t.esNuevoIngreso) return true;
-          return Boolean(t.fechaIngreso && t.fechaIngreso.includes(todayDmy));
+          const f = (t.fechaIngreso || "").trim();
+          return f.includes(todayStr);
         }).length;
 
-        notifCount = recTickets.filter((t) => t.esEstadoCambiadoReciente || Boolean(t.mensaje && t.mensaje.trim().length > 0)).length;
+        // Notificaciones reales enviadas por WhatsApp a clientes (órdenes que no son stock Danesa y fueron notificadas/recibidas en sucursal)
+        notifCount = recTickets.filter((t) => {
+          const isDanesa = (t.cliente || "").toUpperCase().includes("DANESA");
+          const recibido = Boolean(t.recibidoEnDeposito || checkins[t.idOrden]?.recibido);
+          return !isDanesa && recibido;
+        }).length;
+
+        // Listos para retiro en sucursal (recibidos y sin entregar al cliente aún)
         listosCount = recTickets.filter((t) => {
           const st = (t.estado || "").toLowerCase();
-          return st.includes("reparada") || st.includes("listo") || Boolean(t.recibidoEnDeposito);
+          if (st.includes("entregada") || st.includes("entregado")) return false;
+          const recibido = Boolean(t.recibidoEnDeposito || checkins[t.idOrden]?.recibido);
+          return recibido || st.includes("reparada") || st.includes("listo");
         }).length;
       }
 
       // 2. SATI CDE
       const cdeTickets = getStoredCdeTickets();
-      const checkins = getStoredCdeCheckins();
       let enCaminoCount = 0;
       let enCdeCount = 0;
       let recibidosAsuCount = 0;
@@ -151,21 +167,22 @@ function LoginForm() {
 
       setTelemetry({
         recepcion: {
-          ingresosHoy: hoyCount > 0 ? hoyCount : 18,
-          ingresosSub: hoyCount > 0 ? "Hoy en ASU" : "+4 última hora",
-          notificaciones: notifCount > 0 ? Math.min(notifCount, 99) : 5,
-          listosEntrega: listosCount > 0 ? listosCount : 7,
+          ingresosHoy: hoyCount,
+          ingresosSub: hoyCount > 0 ? "Registrados hoy" : "Hoy en ASU",
+          notificaciones: notifCount,
+          notificacionesSub: notifCount > 0 ? "Enviadas Whapi" : "Sin pendientes",
+          listosEntrega: listosCount,
         },
         deposito: {
-          enCamino: enCaminoCount > 0 ? enCaminoCount : 61,
-          enCde: enCdeCount > 0 ? enCdeCount : 109,
-          recibidosAsu: recibidosAsuCount > 0 ? recibidosAsuCount : 142,
+          enCamino: enCaminoCount,
+          enCde: enCdeCount,
+          recibidosAsu: recibidosAsuCount,
         },
         montajes: {
-          enCola: enColaCount > 0 ? enColaCount : 8,
-          enColaSub: enColaCount > 0 ? `${enColaCount} en espera` : "2 Prioridad VIP",
-          enBanco: enBancoCount > 0 ? enBancoCount : 4,
-          finalizados: finCount > 0 ? finCount : 12,
+          enCola: enColaCount,
+          enColaSub: enColaCount > 0 ? `${enColaCount} en espera` : "En espera",
+          enBanco: enBancoCount,
+          finalizados: finCount,
         },
       });
     } catch (e) {
@@ -475,7 +492,7 @@ function LoginForm() {
                     <span className={`text-[8.5px] sm:text-[10px] mt-0.5 truncate ${
                       activeSector === "RECEPCION" ? "text-zinc-400" : "text-zinc-500"
                     }`}>
-                      Whapi WhatsApp
+                      {telemetry.recepcion.notificacionesSub}
                     </span>
                   </div>
 
