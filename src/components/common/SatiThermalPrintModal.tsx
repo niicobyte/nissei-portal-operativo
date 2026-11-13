@@ -30,6 +30,7 @@ export interface SatiComprobanteData {
   informeTecnico?: string;
   tecnico?: string;
   subtitulo?: string;
+  piePagina?: string;
 }
 
 interface SatiThermalPrintModalProps {
@@ -513,8 +514,8 @@ export function SatiThermalPrintModal({
 
             {/* Pie de comprobante */}
             <div className="border-t-2 border-black pt-1.5 text-center text-[9.5px] font-mono text-black uppercase">
-              <span className="thermal-label font-black">
-                Comprobante oficial · Nissei SATI
+              <span className="thermal-label font-black tracking-wide">
+                {data.piePagina || "|| COMPROBANTE DE RECEPCION ||"}
               </span>
             </div>
 
