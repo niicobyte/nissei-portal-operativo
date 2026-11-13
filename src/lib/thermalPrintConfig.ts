@@ -6,6 +6,7 @@ export interface ThermalPrintSettings {
   lengthMode: ThermalLengthMode;
   marginMm: number;
   offsetXMm: number;
+  offsetYMm: number;
   scalePct: number;
   highContrast: boolean;
 }
@@ -15,8 +16,9 @@ export const THERMAL_SETTINGS_STORAGE_KEY = "nissei_thermal_print_settings_v1";
 export const DEFAULT_THERMAL_PRINT_SETTINGS: ThermalPrintSettings = {
   paperProfile: "80_72",
   lengthMode: "auto",
-  marginMm: 1,
+  marginMm: 0, // 0mm para iniciar bien arriba sin espacio desperdiciado
   offsetXMm: 0,
+  offsetYMm: 0, // Ajuste fino vertical (+/- mm)
   scalePct: 100,
   highContrast: true, // Negro intenso por defecto para cabezales térmicos
 };
@@ -67,9 +69,10 @@ export function sanitizeThermalSettings(
     paperProfile,
     lengthMode,
     marginMm: clamp(Number(raw.marginMm), 0, 6, DEFAULT_THERMAL_PRINT_SETTINGS.marginMm),
-    offsetXMm: clamp(Number(raw.offsetXMm), -5, 5, DEFAULT_THERMAL_PRINT_SETTINGS.offsetXMm),
+    offsetXMm: clamp(Number(raw.offsetXMm), -8, 8, DEFAULT_THERMAL_PRINT_SETTINGS.offsetXMm),
+    offsetYMm: clamp(Number(raw.offsetYMm), -15, 15, DEFAULT_THERMAL_PRINT_SETTINGS.offsetYMm),
     scalePct: clamp(Number(raw.scalePct), 75, 130, DEFAULT_THERMAL_PRINT_SETTINGS.scalePct),
-    highContrast: Boolean(raw.highContrast),
+    highContrast: raw.highContrast !== undefined ? Boolean(raw.highContrast) : DEFAULT_THERMAL_PRINT_SETTINGS.highContrast,
   };
 }
 
@@ -112,6 +115,13 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
   const scaledInnerMm = (contentWidthMm / scale).toFixed(2);
   const heightRule = settings.lengthMode === "auto" ? "auto" : settings.lengthMode;
 
+  const offsetX = settings.offsetXMm || 0;
+  const offsetY = settings.offsetYMm || 0;
+  const transformRule =
+    offsetX !== 0 || offsetY !== 0
+      ? `translate(${offsetX}mm, ${offsetY}mm)`
+      : "none";
+
   return `
     @page {
       size: ${profile.pageWidthMm}mm ${heightRule};
@@ -129,9 +139,9 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         visibility: visible !important;
       }
 
-      /* 3. Posicionar el comprobante en la esquina superior izquierda exacta de la hoja térmica */
+      /* 3. Posicionar el comprobante en la parte superior exacta sin margen forzado */
       body.thermal-80mm-print #thermal-sticker-wrapper {
-        position: fixed !important;
+        position: absolute !important;
         left: 0 !important;
         top: 0 !important;
         right: 0 !important;
@@ -140,7 +150,7 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         margin: 0 auto !important;
         padding: 0 !important;
         overflow: visible !important;
-        transform: ${settings.offsetXMm !== 0 ? `translateX(${settings.offsetXMm}mm)` : "none"} !important;
+        transform: ${transformRule} !important;
         z-index: 999999 !important;
       }
 
@@ -149,7 +159,7 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         width: ${scaledInnerMm}mm !important;
         max-width: none !important;
         margin: 0 !important;
-        padding: 0.5mm !important;
+        padding: 0 !important;
         border: 0 !important;
         zoom: ${scale};
       }

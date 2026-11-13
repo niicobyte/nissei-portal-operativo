@@ -264,11 +264,11 @@ export function SatiThermalPrintModal({
               </div>
             </div>
 
-            {/* Escala y Centrado */}
-            <div className="grid grid-cols-2 gap-2.5">
+            {/* Escala y Centrados X / Y */}
+            <div className="grid grid-cols-3 gap-2">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Escala / Tamaño:</span>
+                  <span className="font-bold text-zinc-700">Escala:</span>
                   <span className="font-mono font-bold text-zinc-900">{thermalSettings.scalePct}%</span>
                 </div>
                 <input
@@ -284,19 +284,38 @@ export function SatiThermalPrintModal({
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Centrado horizontal (X):</span>
+                  <span className="font-bold text-zinc-700">Posición (X):</span>
                   <span className="font-mono font-bold text-zinc-900">
                     {thermalSettings.offsetXMm > 0 ? `+${thermalSettings.offsetXMm}` : thermalSettings.offsetXMm}mm
                   </span>
                 </div>
                 <input
                   type="range"
-                  min={-4}
-                  max={4}
+                  min={-6}
+                  max={6}
                   step={0.5}
                   value={thermalSettings.offsetXMm}
                   onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
                   className="w-full accent-zinc-900 cursor-pointer"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-zinc-700">Subir/Bajar (Y):</span>
+                  <span className="font-mono font-bold text-zinc-900">
+                    {thermalSettings.offsetYMm > 0 ? `+${thermalSettings.offsetYMm}` : thermalSettings.offsetYMm}mm
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={-10}
+                  max={10}
+                  step={1}
+                  value={thermalSettings.offsetYMm}
+                  onChange={(e) => updateThermalSetting("offsetYMm", Number(e.target.value))}
+                  className="w-full accent-zinc-900 cursor-pointer"
+                  title="Ajuste fino para subir más arriba o bajar el inicio del papel"
                 />
               </div>
             </div>
