@@ -1690,6 +1690,15 @@ export default function TecnicosDashboardPage() {
                   </div>
                 )}
 
+                {/* Garantía de Componentes (Solo en Montaje Finalizado / Para Entregar) */}
+                {effectiveIsFinalizado && (
+                  <div className="border-t-2 border-dashed border-black pt-1.5 mt-2 text-center">
+                    <span className="text-[9.5px] font-mono font-black text-black block leading-tight uppercase thermal-value">
+                      * Todos los componentes tienen 3 meses de garantía desde la fecha de compra.
+                    </span>
+                  </div>
+                )}
+
                 {/* Pie de Identificación */}
                 <div className="border-t-2 border-black pt-1.5 mt-2 text-center text-[9.5px] font-mono font-black text-black uppercase">
                   <span className="thermal-label font-black tracking-wide">
