@@ -87,29 +87,33 @@ export function SatiThermalPrintModal({
         .thermal-label {
           color: #000000 !important;
           -webkit-text-fill-color: #000000 !important;
-          font-weight: 800 !important;
+          font-weight: 900 !important;
           opacity: 1 !important;
         }
         .thermal-value {
           color: #000000 !important;
           -webkit-text-fill-color: #000000 !important;
-          font-weight: 800 !important;
+          font-weight: 900 !important;
           opacity: 1 !important;
         }
         .thermal-ultra-black {
           color: #000000 !important;
           -webkit-text-fill-color: #000000 !important;
-          -webkit-text-stroke: 0.35px #000000;
           font-weight: 900 !important;
         }
         .thermal-ultra-black-title {
           color: #000000 !important;
           -webkit-text-fill-color: #000000 !important;
-          -webkit-text-stroke: 0.6px #000000;
+          font-weight: 900 !important;
+        }
+        .thermal-ultra-mode,
+        .thermal-ultra-mode * {
+          color: #000000 !important;
+          -webkit-text-fill-color: #000000 !important;
           font-weight: 900 !important;
         }
         @media print {
-          /* En impresión térmica NADA debe usar tonos de gris (evita tramado de puntos) */
+          /* En impresión térmica NADA debe usar tonos de gris ni filtros CSS (evita hojas en blanco) */
           body.thermal-80mm-print,
           body.thermal-80mm-print #thermal-sticker-80mm,
           body.thermal-80mm-print #thermal-sticker-80mm * {
@@ -118,21 +122,24 @@ export function SatiThermalPrintModal({
             border-color: #000000 !important;
             opacity: 1 !important;
             text-shadow: none !important;
+            filter: none !important;
           }
           .thermal-label {
-            font-weight: 800 !important;
-            -webkit-text-stroke: 0.25px #000000 !important;
+            font-weight: 900 !important;
           }
           .thermal-value {
-            font-weight: 800 !important;
-            -webkit-text-stroke: 0.3px #000000 !important;
+            font-weight: 900 !important;
           }
           .thermal-ultra-black {
-            -webkit-text-stroke: 0.45px #000000 !important;
             font-weight: 900 !important;
           }
           .thermal-ultra-black-title {
-            -webkit-text-stroke: 0.75px #000000 !important;
+            font-weight: 900 !important;
+          }
+          .thermal-ultra-mode,
+          .thermal-ultra-mode * {
+            color: #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
             font-weight: 900 !important;
           }
         }
@@ -400,7 +407,7 @@ export function SatiThermalPrintModal({
           <div
             id="thermal-sticker-80mm"
             className={`w-full border ${isUltraBlack ? "border-2 border-black" : "border border-dashed border-zinc-300"} bg-white p-3.5 text-black print:w-full print:max-w-none print:border-0 print:p-0 print:pt-0 print:m-0 print:mt-0 space-y-2.5 print:space-y-1.5 ${
-              isUltraBlack ? "contrast-150" : ""
+              isUltraBlack ? "thermal-ultra-mode font-black" : ""
             }`}
             style={{
               zoom: thermalSettings.scalePct / 100,
@@ -408,12 +415,10 @@ export function SatiThermalPrintModal({
           >
             {/* Encabezado */}
             <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1 print:pt-0 print:mt-0`}>
-              <h1 className={`text-lg uppercase tracking-tight text-black thermal-ultra-black-title print:pt-0 print:mt-0 print:leading-none ${isUltraBlack ? "text-xl" : "font-black"}`}>
+              <h1 className={`text-lg uppercase tracking-tight text-black thermal-ultra-black-title print:pt-0 print:mt-0 print:leading-none ${isUltraBlack ? "text-xl font-black" : "font-black"}`}>
                 Nissei Post-Venta
               </h1>
-              <div className={`mt-1 inline-block px-2.5 py-0.5 font-mono text-[10.5px] uppercase text-black font-black border border-black ${
-                isUltraBlack ? "bg-zinc-200" : "bg-zinc-100"
-              }`}>
+              <div className="mt-1 inline-block px-2.5 py-0.5 font-mono text-[10.5px] uppercase text-black font-black border border-black bg-white">
                 {data.subtitulo || "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI"}
               </div>
             </div>
@@ -421,25 +426,25 @@ export function SatiThermalPrintModal({
             {/* Datos Principales */}
             <div className="text-[11.5px] space-y-2 font-mono text-black">
               <div className="flex justify-between items-center gap-2">
-                <span className="thermal-label uppercase">
+                <span className="thermal-label uppercase font-black">
                   Nº ORDEN:
                 </span>
-                <span className={`text-[14px] thermal-ultra-black font-black`}>
+                <span className="text-[14px] thermal-ultra-black font-black">
                   #{data.idOrden}
                 </span>
               </div>
 
               <div className="flex justify-between items-center gap-2">
-                <span className="thermal-label uppercase">
+                <span className="thermal-label uppercase font-black">
                   CÓDIGO PROD:
                 </span>
-                <span className="thermal-value">
+                <span className="thermal-value font-black">
                   {data.codigoProducto || "N/A"}
                 </span>
               </div>
 
               <div className="flex justify-between items-start gap-2 pt-0.5">
-                <span className="thermal-label uppercase shrink-0">
+                <span className="thermal-label uppercase font-black shrink-0">
                   CLIENTE:
                 </span>
                 <span className="text-right break-words leading-tight thermal-value font-black">
@@ -448,16 +453,16 @@ export function SatiThermalPrintModal({
               </div>
 
               <div className="flex justify-between items-start gap-2">
-                <span className="thermal-label uppercase shrink-0">
+                <span className="thermal-label uppercase font-black shrink-0">
                   EQUIPO:
                 </span>
-                <span className="text-right break-words leading-tight thermal-value">
+                <span className="text-right break-words leading-tight thermal-value font-black">
                   {data.equipo || "Equipo"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center gap-2">
-                <span className="thermal-label uppercase">
+                <span className="thermal-label uppercase font-black">
                   Nº SERIE:
                 </span>
                 <span className="thermal-value font-black">
@@ -467,17 +472,17 @@ export function SatiThermalPrintModal({
 
               {data.tecnico && (
                 <div className="flex justify-between items-center gap-2">
-                  <span className="thermal-label uppercase">
+                  <span className="thermal-label uppercase font-black">
                     TÉCNICO:
                   </span>
-                  <span className="thermal-value">
+                  <span className="thermal-value font-black">
                     {data.tecnico}
                   </span>
                 </div>
               )}
 
               <div className="flex justify-between items-center gap-2">
-                <span className="thermal-label uppercase">
+                <span className="thermal-label uppercase font-black">
                   ESTADO:
                 </span>
                 <span className="uppercase thermal-ultra-black border-b-2 border-black pb-0.5 font-black">
@@ -487,10 +492,10 @@ export function SatiThermalPrintModal({
 
               {data.accesorios && (
                 <div className="border-t-2 border-black border-dashed pt-1.5 flex justify-between items-start gap-2">
-                  <span className="thermal-label uppercase shrink-0">
+                  <span className="thermal-label uppercase font-black shrink-0">
                     ACCESORIOS:
                   </span>
-                  <span className="text-right break-words text-[11px] leading-tight thermal-value font-bold">
+                  <span className="text-right break-words text-[11px] leading-tight thermal-value font-black">
                     {data.accesorios}
                   </span>
                 </div>
@@ -500,7 +505,7 @@ export function SatiThermalPrintModal({
                 <span className="block mb-1 uppercase thermal-label font-black">
                   INFORME TÉCNICO:
                 </span>
-                <p className="text-[11px] font-mono leading-snug whitespace-pre-wrap break-words thermal-value font-bold">
+                <p className="text-[11px] font-mono leading-snug whitespace-pre-wrap break-words thermal-value font-black">
                   {data.informeTecnico || "Sin observaciones."}
                 </p>
               </div>

@@ -1411,7 +1411,7 @@ export default function TecnicosDashboardPage() {
               <div
                 id="thermal-sticker-80mm"
                 className={`w-full border border-dashed border-zinc-300 bg-white p-3 text-black print:w-full print:max-w-none print:border-0 print:p-[0.5mm] ${
-                  thermalSettings.highContrast ? "contrast-125" : ""
+                  thermalSettings.highContrast ? "font-black" : ""
                 }`}
                 style={{
                   zoom: thermalSettings.scalePct / 100,
