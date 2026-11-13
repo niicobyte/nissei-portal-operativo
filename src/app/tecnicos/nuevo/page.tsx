@@ -800,7 +800,7 @@ export default function NuevoIngresoMontajePage() {
       canal: salesChannel,
       tipo_servicio: tipoServicio,
       cantidadEquipos: safeCantidadEquipos,
-      tecnico: assignedTech,
+      tecnico: effectiveTecnico,
       prioridad: priority,
       fecha_montaje: assemblyDate,
       componentes: components,

@@ -1853,31 +1853,57 @@ export function formatMontajeWhatsAppMessage(params: {
   observaciones?: string;
 }): string {
   const cant = Math.max(1, Number(params.cantidadEquipos) || 1);
-  const compText = params.componentes
-    .map(
-      (c) =>
-        `• [${c.categoria}] ${c.descripcion} (SKU: ${c.sku} | S/N: ${
-          c.seriales || "A registrar en banco"
-        })`
-    )
+  const clienteNombre = (params.cliente || "").trim() || "Cliente Sin Asignar";
+  const servicioNombre =
+    params.tipo_servicio === "Montaje"
+      ? "Montaje de PC Completa"
+      : "Expansión / Upgrade de Notebook";
+
+  // Formatear fecha prometida a formato local DD/MM/AAAA si viene en YYYY-MM-DD
+  const rawFecha = params.fecha_montaje || "";
+  const partsFecha = rawFecha.split("-");
+  const fechaFormateada =
+    partsFecha.length === 3 && partsFecha[0].length === 4
+      ? `${partsFecha[2]}/${partsFecha[1]}/${partsFecha[0]}`
+      : rawFecha || "A definir";
+
+  // Formato visual y ordenado para la prioridad operativa
+  const prioUpper = (params.prioridad || "NORMAL").toUpperCase();
+  const prioBadge =
+    prioUpper === "URGENTE"
+      ? "🔴 URGENTE (Despacho en el día)"
+      : prioUpper === "EXPRESS"
+      ? "🟡 EXPRESS (Prioridad 24h)"
+      : "🟢 NORMAL (Cola estándar 48h)";
+
+  // Lista de componentes limpia: sin números de serie, agrupada con categoría y SKU
+  const compCount = params.componentes?.length || 0;
+  const compText = (params.componentes || [])
+    .map((c) => {
+      const catLabel = (c.categoria || "ITEM").replace(/_/g, " ").toUpperCase();
+      const skuLabel = c.sku ? `(SKU: ${c.sku})` : "";
+      return `  ▫️ [${catLabel}] ${c.descripcion} ${skuLabel}`.trimEnd();
+    })
     .join("\n");
 
   const obs = (params.observaciones || "").trim();
 
-  return `El montaje de *${params.cliente || "Cliente"}*, ha ingresado y finalizara en la brevedad posible:
+  return `🛠️ *NISSEI TALLER DE MONTAJES · NUEVO INGRESO*
+Se ha registrado el ingreso a taller para el cliente *${clienteNombre}*:
 
-*Nro. Registro / Interno:* ${params.nro_reg || "Pendiente"}
-*Vendedor Responsable:* ${params.vendedor} (${params.canal})
-*Servicio:* ${
-    params.tipo_servicio === "Montaje"
-      ? "Montaje de PC Completa"
-      : "Expansión / Upgrade de Notebook"
-  }
-*Cantidad de Equipos:* ${cant} ${cant === 1 ? "equipo" : "equipos"}
-*Técnico Responsable:* ${params.tecnico}
-*Prioridad:* ${params.prioridad}
-*Fecha Estimada de Entrega:* ${params.fecha_montaje}
+📋 *Nro. Registro / Interno:* ${params.nro_reg || "Pendiente"}
+👤 *Cliente:* ${clienteNombre}
+💼 *Vendedor Responsable:* ${params.vendedor || "No asignado"} (${params.canal || "Tienda"})
+⚙️ *Servicio:* ${servicioNombre}
+📦 *Cantidad:* ${cant} ${cant === 1 ? "equipo" : "equipos"}
+👨‍🔧 *Técnico Asignado:* ${params.tecnico || "Taller de Laboratorio"}
+⚡ *Prioridad:* ${prioBadge}
+📅 *Fecha Prometida de Entrega:* ${fechaFormateada}
 
-*Componentes a Procesar:*
-${compText || "(Sin componentes registrados aún)"}${obs ? `\n\n*Observaciones:* ${obs}` : ""}`;
+🧩 *Componentes de Hardware (${compCount} ${compCount === 1 ? "pieza" : "piezas"}):*
+${compText || "  (Sin componentes cargados aún)"}${
+    obs
+      ? `\n\n📝 *Observaciones / Instrucciones del Vendedor:*\n${obs}`
+      : ""
+  }`;
 }
