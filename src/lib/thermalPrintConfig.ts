@@ -69,8 +69,8 @@ export function sanitizeThermalSettings(
     paperProfile,
     lengthMode,
     marginMm: clamp(Number(raw.marginMm), 0, 6, DEFAULT_THERMAL_PRINT_SETTINGS.marginMm),
-    offsetXMm: clamp(Number(raw.offsetXMm), -8, 8, DEFAULT_THERMAL_PRINT_SETTINGS.offsetXMm),
-    offsetYMm: clamp(Number(raw.offsetYMm), -15, 15, DEFAULT_THERMAL_PRINT_SETTINGS.offsetYMm),
+    offsetXMm: clamp(Number(raw.offsetXMm), -10, 10, DEFAULT_THERMAL_PRINT_SETTINGS.offsetXMm),
+    offsetYMm: clamp(Number(raw.offsetYMm), -35, 15, DEFAULT_THERMAL_PRINT_SETTINGS.offsetYMm),
     scalePct: clamp(Number(raw.scalePct), 75, 130, DEFAULT_THERMAL_PRINT_SETTINGS.scalePct),
     highContrast: raw.highContrast !== undefined ? Boolean(raw.highContrast) : DEFAULT_THERMAL_PRINT_SETTINGS.highContrast,
   };
@@ -117,17 +117,25 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
 
   const offsetX = settings.offsetXMm || 0;
   const offsetY = settings.offsetYMm || 0;
-  const transformRule =
-    offsetX !== 0 || offsetY !== 0
-      ? `translate(${offsetX}mm, ${offsetY}mm)`
-      : "none";
 
   return `
     @page {
       size: ${profile.pageWidthMm}mm ${heightRule};
-      margin: ${settings.marginMm}mm;
+      margin: 0 !important;
+      margin-top: 0mm !important;
+      margin-bottom: 0mm !important;
+      margin-left: 0mm !important;
+      margin-right: 0mm !important;
     }
     @media print {
+      html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        height: auto !important;
+        min-height: 0 !important;
+        background: #ffffff !important;
+      }
+
       /* 1. Ocultar absolutamente todos los elementos en la página */
       body.thermal-80mm-print * {
         visibility: hidden !important;
@@ -143,14 +151,16 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
       body.thermal-80mm-print #thermal-sticker-wrapper {
         position: absolute !important;
         left: 0 !important;
-        top: 0 !important;
+        top: ${offsetY}mm !important;
         right: 0 !important;
         width: ${contentWidthMm}mm !important;
         max-width: ${contentWidthMm}mm !important;
         margin: 0 auto !important;
         padding: 0 !important;
+        padding-left: ${settings.marginMm}mm !important;
+        padding-right: ${settings.marginMm}mm !important;
         overflow: visible !important;
-        transform: ${transformRule} !important;
+        transform: ${offsetX !== 0 ? `translateX(${offsetX}mm)` : "none"} !important;
         z-index: 999999 !important;
       }
 
@@ -159,9 +169,22 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         width: ${scaledInnerMm}mm !important;
         max-width: none !important;
         margin: 0 !important;
+        margin-top: 0 !important;
         padding: 0 !important;
+        padding-top: 0 !important;
         border: 0 !important;
         zoom: ${scale};
+      }
+
+      body.thermal-80mm-print #thermal-sticker-80mm > div:first-child {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+      }
+
+      body.thermal-80mm-print #thermal-sticker-80mm h1 {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+        line-height: 1.1 !important;
       }
     }
   `;

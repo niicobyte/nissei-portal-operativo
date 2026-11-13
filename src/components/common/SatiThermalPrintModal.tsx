@@ -243,7 +243,7 @@ export function SatiThermalPrintModal({
 
               <div className="space-y-1">
                 <label className="block text-[11px] font-bold text-zinc-700">
-                  Márgenes:
+                  Márgenes laterales (X):
                 </label>
                 <div className="flex items-center gap-1">
                   {[0, 1, 2, 4].map((mm) => (
@@ -291,8 +291,8 @@ export function SatiThermalPrintModal({
                 </div>
                 <input
                   type="range"
-                  min={-6}
-                  max={6}
+                  min={-8}
+                  max={8}
                   step={0.5}
                   value={thermalSettings.offsetXMm}
                   onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
@@ -309,14 +309,37 @@ export function SatiThermalPrintModal({
                 </div>
                 <input
                   type="range"
-                  min={-10}
-                  max={10}
+                  min={-30}
+                  max={15}
                   step={1}
                   value={thermalSettings.offsetYMm}
                   onChange={(e) => updateThermalSetting("offsetYMm", Number(e.target.value))}
                   className="w-full accent-zinc-900 cursor-pointer"
-                  title="Ajuste fino para subir más arriba o bajar el inicio del papel"
+                  title="Desplaza el inicio verticalmente. Valores negativos (-15mm, -25mm) contrarrestan el avance en blanco de la impresora"
                 />
+                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetYMm", -20)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    Subir -20mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetYMm", -10)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    -10mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetYMm", 0)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    0mm
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -340,15 +363,23 @@ export function SatiThermalPrintModal({
               </label>
             </div>
 
-            {/* Tip operativo */}
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-900 space-y-1">
+            {/* Tip operativo y solución para espacio arriba en 3nStar / POS-80 */}
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-900 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold">
                 <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                <span>Configuración óptima de impresión:</span>
+                <span>¿Por qué la impresora deja espacio en blanco arriba? (Solución 3nStar / POS-80):</span>
               </div>
-              <p className="text-[10.5px] leading-snug">
-                En la ventana de impresión deje <strong>Márgenes: Ninguno</strong> y <strong>Escala: 100%</strong>. Los ajustes calibrados aquí se guardan automáticamente para futuras impresiones.
-              </p>
+              <ul className="text-[10.5px] leading-relaxed list-disc list-inside space-y-1 text-amber-950">
+                <li>
+                  <strong>En la ventana de Chrome:</strong> Dejar <strong>Escala: 100%</strong> (si está en 85% se achica y deja margen vacío) y <strong>Márgenes: Ninguno</strong>.
+                </li>
+                <li>
+                  <strong>Tamaño de papel en Chrome:</strong> Cambiar de <em>80(72.1) x 210 mm</em> a <strong>80 x Receipt</strong> o <strong>Continuous / Rollo</strong>. El tamaño <em>210 mm</em> es formato hoja fija y Windows le añade margen de cabecera obligatorio.
+                </li>
+                <li>
+                  <strong>Compensar avance de cabezal:</strong> En impresoras 3nStar, la cuchilla física está 20mm arriba del cabezal. Podés usar <strong>Subir/Bajar (Y)</strong> en <strong>-15mm</strong> o <strong>-20mm</strong> para que el texto comience pegado al borde cortado.
+                </li>
+              </ul>
             </div>
           </div>
         )}
@@ -368,7 +399,7 @@ export function SatiThermalPrintModal({
         >
           <div
             id="thermal-sticker-80mm"
-            className={`w-full border ${isUltraBlack ? "border-2 border-black" : "border border-dashed border-zinc-300"} bg-white p-3.5 text-black print:w-full print:max-w-none print:border-0 print:p-[0.5mm] space-y-2.5 ${
+            className={`w-full border ${isUltraBlack ? "border-2 border-black" : "border border-dashed border-zinc-300"} bg-white p-3.5 text-black print:w-full print:max-w-none print:border-0 print:p-0 print:pt-0 print:m-0 print:mt-0 space-y-2.5 print:space-y-1.5 ${
               isUltraBlack ? "contrast-150" : ""
             }`}
             style={{
@@ -376,8 +407,8 @@ export function SatiThermalPrintModal({
             }}
           >
             {/* Encabezado */}
-            <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2`}>
-              <h1 className={`text-lg uppercase tracking-tight text-black thermal-ultra-black-title ${isUltraBlack ? "text-xl" : "font-black"}`}>
+            <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1 print:pt-0 print:mt-0`}>
+              <h1 className={`text-lg uppercase tracking-tight text-black thermal-ultra-black-title print:pt-0 print:mt-0 print:leading-none ${isUltraBlack ? "text-xl" : "font-black"}`}>
                 Nissei Post-Venta
               </h1>
               <div className={`mt-1 inline-block px-2.5 py-0.5 font-mono text-[10.5px] uppercase text-black font-black border border-black ${
