@@ -84,7 +84,7 @@ function LoginForm() {
       ingresosHoy: 0,
       ingresosSub: "Hoy en ASU",
       notificaciones: 0,
-      notificacionesSub: "Whapi WhatsApp",
+      notificacionesSub: "Avisos al Cliente",
       listosEntrega: 0,
     },
     deposito: {
@@ -122,7 +122,7 @@ function LoginForm() {
           return f.includes(todayStr);
         }).length;
 
-        // Notificaciones reales enviadas por WhatsApp a clientes (órdenes que no son stock Danesa y fueron notificadas/recibidas en sucursal)
+        // Notificaciones reales enviadas a clientes (órdenes que no son stock Danesa y fueron notificadas/recibidas en sucursal)
         notifCount = recTickets.filter((t) => {
           const isDanesa = (t.cliente || "").toUpperCase().includes("DANESA");
           const recibido = Boolean(t.recibidoEnDeposito || checkins[t.idOrden]?.recibido);
@@ -170,7 +170,7 @@ function LoginForm() {
           ingresosHoy: hoyCount,
           ingresosSub: hoyCount > 0 ? "Registrados hoy" : "Hoy en ASU",
           notificaciones: notifCount,
-          notificacionesSub: notifCount > 0 ? "Enviadas Whapi" : "Sin pendientes",
+          notificacionesSub: notifCount > 0 ? "Avisos listos" : "Sin pendientes",
           listosEntrega: listosCount,
         },
         deposito: {
