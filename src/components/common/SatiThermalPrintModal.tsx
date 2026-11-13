@@ -544,70 +544,70 @@ export function SatiThermalPrintModal({
 
             {/* Datos Principales */}
             <div className="text-[11.5px] space-y-2 font-mono text-black">
-              <div className="flex justify-between items-center gap-2">
+              <div className="leading-snug">
                 <span className="thermal-label uppercase font-black">
                   Nº ORDEN:
-                </span>
-                <span className="text-[14px] thermal-ultra-black font-black">
+                </span>{" "}
+                <strong className="text-[14px] thermal-ultra-black font-black">
                   #{data.idOrden}
-                </span>
+                </strong>
               </div>
 
-              <div className="flex justify-between items-center gap-2">
+              <div className="leading-snug">
                 <span className="thermal-label uppercase font-black">
                   CÓDIGO PROD:
-                </span>
+                </span>{" "}
                 <span className="thermal-value font-black">
                   {data.codigoProducto || "N/A"}
                 </span>
               </div>
 
               {!isDanesa && (
-                <div className="flex justify-between items-start gap-2 pt-0.5">
-                  <span className="thermal-label uppercase font-black shrink-0">
+                <div className="leading-snug break-words">
+                  <span className="thermal-label uppercase font-black">
                     CLIENTE:
-                  </span>
-                  <span className="text-right break-words leading-tight thermal-value font-black">
+                  </span>{" "}
+                  <span className="thermal-value font-black">
                     {data.cliente || "Cliente"}
                   </span>
                 </div>
               )}
 
-              <div className="flex justify-between items-start gap-2">
-                <span className="thermal-label uppercase font-black shrink-0">
+              <div className="leading-snug break-words">
+                <span className="thermal-label uppercase font-black">
                   EQUIPO:
-                </span>
-                <span className="text-right break-words leading-tight thermal-value font-black">
+                </span>{" "}
+                <span className="thermal-value font-black">
                   {data.equipo || "Equipo"}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center gap-2">
+              <div className="leading-snug">
                 <span className="thermal-label uppercase font-black">
                   Nº SERIE:
-                </span>
-                <span className="thermal-value font-black text-right">
+                </span>{" "}
+                <span className="thermal-value font-black">
                   {data.serial || "S/N"}
                 </span>
               </div>
 
               {data.tecnico && (
-                <div className="flex justify-between items-center gap-2">
+                <div className="leading-snug">
                   <span className="thermal-label uppercase font-black">
                     TÉCNICO:
-                  </span>
-                  <span className="thermal-value font-black text-right">
+                  </span>{" "}
+                  <span className="thermal-value font-black">
                     {data.tecnico}
                   </span>
                 </div>
               )}
 
               {!isDanesa && (
-                <div className="flex justify-between items-center gap-2">
+                <div className="leading-snug">
                   <span className="thermal-label uppercase font-black">
                     ESTADO:
-                  </span>
-                  <span className="uppercase thermal-ultra-black border-b-2 border-black pb-0.5 font-black text-right">
+                  </span>{" "}
+                  <span className="uppercase thermal-ultra-black border-b-2 border-black pb-0.5 font-black">
                     {data.estado || "En Asignacion"}
                   </span>
                 </div>
