@@ -1362,6 +1362,7 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
                 showPrintOrdenModal.fallaReportada ||
                 "Sin observaciones.",
               subtitulo: "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI",
+              fechaIngreso: showPrintOrdenModal.fechaIngreso,
             }}
             onClose={() => setShowPrintOrdenModal(null)}
           />

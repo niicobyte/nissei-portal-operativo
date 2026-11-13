@@ -3073,6 +3073,7 @@ ${dictamen.accText}`;
               accesorios: showPrintModal.accesorios,
               informeTecnico: formatSatiSentenceCase(showPrintModal.mensaje),
               subtitulo: "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI",
+              fechaIngreso: showPrintModal.fechaIngreso,
             }}
             onClose={() => setShowPrintModal(null)}
           />

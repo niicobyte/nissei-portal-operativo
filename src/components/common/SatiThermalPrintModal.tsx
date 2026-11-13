@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Printer,
   SlidersHorizontal,
@@ -31,6 +31,68 @@ export interface SatiComprobanteData {
   tecnico?: string;
   subtitulo?: string;
   piePagina?: string;
+  fechaIngreso?: string;
+}
+
+function parseSatiDate(rawDate?: string | null): Date | null {
+  if (!rawDate) return null;
+  const clean = rawDate.trim();
+
+  // Formato DD/MM/YYYY o DD/MM/YYYY HH:mm
+  const dmyMatch = clean.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2}))?/);
+  if (dmyMatch) {
+    const day = parseInt(dmyMatch[1], 10);
+    const month = parseInt(dmyMatch[2], 10) - 1;
+    const year = parseInt(dmyMatch[3], 10);
+    const hours = dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 12;
+    const minutes = dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0;
+    const d = new Date(year, month, day, hours, minutes);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // Formato ISO YYYY-MM-DD
+  const isoMatch = clean.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (isoMatch) {
+    const year = parseInt(isoMatch[1], 10);
+    const month = parseInt(isoMatch[2], 10) - 1;
+    const day = parseInt(isoMatch[3], 10);
+    const d = new Date(year, month, day, 12, 0);
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  const parsed = new Date(clean);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatToDmy(date: Date): string {
+  const d = String(date.getDate()).padStart(2, "0");
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const y = date.getFullYear();
+  return `${d}/${m}/${y}`;
+}
+
+export function compute90DaysPolicy(rawFechaIngreso?: string | null): {
+  fechaIngresoStr: string;
+  fechaLimiteStr: string;
+  diasTranscurridos: number;
+  diasRestantes: number;
+  estaVencido: boolean;
+} {
+  const ingresoDate = parseSatiDate(rawFechaIngreso) || new Date();
+  const limiteDate = new Date(ingresoDate.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+  const hoy = new Date();
+  const diffTime = hoy.getTime() - ingresoDate.getTime();
+  const diasTranscurridos = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+  const diasRestantes = 90 - diasTranscurridos;
+
+  return {
+    fechaIngresoStr: formatToDmy(ingresoDate),
+    fechaLimiteStr: formatToDmy(limiteDate),
+    diasTranscurridos,
+    diasRestantes,
+    estaVencido: diasRestantes <= 0,
+  };
 }
 
 interface SatiThermalPrintModalProps {
@@ -46,6 +108,8 @@ export function SatiThermalPrintModal({
     DEFAULT_THERMAL_PRINT_SETTINGS
   );
   const [showThermalConfig, setShowThermalConfig] = useState(false);
+
+  const policy = useMemo(() => compute90DaysPolicy(data.fechaIngreso), [data.fechaIngreso]);
 
   useEffect(() => {
     setThermalSettings(getStoredThermalPrintSettings());
@@ -511,6 +575,39 @@ export function SatiThermalPrintModal({
                 <p className="text-[11px] font-mono leading-snug whitespace-pre-wrap break-words thermal-value font-black">
                   {data.informeTecnico || "Sin observaciones."}
                 </p>
+              </div>
+
+              {/* Control de Permanencia & Plazo de 90 Días para Depósito */}
+              <div className="border-t-2 border-black border-dashed pt-1.5 space-y-1">
+                <div className="flex justify-between items-center text-[10.5px] font-mono">
+                  <span className="thermal-label uppercase font-black shrink-0">
+                    INGRESO EN ASU:
+                  </span>
+                  <span className="thermal-value font-black text-right">
+                    {policy.fechaIngresoStr}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-[10.5px] font-mono">
+                  <span className="thermal-label uppercase font-black shrink-0">
+                    LÍMITE DEPÓSITO (90D):
+                  </span>
+                  <strong className="thermal-value font-black text-right border-b border-black">
+                    {policy.fechaLimiteStr}
+                  </strong>
+                </div>
+
+                <div className="text-[9px] font-mono leading-tight text-center pt-0.5 text-black">
+                  {policy.estaVencido ? (
+                    <div className="border-2 border-black py-0.5 px-1 font-black">
+                      ⚠️ PLAZO 90 DÍAS VENCIDO · REMITIR A DEPÓSITO
+                    </div>
+                  ) : (
+                    <span className="thermal-label font-bold">
+                      * Plazo de guarda en ASU: 90 días ({policy.diasRestantes}d restantes). Cumplido el plazo se remite al depósito.
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
