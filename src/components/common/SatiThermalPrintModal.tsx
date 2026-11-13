@@ -76,27 +76,63 @@ export function SatiThermalPrintModal({
     <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block animate-in fade-in">
       <style media="print">{buildThermalPrintCss(thermalSettings)}</style>
 
-      {/* Estilos especiales para ultra negro y aislamiento en impresión térmica */}
+      {/* Estilos especiales para ultra negro y cabezales térmicos POS */}
       <style>{`
+        /* Clase universal de negro puro y trazo nítido para impresión térmica */
+        .thermal-pure-black {
+          color: #000000 !important;
+          -webkit-text-fill-color: #000000 !important;
+          opacity: 1 !important;
+        }
+        .thermal-label {
+          color: #000000 !important;
+          -webkit-text-fill-color: #000000 !important;
+          font-weight: 800 !important;
+          opacity: 1 !important;
+        }
+        .thermal-value {
+          color: #000000 !important;
+          -webkit-text-fill-color: #000000 !important;
+          font-weight: 800 !important;
+          opacity: 1 !important;
+        }
         .thermal-ultra-black {
           color: #000000 !important;
+          -webkit-text-fill-color: #000000 !important;
           -webkit-text-stroke: 0.35px #000000;
-          font-weight: 800 !important;
+          font-weight: 900 !important;
         }
         .thermal-ultra-black-title {
           color: #000000 !important;
+          -webkit-text-fill-color: #000000 !important;
           -webkit-text-stroke: 0.6px #000000;
           font-weight: 900 !important;
         }
         @media print {
-          .thermal-ultra-black {
+          /* En impresión térmica NADA debe usar tonos de gris (evita tramado de puntos) */
+          body.thermal-80mm-print,
+          body.thermal-80mm-print #thermal-sticker-80mm,
+          body.thermal-80mm-print #thermal-sticker-80mm * {
             color: #000000 !important;
-            -webkit-text-stroke: 0.4px #000000 !important;
+            -webkit-text-fill-color: #000000 !important;
+            border-color: #000000 !important;
+            opacity: 1 !important;
+            text-shadow: none !important;
+          }
+          .thermal-label {
+            font-weight: 800 !important;
+            -webkit-text-stroke: 0.25px #000000 !important;
+          }
+          .thermal-value {
+            font-weight: 800 !important;
+            -webkit-text-stroke: 0.3px #000000 !important;
+          }
+          .thermal-ultra-black {
+            -webkit-text-stroke: 0.45px #000000 !important;
             font-weight: 900 !important;
           }
           .thermal-ultra-black-title {
-            color: #000000 !important;
-            -webkit-text-stroke: 0.7px #000000 !important;
+            -webkit-text-stroke: 0.75px #000000 !important;
             font-weight: 900 !important;
           }
         }
@@ -322,111 +358,107 @@ export function SatiThermalPrintModal({
           >
             {/* Encabezado */}
             <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2`}>
-              <h1 className={`text-lg uppercase tracking-tight text-black ${isUltraBlack ? "thermal-ultra-black-title text-xl" : "font-black"}`}>
+              <h1 className={`text-lg uppercase tracking-tight text-black thermal-ultra-black-title ${isUltraBlack ? "text-xl" : "font-black"}`}>
                 Nissei Post-Venta
               </h1>
-              <div className={`mt-1 inline-block px-2.5 py-0.5 font-mono text-[10px] uppercase text-black ${
-                isUltraBlack
-                  ? "border border-black font-black bg-zinc-100"
-                  : "bg-zinc-100 font-bold"
+              <div className={`mt-1 inline-block px-2.5 py-0.5 font-mono text-[10.5px] uppercase text-black font-black border border-black ${
+                isUltraBlack ? "bg-zinc-200" : "bg-zinc-100"
               }`}>
                 {data.subtitulo || "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI"}
               </div>
             </div>
 
             {/* Datos Principales */}
-            <div className="text-[11px] space-y-1.5 font-mono text-black">
+            <div className="text-[11.5px] space-y-2 font-mono text-black">
               <div className="flex justify-between items-center gap-2">
-                <span className={isUltraBlack ? "thermal-ultra-black uppercase" : "text-zinc-600 font-semibold"}>
+                <span className="thermal-label uppercase">
                   Nº ORDEN:
                 </span>
-                <span className={`text-[13px] ${isUltraBlack ? "thermal-ultra-black text-[14px]" : "font-black"}`}>
+                <span className={`text-[14px] thermal-ultra-black font-black`}>
                   #{data.idOrden}
                 </span>
               </div>
 
               <div className="flex justify-between items-center gap-2">
-                <span className={isUltraBlack ? "thermal-ultra-black uppercase" : "text-zinc-600 font-semibold"}>
+                <span className="thermal-label uppercase">
                   CÓDIGO PROD:
                 </span>
-                <span className={isUltraBlack ? "thermal-ultra-black" : "font-bold"}>
+                <span className="thermal-value">
                   {data.codigoProducto || "N/A"}
                 </span>
               </div>
 
               <div className="flex justify-between items-start gap-2 pt-0.5">
-                <span className={isUltraBlack ? "thermal-ultra-black uppercase shrink-0" : "text-zinc-600 font-semibold shrink-0"}>
+                <span className="thermal-label uppercase shrink-0">
                   CLIENTE:
                 </span>
-                <span className={`text-right break-words leading-tight ${isUltraBlack ? "thermal-ultra-black" : "font-bold"}`}>
+                <span className="text-right break-words leading-tight thermal-value font-black">
                   {data.cliente || "Cliente"}
                 </span>
               </div>
 
               <div className="flex justify-between items-start gap-2">
-                <span className={isUltraBlack ? "thermal-ultra-black uppercase shrink-0" : "text-zinc-600 font-semibold shrink-0"}>
+                <span className="thermal-label uppercase shrink-0">
                   EQUIPO:
                 </span>
-                <span className={`text-right break-words leading-tight ${isUltraBlack ? "thermal-ultra-black" : "font-semibold"}`}>
+                <span className="text-right break-words leading-tight thermal-value">
                   {data.equipo || "Equipo"}
                 </span>
               </div>
 
               <div className="flex justify-between items-center gap-2">
-                <span className={isUltraBlack ? "thermal-ultra-black uppercase" : "text-zinc-600 font-semibold"}>
+                <span className="thermal-label uppercase">
                   Nº SERIE:
                 </span>
-                <span className={isUltraBlack ? "thermal-ultra-black" : "font-bold"}>
+                <span className="thermal-value font-black">
                   {data.serial || "S/N"}
                 </span>
               </div>
 
               {data.tecnico && (
                 <div className="flex justify-between items-center gap-2">
-                  <span className={isUltraBlack ? "thermal-ultra-black uppercase" : "text-zinc-600 font-semibold"}>
+                  <span className="thermal-label uppercase">
                     TÉCNICO:
                   </span>
-                  <span className={isUltraBlack ? "thermal-ultra-black" : "font-semibold"}>
+                  <span className="thermal-value">
                     {data.tecnico}
                   </span>
                 </div>
               )}
 
               <div className="flex justify-between items-center gap-2">
-                <span className={isUltraBlack ? "thermal-ultra-black uppercase" : "text-zinc-600 font-semibold"}>
+                <span className="thermal-label uppercase">
                   ESTADO:
                 </span>
-                <span className={`uppercase ${isUltraBlack ? "thermal-ultra-black border-b border-black pb-0.5" : "font-black"}`}>
+                <span className="uppercase thermal-ultra-black border-b-2 border-black pb-0.5 font-black">
                   {data.estado || "En Asignacion"}
                 </span>
               </div>
 
               {data.accesorios && (
-                <div className={`border-t ${isUltraBlack ? "border-black border-dashed" : "border-zinc-300 border-dashed"} pt-1.5 flex justify-between items-start gap-2`}>
-                  <span className={isUltraBlack ? "thermal-ultra-black uppercase shrink-0" : "text-zinc-600 font-semibold shrink-0"}>
+                <div className="border-t-2 border-black border-dashed pt-1.5 flex justify-between items-start gap-2">
+                  <span className="thermal-label uppercase shrink-0">
                     ACCESORIOS:
                   </span>
-                  <span className={`text-right break-words text-[10.5px] leading-tight ${isUltraBlack ? "thermal-ultra-black" : "font-semibold"}`}>
+                  <span className="text-right break-words text-[11px] leading-tight thermal-value font-bold">
                     {data.accesorios}
                   </span>
                 </div>
               )}
 
-              <div className={`border-t ${isUltraBlack ? "border-black border-dashed" : "border-zinc-300 border-dashed"} pt-1.5`}>
-                <span className={`block mb-0.5 uppercase ${isUltraBlack ? "thermal-ultra-black" : "text-zinc-600 font-bold"}`}>
+              <div className="border-t-2 border-black border-dashed pt-1.5">
+                <span className="block mb-1 uppercase thermal-label font-black">
                   INFORME TÉCNICO:
                 </span>
-                <p className={`text-[10.5px] font-sans leading-snug whitespace-pre-wrap break-words ${
-                  isUltraBlack ? "thermal-ultra-black font-bold" : "text-zinc-800"
-                }`}>
+                <p className="text-[11px] font-mono leading-snug whitespace-pre-wrap break-words thermal-value font-bold">
                   {data.informeTecnico || "Sin observaciones."}
                 </p>
               </div>
             </div>
 
             {/* Pie de comprobante */}
-            <div className={`border-t ${isUltraBlack ? "border-black" : "border-zinc-300 border-dashed"} pt-1.5 text-center text-[9px] font-mono text-black uppercase`}>
-              <span className={isUltraBlack ? "thermal-ultra-black" : "font-semibold text-zinc-600"}>
+            <div className="border-t-2 border-black pt-1.5 text-center text-[9.5px] font-mono text-black uppercase">
+              <span className="thermal-label font-black">
                 Comprobante oficial · Nissei SATI
               </span>
             </div>

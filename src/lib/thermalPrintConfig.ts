@@ -18,7 +18,7 @@ export const DEFAULT_THERMAL_PRINT_SETTINGS: ThermalPrintSettings = {
   marginMm: 1,
   offsetXMm: 0,
   scalePct: 100,
-  highContrast: false,
+  highContrast: true, // Negro intenso por defecto para cabezales térmicos
 };
 
 export const THERMAL_PROFILE_META: Record<
