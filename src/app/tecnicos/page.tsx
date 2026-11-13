@@ -104,6 +104,7 @@ export default function TecnicosDashboardPage() {
   const [vendedorFilter, setVendedorFilter] = useState<string>("TODOS");
   const [thermalSettings, setThermalSettings] = useState<ThermalPrintSettings>(DEFAULT_THERMAL_PRINT_SETTINGS);
   const [showThermalConfig, setShowThermalConfig] = useState(false);
+  const [overrideStickerType, setOverrideStickerType] = useState<"auto" | "nuevo" | "finalizado">("auto");
   const draftHydratedRef = useRef(false);
 
   // Carga reactiva de datos reales desde MySQL + LocalStorage y resincronización automática al enfocar ventana
@@ -204,6 +205,7 @@ export default function TecnicosDashboardPage() {
   useEffect(() => {
     if (selectedOrderForCert) {
       document.body.classList.add("thermal-80mm-print");
+      setOverrideStickerType("auto");
     } else {
       document.body.classList.remove("thermal-80mm-print");
     }
@@ -484,6 +486,25 @@ export default function TecnicosDashboardPage() {
 
   const activeThermalMeta = THERMAL_PROFILE_META[thermalSettings.paperProfile];
   const activeThermalContentMm = getThermalEffectiveContentMm(thermalSettings);
+
+  // Detección inteligente de estado: Nuevo Ingreso vs Montaje Finalizado
+  const isOrderFinalizado = selectedOrderForCert
+    ? selectedOrderForCert.estado === "Entregado" ||
+      selectedOrderForCert.estado === "Rev. Cerrado" ||
+      selectedOrderForCert.etapa === "LISTO_ENTREGA" ||
+      (Number(selectedOrderForCert.progreso) || 0) >= 100
+    : false;
+
+  const isExpansion = selectedOrderForCert?.tipo_servicio === "Expansion";
+
+  const effectiveIsFinalizado =
+    overrideStickerType === "auto"
+      ? isOrderFinalizado
+      : overrideStickerType === "finalizado";
+
+  const stickerHeaderTitle = effectiveIsFinalizado
+    ? (isExpansion ? "Expansión Finalizada" : "Montaje Finalizado")
+    : (isExpansion ? "Nueva Expansión" : "Nuevo Montaje");
 
   const stickerObservaciones = selectedOrderForCert
     ? getRealObservaciones(selectedOrderForCert.observaciones)
@@ -1268,7 +1289,7 @@ export default function TecnicosDashboardPage() {
               <div className="min-w-0">
                 <h2 className="text-base font-black text-zinc-900 flex items-center gap-2">
                   <Printer className="w-4 h-4 text-zinc-700" />
-                  <span>Sticker de Montaje · {activeThermalMeta.pageWidthMm}mm</span>
+                  <span>Sticker: {stickerHeaderTitle} · {activeThermalMeta.pageWidthMm}mm</span>
                 </h2>
                 <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
                   {activeThermalMeta.shortLabel} ({activeThermalContentMm}mm útil) · {thermalSettings.scalePct}% · {thermalSettings.highContrast ? "Negro Intenso ON" : "Estándar"}
@@ -1317,6 +1338,53 @@ export default function TecnicosDashboardPage() {
                   </button>
                 </div>
 
+                {/* Tipo de Comprobante / Título (Detección automática + selección manual) */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-[11px] font-bold text-zinc-700">
+                      Tipo de Comprobante / Título:
+                    </label>
+                    <span className="text-[10px] font-mono text-zinc-500">
+                      Detectado: {isOrderFinalizado ? "Finalizado" : "Nuevo Ingreso"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setOverrideStickerType("auto")}
+                      className={`px-2 py-1.5 rounded-lg text-[10.5px] font-semibold border text-center transition-colors cursor-pointer ${
+                        overrideStickerType === "auto"
+                          ? "bg-zinc-900 text-white border-zinc-900"
+                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                      }`}
+                    >
+                      Automático ({isOrderFinalizado ? "Finalizado" : "Nuevo"})
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOverrideStickerType("nuevo")}
+                      className={`px-2 py-1.5 rounded-lg text-[10.5px] font-semibold border text-center transition-colors cursor-pointer ${
+                        overrideStickerType === "nuevo"
+                          ? "bg-zinc-900 text-white border-zinc-900"
+                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                      }`}
+                    >
+                      {isExpansion ? "Nueva Expansión" : "Nuevo Montaje"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOverrideStickerType("finalizado")}
+                      className={`px-2 py-1.5 rounded-lg text-[10.5px] font-semibold border text-center transition-colors cursor-pointer ${
+                        overrideStickerType === "finalizado"
+                          ? "bg-zinc-900 text-white border-zinc-900"
+                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                      }`}
+                    >
+                      {isExpansion ? "Expansión Finalizada" : "Montaje Finalizado"}
+                    </button>
+                  </div>
+                </div>
+
                 {/* Ancho de papel */}
                 <div className="space-y-1">
                   <label className="block text-[11px] font-bold text-zinc-700">
@@ -1356,11 +1424,10 @@ export default function TecnicosDashboardPage() {
                       }
                       className="w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-[11px] font-medium text-zinc-900 outline-none focus:border-zinc-900"
                     >
-                      <option value="auto">Rollo continuo (Auto)</option>
-                      <option value="100mm">Etiqueta 100mm</option>
-                      <option value="120mm">Etiqueta 120mm</option>
-                      <option value="150mm">Etiqueta 150mm</option>
-                      <option value="80mm">Etiqueta 80mm</option>
+                      <option value="auto">Rollo continuo (Recomendado - Auto)</option>
+                      <option value="120mm">Etiqueta 120mm (Stickers precortados)</option>
+                      <option value="150mm">Etiqueta 150mm (Stickers precortados)</option>
+                      <option value="200mm">Etiqueta 200mm (Stickers precortados)</option>
                     </select>
                   </div>
 
@@ -1486,21 +1553,24 @@ export default function TecnicosDashboardPage() {
                   </label>
                 </div>
 
-                {/* Tip operativo y solución para espacio arriba en 3nStar / POS-80 */}
+                {/* Tip operativo y solución para espacio arriba y saltos en 3nStar / POS-80 */}
                 <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-900 space-y-1.5">
                   <div className="flex items-center gap-1.5 font-bold">
                     <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                    <span>¿Por qué la impresora deja espacio en blanco arriba? (Solución 3nStar / POS-80):</span>
+                    <span>Solución a saltos en blanco y espacio arriba (3nStar / POS-80):</span>
                   </div>
                   <ul className="text-[10.5px] leading-relaxed list-disc list-inside space-y-1 text-amber-950">
                     <li>
-                      <strong>En la ventana de Chrome:</strong> Dejar <strong>Escala: 100%</strong> (si está en 85% se achica y deja margen vacío) y <strong>Márgenes: Ninguno</strong>.
+                      <strong>Evitar saltos en blanco en el medio:</strong> Dejá siempre <strong>Largo de corte: Rollo continuo (Auto)</strong>. Las etiquetas fijas cortan la lista de componentes a la mitad.
                     </li>
                     <li>
-                      <strong>Tamaño de papel en Chrome:</strong> Cambiar de <em>80(72.1) x 210 mm</em> a <strong>80 x Receipt</strong> o <strong>Continuous / Rollo</strong>. El tamaño <em>210 mm</em> es formato hoja fija y Windows le añade margen de cabecera obligatorio.
+                      <strong>En la ventana de Chrome:</strong> Dejar <strong>Escala: 100%</strong> y <strong>Márgenes: Ninguno</strong>.
                     </li>
                     <li>
-                      <strong>Compensar avance de cabezal:</strong> En impresoras 3nStar, la cuchilla física está 20mm arriba del cabezal. Podés usar <strong>Subir/Bajar (Y)</strong> en <strong>-15mm</strong> o <strong>-20mm</strong> para que el texto comience pegado al borde cortado.
+                      <strong>Tamaño de papel en Chrome:</strong> Cambiar de <em>80(72.1) x 210 mm</em> a <strong>80 x Receipt</strong> o <strong>Continuous / Rollo</strong> para evitar que Windows divida en hojas fijas de 210mm.
+                    </li>
+                    <li>
+                      <strong>Compensar avance de cabezal:</strong> En impresoras 3nStar, podés usar <strong>Subir/Bajar (Y)</strong> en <strong>-10mm</strong> a <strong>-20mm</strong> para que el texto comience pegado al borde cortado.
                     </li>
                   </ul>
                 </div>
@@ -1529,10 +1599,10 @@ export default function TecnicosDashboardPage() {
                   zoom: thermalSettings.scalePct / 100,
                 }}
               >
-                {/* Encabezado Compacto */}
+                {/* Encabezado Compacto Dinámico (Nuevo Montaje vs Montaje Finalizado) */}
                 <div className={`text-center ${thermalSettings.highContrast ? "border-b-[3px]" : "border-b-2"} border-black pb-1.5 print:pb-1 print:pt-0 print:mt-0`}>
                   <h1 className="text-sm font-black tracking-wider uppercase text-black thermal-label print:pt-0 print:mt-0 print:leading-none">
-                    Montaje Finalizado
+                    {stickerHeaderTitle}
                   </h1>
                 </div>
 
@@ -1623,7 +1693,7 @@ export default function TecnicosDashboardPage() {
                 {/* Pie de Identificación */}
                 <div className="border-t-2 border-black pt-1.5 mt-2 text-center text-[9.5px] font-mono font-black text-black uppercase">
                   <span className="thermal-label font-black tracking-wide">
-                    || ETIQUETA DE MONTAJE Y ENTREGA ||
+                    || {effectiveIsFinalizado ? "ETIQUETA DE MONTAJE Y ENTREGA" : "ETIQUETA DE INGRESO A TALLER"} ||
                   </span>
                 </div>
               </div>

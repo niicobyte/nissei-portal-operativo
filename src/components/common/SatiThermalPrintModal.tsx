@@ -241,11 +241,10 @@ export function SatiThermalPrintModal({
                   }
                   className="w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-[11px] font-medium text-zinc-900 outline-none focus:border-zinc-900"
                 >
-                  <option value="auto">Rollo continuo (Auto)</option>
-                  <option value="100mm">Etiqueta 100mm</option>
-                  <option value="120mm">Etiqueta 120mm</option>
-                  <option value="150mm">Etiqueta 150mm</option>
-                  <option value="80mm">Etiqueta 80mm</option>
+                  <option value="auto">Rollo continuo (Recomendado - Auto)</option>
+                  <option value="120mm">Etiqueta 120mm (Stickers precortados)</option>
+                  <option value="150mm">Etiqueta 150mm (Stickers precortados)</option>
+                  <option value="200mm">Etiqueta 200mm (Stickers precortados)</option>
                 </select>
               </div>
 
@@ -371,21 +370,24 @@ export function SatiThermalPrintModal({
               </label>
             </div>
 
-            {/* Tip operativo y solución para espacio arriba en 3nStar / POS-80 */}
+            {/* Tip operativo y solución para espacio arriba y saltos en 3nStar / POS-80 */}
             <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-900 space-y-1.5">
               <div className="flex items-center gap-1.5 font-bold">
                 <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                <span>¿Por qué la impresora deja espacio en blanco arriba? (Solución 3nStar / POS-80):</span>
+                <span>Solución a saltos en blanco y espacio arriba (3nStar / POS-80):</span>
               </div>
               <ul className="text-[10.5px] leading-relaxed list-disc list-inside space-y-1 text-amber-950">
                 <li>
-                  <strong>En la ventana de Chrome:</strong> Dejar <strong>Escala: 100%</strong> (si está en 85% se achica y deja margen vacío) y <strong>Márgenes: Ninguno</strong>.
+                  <strong>Evitar saltos en blanco en el medio:</strong> Dejá siempre <strong>Largo de corte: Rollo continuo (Auto)</strong>. Las etiquetas fijas cortan el comprobante a la mitad.
                 </li>
                 <li>
-                  <strong>Tamaño de papel en Chrome:</strong> Cambiar de <em>80(72.1) x 210 mm</em> a <strong>80 x Receipt</strong> o <strong>Continuous / Rollo</strong>. El tamaño <em>210 mm</em> es formato hoja fija y Windows le añade margen de cabecera obligatorio.
+                  <strong>En la ventana de Chrome:</strong> Dejar <strong>Escala: 100%</strong> y <strong>Márgenes: Ninguno</strong>.
                 </li>
                 <li>
-                  <strong>Compensar avance de cabezal:</strong> En impresoras 3nStar, la cuchilla física está 20mm arriba del cabezal. Podés usar <strong>Subir/Bajar (Y)</strong> en <strong>-15mm</strong> o <strong>-20mm</strong> para que el texto comience pegado al borde cortado.
+                  <strong>Tamaño de papel en Chrome:</strong> Cambiar de <em>80(72.1) x 210 mm</em> a <strong>80 x Receipt</strong> o <strong>Continuous / Rollo</strong> para evitar que Windows divida en hojas fijas de 210mm.
+                </li>
+                <li>
+                  <strong>Compensar avance de cabezal:</strong> En impresoras 3nStar, podés usar <strong>Subir/Bajar (Y)</strong> en <strong>-10mm</strong> a <strong>-20mm</strong> para que el texto comience pegado al borde cortado.
                 </li>
               </ul>
             </div>

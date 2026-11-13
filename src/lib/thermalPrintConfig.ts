@@ -1,5 +1,5 @@
 export type ThermalPaperProfile = "80_72" | "80_76" | "58_48";
-export type ThermalLengthMode = "auto" | "80mm" | "100mm" | "120mm" | "150mm";
+export type ThermalLengthMode = "auto" | "100mm" | "120mm" | "150mm" | "200mm";
 
 export interface ThermalPrintSettings {
   paperProfile: ThermalPaperProfile;
@@ -59,11 +59,17 @@ export function sanitizeThermalSettings(
     raw.paperProfile && raw.paperProfile in THERMAL_PROFILE_META
       ? raw.paperProfile
       : DEFAULT_THERMAL_PRINT_SETTINGS.paperProfile;
-  const validLengths: ThermalLengthMode[] = ["auto", "80mm", "100mm", "120mm", "150mm"];
+
+  // Lista de longitudes permitidas
+  // NOTA CRÍTICA: "80mm" fue removido porque los usuarios lo seleccionaban confundiéndolo con el ancho del rollo (80mm),
+  // lo cual forzaba un corte de página rígido a 80mm de alto, generando un salto en blanco en el medio de los componentes.
+  // Cualquier valor "80mm" o inválido se normaliza automáticamente a "auto" (rollo continuo).
+  const validLengths: ThermalLengthMode[] = ["auto", "100mm", "120mm", "150mm", "200mm"];
+  const rawLength = String(raw.lengthMode || "");
   const lengthMode: ThermalLengthMode =
-    raw.lengthMode && validLengths.includes(raw.lengthMode)
-      ? raw.lengthMode
-      : DEFAULT_THERMAL_PRINT_SETTINGS.lengthMode;
+    rawLength === "80mm" || !validLengths.includes(rawLength as ThermalLengthMode)
+      ? "auto"
+      : (rawLength as ThermalLengthMode);
 
   return {
     paperProfile,
@@ -113,7 +119,8 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
   const contentWidthMm = getThermalEffectiveContentMm(settings);
   const scale = Math.max(0.75, Math.min(1.3, settings.scalePct / 100));
   const scaledInnerMm = (contentWidthMm / scale).toFixed(2);
-  const heightRule = settings.lengthMode === "auto" ? "auto" : settings.lengthMode;
+  const isAutoLength = !settings.lengthMode || settings.lengthMode === "auto" || (settings.lengthMode as string) === "80mm";
+  const heightRule = isAutoLength ? "auto" : settings.lengthMode;
 
   const offsetX = settings.offsetXMm || 0;
   const offsetY = settings.offsetYMm || 0;
@@ -162,6 +169,8 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         overflow: visible !important;
         transform: ${offsetX !== 0 ? `translateX(${offsetX}mm)` : "none"} !important;
         z-index: 999999 !important;
+        page-break-inside: auto !important;
+        break-inside: auto !important;
       }
 
       body.thermal-80mm-print #thermal-sticker-80mm {
@@ -174,6 +183,13 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         padding-top: 0 !important;
         border: 0 !important;
         zoom: ${scale};
+        page-break-inside: auto !important;
+        break-inside: auto !important;
+      }
+
+      body.thermal-80mm-print #thermal-sticker-80mm li {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
       }
 
       body.thermal-80mm-print #thermal-sticker-80mm > div:first-child {
