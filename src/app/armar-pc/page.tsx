@@ -150,6 +150,8 @@ export default function ArmarPcPresupuestadorPage() {
   const [copiedSuccess, setCopiedSuccess] = useState<boolean>(false);
   const [activeTabSlot, setActiveTabSlot] = useState<HardwarePresupuestoItem["categoria"] | "TODO">("PROCESADOR");
   const [catalogSearchTerm, setCatalogSearchTerm] = useState<string>("");
+  const [selectedBrand, setSelectedBrand] = useState<string>("TODAS");
+  const [displayLimit, setDisplayLimit] = useState<number>(60);
   const [onlyCompatible, setOnlyCompatible] = useState<boolean>(true);
 
   // Inicialización de vendedores
@@ -243,6 +245,18 @@ export default function ArmarPcPresupuestadorPage() {
   const totalPresupuestoUsd = totalHardwareUsd + costoMontajeUsd;
   const totalPresupuestoPyg = Math.round(totalPresupuestoUsd * tipoCambio);
 
+  // Marcas disponibles en la categoría activa
+  const marcasDisponibles = useMemo(() => {
+    const pool = catalogoCompleto.filter(
+      (item) => activeTabSlot === "TODO" || item.categoria === activeTabSlot
+    );
+    const brands = new Set<string>();
+    pool.forEach((i) => {
+      if (i.marca && i.marca.trim()) brands.add(i.marca.trim().toUpperCase());
+    });
+    return ["TODAS", ...Array.from(brands).sort()];
+  }, [catalogoCompleto, activeTabSlot]);
+
   // Filtrado del catálogo en pantalla
   const catalogoFiltrado = useMemo(() => {
     return catalogoCompleto.filter((item) => {
@@ -250,11 +264,16 @@ export default function ArmarPcPresupuestadorPage() {
         return false;
       }
 
+      if (selectedBrand !== "TODAS" && item.marca?.toUpperCase() !== selectedBrand) {
+        return false;
+      }
+
       if (catalogSearchTerm.trim()) {
         const q = catalogSearchTerm.toLowerCase();
         const matchSku = item.sku.toLowerCase().includes(q);
         const matchDesc = item.descripcion.toLowerCase().includes(q);
-        if (!matchSku && !matchDesc) return false;
+        const matchMarca = item.marca ? item.marca.toLowerCase().includes(q) : false;
+        if (!matchSku && !matchDesc && !matchMarca) return false;
       }
 
       if (onlyCompatible) {
@@ -277,7 +296,7 @@ export default function ArmarPcPresupuestadorPage() {
 
       return true;
     });
-  }, [catalogoCompleto, activeTabSlot, catalogSearchTerm, onlyCompatible, currentCpu, currentMb]);
+  }, [catalogoCompleto, activeTabSlot, catalogSearchTerm, selectedBrand, onlyCompatible, currentCpu, currentMb]);
 
   // Generación de resumen de texto para cotización
   const generarTextoPresupuesto = () => {
@@ -557,7 +576,11 @@ export default function ArmarPcPresupuestadorPage() {
                   <button
                     key={slot.categoria}
                     type="button"
-                    onClick={() => setActiveTabSlot(slot.categoria)}
+                    onClick={() => {
+                      setActiveTabSlot(slot.categoria);
+                      setSelectedBrand("TODAS");
+                      setDisplayLimit(60);
+                    }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
                       isSelected
                         ? "bg-zinc-900 text-white font-bold shadow-xs"
@@ -574,7 +597,11 @@ export default function ArmarPcPresupuestadorPage() {
               })}
               <button
                 type="button"
-                onClick={() => setActiveTabSlot("TODO")}
+                onClick={() => {
+                  setActiveTabSlot("TODO");
+                  setSelectedBrand("TODAS");
+                  setDisplayLimit(60);
+                }}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                   activeTabSlot === "TODO"
                     ? "bg-zinc-900 text-white font-bold shadow-xs"
@@ -586,23 +613,69 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
           </div>
 
-          {/* Buscador en Catálogo */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
-            <input
-              type="text"
-              value={catalogSearchTerm}
-              onChange={(e) => setCatalogSearchTerm(e.target.value)}
-              placeholder="Buscar por SKU, marca, modelo, procesador..."
-              className="w-full bg-white border border-zinc-200 rounded-lg pl-9 pr-3.5 py-2 text-xs text-zinc-900 outline-none focus:border-zinc-900 transition-colors shadow-2xs"
-            />
-            {catalogSearchTerm && (
+          {/* Buscador en Catálogo & Selector de Marca */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div className="sm:col-span-2 relative">
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                value={catalogSearchTerm}
+                onChange={(e) => {
+                  setCatalogSearchTerm(e.target.value);
+                  setDisplayLimit(60);
+                }}
+                placeholder="Buscar por SKU, modelo, descripción..."
+                className="w-full bg-white border border-zinc-200 rounded-lg pl-9 pr-8 py-2 text-xs text-zinc-900 outline-none focus:border-zinc-900 transition-colors shadow-2xs"
+              />
+              {catalogSearchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setCatalogSearchTerm("")}
+                  className="absolute right-3 top-2 text-xs text-zinc-400 hover:text-zinc-700"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            <div>
+              <select
+                value={selectedBrand}
+                onChange={(e) => {
+                  setSelectedBrand(e.target.value);
+                  setDisplayLimit(60);
+                }}
+                className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-2 text-xs font-semibold text-zinc-800 outline-none focus:border-zinc-900 transition-colors shadow-2xs cursor-pointer"
+              >
+                <option value="TODAS">
+                  {marcasDisponibles.length > 1
+                    ? `Todas las marcas (${marcasDisponibles.length - 1})`
+                    : "Todas las marcas"}
+                </option>
+                {marcasDisponibles
+                  .filter((m) => m !== "TODAS")
+                  .map((b) => (
+                    <option key={b} value={b}>
+                      {b}
+                    </option>
+                  ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Contador y Estado de Filtro */}
+          <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1">
+            <span>
+              Mostrando {Math.min(catalogoFiltrado.length, displayLimit)} de{" "}
+              <strong>{catalogoFiltrado.length}</strong> componentes encontrados
+            </span>
+            {selectedBrand !== "TODAS" && (
               <button
                 type="button"
-                onClick={() => setCatalogSearchTerm("")}
-                className="absolute right-3 top-2 text-xs text-zinc-400 hover:text-zinc-700"
+                onClick={() => setSelectedBrand("TODAS")}
+                className="text-zinc-700 font-semibold hover:underline"
               >
-                ✕
+                Limpiar marca ({selectedBrand})
               </button>
             )}
           </div>
@@ -626,84 +699,108 @@ export default function ArmarPcPresupuestadorPage() {
                 )}
               </div>
             ) : (
-              catalogoFiltrado.map((item) => {
-                const isSelected = selectedComponents.some((c) => c.sku === item.sku);
-                const precioPyg = Math.round(item.precioUsd * tipoCambio);
+              <>
+                {catalogoFiltrado.slice(0, displayLimit).map((item) => {
+                  const isSelected = selectedComponents.some((c) => c.sku === item.sku);
+                  const precioPyg = Math.round(item.precioUsd * tipoCambio);
 
-                return (
-                  <div
-                    key={item.sku}
-                    className={`p-3.5 transition-colors flex items-center justify-between gap-3 ${
-                      isSelected
-                        ? "bg-zinc-50/90 border-l-4 border-l-zinc-900"
-                        : "hover:bg-zinc-50/60"
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                        <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
-                          SKU {item.sku}
-                        </span>
-                        <span className="text-[10px] font-mono text-zinc-500 font-semibold uppercase">
-                          {item.categoria}
-                        </span>
-                        {item.socket && item.socket !== "UNIVERSAL" && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200 font-mono font-semibold">
-                            {item.socket}
+                  return (
+                    <div
+                      key={item.sku}
+                      className={`p-3.5 transition-colors flex items-center justify-between gap-3 ${
+                        isSelected
+                          ? "bg-zinc-50/90 border-l-4 border-l-zinc-900"
+                          : "hover:bg-zinc-50/60"
+                      }`}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
+                            SKU {item.sku}
                           </span>
-                        )}
-                        {item.ramType && item.ramType !== "UNIVERSAL" && (
-                          <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 font-mono font-semibold">
-                            {item.ramType}
+                          {item.marca && (
+                            <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-800 border border-zinc-300">
+                              {item.marca}
+                            </span>
+                          )}
+                          <span className="text-[10px] font-mono text-zinc-500 font-semibold uppercase">
+                            {item.categoria}
                           </span>
-                        )}
-                        {item.tdpWatts ? (
-                          <span className="text-[9px] text-zinc-400 font-mono">
-                            {item.tdpWatts}W
-                          </span>
-                        ) : null}
+                          {item.socket && item.socket !== "UNIVERSAL" && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200 font-mono font-semibold">
+                              {item.socket}
+                            </span>
+                          )}
+                          {item.ramType && item.ramType !== "UNIVERSAL" && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 font-mono font-semibold">
+                              {item.ramType}
+                            </span>
+                          )}
+                          {item.tdpWatts ? (
+                            <span className="text-[9px] text-zinc-400 font-mono">
+                              {item.tdpWatts}W
+                            </span>
+                          ) : null}
+                          {item.potenciaWatts ? (
+                            <span className="text-[9px] text-emerald-700 font-mono font-bold bg-emerald-50 border border-emerald-200 px-1 rounded">
+                              {item.potenciaWatts}W
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <h4 className="text-xs font-semibold text-zinc-800 line-clamp-2 leading-relaxed">
+                          {item.descripcion}
+                        </h4>
+
+                        <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-1">
+                          <span>Garantía: {item.garantiaMeses} meses</span>
+                          {item.hasIGpu === false && (
+                            <span className="text-amber-700 font-medium">
+                              ⚠️ Requiere placa de video dedicada
+                            </span>
+                          )}
+                        </div>
                       </div>
 
-                      <h4 className="text-xs font-semibold text-zinc-800 line-clamp-2 leading-relaxed">
-                        {item.descripcion}
-                      </h4>
-
-                      <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-1">
-                        <span>Garantía: {item.garantiaMeses} meses</span>
-                        {item.hasIGpu === false && (
-                          <span className="text-amber-700 font-medium">
-                            ⚠️ Requiere placa de video dedicada
+                      {/* Precios y Botón de Selección */}
+                      <div className="text-right shrink-0 flex items-center gap-3">
+                        <div>
+                          <span className="text-sm font-extrabold font-mono text-zinc-900 block">
+                            US$ {item.precioUsd.toLocaleString()}
                           </span>
-                        )}
+                          <span className="text-[10px] font-mono text-zinc-500 block">
+                            ₲ {precioPyg.toLocaleString("es-PY")}
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleSelectComponent(item)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                            isSelected
+                              ? "bg-zinc-900 text-white shadow-xs"
+                              : "bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200"
+                          }`}
+                        >
+                          {isSelected ? "Agregado ✓" : "+ Agregar"}
+                        </button>
                       </div>
                     </div>
+                  );
+                })}
 
-                    {/* Precios y Botón de Selección */}
-                    <div className="text-right shrink-0 flex items-center gap-3">
-                      <div>
-                        <span className="text-sm font-extrabold font-mono text-zinc-900 block">
-                          US$ {item.precioUsd.toLocaleString()}
-                        </span>
-                        <span className="text-[10px] font-mono text-zinc-500 block">
-                          ₲ {precioPyg.toLocaleString("es-PY")}
-                        </span>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleSelectComponent(item)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                          isSelected
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200"
-                        }`}
-                      >
-                        {isSelected ? "Agregado ✓" : "+ Agregar"}
-                      </button>
-                    </div>
+                {catalogoFiltrado.length > displayLimit && (
+                  <div className="p-3 text-center bg-zinc-50 border-t border-zinc-100">
+                    <button
+                      type="button"
+                      onClick={() => setDisplayLimit((prev) => prev + 60)}
+                      className="px-4 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200 shadow-2xs cursor-pointer transition-colors"
+                    >
+                      Cargar más componentes (+{catalogoFiltrado.length - displayLimit} restantes)
+                    </button>
                   </div>
-                );
-              })
+                )}
+              </>
             )}
           </div>
         </section>

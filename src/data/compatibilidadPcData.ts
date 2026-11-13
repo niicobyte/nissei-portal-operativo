@@ -1,12 +1,14 @@
 // Motor de Compatibilidad y Catálogo de Presupuestos de PC - NISSEI Taller de Montajes
 import { CATALOGO_MONTAJE_PC, ComponenteMontaje } from "./montajesData";
+import catalogoNisseiRaw from "./catalogoNisseiHardware.json";
 
-export type SocketType = "LGA1700" | "LGA1851" | "AM4" | "AM5" | "UNIVERSAL";
+export type SocketType = "LGA1700" | "LGA1851" | "AM4" | "AM5" | "LGA1200" | "LGA1151" | "UNIVERSAL";
 export type MemoryType = "DDR4" | "DDR5" | "UNIVERSAL";
 export type FormFactor = "ATX" | "MATX" | "EATX" | "UNIVERSAL";
 
 export interface HardwarePresupuestoItem {
   sku: string;
+  marca?: string;
   descripcion: string;
   categoria:
     | "PROCESADOR"
@@ -191,12 +193,19 @@ export function enriquecerComponente(c: ComponenteMontaje): HardwarePresupuestoI
   };
 }
 
-// Catálogo base enriquecido a partir de CATALOGO_MONTAJE_PC
+// Catálogo base enriquecido a partir de la base de datos oficial de NISSEI y CATALOGO_MONTAJE_PC
+const skusNissei = new Set((catalogoNisseiRaw as HardwarePresupuestoItem[]).map((i) => i.sku));
+const montajesAdicionales = CATALOGO_MONTAJE_PC
+  .filter((c) => !skusNissei.has(c.sku))
+  .map(enriquecerComponente);
+
 export const CATALOGO_PRESUPUESTO_OFICIAL: HardwarePresupuestoItem[] = [
-  ...CATALOGO_MONTAJE_PC.map(enriquecerComponente),
+  ...(catalogoNisseiRaw as unknown as HardwarePresupuestoItem[]),
+  ...montajesAdicionales,
   // Cooler stock estándar
   {
     sku: "STOCK-COOLER",
+    marca: "ORIGINAL",
     descripcion: "COOLER DE FÁBRICA / STOCK (INCLUIDO CON PROCESADOR)",
     categoria: "REFRIGERACION",
     precioUsd: 0,
