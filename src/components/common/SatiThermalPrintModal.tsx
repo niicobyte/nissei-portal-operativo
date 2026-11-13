@@ -634,7 +634,7 @@ export function SatiThermalPrintModal({
               </div>
 
               {/* Control de Permanencia & Plazo de 90 Días para Depósito (Solo Clientes Particulares) */}
-              {!isDanesa ? (
+              {!isDanesa && (
                 <div className="border-t-2 border-black border-dashed pt-1.5 space-y-1">
                   <div className="flex justify-between items-center text-[10.5px] font-mono">
                     <span className="thermal-label uppercase font-black shrink-0">
@@ -679,28 +679,17 @@ export function SatiThermalPrintModal({
                     )}
                   </div>
                 </div>
-              ) : (
-                /* Ficha de Control de Stock Propio (Danesa S.A.) - Solo Ámbito: STOCK */
-                <div className="border-t-2 border-black border-dashed pt-1.5 flex justify-between items-center text-[10.5px] font-mono">
-                  <span className="thermal-label uppercase font-black shrink-0">
-                    ÁMBITO:
-                  </span>
-                  <span className="thermal-value font-black text-right">
-                    STOCK
-                  </span>
-                </div>
               )}
             </div>
 
-            {/* Pie de comprobante */}
-            <div className="border-t-2 border-black pt-1.5 text-center text-[9.5px] font-mono text-black uppercase">
-              <span className="thermal-label font-black tracking-wide">
-                {data.piePagina ||
-                  (isDanesa
-                    ? "|| COMPROBANTE OFICIAL · STOCK PROPIO ||"
-                    : "|| COMPROBANTE DE RECEPCION ||")}
-              </span>
-            </div>
+            {/* Pie de comprobante (Solo Clientes Particulares) */}
+            {!isDanesa && (
+              <div className="border-t-2 border-black pt-1.5 text-center text-[9.5px] font-mono text-black uppercase">
+                <span className="thermal-label font-black tracking-wide">
+                  {data.piePagina || "|| COMPROBANTE DE RECEPCION ||"}
+                </span>
+              </div>
+            )}
 
           </div>
         </div>
