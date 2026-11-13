@@ -36,6 +36,8 @@ import {
   getPendingDirtyMontajeIds,
   getStoredVendedores,
   addCustomVendedor,
+  getStoredTecnicos,
+  addCustomTecnico,
   getStoredSkuCatalog,
   fetchSkuCatalogFromMySQL,
   saveSkusToCatalogOnline,
@@ -75,7 +77,8 @@ interface TecnicosNuevoDraft {
   customDesc: string;
   customCategory: ComponenteMontaje["categoria"];
   customSerial: string;
-  assignedTech: "Nicolas Solis" | "Magaly Yegros" | "Juan Ronnebeck";
+  assignedTech: string;
+  customTech?: string;
   priority: "NORMAL" | "EXPRESS" | "URGENTE";
   assemblyDate: string;
   observations: string;
@@ -85,8 +88,9 @@ export default function NuevoIngresoMontajePage() {
   const router = useRouter();
   const skuFileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Lista dinámica de vendedores y catálogo maestro de SKUs sincronizados con MySQL
+  // Lista dinámica de vendedores, técnicos y catálogo maestro de SKUs sincronizados con MySQL
   const [listaVendedores, setListaVendedores] = useState<string[]>(LISTA_VENDEDORES_REALES);
+  const [listaTecnicos, setListaTecnicos] = useState<string[]>(LISTA_TECNICOS_MONTAJE);
   const [skuCatalog, setSkuCatalog] = useState<SkuCatalogItem[]>(() =>
     CATALOGO_HARDWARE_REAL.map((c) => ({
       sku: c.sku,
@@ -98,6 +102,7 @@ export default function NuevoIngresoMontajePage() {
 
   useEffect(() => {
     setListaVendedores(getStoredVendedores());
+    setListaTecnicos(getStoredTecnicos());
     setSkuCatalog(getStoredSkuCatalog());
 
     Promise.all([
@@ -105,6 +110,7 @@ export default function NuevoIngresoMontajePage() {
       fetchSkuCatalogFromMySQL().catch(() => []),
     ]).then(([orders, dbCatalog]) => {
       setListaVendedores(getStoredVendedores());
+      setListaTecnicos(getStoredTecnicos());
       const fromOrders = Array.isArray(orders) ? extractSkusFromOrders(orders) : [];
       setSkuCatalog((prev) =>
         mergeSkuCatalogItems(
@@ -178,9 +184,8 @@ export default function NuevoIngresoMontajePage() {
   >(null);
 
   // 4. APARTADO DE TÉCNICO RESPONSABLE & PRIORIDAD
-  const [assignedTech, setAssignedTech] = useState<"Nicolas Solis" | "Magaly Yegros" | "Juan Ronnebeck">(
-    LISTA_TECNICOS_MONTAJE[0]
-  );
+  const [assignedTech, setAssignedTech] = useState<string>(LISTA_TECNICOS_MONTAJE[0]);
+  const [customTech, setCustomTech] = useState<string>("");
   const [priority, setPriority] = useState<"NORMAL" | "EXPRESS" | "URGENTE">("NORMAL");
 
   // Opciones con estilo CleanSelect
@@ -218,10 +223,13 @@ export default function NuevoIngresoMontajePage() {
           { value: "OTROS", label: "Otro Accesorio" },
         ];
 
-  const tecnicoOptions: CleanSelectOption[] = LISTA_TECNICOS_MONTAJE.map((t) => ({
-    value: t,
-    label: t,
-  }));
+  const tecnicoOptions = useMemo<CleanSelectOption[]>(
+    () => [
+      ...listaTecnicos.map((t) => ({ value: t, label: t })),
+      { value: "OTRO", label: "+ Otro técnico (especificar)" },
+    ],
+    [listaTecnicos]
+  );
 
   const prioridadOptions: CleanSelectOption[] = [
     { value: "NORMAL", label: "NORMAL (Cola estándar 48h)" },
@@ -252,6 +260,7 @@ export default function NuevoIngresoMontajePage() {
     customCategory,
     customSerial,
     assignedTech,
+    customTech,
     priority,
     assemblyDate,
     observations,
@@ -289,6 +298,7 @@ export default function NuevoIngresoMontajePage() {
         if (saved.customCategory) setCustomCategory(saved.customCategory);
         if (typeof saved.customSerial === "string") setCustomSerial(saved.customSerial);
         if (saved.assignedTech) setAssignedTech(saved.assignedTech);
+        if (typeof saved.customTech === "string") setCustomTech(saved.customTech);
         if (saved.priority) setPriority(saved.priority);
         if (saved.assemblyDate) setAssemblyDate(saved.assemblyDate);
         if (typeof saved.observations === "string") setObservations(saved.observations);
@@ -317,6 +327,7 @@ export default function NuevoIngresoMontajePage() {
     customCategory,
     customSerial,
     assignedTech,
+    customTech,
     priority,
     assemblyDate,
     observations,
@@ -575,6 +586,17 @@ export default function NuevoIngresoMontajePage() {
     }
   };
 
+  // Confirmar y registrar nuevo técnico de laboratorio en la lista permanente
+  const handleConfirmCustomTech = () => {
+    const clean = customTech.trim();
+    if (clean) {
+      const updated = addCustomTecnico(clean);
+      setListaTecnicos(updated);
+      setAssignedTech(clean);
+      setCustomTech("");
+    }
+  };
+
   // Manejo de la tecla Enter para confirmar casilla y pasar a la siguiente sin bugear el formulario
   const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     if (e.key !== "Enter") return;
@@ -710,6 +732,16 @@ export default function NuevoIngresoMontajePage() {
       }
     }
 
+    let effectiveTecnico = assignedTech;
+    if (assignedTech === "OTRO") {
+      const cleanCustom = customTech.trim() || "Técnico de Laboratorio";
+      effectiveTecnico = cleanCustom;
+      if (customTech.trim()) {
+        const updatedTech = addCustomTecnico(cleanCustom);
+        setListaTecnicos(updatedTech);
+      }
+    }
+
     const safeCantidadEquipos = Math.max(1, Number(cantidadEquipos) || 1);
     const cleanReg = nroRegistroInterno.replace(/[^0-9]/g, "") || String(Math.floor(100000 + Math.random() * 900000));
     const prefix = tipoServicio === "Montaje" ? "MNT" : "EXP";
@@ -746,7 +778,7 @@ export default function NuevoIngresoMontajePage() {
       estado: "En Proceso",
       tipo_servicio: tipoServicio,
       cantidadEquipos: safeCantidadEquipos,
-      tecnico: assignedTech,
+      tecnico: effectiveTecnico,
       etapa: "ARMADO_MECANICO",
       progreso: 35,
       prioridad: priority,
@@ -833,6 +865,7 @@ export default function NuevoIngresoMontajePage() {
   // Mensaje para previsualización en vivo y notificación al grupo de WhatsApp
   const generateWhatsAppMessage = () => {
     const effectiveVendedor = salesAgent === "OTRO" ? customSalesAgent.trim() || "Asesor Comercial" : salesAgent;
+    const effectiveTecnico = assignedTech === "OTRO" ? customTech.trim() || "Técnico de Laboratorio" : assignedTech;
     return formatMontajeWhatsAppMessage({
       cliente: clientName,
       nro_reg: nroRegistroInterno,
@@ -840,7 +873,7 @@ export default function NuevoIngresoMontajePage() {
       canal: salesChannel,
       tipo_servicio: tipoServicio,
       cantidadEquipos: cantidadEquipos,
-      tecnico: assignedTech,
+      tecnico: effectiveTecnico,
       prioridad: priority,
       fecha_montaje: assemblyDate,
       componentes: components,
@@ -1499,21 +1532,57 @@ export default function NuevoIngresoMontajePage() {
                 <Wrench className="w-5 h-5 text-zinc-400" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                {/* Técnico Responsable: Nicolas Solis, Magaly Yegros, Juan Ronnebeck */}
+              <div className={`grid grid-cols-1 sm:grid-cols-2 ${assignedTech === "OTRO" ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3 sm:gap-4`}>
+                {/* Técnico Responsable */}
                 <div>
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Técnico Responsable *
                   </label>
                   <CleanSelect
                     value={assignedTech}
-                    onChange={(val) => setAssignedTech(val as any)}
+                    onChange={(val) => setAssignedTech(val)}
                     options={tecnicoOptions}
                     fullWidth
                     dropdownWidth="w-full"
+                    searchable
+                    searchPlaceholder="Buscar técnico..."
                     className="w-full justify-between"
                   />
                 </div>
+
+                {/* Técnico personalizado si seleccionó OTRO */}
+                {assignedTech === "OTRO" && (
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs text-zinc-600 font-semibold block">
+                        Nombre del Técnico *
+                      </label>
+                      <span className="text-[10px] text-zinc-400 font-mono">
+                        Enter confirma
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        id="input-custom-tech"
+                        type="text"
+                        required
+                        value={customTech}
+                        onChange={(e) => setCustomTech(e.target.value)}
+                        onBlur={handleConfirmCustomTech}
+                        placeholder="Ej: Carlos Silva"
+                        className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none text-zinc-900"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleConfirmCustomTech}
+                        className="px-2.5 py-2 text-xs font-semibold bg-zinc-900 hover:bg-black text-white rounded-lg whitespace-nowrap shadow-xs cursor-pointer"
+                        title="Guardar técnico en la lista"
+                      >
+                        Añadir
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Prioridad */}
                 <div>
@@ -1615,7 +1684,9 @@ export default function NuevoIngresoMontajePage() {
 
                 <div className="pt-2 flex justify-between">
                   <span className="text-zinc-500">Técnico Responsable:</span>
-                  <span className="text-zinc-900 font-bold">{assignedTech}</span>
+                  <span className="text-zinc-900 font-bold">
+                    {assignedTech === "OTRO" ? customTech || "No especificado" : assignedTech}
+                  </span>
                 </div>
 
                 <div className="pt-2 flex justify-between">
@@ -1659,7 +1730,8 @@ export default function NuevoIngresoMontajePage() {
               </button>
 
               <p className="text-[11px] text-zinc-400 text-center">
-                La orden ingresará a la cola activa del taller bajo la responsabilidad de {assignedTech}.
+                La orden ingresará a la cola activa del taller bajo la responsabilidad de{" "}
+                {assignedTech === "OTRO" ? customTech || "nuevo técnico" : assignedTech}.
               </p>
             </div>
 

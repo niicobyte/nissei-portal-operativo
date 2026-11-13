@@ -30,7 +30,7 @@ export interface OrdenMontajeReal {
   estado: "Entregado" | "Rev. Cerrado" | "En Proceso" | "Pendiente";
   tipo_servicio: "Montaje" | "Expansion";
   cantidadEquipos: number; // 1 o 2 PCs completas para el cliente (ej. Prychen Wei 2, J.W.F. 2, Opalo 2)
-  tecnico: "Nicolas Solis" | "Magaly Yegros" | "Juan Ronnebeck" | "Sin Asignar";
+  tecnico: string;
   etapa: "PENDIENTE_PIEZAS" | "ARMADO_MECANICO" | "ESTRES_TERMICO" | "LISTO_ENTREGA";
   progreso: number;
   prioridad: "NORMAL" | "EXPRESS" | "URGENTE";
@@ -98,7 +98,46 @@ export const LISTA_TECNICOS_MONTAJE = [
   "Nicolas Solis",
   "Magaly Yegros",
   "Juan Ronnebeck"
-] as const;
+];
+
+export const TECNICOS_STORAGE_KEY = "nissei_tecnicos_montajes_v1";
+
+export function getStoredTecnicos(): string[] {
+  if (typeof window === "undefined") return [...LISTA_TECNICOS_MONTAJE];
+  try {
+    const raw = localStorage.getItem(TECNICOS_STORAGE_KEY);
+    if (!raw) return [...LISTA_TECNICOS_MONTAJE];
+    const list = JSON.parse(raw);
+    if (Array.isArray(list) && list.length > 0) {
+      const merged = Array.from(
+        new Set([...LISTA_TECNICOS_MONTAJE, ...list.map((t) => String(t).trim()).filter(Boolean)])
+      );
+      return merged;
+    }
+  } catch (e) {
+    console.warn("Error leyendo técnicos de localStorage:", e);
+  }
+  return [...LISTA_TECNICOS_MONTAJE];
+}
+
+export function addCustomTecnico(nuevoTecnico: string): string[] {
+  const clean = nuevoTecnico.trim();
+  if (!clean || clean.toUpperCase() === "OTRO") return getStoredTecnicos();
+  const current = getStoredTecnicos();
+  const exists = current.some((t) => t.toLowerCase() === clean.toLowerCase());
+  if (!exists) {
+    const updated = [...current, clean];
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(TECNICOS_STORAGE_KEY, JSON.stringify(updated));
+      } catch (e) {
+        console.warn("Error guardando nuevo técnico:", e);
+      }
+    }
+    return updated;
+  }
+  return current;
+}
 
 // Catálogo específico para MONTAJE DE PC COMPLETA (CPU, Placa Madre, RAM Desktop, GPU, Fuente, Gabinete, Cooler, SSD)
 export const CATALOGO_MONTAJE_PC: ComponenteMontaje[] = [

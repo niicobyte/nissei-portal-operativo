@@ -34,6 +34,7 @@ import {
   updateMontajeEstado,
   resetMontajes,
   LISTA_TECNICOS_MONTAJE,
+  getStoredTecnicos,
   MONTAJES_WHATSAPP_GROUP_ID,
   formatMontajeWhatsAppMessage,
   OrdenMontajeReal
@@ -335,6 +336,18 @@ export default function TecnicosDashboardPage() {
     return parts.length > 0 ? parts.join(" · ") : m.observaciones;
   };
 
+  // Lista dinámica de técnicos (incluye técnicos oficiales y nuevos agregados)
+  const listaTecnicos = useMemo(() => {
+    const fromStorage = getStoredTecnicos();
+    const set = new Set<string>(fromStorage);
+    montajes.forEach((m) => {
+      if (m.tecnico && m.tecnico !== "Sin Asignar") {
+        set.add(m.tecnico.trim());
+      }
+    });
+    return Array.from(set);
+  }, [montajes]);
+
   // Métricas avanzadas basadas estrictamente en la tabla real montaje.csv
   const metrics = useMemo(() => {
     const totalOrdenes = montajes.length;
@@ -364,8 +377,8 @@ export default function TecnicosDashboardPage() {
       .map(([nombre, data]) => ({ nombre, ...data }))
       .sort((a, b) => b.ordenes - a.ordenes);
 
-    // Carga por técnico asignado en el portal operativo (Nicolas Solis, Magaly Yegros, Juan Ronnebeck)
-    const cargaPorTecnico = LISTA_TECNICOS_MONTAJE.map((tNombre) => {
+    // Carga por técnico asignado en el portal operativo
+    const cargaPorTecnico = listaTecnicos.map((tNombre) => {
       const asignadas = montajes.filter((m) => m.tecnico === tNombre);
       const montajesCount = asignadas.filter((m) => m.tipo_servicio === "Montaje").length;
       const expansionesCount = asignadas.filter((m) => m.tipo_servicio === "Expansion").length;
@@ -419,8 +432,8 @@ export default function TecnicosDashboardPage() {
   const tecnicoFilterOptions: CleanSelectOption[] = useMemo(() => [
     { value: "TODOS", label: "Todos los Técnicos" },
     { value: "Sin Asignar", label: `Sin Asignar (${metrics.sinAsignarCount})` },
-    ...LISTA_TECNICOS_MONTAJE.map((t) => ({ value: t, label: t })),
-  ], [metrics.sinAsignarCount]);
+    ...listaTecnicos.map((t) => ({ value: t, label: t })),
+  ], [metrics.sinAsignarCount, listaTecnicos]);
 
   const vendedorFilterOptions: CleanSelectOption[] = useMemo(() => [
     { value: "TODOS", label: "Todos los Vendedores" },
@@ -925,7 +938,7 @@ export default function TecnicosDashboardPage() {
                               onChange={(val) => {
                                 if (val) handleAssignTecnico(order.id, val);
                               }}
-                              options={LISTA_TECNICOS_MONTAJE.map((t) => ({
+                              options={listaTecnicos.map((t) => ({
                                 value: t,
                                 label: t,
                               }))}
@@ -947,7 +960,7 @@ export default function TecnicosDashboardPage() {
                                   if (val) handleAssignTecnico(order.id, val);
                                 }}
                                 placeholder="Asignar técnico..."
-                                options={LISTA_TECNICOS_MONTAJE.map((t) => ({
+                                options={listaTecnicos.map((t) => ({
                                   value: t,
                                   label: t,
                                 }))}
