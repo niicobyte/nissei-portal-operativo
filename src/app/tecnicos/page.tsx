@@ -25,6 +25,7 @@ import {
   AlertCircle,
   SlidersHorizontal,
   Info,
+  Wrench,
 } from "lucide-react";
 import {
   getStoredMontajes,
@@ -792,6 +793,15 @@ export default function TecnicosDashboardPage() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
+              <Link
+                href="/armar-pc"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-cyan-800 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg shadow-2xs transition-colors"
+                title="Configurador de PC y Presupuestos con Hardware Compatible"
+              >
+                <Wrench className="w-3.5 h-3.5 text-cyan-600" />
+                <span>Armar PC &amp; Presupuestos</span>
+              </Link>
+
               <Link
                 href="/tecnicos/nuevo"
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-zinc-900 hover:bg-black rounded-lg shadow-sm transition-colors"

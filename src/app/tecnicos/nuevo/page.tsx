@@ -305,6 +305,28 @@ export default function NuevoIngresoMontajePage() {
         setRestoredDraftBanner(true);
       }
     }
+
+    // Importación automática de presupuesto generado en /armar-pc si existe
+    if (typeof window !== "undefined") {
+      try {
+        const rawPresupuesto = sessionStorage.getItem("nissei_presupuesto_export_v1");
+        if (rawPresupuesto) {
+          const pres = JSON.parse(rawPresupuesto);
+          if (pres && Array.isArray(pres.componentes) && pres.componentes.length > 0) {
+            if (pres.cliente) setClientName(pres.cliente);
+            if (pres.vendedor) setSalesAgent(pres.vendedor);
+            if (pres.tipoServicio) setTipoServicio(pres.tipoServicio);
+            if (pres.observaciones) setObservations(pres.observaciones);
+            setComponents(pres.componentes);
+            sessionStorage.removeItem("nissei_presupuesto_export_v1");
+            setRestoredDraftBanner(true);
+          }
+        }
+      } catch (err) {
+        console.warn("Error importando presupuesto a nuevo montaje:", err);
+      }
+    }
+
     draftHydratedRef.current = true;
   }, []);
 
