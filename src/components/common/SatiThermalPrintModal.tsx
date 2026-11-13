@@ -614,13 +614,13 @@ export function SatiThermalPrintModal({
               )}
 
               {data.accesorios && (
-                <div className="border-t-2 border-black border-dashed pt-1.5 flex justify-between items-start gap-2 w-full">
-                  <span className="thermal-label uppercase font-black shrink-0">
+                <div className="border-t-2 border-black border-dashed pt-1.5">
+                  <span className="block mb-1 uppercase thermal-label font-black">
                     ACCESORIOS:
                   </span>
-                  <span className="flex-1 text-right break-words text-[11px] leading-tight thermal-value font-black">
+                  <p className="text-[11px] font-mono leading-snug whitespace-pre-wrap break-words thermal-value font-black">
                     {data.accesorios}
-                  </span>
+                  </p>
                 </div>
               )}
 
