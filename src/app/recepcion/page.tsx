@@ -535,6 +535,9 @@ function getEffectiveRetentionDate(ticket: RecepcionTicket): Date | null {
 }
 
 function isTicketVencidoDeposito(ticket: RecepcionTicket): boolean {
+  // Stock propio / Danesa SA no aplica a plazo de 90 días por retiro de cliente
+  if (isTicketDanesa(ticket.cliente)) return false;
+
   // Solo aplica a equipos aún en poder de la sucursal (no entregados al cliente final)
   const st = (ticket.estado || "").toLowerCase();
   if (st.includes("entregad")) return false;
@@ -1206,34 +1209,38 @@ ${dictamen.accText}`;
   };
 
   const handleNotificarWhatsAppRecepcion = async (ticket: RecepcionTicket) => {
+    const isDanesa = isTicketDanesa(ticket.cliente);
+
     const accFinal =
       modalAccessoriesList.length > 0
         ? modalAccessoriesList.join(", ")
         : modalAccesorios.trim();
 
-    // 1. Validar estrictamente que el informe técnico / mensaje esté completado antes de marcar recibido
-    const msgParaValidar = (
-      selectedTicket && selectedTicket.idOrden === ticket.idOrden
-        ? modalMensaje
-        : ticket.mensaje || ""
-    ).trim();
+    // 1. Validar informe técnico solo para clientes externos particulares
+    if (!isDanesa) {
+      const msgParaValidar = (
+        selectedTicket && selectedTicket.idOrden === ticket.idOrden
+          ? modalMensaje
+          : ticket.mensaje || ""
+      ).trim();
 
-    const esMsgVacio =
-      !msgParaValidar ||
-      msgParaValidar.toLowerCase() === "sin observaciones técnicas registradas." ||
-      msgParaValidar.toLowerCase() === "sin observaciones técnicas registradas" ||
-      msgParaValidar.toLowerCase() === "sin observaciones" ||
-      msgParaValidar.length < 4;
+      const esMsgVacio =
+        !msgParaValidar ||
+        msgParaValidar.toLowerCase() === "sin observaciones técnicas registradas." ||
+        msgParaValidar.toLowerCase() === "sin observaciones técnicas registradas" ||
+        msgParaValidar.toLowerCase() === "sin observaciones" ||
+        msgParaValidar.length < 4;
 
-    if (esMsgVacio) {
-      if (!selectedTicket || selectedTicket.idOrden !== ticket.idOrden) {
-        setSelectedTicket(ticket);
+      if (esMsgVacio) {
+        if (!selectedTicket || selectedTicket.idOrden !== ticket.idOrden) {
+          setSelectedTicket(ticket);
+        }
+        showToast("⚠️ Debe completar el informe técnico / mensaje antes de notificar y marcar como recibido.");
+        setTimeout(() => {
+          modalTextareaRef.current?.focus();
+        }, 100);
+        return;
       }
-      showToast("⚠️ Debe completar el informe técnico / mensaje antes de notificar y marcar como recibido.");
-      setTimeout(() => {
-        modalTextareaRef.current?.focus();
-      }, 100);
-      return;
     }
 
     // Si el mensaje, accesorios o dictamen en el modal fueron modificados, guardarlos antes de notificar
@@ -1259,7 +1266,6 @@ ${dictamen.accText}`;
         setSelectedTicket(currentTicket);
       }
     }
-    const msg = generarMensajeWhatsAppRecepcion(currentTicket);
 
     // Capturar fecha y hora exacta del momento en que se toca el botón para el cruce
     const now = new Date();
@@ -1276,17 +1282,29 @@ ${dictamen.accText}`;
     const fechaNotificacion = `${fechaHoyCorta} ${horaCorta}`;
 
     try {
-      // 1. Enviar mensaje por WhatsApp
-      const res = await fetch("/api/whatsapp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          channel: "RECEPCION",
-          body: msg,
-        }),
-      });
+      // 1. Enviar mensaje por WhatsApp SOLO si NO es producto propio (Danesa SA)
+      let resOk = true;
+      let dataSuccess = true;
+      let errorMsg = "";
 
-      const data = await res.json();
+      if (!isDanesa) {
+        const msg = generarMensajeWhatsAppRecepcion(currentTicket);
+        const res = await fetch("/api/whatsapp/send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            channel: "RECEPCION",
+            body: msg,
+          }),
+        });
+
+        const data = await res.json();
+        resOk = res.ok;
+        dataSuccess = Boolean(data?.success);
+        if (!dataSuccess) {
+          errorMsg = data?.error || "Error al entregar mensaje";
+        }
+      }
 
       // 2. Sincronizar y cruzar de inmediato con SATI ASU - CDE en MySQL
       let matchedCdeId: string | undefined = undefined;
@@ -1367,23 +1385,28 @@ ${dictamen.accText}`;
         );
       }
 
-      if (res.ok && data?.success) {
+      if (isDanesa) {
+        showToast(
+          matchedCdeId
+            ? `✅ Orden #${ticket.idOrden}: Marcado como Recibido en Sucursal (Stock Propio Danesa · cruzado con CDE #${matchedCdeId}).`
+            : `✅ Orden #${ticket.idOrden}: Marcado como Recibido en Sucursal (Stock Propio Danesa · sin envío a WhatsApp).`
+        );
+      } else if (resOk && dataSuccess) {
         showToast(
           matchedCdeId
             ? `✅ Orden #${ticket.idOrden}: Recibido · Listo para que retire el cliente (cruzado con CDE #${matchedCdeId}).`
             : `✅ Orden #${ticket.idOrden}: Recibido · Listo para que retire el cliente (notificado al grupo).`
         );
       } else {
-        const errorMsg = data?.error || "Error al entregar mensaje";
         console.error("[WHATSAPP ERROR]", errorMsg);
         showToast(
-          `✅ Orden #${ticket.idOrden}: Recibido · Listo para retiro (aviso WhatsApp: ${errorMsg}).`
+          `✅ Orden #${ticket.idOrden}: Recibido · Listo para retiro (aviso WhatsApp: ${errorMsg || "pendiente"}).`
         );
       }
     } catch (err: unknown) {
-      console.error("[WHATSAPP FETCH ERROR]", err);
+      console.error("[RECEPCION CHECKIN ERROR]", err);
       showToast(
-        `Error de conexión al enviar aviso de la Orden #${ticket.idOrden}.`
+        `Error de conexión al marcar recepción de la Orden #${ticket.idOrden}.`
       );
     }
   };
@@ -2221,22 +2244,24 @@ ${dictamen.accText}`;
                 <span>Recibidos ({scopeRecibidosCount})</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setTransitFilter("A_DEPOSITO");
-                  setCurrentPage(1);
-                }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  transitFilter === "A_DEPOSITO"
-                    ? "bg-rose-600 text-white font-bold shadow-xs"
-                    : "text-rose-700 hover:bg-rose-100/60"
-                }`}
-                title="Equipos con más de 90 días en sucursal que deben remitirse al depósito central"
-              >
-                <Package className="w-3.5 h-3.5" />
-                <span>A Depósito (+90d) ({scopeVencidosDepositoCount})</span>
-              </button>
+              {viewScope !== "DANESA" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransitFilter("A_DEPOSITO");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    transitFilter === "A_DEPOSITO"
+                      ? "bg-rose-600 text-white font-bold shadow-xs"
+                      : "text-rose-700 hover:bg-rose-100/60"
+                  }`}
+                  title="Equipos de clientes con más de 90 días en sucursal que deben remitirse al depósito central"
+                >
+                  <Package className="w-3.5 h-3.5" />
+                  <span>A Depósito (+90d) ({scopeVencidosDepositoCount})</span>
+                </button>
+              )}
             </div>
 
             {/* Filtro de Fecha de Recepción cuando se selecciona Recibidos */}
@@ -3051,7 +3076,9 @@ ${dictamen.accText}`;
                     <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-2.5">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">
-                          Dictamen Técnico · Resolución QC (WhatsApp)
+                          {isTicketDanesa(selectedTicket.cliente)
+                            ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
+                            : "Dictamen Técnico · Resolución QC (WhatsApp)"}
                         </span>
                         <span className="text-[10px] font-mono text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
                           {preview.sourceLabel}
@@ -3078,46 +3105,77 @@ ${dictamen.accText}`;
                         })}
                       </div>
 
-                      <div className="text-xs text-zinc-800 space-y-1 bg-white/90 p-2.5 rounded-lg border border-emerald-100">
-                        <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
-                        <p className="text-zinc-600 leading-relaxed">{preview.body}</p>
-                        {preview.detalleTexto ? (
-                          <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200">
-                            <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
-                          </p>
-                        ) : (
-                          <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200">
-                            Complete &quot;Informe Técnico / Mensaje de Servicio&quot; arriba para incluir el detalle.
-                          </p>
-                        )}
-                      </div>
+                      {isTicketDanesa(selectedTicket.cliente) ? (
+                        <div className="text-xs text-amber-900 bg-amber-50/90 p-2.5 rounded-lg border border-amber-200 flex items-start gap-2">
+                          <Building2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                          <div>
+                            <div className="font-bold text-amber-950">Mercadería de Stock Propio (Danesa S.A.)</div>
+                            <p className="text-amber-800 text-[11px] leading-relaxed mt-0.5">
+                              Este equipo pertenece a la sucursal. Al tocar <strong>Marcar como Recibido</strong> se registrará la recepción interna en el sistema sin enviar notificaciones al grupo de WhatsApp.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-zinc-800 space-y-1 bg-white/90 p-2.5 rounded-lg border border-emerald-100">
+                          <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
+                          <p className="text-zinc-600 leading-relaxed">{preview.body}</p>
+                          {preview.detalleTexto ? (
+                            <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200">
+                              <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
+                            </p>
+                          ) : (
+                            <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200">
+                              Complete &quot;Informe Técnico / Mensaje de Servicio&quot; arriba para incluir el detalle.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
               </div>
 
               <div className="pt-3 border-t border-[#e5e5e5] flex justify-between items-center">
-                <button
-                  type="button"
-                  onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors ${
-                    selectedTicket.recibidoEnDeposito
-                      ? "bg-emerald-700 hover:bg-emerald-800"
-                      : "bg-emerald-600 hover:bg-emerald-700"
-                  }`}
-                >
-                  {selectedTicket.recibidoEnDeposito ? (
-                    <>
-                      <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                      <span>Recibido · Listo para retiro (Re-notificar)</span>
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Notificar por WhatsApp &amp; Marcar Recibido</span>
-                    </>
-                  )}
-                </button>
+                {isTicketDanesa(selectedTicket.cliente) ? (
+                  <button
+                    type="button"
+                    onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors ${
+                      selectedTicket.recibidoEnDeposito
+                        ? "bg-zinc-800 hover:bg-zinc-900"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }`}
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                    <span>
+                      {selectedTicket.recibidoEnDeposito
+                        ? "Recibido en Sucursal (Actualizar)"
+                        : "Marcar como Recibido"}
+                    </span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
+                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors ${
+                      selectedTicket.recibidoEnDeposito
+                        ? "bg-emerald-700 hover:bg-emerald-800"
+                        : "bg-emerald-600 hover:bg-emerald-700"
+                    }`}
+                  >
+                    {selectedTicket.recibidoEnDeposito ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                        <span>Recibido · Listo para retiro (Re-notificar)</span>
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="w-4 h-4" />
+                        <span>Notificar por WhatsApp &amp; Marcar Recibido</span>
+                      </>
+                    )}
+                  </button>
+                )}
 
                 <button
                   onClick={() => setSelectedTicket(null)}
@@ -3142,7 +3200,10 @@ ${dictamen.accText}`;
               estado: showPrintModal.estado,
               accesorios: showPrintModal.accesorios,
               informeTecnico: formatSatiSentenceCase(showPrintModal.mensaje),
-              subtitulo: "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI",
+              subtitulo: isTicketDanesa(showPrintModal.cliente)
+                ? "COMPROBANTE DE STOCK PROPIO - SUCURSAL"
+                : "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI",
+              esDanesa: isTicketDanesa(showPrintModal.cliente),
               fechaIngreso: showPrintModal.fechaIngreso,
               fechaRecepcionReparacion:
                 showPrintModal.fechaRecibidoDeposito ||

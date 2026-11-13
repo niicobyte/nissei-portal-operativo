@@ -18,6 +18,7 @@ import {
   getThermalEffectiveContentMm,
   buildThermalPrintCss,
 } from "@/lib/thermalPrintConfig";
+import { isTicketDanesa } from "@/data/recepcionCdeData";
 
 export interface SatiComprobanteData {
   idOrden: string;
@@ -34,6 +35,7 @@ export interface SatiComprobanteData {
   fechaIngreso?: string;
   fechaRecepcionReparacion?: string;
   recibidoListoRetiro?: boolean;
+  esDanesa?: boolean;
 }
 
 function parseSatiDate(rawDate?: string | null): Date | null {
@@ -146,6 +148,10 @@ export function SatiThermalPrintModal({
     DEFAULT_THERMAL_PRINT_SETTINGS
   );
   const [showThermalConfig, setShowThermalConfig] = useState(false);
+
+  const isDanesa = Boolean(
+    data.esDanesa ?? (data.cliente ? isTicketDanesa(data.cliente) : false)
+  );
 
   const policy = useMemo(
     () =>
@@ -623,57 +629,100 @@ export function SatiThermalPrintModal({
                 </p>
               </div>
 
-              {/* Control de Permanencia & Plazo de 90 Días para Depósito */}
-              <div className="border-t-2 border-black border-dashed pt-1.5 space-y-1">
-                <div className="flex justify-between items-center text-[10.5px] font-mono">
-                  <span className="thermal-label uppercase font-black shrink-0">
-                    INGRESO ASU:
-                  </span>
-                  <span className="thermal-value font-black text-right">
-                    {policy.fechaIngresoStr}
-                  </span>
-                </div>
-
-                {policy.esRetornoReparacion && policy.fechaRetornoStr && (
+              {/* Control de Permanencia & Plazo de 90 Días para Depósito (Solo Clientes Particulares) */}
+              {!isDanesa ? (
+                <div className="border-t-2 border-black border-dashed pt-1.5 space-y-1">
                   <div className="flex justify-between items-center text-[10.5px] font-mono">
                     <span className="thermal-label uppercase font-black shrink-0">
-                      RETORNO TALLER (ASU):
+                      INGRESO ASU:
                     </span>
-                    <span className="thermal-value font-black text-right border-b border-black">
-                      {policy.fechaRetornoStr}
+                    <span className="thermal-value font-black text-right">
+                      {policy.fechaIngresoStr}
                     </span>
                   </div>
-                )}
 
-                <div className="flex justify-between items-center text-[10.5px] font-mono">
-                  <span className="thermal-label uppercase font-black shrink-0">
-                    {policy.esRetornoReparacion
-                      ? "LÍMITE DEPÓSITO (+90D RETORNO):"
-                      : "LÍMITE DEPÓSITO (90 DÍAS):"}
-                  </span>
-                  <strong className="thermal-value font-black text-right border-b-2 border-black">
-                    {policy.fechaLimiteStr}
-                  </strong>
-                </div>
-
-                <div className="text-[9px] font-mono leading-tight text-center pt-0.5 text-black">
-                  {policy.estaVencido ? (
-                    <div className="border-2 border-black py-0.5 px-1 font-black">
-                      ⚠️ PLAZO 90 DÍAS VENCIDO · REMITIR A DEPÓSITO
+                  {policy.esRetornoReparacion && policy.fechaRetornoStr && (
+                    <div className="flex justify-between items-center text-[10.5px] font-mono">
+                      <span className="thermal-label uppercase font-black shrink-0">
+                        RETORNO TALLER (ASU):
+                      </span>
+                      <span className="thermal-value font-black text-right border-b border-black">
+                        {policy.fechaRetornoStr}
+                      </span>
                     </div>
-                  ) : (
-                    <span className="thermal-label font-bold">
-                      {policy.mensajeInteligente}
-                    </span>
                   )}
+
+                  <div className="flex justify-between items-center text-[10.5px] font-mono">
+                    <span className="thermal-label uppercase font-black shrink-0">
+                      {policy.esRetornoReparacion
+                        ? "LÍMITE DEPÓSITO (+90D RETORNO):"
+                        : "LÍMITE DEPÓSITO (90 DÍAS):"}
+                    </span>
+                    <strong className="thermal-value font-black text-right border-b-2 border-black">
+                      {policy.fechaLimiteStr}
+                    </strong>
+                  </div>
+
+                  <div className="text-[9px] font-mono leading-tight text-center pt-0.5 text-black">
+                    {policy.estaVencido ? (
+                      <div className="border-2 border-black py-0.5 px-1 font-black">
+                        ⚠️ PLAZO 90 DÍAS VENCIDO · REMITIR A DEPÓSITO
+                      </div>
+                    ) : (
+                      <span className="thermal-label font-bold">
+                        {policy.mensajeInteligente}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* Ficha de Control de Stock Propio (Danesa S.A.) - Reemplaza los 90 días */
+                <div className="border-t-2 border-black border-dashed pt-1.5 space-y-1">
+                  <div className="flex justify-between items-center text-[10.5px] font-mono">
+                    <span className="thermal-label uppercase font-black shrink-0">
+                      ÁMBITO:
+                    </span>
+                    <span className="thermal-value font-black text-right">
+                      STOCK PROPIO (DANESA S.A.)
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between items-center text-[10.5px] font-mono">
+                    <span className="thermal-label uppercase font-black shrink-0">
+                      INGRESO SUCURSAL:
+                    </span>
+                    <span className="thermal-value font-black text-right">
+                      {policy.fechaIngresoStr}
+                    </span>
+                  </div>
+
+                  {policy.fechaRetornoStr && (
+                    <div className="flex justify-between items-center text-[10.5px] font-mono">
+                      <span className="thermal-label uppercase font-black shrink-0">
+                        RETORNO SUCURSAL:
+                      </span>
+                      <span className="thermal-value font-black text-right border-b border-black">
+                        {policy.fechaRetornoStr}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="border border-black py-0.5 px-1 text-[9px] font-mono font-black text-center uppercase mt-0.5">
+                    {data.estado
+                      ? `ESTADO / DESTINO: ${data.estado.toUpperCase()}`
+                      : "DESTINO INTERNO: REINTEGRO A STOCK / SALÓN"}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Pie de comprobante */}
             <div className="border-t-2 border-black pt-1.5 text-center text-[9.5px] font-mono text-black uppercase">
               <span className="thermal-label font-black tracking-wide">
-                {data.piePagina || "|| COMPROBANTE DE RECEPCION ||"}
+                {data.piePagina ||
+                  (isDanesa
+                    ? "|| COMPROBANTE OFICIAL · STOCK PROPIO ||"
+                    : "|| COMPROBANTE DE RECEPCION ||")}
               </span>
             </div>
 
