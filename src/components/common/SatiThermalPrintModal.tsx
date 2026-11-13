@@ -32,6 +32,8 @@ export interface SatiComprobanteData {
   subtitulo?: string;
   piePagina?: string;
   fechaIngreso?: string;
+  fechaRecepcionReparacion?: string;
+  recibidoListoRetiro?: boolean;
 }
 
 function parseSatiDate(rawDate?: string | null): Date | null {
@@ -71,27 +73,63 @@ function formatToDmy(date: Date): string {
   return `${d}/${m}/${y}`;
 }
 
-export function compute90DaysPolicy(rawFechaIngreso?: string | null): {
+export function compute90DaysPolicy(params: {
+  rawFechaIngreso?: string | null;
+  rawFechaRecepcion?: string | null;
+  recibidoListoRetiro?: boolean;
+}): {
   fechaIngresoStr: string;
+  fechaRetornoStr: string | null;
   fechaLimiteStr: string;
   diasTranscurridos: number;
   diasRestantes: number;
   estaVencido: boolean;
+  esRetornoReparacion: boolean;
+  mensajeInteligente: string;
 } {
-  const ingresoDate = parseSatiDate(rawFechaIngreso) || new Date();
-  const limiteDate = new Date(ingresoDate.getTime() + 90 * 24 * 60 * 60 * 1000);
+  const ingresoDate = parseSatiDate(params.rawFechaIngreso) || new Date();
+  const retornoDate = parseSatiDate(params.rawFechaRecepcion);
+
+  // Un equipo se considera retorno de taller si tiene fecha de retorno válida o marca de recibidoListoRetiro
+  const esRetornoReparacion = Boolean(
+    params.recibidoListoRetiro ||
+    (retornoDate && retornoDate.getTime() > ingresoDate.getTime() + 24 * 60 * 60 * 1000)
+  );
+
+  // La fecha de referencia para el cliente rige desde que el equipo retornó disponible a la sucursal
+  const fechaReferencia = esRetornoReparacion && retornoDate ? retornoDate : ingresoDate;
+  const limiteDate = new Date(fechaReferencia.getTime() + 90 * 24 * 60 * 60 * 1000);
 
   const hoy = new Date();
-  const diffTime = hoy.getTime() - ingresoDate.getTime();
+  const diffTime = hoy.getTime() - fechaReferencia.getTime();
   const diasTranscurridos = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
   const diasRestantes = 90 - diasTranscurridos;
+  const estaVencido = diasRestantes <= 0;
+
+  let mensajeInteligente = "";
+  if (esRetornoReparacion && retornoDate) {
+    if (estaVencido) {
+      mensajeInteligente = `⚠️ Plazo de 90 días vencido desde el retorno de taller (${formatToDmy(retornoDate)}). Remitir a depósito.`;
+    } else {
+      mensajeInteligente = `* El equipo estuvo en taller/repuesto. El plazo de 90 días para retiro rige desde su retorno listo (${formatToDmy(retornoDate)} · restan ${diasRestantes}d).`;
+    }
+  } else {
+    if (estaVencido) {
+      mensajeInteligente = `⚠️ Plazo de 90 días vencido desde ingreso (${formatToDmy(ingresoDate)}). Remitir a depósito.`;
+    } else {
+      mensajeInteligente = `* Plazo de guarda en ASU: 90 días (restan ${diasRestantes}d). Cumplido el plazo se remite al depósito.`;
+    }
+  }
 
   return {
     fechaIngresoStr: formatToDmy(ingresoDate),
+    fechaRetornoStr: retornoDate ? formatToDmy(retornoDate) : null,
     fechaLimiteStr: formatToDmy(limiteDate),
     diasTranscurridos,
     diasRestantes,
-    estaVencido: diasRestantes <= 0,
+    estaVencido,
+    esRetornoReparacion,
+    mensajeInteligente,
   };
 }
 
@@ -109,7 +147,15 @@ export function SatiThermalPrintModal({
   );
   const [showThermalConfig, setShowThermalConfig] = useState(false);
 
-  const policy = useMemo(() => compute90DaysPolicy(data.fechaIngreso), [data.fechaIngreso]);
+  const policy = useMemo(
+    () =>
+      compute90DaysPolicy({
+        rawFechaIngreso: data.fechaIngreso,
+        rawFechaRecepcion: data.fechaRecepcionReparacion,
+        recibidoListoRetiro: data.recibidoListoRetiro,
+      }),
+    [data.fechaIngreso, data.fechaRecepcionReparacion, data.recibidoListoRetiro]
+  );
 
   useEffect(() => {
     setThermalSettings(getStoredThermalPrintSettings());
@@ -581,18 +627,31 @@ export function SatiThermalPrintModal({
               <div className="border-t-2 border-black border-dashed pt-1.5 space-y-1">
                 <div className="flex justify-between items-center text-[10.5px] font-mono">
                   <span className="thermal-label uppercase font-black shrink-0">
-                    INGRESO EN ASU:
+                    INGRESO ASU:
                   </span>
                   <span className="thermal-value font-black text-right">
                     {policy.fechaIngresoStr}
                   </span>
                 </div>
 
+                {policy.esRetornoReparacion && policy.fechaRetornoStr && (
+                  <div className="flex justify-between items-center text-[10.5px] font-mono">
+                    <span className="thermal-label uppercase font-black shrink-0">
+                      RETORNO TALLER (ASU):
+                    </span>
+                    <span className="thermal-value font-black text-right border-b border-black">
+                      {policy.fechaRetornoStr}
+                    </span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-center text-[10.5px] font-mono">
                   <span className="thermal-label uppercase font-black shrink-0">
-                    LÍMITE DEPÓSITO (90D):
+                    {policy.esRetornoReparacion
+                      ? "LÍMITE DEPÓSITO (+90D RETORNO):"
+                      : "LÍMITE DEPÓSITO (90 DÍAS):"}
                   </span>
-                  <strong className="thermal-value font-black text-right border-b border-black">
+                  <strong className="thermal-value font-black text-right border-b-2 border-black">
                     {policy.fechaLimiteStr}
                   </strong>
                 </div>
@@ -604,7 +663,7 @@ export function SatiThermalPrintModal({
                     </div>
                   ) : (
                     <span className="thermal-label font-bold">
-                      * Plazo de guarda en ASU: 90 días ({policy.diasRestantes}d restantes). Cumplido el plazo se remite al depósito.
+                      {policy.mensajeInteligente}
                     </span>
                   )}
                 </div>

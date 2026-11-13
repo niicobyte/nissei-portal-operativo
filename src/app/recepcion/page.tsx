@@ -515,8 +515,37 @@ function resolveDictamenRecepcion(
 }
 
 type ViewScope = "DANESA" | "CLIENTES_ASU" | "TODOS";
-type TransitFilter = "TODOS" | "EN_CAMINO" | "INGRESADO_CDE" | "FALTA_INGRESAR" | "RECIBIDOS";
+type TransitFilter = "TODOS" | "EN_CAMINO" | "INGRESADO_CDE" | "FALTA_INGRESAR" | "RECIBIDOS" | "A_DEPOSITO";
 type RecibidosDateFilter = "TODAS" | "HOY" | "AYER" | "ULTIMOS_7" | "ESTE_MES";
+
+function getEffectiveRetentionDate(ticket: RecepcionTicket): Date | null {
+  // Si el equipo retornó de reparación/CDE y fue recibido en ASU:
+  if (ticket.recibidoEnDeposito) {
+    const rawRetorno = ticket.fechaRecibidoDeposito || ticket.fechaDespachoCde;
+    if (rawRetorno) {
+      const d = parseFechaDMY(rawRetorno);
+      if (d) return d;
+    }
+  }
+  // Si no retornó de reparación, el plazo rige desde el ingreso original a sucursal
+  if (ticket.fechaIngreso) {
+    return parseFechaDMY(ticket.fechaIngreso);
+  }
+  return null;
+}
+
+function isTicketVencidoDeposito(ticket: RecepcionTicket): boolean {
+  // Solo aplica a equipos aún en poder de la sucursal (no entregados al cliente final)
+  const st = (ticket.estado || "").toLowerCase();
+  if (st.includes("entregad")) return false;
+
+  const refDate = getEffectiveRetentionDate(ticket);
+  if (!refDate) return false;
+
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24));
+  return diffDays > 90;
+}
 
 function matchesRecibidosDate(ticket: RecepcionTicket, filter: RecibidosDateFilter): boolean {
   if (filter === "TODAS") return true;
@@ -1459,6 +1488,10 @@ ${dictamen.accText}`;
 
   const scopeRecibidosCount = scopeRecibidosList.length;
 
+  const scopeVencidosDepositoCount = useMemo(() => {
+    return scopeTickets.filter(isTicketVencidoDeposito).length;
+  }, [scopeTickets]);
+
   const countRecibidosTodas = scopeRecibidosCount;
   const countRecibidosHoy = useMemo(
     () => scopeRecibidosList.filter((t) => matchesRecibidosDate(t, "HOY")).length,
@@ -1553,6 +1586,8 @@ ${dictamen.accText}`;
       if (recibidosDateFilter !== "TODAS") {
         result = result.filter((t) => matchesRecibidosDate(t, recibidosDateFilter));
       }
+    } else if (transitFilter === "A_DEPOSITO") {
+      result = result.filter(isTicketVencidoDeposito);
     }
 
     // 2. Filtro de Estado
@@ -2185,6 +2220,23 @@ ${dictamen.accText}`;
                 <Check className="w-3 h-3" />
                 <span>Recibidos ({scopeRecibidosCount})</span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTransitFilter("A_DEPOSITO");
+                  setCurrentPage(1);
+                }}
+                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  transitFilter === "A_DEPOSITO"
+                    ? "bg-rose-600 text-white font-bold shadow-xs"
+                    : "text-rose-700 hover:bg-rose-100/60"
+                }`}
+                title="Equipos con más de 90 días en sucursal que deben remitirse al depósito central"
+              >
+                <Package className="w-3.5 h-3.5" />
+                <span>A Depósito (+90d) ({scopeVencidosDepositoCount})</span>
+              </button>
             </div>
 
             {/* Filtro de Fecha de Recepción cuando se selecciona Recibidos */}
@@ -2427,6 +2479,15 @@ ${dictamen.accText}`;
                                 ESTADO CAMBIADO
                               </span>
                             )
+                          )}
+                          {isTicketVencidoDeposito(ticket) && (
+                            <span
+                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-300"
+                              title="Plazo de guarda de 90 días cumplido en sucursal. Remitir al depósito central para liberar espacio."
+                            >
+                              <Package className="w-3 h-3 text-rose-600" />
+                              <span>LLEVAR A DEPÓSITO (+90D)</span>
+                            </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5 flex-wrap">
@@ -2758,6 +2819,15 @@ ${dictamen.accText}`;
               </div>
 
               <div className="space-y-3.5 text-xs">
+                {isTicketVencidoDeposito(selectedTicket) && (
+                  <div className="bg-rose-50 border border-rose-300 p-3 rounded-xl flex items-start gap-2.5 text-rose-900 text-xs">
+                    <Package className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="block font-bold">Equipo para remisión a depósito (+90 días):</strong>
+                      <span>Este equipo cumplió el plazo máximo de 90 días de permanencia en la sucursal ASU. Debe ser trasladado al depósito central para optimizar espacio.</span>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-3 bg-[#f9f9f9] p-3.5 rounded-xl border border-[#f0f0f0]">
                   <div>
                     <span className="text-[#888888] block text-[11px]">Cliente</span>
@@ -3074,6 +3144,11 @@ ${dictamen.accText}`;
               informeTecnico: formatSatiSentenceCase(showPrintModal.mensaje),
               subtitulo: "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI",
               fechaIngreso: showPrintModal.fechaIngreso,
+              fechaRecepcionReparacion:
+                showPrintModal.fechaRecibidoDeposito ||
+                showPrintModal.fechaDespachoCde ||
+                (showPrintModal.recibidoEnDeposito ? showPrintModal.fechaEntregada || new Date().toLocaleDateString("es-PY") : undefined),
+              recibidoListoRetiro: Boolean(showPrintModal.recibidoEnDeposito),
             }}
             onClose={() => setShowPrintModal(null)}
           />
