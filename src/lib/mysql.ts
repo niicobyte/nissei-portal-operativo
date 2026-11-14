@@ -127,10 +127,10 @@ export function resolveMysqlConfig(): MysqlConfig {
 export function getMysqlInfo() {
   const config = resolveMysqlConfig();
   return {
-    host: config.host,
-    port: config.port,
+    host: config.isRailway ? "railway-internal" : "local-instance",
+    port: 3306,
     database: config.database,
-    user: config.user,
+    user: "***",
     isRailway: config.isRailway,
     source: config.source,
     hasPassword: Boolean(config.password),
@@ -151,21 +151,20 @@ export function formatMysqlError(err: unknown): string {
 
   if (isAccessDenied && !info.hasPassword && info.isRailway) {
     return (
-      `MySQL en Railway rechazó la conexión (using password: NO). ` +
-      `En Railway -> servicio nissei-portal-operativo -> Variables, agregue Reference Variable desde MySQL ` +
-      `(MYSQL_URL o MYSQLPASSWORD / MYSQL_ROOT_PASSWORD) y vuelva a desplegar.`
+      `MySQL en Railway rechazó la conexión (sin contraseña configurada). ` +
+      `En Railway -> Variables, configure la variable de referencia desde el servicio MySQL y vuelva a desplegar.`
     );
   }
 
   if (isAccessDenied) {
-    return `Acceso denegado a MySQL (${info.user}@${info.host}:${info.port}). Verifique las credenciales de MySQL en las variables de entorno.`;
+    return `Acceso denegado al servidor MySQL. Verifique las credenciales en las variables de entorno del servidor.`;
   }
 
   if (code === "ECONNREFUSED" || code === "ENOTFOUND" || code === "ETIMEDOUT") {
-    return `No se pudo conectar a MySQL (${info.host}:${info.port}): ${rawMessage}`;
+    return `No se pudo establecer conexión con el servidor MySQL (${code || "TIMEOUT"}).`;
   }
 
-  return rawMessage;
+  return "Error operativo al procesar la consulta en MySQL.";
 }
 
 declare global {

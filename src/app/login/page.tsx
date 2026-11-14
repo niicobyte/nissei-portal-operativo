@@ -29,15 +29,11 @@ import {
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { AnimatedReceptionBox } from "@/components/common/AnimatedReceptionBox";
 import { AnimatedCpu } from "@/components/common/AnimatedCpu";
-import { syncAllModulesFromMySQL } from "@/lib/cloudSync";
-import { getStoredTickets } from "@/data/recepcionData";
-import { getStoredCdeTickets, getStoredCdeCheckins } from "@/data/recepcionCdeData";
-import { getStoredMontajes } from "@/data/montajesData";
+import dynamic from "next/dynamic";
 import {
   USER_PROFILES,
   UserProfile,
   authenticate,
-  getActiveUser,
   verifyAdminPassword,
   logout,
   fetchServerDeployId,
@@ -48,7 +44,11 @@ import {
   isValidReturnToPath,
   isAuthorizedForPath,
 } from "@/data/authData";
-import DatabaseViewerModal from "@/components/common/DatabaseViewerModal";
+
+const DatabaseViewerModal = dynamic(
+  () => import("@/components/common/DatabaseViewerModal"),
+  { ssr: false }
+);
 
 function LoginForm() {
   const router = useRouter();
@@ -101,93 +101,135 @@ function LoginForm() {
   });
 
   useEffect(() => {
+    let cancelled = false;
     try {
-      // 1. Recepción Post-Venta (Métricas reales y transparentes sin topes ficticios)
-      const recTickets = getStoredTickets();
-      const checkins = getStoredCdeCheckins();
-      let hoyCount = 0;
-      let notifCount = 0;
-      let listosCount = 0;
+      // 1. Intentar leer primero de localStorage si la estación de trabajo ya tiene caché local
+      const rawRec = localStorage.getItem("nissei_recepcion_tickets_v9");
+      const rawCheckins = localStorage.getItem("nissei_recepcion_cde_checkins_v1");
+      const rawCde = localStorage.getItem("nissei_recepcion_cde_tickets_v2");
+      const rawMontajes = localStorage.getItem("nissei_taller_montajes_v4_real");
 
-      if (Array.isArray(recTickets) && recTickets.length > 0) {
+      const recTickets: any[] = rawRec ? JSON.parse(rawRec) : [];
+      const checkins: Record<string, any> = rawCheckins ? JSON.parse(rawCheckins) : {};
+      const cdeTickets: any[] = rawCde ? JSON.parse(rawCde) : [];
+      const montajesList: any[] = rawMontajes ? JSON.parse(rawMontajes) : [];
+
+      if (recTickets.length > 0 || cdeTickets.length > 0 || montajesList.length > 0) {
         const now = new Date();
         const d = String(now.getDate()).padStart(2, "0");
         const m = String(now.getMonth() + 1).padStart(2, "0");
         const y = String(now.getFullYear());
         const todayStr = `${d}/${m}/${y}`;
 
-        // Ingresos reales registrados con fecha de hoy
-        hoyCount = recTickets.filter((t) => {
-          const f = (t.fechaIngreso || "").trim();
-          return f.includes(todayStr);
-        }).length;
-
-        // Notificaciones reales enviadas a clientes (órdenes que no son stock Danesa y fueron notificadas/recibidas en sucursal)
-        notifCount = recTickets.filter((t) => {
-          const isDanesa = (t.cliente || "").toUpperCase().includes("DANESA");
+        const hoyCount = recTickets.filter((t) =>
+          String(t.fechaIngreso || "").trim().includes(todayStr)
+        ).length;
+        const notifCount = recTickets.filter((t) => {
+          const isDanesa = String(t.cliente || "").toUpperCase().includes("DANESA");
           const recibido = Boolean(t.recibidoEnDeposito || checkins[t.idOrden]?.recibido);
           return !isDanesa && recibido;
         }).length;
-
-        // Listos para retiro en sucursal (recibidos y sin entregar al cliente aún)
-        listosCount = recTickets.filter((t) => {
-          const st = (t.estado || "").toLowerCase();
+        const listosCount = recTickets.filter((t) => {
+          const st = String(t.estado || "").toLowerCase();
           if (st.includes("entregada") || st.includes("entregado")) return false;
           const recibido = Boolean(t.recibidoEnDeposito || checkins[t.idOrden]?.recibido);
           return recibido || st.includes("reparada") || st.includes("listo");
         }).length;
-      }
 
-      // 2. SATI CDE
-      const cdeTickets = getStoredCdeTickets();
-      let enCaminoCount = 0;
-      let enCdeCount = 0;
-      let recibidosAsuCount = 0;
-
-      if (Array.isArray(cdeTickets) && cdeTickets.length > 0) {
-        enCaminoCount = cdeTickets.filter((t) => {
+        const enCaminoCount = cdeTickets.filter((t) => {
           const isRecibido = Boolean(checkins[t.idOrden]?.recibido || t.recibidoEnDeposito);
-          return !isRecibido && Boolean(t.fechaEntregada && t.fechaEntregada.trim() !== "");
+          return !isRecibido && Boolean(t.fechaEntregada && String(t.fechaEntregada).trim() !== "");
         }).length;
-        enCdeCount = cdeTickets.filter((t) => !t.fechaEntregada || t.fechaEntregada.trim() === "").length;
-        recibidosAsuCount = Object.values(checkins).filter((c) => c?.recibido).length || cdeTickets.filter((t) => Boolean(t.recibidoEnDeposito)).length;
+        const enCdeCount = cdeTickets.filter(
+          (t) => !t.fechaEntregada || String(t.fechaEntregada).trim() === ""
+        ).length;
+        const recibidosAsuCount =
+          Object.values(checkins).filter((c: any) => c?.recibido).length ||
+          cdeTickets.filter((t) => Boolean(t.recibidoEnDeposito)).length;
+
+        const enColaCount = montajesList.filter(
+          (m) => m.estado === "Pendiente" || m.etapa === "PENDIENTE_PIEZAS"
+        ).length;
+        const enBancoCount = montajesList.filter(
+          (m) =>
+            m.estado === "En Proceso" ||
+            m.etapa === "ARMADO_MECANICO" ||
+            m.etapa === "ESTRES_TERMICO"
+        ).length;
+        const finCount = montajesList.filter(
+          (m) =>
+            m.estado === "Entregado" ||
+            m.estado === "Rev. Cerrado" ||
+            m.etapa === "LISTO_ENTREGA"
+        ).length;
+
+        setTelemetry({
+          recepcion: {
+            ingresosHoy: hoyCount,
+            ingresosSub: hoyCount > 0 ? "Registrados hoy" : "Hoy en ASU",
+            notificaciones: notifCount,
+            notificacionesSub: notifCount > 0 ? "Avisos listos" : "Sin pendientes",
+            listosEntrega: listosCount,
+          },
+          deposito: {
+            enCamino: enCaminoCount,
+            enCde: enCdeCount,
+            recibidosAsu: recibidosAsuCount,
+          },
+          montajes: {
+            enCola: enColaCount,
+            enColaSub: enColaCount > 0 ? `${enColaCount} en espera` : "En espera",
+            enBanco: enBancoCount,
+            finalizados: finCount,
+          },
+        });
       }
-
-      // 3. Montajes
-      const montajesList = getStoredMontajes();
-      let enColaCount = 0;
-      let enBancoCount = 0;
-      let finCount = 0;
-
-      if (Array.isArray(montajesList) && montajesList.length > 0) {
-        enColaCount = montajesList.filter((m) => m.estado === "Pendiente" || m.etapa === "PENDIENTE_PIEZAS").length;
-        enBancoCount = montajesList.filter((m) => m.estado === "En Proceso" || m.etapa === "ARMADO_MECANICO" || m.etapa === "ESTRES_TERMICO").length;
-        finCount = montajesList.filter((m) => m.estado === "Entregado" || m.estado === "Rev. Cerrado" || m.etapa === "LISTO_ENTREGA").length;
-      }
-
-      setTelemetry({
-        recepcion: {
-          ingresosHoy: hoyCount,
-          ingresosSub: hoyCount > 0 ? "Registrados hoy" : "Hoy en ASU",
-          notificaciones: notifCount,
-          notificacionesSub: notifCount > 0 ? "Avisos listos" : "Sin pendientes",
-          listosEntrega: listosCount,
-        },
-        deposito: {
-          enCamino: enCaminoCount,
-          enCde: enCdeCount,
-          recibidosAsu: recibidosAsuCount,
-        },
-        montajes: {
-          enCola: enColaCount,
-          enColaSub: enColaCount > 0 ? `${enColaCount} en espera` : "En espera",
-          enBanco: enBancoCount,
-          finalizados: finCount,
-        },
-      });
-    } catch (e) {
-      console.warn("No se pudo calcular la telemetría local de login:", e);
+    } catch {
+      // Ignorar errores de parseo de caché local
     }
+
+    // 2. Obtener métricas agregadas del servidor sin descargar registros de clientes al bundle público
+    fetch("/api/telemetry", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.ok) return;
+        setTelemetry((prev) => {
+          const hasLocalRec =
+            prev.recepcion.ingresosHoy > 0 ||
+            prev.recepcion.notificaciones > 0 ||
+            prev.recepcion.listosEntrega > 0;
+          if (hasLocalRec) return prev;
+          const hoy = Number(data.recepcion?.ingresosHoy || 0);
+          const notif = Number(data.recepcion?.notificaciones || 0);
+          const listos = Number(data.recepcion?.listosEntrega || 0);
+          const enCola = Number(data.montajes?.enCola || 0);
+          return {
+            recepcion: {
+              ingresosHoy: hoy,
+              ingresosSub: hoy > 0 ? "Registrados hoy" : "Hoy en ASU",
+              notificaciones: notif,
+              notificacionesSub: notif > 0 ? "Avisos listos" : "Sin pendientes",
+              listosEntrega: listos,
+            },
+            deposito: {
+              enCamino: Number(data.deposito?.enCamino || 0),
+              enCde: Number(data.deposito?.enCde || 0),
+              recibidosAsu: Number(data.deposito?.recibidosAsu || 0),
+            },
+            montajes: {
+              enCola,
+              enColaSub: enCola > 0 ? `${enCola} en espera` : "En espera",
+              enBanco: Number(data.montajes?.enBanco || 0),
+              finalizados: Number(data.montajes?.finalizados || 0),
+            },
+          };
+        });
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Limpieza rigurosa de sesiones expiradas al ingresar a Login + precarga de deployId y returnTo
@@ -269,7 +311,12 @@ function LoginForm() {
       updateSessionDeployVersion(serverDeployId);
     }
 
-    await syncAllModulesFromMySQL(7000).catch(() => {});
+    try {
+      const { syncAllModulesFromMySQL } = await import("@/lib/cloudSync");
+      await syncAllModulesFromMySQL(7000).catch(() => {});
+    } catch {
+      // Ignorar fallo de carga asíncrona
+    }
 
     const candidateReturnTo = isValidReturnToPath(returnToParam)
       ? returnToParam
@@ -290,13 +337,7 @@ function LoginForm() {
     const clean = entered.trim();
     if (!clean) return false;
 
-    let profileToAuth = selectedProfile.id;
-    const cleanLower = clean.toLowerCase();
-    if (cleanLower === "deposito.danesa" || cleanLower === "danesa") {
-      profileToAuth = "deposito.danesa";
-    }
-
-    const result = authenticate(profileToAuth, clean);
+    const result = authenticate(selectedProfile.id, clean);
     if (result.success) {
       isRedirectingRef.current = true;
       const authUser = result.user || selectedProfile;
@@ -315,12 +356,7 @@ function LoginForm() {
       return;
     }
 
-    let profileToAuth = selectedProfile.id;
-    if (password.trim() === "deposito.danesa" || password.trim() === "danesa") {
-      profileToAuth = "deposito.danesa";
-    }
-
-    const result = authenticate(profileToAuth, password);
+    const result = authenticate(selectedProfile.id, password);
     if (!result.success) {
       setError(result.message);
       return;
@@ -881,10 +917,12 @@ function LoginForm() {
 
       </div>
 
-      <DatabaseViewerModal
-        isOpen={isDbModalOpen}
-        onClose={() => setIsDbModalOpen(false)}
-      />
+      {isDbModalOpen && (
+        <DatabaseViewerModal
+          isOpen={isDbModalOpen}
+          onClose={() => setIsDbModalOpen(false)}
+        />
+      )}
     </main>
   );
 }

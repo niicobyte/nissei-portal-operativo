@@ -5,6 +5,7 @@ import {
   ADMIN_HEADER_NAME,
   UserProfile,
   isAuthorizedForPath,
+  verifyClientKeyAgainstProfile,
 } from "@/data/authData";
 
 interface ResolvedSession {
@@ -12,7 +13,7 @@ interface ResolvedSession {
   outdatedDeploy: boolean;
 }
 
-function resolveAuthenticatedUser(req: NextRequest): ResolvedSession {
+export function resolveAuthenticatedUser(req: NextRequest): ResolvedSession {
   const rawCookie = req.cookies.get(AUTH_COOKIE_NAME)?.value;
   if (!rawCookie) return { user: null, outdatedDeploy: false };
 
@@ -22,11 +23,11 @@ function resolveAuthenticatedUser(req: NextRequest): ResolvedSession {
 
     const parts = cookieVal.split(":");
     const id = parts[0];
-    const hash = parts[1];
+    const clientKey = parts[1];
     const expiresAt = parts[2] ? Number(parts[2]) : null;
     const cookieDeployId = (parts[3] || "").trim();
 
-    if (!id || !hash) return { user: null, outdatedDeploy: false };
+    if (!id || !clientKey) return { user: null, outdatedDeploy: false };
 
     // Si tiene expiración y el tiempo actual superó el límite de inactividad: EXPIRADO
     if (expiresAt && Date.now() > expiresAt) {
@@ -34,7 +35,7 @@ function resolveAuthenticatedUser(req: NextRequest): ResolvedSession {
     }
 
     const found = USER_PROFILES.find(
-      (p) => p.id === id && p.passwordHash === hash
+      (p) => p.id === id && verifyClientKeyAgainstProfile(clientKey, p)
     );
     if (!found) return { user: null, outdatedDeploy: false };
 
@@ -51,11 +52,11 @@ function resolveAuthenticatedUser(req: NextRequest): ResolvedSession {
   }
 }
 
-function hasValidAdminHeader(req: NextRequest): boolean {
-  const headerHash = req.headers.get(ADMIN_HEADER_NAME);
-  if (!headerHash) return false;
+export function hasValidAdminHeader(req: NextRequest): boolean {
+  const headerClientKey = req.headers.get(ADMIN_HEADER_NAME);
+  if (!headerClientKey) return false;
   const adminProfile = USER_PROFILES.find((p) => p.id === "admin");
-  return Boolean(adminProfile && adminProfile.passwordHash === headerHash);
+  return verifyClientKeyAgainstProfile(headerClientKey, adminProfile);
 }
 
 export function middleware(req: NextRequest) {

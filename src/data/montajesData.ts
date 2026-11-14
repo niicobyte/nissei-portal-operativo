@@ -1837,7 +1837,7 @@ export function parseSkuImportText(rawText: string): SkuCatalogItem[] {
   return mergeSkuCatalogItems(parsed);
 }
 
-export const MONTAJES_WHATSAPP_GROUP_ID = "120363428540171277@g.us";
+export const MONTAJES_WHATSAPP_GROUP_ID = "GRUPO_MONTAJES_SATI";
 
 export function formatMontajeWhatsAppMessage(params: {
   cliente: string;

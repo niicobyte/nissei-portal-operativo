@@ -19,9 +19,9 @@ export interface WhapiResponse {
 }
 
 export const WHAPI_GROUPS: Record<WhapiChannel, string> = {
-  MONTAJES: process.env.WHAPI_GROUP_MONTAJES || "120363428540171277@g.us",
-  RECEPCION: process.env.WHAPI_GROUP_RECEPCION || "120363426626761732@g.us",
-  TALLER: process.env.WHAPI_GROUP_TALLER || "120363288459442182@g.us",
+  MONTAJES: (process.env.WHAPI_GROUP_MONTAJES || "").trim(),
+  RECEPCION: (process.env.WHAPI_GROUP_RECEPCION || "").trim(),
+  TALLER: (process.env.WHAPI_GROUP_TALLER || "").trim(),
 };
 
 export async function sendWhapiMessage({
@@ -45,7 +45,11 @@ export async function sendWhapiMessage({
 
   // Determinar destino desde canal seguro o número explícito validado
   let destination = to;
-  if (!destination || destination.trim() === "") {
+  if (
+    !destination ||
+    destination.trim() === "" ||
+    destination === "GRUPO_MONTAJES_SATI"
+  ) {
     if (channel && WHAPI_GROUPS[channel]) {
       destination = WHAPI_GROUPS[channel];
     } else {

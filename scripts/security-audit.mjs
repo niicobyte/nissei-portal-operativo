@@ -8,6 +8,7 @@
 
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { execSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { performance } from 'perf_hooks';
@@ -111,15 +112,49 @@ if (fs.existsSync(envExamplePath)) {
 // ============================================================================
 log(`\n[CHECK 2] Escaneo de fugas de secretos, tokens y credenciales en código...`, colors.bold);
 
-// Firma de comprobación segura para WhaApi
-const whapiSignature = Buffer.from('aFRWNE1RQnFtNE1nd0Vkczl0OWEwTUlUVUhtNk1oVmo=', 'base64').toString('utf-8');
+// Firma irreversible SHA-256 (one-way digest) para detectar el token histórico de WhaApi
+// sin almacenar ni exponer el secreto (ni en texto plano ni en Base64) dentro del repositorio.
+const REVOKED_WHAPI_TOKEN_SHA256 = '81d49fe8539c9f88ca39312f25c58a81a043e0d847b0867bdc76a3fd641a8d1a';
+
+function lineContainsRevokedWhapiToken(line) {
+  // 1. Verificar candidatos alfanuméricos de 32 caracteres mediante SHA-256
+  const candidates = line.match(/[A-Za-z0-9]{32}/g) || [];
+  for (const token of candidates) {
+    const digest = crypto.createHash('sha256').update(token).digest('hex');
+    if (digest === REVOKED_WHAPI_TOKEN_SHA256) return true;
+  }
+  // 2. Verificar candidatos codificados en Base64 de 44 caracteres
+  const b64Candidates = line.match(/[A-Za-z0-9+/]{43}=/g) || [];
+  for (const b64 of b64Candidates) {
+    try {
+      const decoded = Buffer.from(b64, 'base64');
+      const digest = crypto.createHash('sha256').update(decoded).digest('hex');
+      if (digest === REVOKED_WHAPI_TOKEN_SHA256) return true;
+    } catch {
+      // Ignorar Base64 inválido
+    }
+  }
+  return false;
+}
 
 const secretRules = [
   {
-    name: 'Token real de WhaApi en código fuente',
-    test: (line) => line.includes(whapiSignature),
+    name: 'Token real de WhaApi (plano o Base64) en código fuente',
+    test: (line) => lineContainsRevokedWhapiToken(line),
     severity: 'CRÍTICA',
-    exclude: ['scripts/security-audit.mjs', '.env.local'],
+    exclude: ['.env.local'],
+  },
+  {
+    name: 'ID real de Grupo de WhatsApp (@g.us) hardcodeado en código fuente',
+    test: (line) => /\b[0-9]{15,}@g\.us\b/.test(line),
+    severity: 'CRÍTICA',
+    exclude: ['.env.local', 'scripts/security-audit.mjs'],
+  },
+  {
+    name: 'Backdoor de contraseña en texto plano detectado',
+    test: (line) => /cleanLower\s*===\s*["'](?:sati|danesa|deposito\.danesa)["']/i.test(line),
+    severity: 'CRÍTICA',
+    exclude: ['scripts/security-audit.mjs'],
   },
   {
     name: 'Clave privada RSA / EC / PGP / OPENSSH expuesta',

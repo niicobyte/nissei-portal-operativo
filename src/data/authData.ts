@@ -16,13 +16,13 @@ export interface UserProfile {
 }
 
 const AUTH_SALT = "NISSEI_SATI_SALT_2026::";
+const STORED_KEY_SALT = "NISSEI_STORED_KEY_2026::";
+const ADMIN_SESSION_KEY_STORAGE = "nissei_admin_key_v1";
 
 /**
- * Implementación síncrona estándar FIPS 180-4 SHA-256 para verificación
- * sin exponer contraseñas en texto plano en el cliente ni en localStorage.
+ * Implementación síncrona estándar FIPS 180-4 SHA-256.
  */
-export function hashPasswordSHA256(plainText: string): string {
-  const ascii = AUTH_SALT + plainText.trim();
+function computeRawSHA256(ascii: string): string {
   function rightRotate(value: number, amount: number): number {
     return (value >>> amount) | (value << (32 - amount));
   }
@@ -92,6 +92,32 @@ export function hashPasswordSHA256(plainText: string): string {
   return result;
 }
 
+/**
+ * Deriva la clave de sesión (ClientKey) a partir de la contraseña ingresada.
+ * Esta clave nunca se almacena en el código fuente.
+ */
+export function hashPasswordSHA256(plainText: string): string {
+  return computeRawSHA256(AUTH_SALT + plainText.trim());
+}
+
+/**
+ * Deriva el verificador público (StoredKey = SHA256(STORED_KEY_SALT + ClientKey))
+ * estilo SCRAM (RFC 5802) para impedir ataques Pass-the-Hash.
+ */
+export function deriveStoredKey(clientKey: string): string {
+  if (!clientKey || !/^[a-f0-9]{64}$/i.test(clientKey.trim())) return "";
+  return computeRawSHA256(STORED_KEY_SALT + clientKey.trim().toLowerCase());
+}
+
+export function verifyClientKeyAgainstProfile(
+  clientKey: string | null | undefined,
+  profile: UserProfile | undefined
+): boolean {
+  if (!clientKey || !profile) return false;
+  const storedKey = deriveStoredKey(clientKey);
+  return Boolean(storedKey && storedKey === profile.passwordHash);
+}
+
 export const USER_PROFILES: UserProfile[] = [
   // 1. Recepción
   {
@@ -99,7 +125,7 @@ export const USER_PROFILES: UserProfile[] = [
     nombre: "Recepción Post-Venta",
     role: "RECEPCION",
     password: "•••••••• (SHA-256)",
-    passwordHash: "a2255cd0873c7ad4aac5368a603eed56b24f2971d9ee5ebe37e7d80a31d36829",
+    passwordHash: "abd0efa2316e74673f6fb12bacc5afc9b362ac4f9408810c9e9f08b82d51c246",
     defaultRoute: "/recepcion",
     avatar: "RP",
     badge: "Módulo Post-Venta",
@@ -112,7 +138,7 @@ export const USER_PROFILES: UserProfile[] = [
     nombre: "SATI ASU - CDE",
     role: "DEPOSITO",
     password: "•••••••• (SHA-256)",
-    passwordHash: "4f281fab5c3e2ec65e3f763768ef9f866972b62e5a065a4ba918f316dba4ae31",
+    passwordHash: "452c82e71e23b5aa61a43503de128fe4b8094ebe22cc1b54559e4aba9ffff6f7",
     defaultRoute: "/recepcion/cde",
     avatar: "SC",
     badge: "SATI ASU - CDE",
@@ -125,7 +151,7 @@ export const USER_PROFILES: UserProfile[] = [
     nombre: "Taller de Montajes",
     role: "MONTAJES",
     password: "•••••••• (SHA-256)",
-    passwordHash: "a2255cd0873c7ad4aac5368a603eed56b24f2971d9ee5ebe37e7d80a31d36829",
+    passwordHash: "abd0efa2316e74673f6fb12bacc5afc9b362ac4f9408810c9e9f08b82d51c246",
     defaultRoute: "/tecnicos",
     avatar: "TM",
     badge: "Ensamble PC & Telemetría",
@@ -138,7 +164,7 @@ export const USER_PROFILES: UserProfile[] = [
     nombre: "Admin",
     role: "ADMIN",
     password: "•••••••• (SHA-256)",
-    passwordHash: "971de3a8bfa49be2039be8a1ac642316e9c2a5e3024e9da6592c6825d31ca44b",
+    passwordHash: "8daabf75a53a18f5d726d41f2b9d434ec50528df5ebf58cb192757dbaef8aa24",
     defaultRoute: "/reparaciones",
     avatar: "AD",
     badge: "Supervisor General SATI",
@@ -151,7 +177,7 @@ export const USER_PROFILES: UserProfile[] = [
     nombre: "Carlos",
     role: "TECNICO",
     password: "•••••••• (SHA-256)",
-    passwordHash: "0018ce884ad779f3a57e79ac29b66490de49fe6adb0eebf164b3d5be2ce2b639",
+    passwordHash: "483b73216112b2e0ddfe2a8147ebb6dec59e27bb3c3b49e829a3772a7d2c540a",
     defaultRoute: "/reparaciones",
     avatar: "CA",
     badge: "Técnico",
@@ -162,7 +188,7 @@ export const USER_PROFILES: UserProfile[] = [
     nombre: "Enrique",
     role: "TECNICO",
     password: "•••••••• (SHA-256)",
-    passwordHash: "2f7b84d0802af1866ff812187f223a79165c81964cb7d7b2a3df581b729423d9",
+    passwordHash: "8602ff483c90ad8f5c263943fac3ff9201f030a7f79bd54d4a2423357f05a9a3",
     defaultRoute: "/reparaciones",
     avatar: "EN",
     badge: "Técnico",
@@ -173,7 +199,7 @@ export const USER_PROFILES: UserProfile[] = [
     nombre: "Michael",
     role: "TECNICO",
     password: "•••••••• (SHA-256)",
-    passwordHash: "30b668a7495bba0a28cb80ef28565be5be46ac7b7b8853cb1d71d29b8135df83",
+    passwordHash: "0971bddfa020e938c267c68e7332f241937ed3736969d5511af9f530662d1cc2",
     defaultRoute: "/reparaciones",
     avatar: "MI",
     badge: "Técnico",
@@ -184,7 +210,7 @@ export const USER_PROFILES: UserProfile[] = [
     nombre: "Marcelo",
     role: "TECNICO",
     password: "•••••••• (SHA-256)",
-    passwordHash: "b08282fbf74e65e7ea187019b6cadbfdba8ff35448c8677750d2a523b037e4d2",
+    passwordHash: "3fee89355384ab414596875cf3e18171b8d379097f400719b8f917a541b7b889",
     defaultRoute: "/reparaciones",
     avatar: "MA",
     badge: "Técnico",
@@ -254,20 +280,36 @@ export function consumePendingReturnTo(): string | null {
   return val;
 }
 
-export function syncSessionCookie(profile: UserProfile | null, deployVersion?: string | null): void {
+function getStoredClientKey(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return typeof parsed?.clientKey === "string" && parsed.clientKey ? parsed.clientKey : null;
+  } catch {
+    return null;
+  }
+}
+
+export function syncSessionCookie(
+  profile: UserProfile | null,
+  deployVersion?: string | null,
+  clientKey?: string | null
+): void {
   if (typeof document === "undefined") return;
   try {
-    if (!profile) {
+    const effectiveKey = clientKey || getStoredClientKey();
+    if (!profile || !effectiveKey || !verifyClientKeyAgainstProfile(effectiveKey, profile)) {
       document.cookie = `${AUTH_COOKIE_NAME}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Strict`;
       return;
     }
     const expiresAt = Date.now() + SESSION_TIMEOUT_MS;
     const safeDeploy = sanitizeDeployVersion(deployVersion ?? getSessionDeployVersion());
     const tokenValue = safeDeploy
-      ? `${profile.id}:${profile.passwordHash}:${expiresAt}:${safeDeploy}`
-      : `${profile.id}:${profile.passwordHash}:${expiresAt}`;
-    // Cookie de sesión (sin max-age persistente) para que expire al cerrar el navegador,
-    // y con timestamp de 1 hora + deployVersion para invalidar sesiones de deploys anteriores.
+      ? `${profile.id}:${effectiveKey}:${expiresAt}:${safeDeploy}`
+      : `${profile.id}:${effectiveKey}:${expiresAt}`;
+    // Cookie de sesión con ClientKey verificable por StoredKey (SCRAM)
     document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(tokenValue)}; path=/; SameSite=Strict`;
   } catch {
     // Ignore cookie errors in restricted contexts
@@ -283,9 +325,19 @@ export function getSafeUserProfiles(): UserProfile[] {
 }
 
 export function getAdminAuthHeaders(): Record<string, string> {
+  if (typeof window === "undefined") return {};
   const adminProfile = USER_PROFILES.find((p) => p.id === "admin");
   if (!adminProfile) return {};
-  return { [ADMIN_HEADER_NAME]: adminProfile.passwordHash };
+  try {
+    const cachedAdminKey =
+      sessionStorage.getItem(ADMIN_SESSION_KEY_STORAGE) || getStoredClientKey();
+    if (cachedAdminKey && verifyClientKeyAgainstProfile(cachedAdminKey, adminProfile)) {
+      return { [ADMIN_HEADER_NAME]: cachedAdminKey };
+    }
+  } catch {
+    // Ignore storage error
+  }
+  return {};
 }
 
 /**
@@ -297,16 +349,15 @@ export function touchSession(): void {
     const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.id) return;
+    if (!parsed || !parsed.id || !parsed.clientKey) return;
+    const found = USER_PROFILES.find((p) => p.id === parsed.id);
+    if (!found || !verifyClientKeyAgainstProfile(parsed.clientKey, found)) return;
+
     const now = Date.now();
     parsed.lastActive = now;
     sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
-
-    const found = USER_PROFILES.find((p) => p.id === parsed.id);
-    if (found) {
-      syncSessionCookie(found);
-    }
+    syncSessionCookie(found, parsed.deployVersion, parsed.clientKey);
   } catch {
     // Ignore error
   }
@@ -326,7 +377,7 @@ export function getActiveUser(): UserProfile | null {
       return null;
     }
     const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.id || !parsed.ts) {
+    if (!parsed || !parsed.id || !parsed.ts || !parsed.clientKey) {
       logout();
       return null;
     }
@@ -341,12 +392,12 @@ export function getActiveUser(): UserProfile | null {
     }
 
     const found = USER_PROFILES.find((p) => p.id === parsed.id);
-    if (found) {
+    if (found && verifyClientKeyAgainstProfile(parsed.clientKey, found)) {
       // Renovar actividad en memoria
       parsed.lastActive = now;
       sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
       localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
-      syncSessionCookie(found);
+      syncSessionCookie(found, parsed.deployVersion, parsed.clientKey);
       return found;
     }
 
@@ -378,14 +429,14 @@ export function updateSessionDeployVersion(deployVersion: string | null | undefi
     const raw = sessionStorage.getItem(AUTH_STORAGE_KEY) || localStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return;
     const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.id) return;
+    if (!parsed || !parsed.id || !parsed.clientKey) return;
     parsed.deployVersion = safeDeploy;
     sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(parsed));
 
     const found = USER_PROFILES.find((p) => p.id === parsed.id);
-    if (found) {
-      syncSessionCookie(found, safeDeploy);
+    if (found && verifyClientKeyAgainstProfile(parsed.clientKey, found)) {
+      syncSessionCookie(found, safeDeploy, parsed.clientKey);
     }
   } catch {
     // Ignore
@@ -411,9 +462,16 @@ export async function fetchServerDeployId(timeoutMs = 3000): Promise<string | nu
   }
 }
 
-export function setActiveUser(profile: UserProfile, deployVersion?: string | null): void {
+export function setActiveUser(
+  profile: UserProfile,
+  deployVersion?: string | null,
+  clientKey?: string | null
+): void {
   if (typeof window === "undefined") return;
   try {
+    const effectiveKey = clientKey || getStoredClientKey();
+    if (!effectiveKey || !verifyClientKeyAgainstProfile(effectiveKey, profile)) return;
+
     const now = Date.now();
     // Limpieza estricta de residuos antiguos
     localStorage.removeItem("nissei_active_session_v1");
@@ -428,13 +486,17 @@ export function setActiveUser(profile: UserProfile, deployVersion?: string | nul
       defaultRoute: profile.defaultRoute,
       avatar: profile.avatar,
       badge: profile.badge,
+      clientKey: effectiveKey,
       ts: now,
       lastActive: now,
       ...(safeDeploy ? { deployVersion: safeDeploy } : {}),
     };
     sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeSession));
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(safeSession));
-    syncSessionCookie(profile, safeDeploy);
+    if (profile.role === "ADMIN") {
+      sessionStorage.setItem(ADMIN_SESSION_KEY_STORAGE, effectiveKey);
+    }
+    syncSessionCookie(profile, safeDeploy, effectiveKey);
   } catch (e) {
     console.error("Error al guardar sesión activa:", e);
   }
@@ -444,6 +506,7 @@ export function logout(): void {
   if (typeof window === "undefined") return;
   try {
     sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    sessionStorage.removeItem(ADMIN_SESSION_KEY_STORAGE);
     localStorage.removeItem(AUTH_STORAGE_KEY);
     localStorage.removeItem("nissei_active_session_v1");
     localStorage.removeItem("nissei_active_session_v2");
@@ -457,7 +520,16 @@ export function logout(): void {
 export function verifyAdminPassword(enteredPassword: string): boolean {
   const adminProfile = USER_PROFILES.find((p) => p.id === "admin");
   if (!adminProfile || !enteredPassword.trim()) return false;
-  return hashPasswordSHA256(enteredPassword) === adminProfile.passwordHash;
+  const clientKey = hashPasswordSHA256(enteredPassword);
+  const isValid = verifyClientKeyAgainstProfile(clientKey, adminProfile);
+  if (isValid && typeof window !== "undefined") {
+    try {
+      sessionStorage.setItem(ADMIN_SESSION_KEY_STORAGE, clientKey);
+    } catch {
+      // Ignore storage error
+    }
+  }
+  return isValid;
 }
 
 export function verifyDepositoPassword(enteredPassword: string): boolean {
@@ -465,18 +537,8 @@ export function verifyDepositoPassword(enteredPassword: string): boolean {
   if (!clean) return false;
   const depositoProfile = USER_PROFILES.find((p) => p.id === "deposito.danesa");
   if (!depositoProfile) return false;
-  const hash = hashPasswordSHA256(clean);
-  const cleanLower = clean.toLowerCase();
-  return (
-    hash === depositoProfile.passwordHash ||
-    cleanLower === "deposito.danesa" ||
-    cleanLower === "danesa" ||
-    cleanLower === "sati" ||
-    cleanLower === "sati asu - cde" ||
-    cleanLower === "sati asu cde" ||
-    cleanLower === "sati-cde" ||
-    verifyAdminPassword(clean)
-  );
+  const clientKey = hashPasswordSHA256(clean);
+  return verifyClientKeyAgainstProfile(clientKey, depositoProfile) || verifyAdminPassword(clean);
 }
 
 export function authenticate(
@@ -489,18 +551,15 @@ export function authenticate(
   }
 
   const clean = enteredPassword.trim();
-  const cleanLower = clean.toLowerCase();
-  const candidateHash = hashPasswordSHA256(clean);
-  const isValid =
-    candidateHash === user.passwordHash ||
-    (user.id === "deposito.danesa" && (
-      cleanLower === "deposito.danesa" ||
-      cleanLower === "danesa" ||
-      cleanLower === "sati" ||
-      cleanLower === "sati asu - cde" ||
-      cleanLower === "sati asu cde" ||
-      cleanLower === "sati-cde"
-    ));
+  if (!clean) {
+    return {
+      success: false,
+      message: "Debe ingresar una contraseña válida.",
+    };
+  }
+
+  const clientKey = hashPasswordSHA256(clean);
+  const isValid = verifyClientKeyAgainstProfile(clientKey, user);
 
   if (!isValid) {
     return {
@@ -509,6 +568,6 @@ export function authenticate(
     };
   }
 
-  setActiveUser(user);
+  setActiveUser(user, undefined, clientKey);
   return { success: true, message: "Autenticación exitosa.", user };
 }

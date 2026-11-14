@@ -222,7 +222,7 @@ export default function TecnicosDashboardPage() {
     toastTimerRef.current = setTimeout(() => setNotification(null), duration);
   };
 
-  // Enviar o reenviar la ficha del montaje al grupo de WhatsApp (120363428540171277@g.us)
+  // Enviar o reenviar la ficha del montaje al grupo de WhatsApp configurado en el servidor
   const handleSendOrderToWhatsApp = async (order: OrdenMontajeReal) => {
     setIsSendingWhatsApp(true);
     try {

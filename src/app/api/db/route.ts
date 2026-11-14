@@ -26,6 +26,7 @@ import {
   isOrderPairChronologicallyCoherent,
   pickBestChronologicalCandidate,
 } from "@/lib/crossMatch";
+import { resolveAuthenticatedUser, hasValidAdminHeader } from "@/middleware";
 
 export const dynamic = "force-dynamic";
 
@@ -1141,8 +1142,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
-    // 14. Eliminar registro individual de cualquier tabla desde el Visor de Base de Datos
+    // 14. Eliminar registro individual de cualquier tabla desde el Visor de Base de Datos (Solo ADMIN)
     if (action === "DELETE_ROW") {
+      const { user } = resolveAuthenticatedUser(req);
+      if (user?.role !== "ADMIN" && !hasValidAdminHeader(req)) {
+        return NextResponse.json(
+          { ok: false, error: "Autorización de Administrador requerida para eliminar registros." },
+          { status: 403 }
+        );
+      }
+
       const { table, id } = body;
       if (!table || !id) {
         return NextResponse.json(
