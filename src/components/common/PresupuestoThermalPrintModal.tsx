@@ -45,6 +45,95 @@ export interface PresupuestoThermalData {
   fecha?: string;
 }
 
+export function formatearNombreComponenteBasico(raw: string, categoria?: string): string {
+  if (!raw) return "";
+  let s = raw.trim();
+
+  // Caso especial cooler de fábrica
+  if (/cooler\s+de\s+f[aá]brica/i.test(s) || /stock-cooler/i.test(s)) {
+    return "Cooler de Fábrica (Stock)";
+  }
+
+  // 1. CPU: AMD Ryzen o Intel Core
+  if (categoria === "PROCESADOR" || /Ryzen|Intel|Core\s+i|Core\s+Ultra/i.test(s)) {
+    const cpuIntel = s.match(/(Intel\s+Core\s+(?:Ultra\s+)?[iI][3579]-\w+|\bIntel\s+Core\s+\w+-\w+)/i);
+    if (cpuIntel) return cpuIntel[1];
+    const cpuRyzen = s.match(/(AMD\s+Ryzen\s+[3579]\s+\w+|Ryzen\s+[3579]\s+\w+)/i);
+    if (cpuRyzen) return cpuRyzen[1];
+  }
+
+  // Quitar prefijos comunes redundantes
+  s = s.replace(
+    /^(Procesador|Placa Madre|Memoria RAM|Placa de Video|Tarjeta Gr[aá]fica|Tarjeta de Video|Fuente de Alimentaci[oó]n|Fuente)\s+/i,
+    ""
+  );
+
+  // 2. RAM: Ej "Adata GAMMIX D35 8GB DDR4 3200MHz" o "Adata 16GB DDR5 5600MHz"
+  if (categoria === "RAM" || (/DDR[45]/i.test(s) && /\b\d+\s*GB\b/i.test(s))) {
+    const ddr = s.match(/DDR[45]/i)?.[0] || "";
+    const cap = s.match(/\b\d+\s*GB\b/i)?.[0]?.replace(/\s+/, "") || "";
+    const mhz = s.match(/\b\d{4}\s*MHz\b/i)?.[0]?.replace(/\s+/, "") || "";
+    const marca = s.match(/\b(Adata|Corsair|Kingston|Fury|Crucial|G\.Skill|Teamgroup|Patriot)\b/i)?.[0] || "";
+    const modelo = s.match(/\b(GAMMIX\s+D\d+|Lancer|Beast|Vengeance|Ripjaws|T-Force)\b/i)?.[0] || "";
+    const res = `${marca} ${modelo} ${cap} ${ddr} ${mhz}`.replace(/\s+/g, " ").trim();
+    if (res.length > 5) return res;
+  }
+
+  // 3. GPU: Ej "Palit GeForce RTX 3050 6GB" o "MSI GeForce RTX 4060 8GB"
+  if (categoria === "GPU" || /GeForce|Radeon|RTX|GTX|RX\s*\d+/i.test(s)) {
+    const gpuMatch = s.match(/(GeForce\s+RTX\s+\d+|GeForce\s+GTX\s+\d+|Radeon\s+RX\s+\d+\w*)/i);
+    if (gpuMatch) {
+      const marca = s.match(/\b(Palit|MSI|ASUS|Gigabyte|Zotac|PowerColor|Sapphire|ASRock|PNY)\b/i)?.[0] || "";
+      const vram = s.match(/\b\d+\s*GB\b/i)?.[0]?.replace(/\s+/, "") || "";
+      return `${marca} ${gpuMatch[1]} ${vram}`.replace(/\s+/g, " ").trim();
+    }
+  }
+
+  // 4. SSD / Almacenamiento: Ej "SSD WD Green SN3000 500GB M.2"
+  if (categoria === "ALMACENAMIENTO" || /SSD|NVMe|M\.2|Disco/i.test(s)) {
+    const cap = s.match(/\b(\d+\s*(?:GB|TB))\b/i)?.[0]?.replace(/\s+/, "") || "";
+    const marca = s.match(/\b(Western Digital|WD|Kingston|Samsung|Crucial|Adata|Lexar|Gigabyte)\b/i)?.[0] || "";
+    const serie = s.match(/\b(Green|Blue|Black|Plus|Evo)\b/i)?.[0] || "";
+    const modelSn = s.match(/\b(SN\d+|NV\d+|KC\d+|NM\d+)\b/i)?.[0] || "";
+    const res = `SSD ${marca} ${serie} ${modelSn} ${cap} M.2`
+      .replace(/Western Digital/i, "WD")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (res.length > 8) return res;
+  }
+
+  // 5. Placa Madre: Ej "ASUS TUF B760-PLUS DDR5 Wi-Fi"
+  if (categoria === "PLACA_MADRE" || /\b[BAZXH]\d{3}[A-Z]*(?:-[A-Z0-9]+)?\b/i.test(s)) {
+    const marca = s.match(/\b(ASUS|ASRock|Gigabyte|MSI|Biostar)\b/i)?.[0] || "";
+    const serie = s.match(/\b(TUF|ROG|ProArt|Gaming|Steel Legend|Phantom|Eagle|AORUS|PRO)\b/i)?.[0] || "";
+    const chipset = s.match(/\b([BAZXH]\d{3}[A-Z]*(?:-[A-Z0-9]+)?)\b/i)?.[0] || "";
+    const wifi = /Wi-?Fi/i.test(s) ? "Wi-Fi" : "";
+    const ddr = s.match(/DDR[45]/i)?.[0] || "";
+    const res = `${marca} ${serie} ${chipset} ${ddr} ${wifi}`.replace(/\s+/g, " ").trim();
+    if (res.length > 5) return res;
+  }
+
+  // 6. Fuentes: Ej "Fuente ASRock PRO-650B 650W 80+ Bronze"
+  if (categoria === "FUENTE" || /\b\d{3,4}\s*W\b/i.test(s)) {
+    const marca = s.match(/\b(ASRock|Gigabyte|Corsair|EVGA|MSI|Redragon|Cooler Master)\b/i)?.[0] || "";
+    const modelo = s.match(/\b(PRO-[A-Z0-9]+|GP-[A-Z0-9]+|CX\d+|CV\d+|MAG|Smart)\b/i)?.[0] || "";
+    const w = s.match(/\b\d{3,4}\s*W\b/i)?.[0]?.replace(/\s+/, "") || "";
+    const cert = s.match(/80\s*PLUS\s*(Bronze|Gold|White|Silver|Platinum)?/i);
+    const certStr = cert ? `80+ ${cert[1] || ""}`.trim() : "";
+    return `Fuente ${marca} ${modelo} ${w} ${certStr}`.replace(/\s+/g, " ").trim();
+  }
+
+  // 7. Limpieza de relleno para otros productos
+  return s
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\s*-\s*(Negro|Blanco|Black|White)$/i, "")
+    .replace(/\s*LGA\s*\d+/gi, "")
+    .replace(/\s*AM[45]/gi, "")
+    .replace(/\s*\d+\s*N[uú]cleos.*/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 interface PresupuestoThermalPrintModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -57,6 +146,7 @@ export function PresupuestoThermalPrintModal({
   data,
 }: PresupuestoThermalPrintModalProps) {
   const [mounted, setMounted] = useState(false);
+  const [useShortNames, setUseShortNames] = useState(true);
   const [thermalSettings, setThermalSettings] = useState<ThermalPrintSettings>(
     DEFAULT_THERMAL_PRINT_SETTINGS
   );
@@ -345,7 +435,7 @@ export function PresupuestoThermalPrintModal({
               </div>
             </div>
 
-            {/* Escala y Calibración Y */}
+            {/* Escala y Calibración Y / X */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
@@ -384,7 +474,7 @@ export function PresupuestoThermalPrintModal({
               </div>
             </div>
 
-            {/* Margen y Ajuste Fino Vertical Y */}
+            {/* Ajuste Fino de Ejes: Vertical (Y) y Horizontal (X) */}
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
@@ -429,16 +519,61 @@ export function PresupuestoThermalPrintModal({
               </div>
 
               <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-zinc-700">Posición Horizontal (X):</span>
+                  <span className="font-mono font-bold text-zinc-900">
+                    {thermalSettings.offsetXMm > 0 ? `+${thermalSettings.offsetXMm}` : thermalSettings.offsetXMm}mm
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={-8}
+                  max={8}
+                  step={0.5}
+                  value={thermalSettings.offsetXMm}
+                  onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
+                  className="w-full accent-zinc-900 cursor-pointer"
+                  title="Ajuste horizontal fino (+/- mm). Mueve el ticket a la izquierda o derecha"
+                />
+                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetXMm", -4)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    -4mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetXMm", 0)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    0mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetXMm", 4)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    +4mm
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Márgenes Laterales y Modo de Nombres */}
+            <div className="space-y-2 pt-1 border-t border-zinc-200">
+              <div className="space-y-1">
                 <span className="font-bold text-zinc-700 block text-[11px]">Márgenes Laterales:</span>
-                <div className="grid grid-cols-3 gap-1">
+                <div className="grid grid-cols-3 gap-1.5">
                   {[0, 2, 4].map((mm) => (
                     <button
                       key={mm}
                       type="button"
                       onClick={() => updateThermalSetting("marginMm", mm)}
-                      className={`py-1.5 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-colors ${
+                      className={`py-1 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-colors ${
                         thermalSettings.marginMm === mm
-                          ? "bg-zinc-900 text-white border-zinc-900"
+                          ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
                           : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
                       }`}
                     >
@@ -446,6 +581,45 @@ export function PresupuestoThermalPrintModal({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Formato de nombres de componentes en el ticket */}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-zinc-700">Formato de Nombres en Ticket:</span>
+                  <span className="font-mono font-bold text-zinc-900 text-[10px]">
+                    {useShortNames ? "Básico / Limpio" : "Descripción Completa"}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setUseShortNames(true)}
+                    className={`py-1.5 px-2 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-all ${
+                      useShortNames
+                        ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
+                        : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
+                    }`}
+                  >
+                    ✓ Básico (ej: Ryzen 5 7900X)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUseShortNames(false)}
+                    className={`py-1.5 px-2 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-all ${
+                      !useShortNames
+                        ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
+                        : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
+                    }`}
+                  >
+                    Descripción Web Completa
+                  </button>
+                </div>
+                <p className="text-[10px] text-zinc-500 leading-tight">
+                  {useShortNames
+                    ? "Limpio y directo: Muestra el modelo principal sin datos redundantes de socket ni núcleos."
+                    : "Muestra la descripción completa del producto sin recortar nada con puntos (...)."}
+                </p>
               </div>
             </div>
 
@@ -473,6 +647,10 @@ export function PresupuestoThermalPrintModal({
                 : thermalSettings.paperProfile === "80_72"
                 ? "290px"
                 : "310px",
+            transform:
+              thermalSettings.offsetXMm !== 0
+                ? `translateX(${thermalSettings.offsetXMm}mm)`
+                : undefined,
           }}
         >
           <div
@@ -530,28 +708,33 @@ export function PresupuestoThermalPrintModal({
               </div>
 
               <div className="space-y-2 pt-1">
-                {data.items.map((item, idx) => (
-                  <div key={idx} className="text-[11px] font-mono leading-tight space-y-0.5">
-                    <div className="flex items-start justify-between gap-1">
-                      <span className="font-black text-black line-clamp-2">
-                        {item.nombre}
-                      </span>
-                      <span className="font-black text-black shrink-0 whitespace-nowrap">
-                        ₲ {item.subtotalPyg.toLocaleString("es-PY")}
-                      </span>
+                {data.items.map((item, idx) => {
+                  const displayNombre = useShortNames
+                    ? formatearNombreComponenteBasico(item.nombre, item.categoria)
+                    : item.nombre;
+                  return (
+                    <div key={idx} className="text-[11px] font-mono leading-tight space-y-0.5">
+                      <div className="flex items-start justify-between gap-1.5">
+                        <span className="font-black text-black break-words whitespace-normal leading-snug flex-1">
+                          {displayNombre}
+                        </span>
+                        <span className="font-black text-black shrink-0 whitespace-nowrap pl-1 text-right">
+                          ₲ {item.subtotalPyg.toLocaleString("es-PY")}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-black/80 font-bold">
+                        <span>
+                          SKU #{item.sku} · Cant: {item.cantidad}
+                        </span>
+                        <span>
+                          {item.cantidad > 1
+                            ? `(₲ ${item.precioUnitarioPyg.toLocaleString("es-PY")} c/u)`
+                            : ""}
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-[10px] text-black/80 font-bold">
-                      <span>
-                        SKU #{item.sku} · Cant: {item.cantidad}
-                      </span>
-                      <span>
-                        {item.cantidad > 1
-                          ? `(₲ ${item.precioUnitarioPyg.toLocaleString("es-PY")} c/u)`
-                          : ""}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
