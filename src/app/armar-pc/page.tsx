@@ -41,6 +41,7 @@ import {
   AreaVendedor,
 } from "@/data/montajesData";
 import { VendedorSelect } from "@/components/common/VendedorSelect";
+import { CleanSelect } from "@/components/common/CleanSelect";
 
 interface NisseiLiveItemDto {
   sku: string;
@@ -1133,28 +1134,28 @@ export default function ArmarPcPresupuestadorPage() {
 
   return (
     <main className="min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans relative">
-      {/* Alerta de Advertencia de 8 Segundos al Ingresar */}
+      {/* Alerta de Advertencia de 8 Segundos al Ingresar (Estilo de la página) */}
       {showStockWarning && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[94vw] max-w-xl animate-in fade-in slide-in-from-top-3 duration-200">
-          <div className="bg-zinc-900 text-white border border-amber-500/50 rounded-2xl shadow-2xl overflow-hidden">
+          <div className="bg-white text-zinc-900 border border-zinc-200 rounded-2xl shadow-xl overflow-hidden">
             <div className="p-4 sm:p-5 flex items-start gap-3.5">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-5 h-5 text-amber-400" />
+              <div className="w-9 h-9 rounded-xl bg-zinc-900 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <AlertTriangle className="w-4 h-4 text-amber-400" />
               </div>
 
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs sm:text-sm font-extrabold text-amber-400 tracking-wide uppercase">
+                  <span className="text-xs sm:text-sm font-bold text-zinc-900 tracking-tight">
                     Advertencia de Stock y Disponibilidad
                   </span>
                   <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700 border border-zinc-200">
                       {warningSecondsLeft}s
                     </span>
                     <button
                       type="button"
                       onClick={() => setShowStockWarning(false)}
-                      className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                      className="text-zinc-400 hover:text-zinc-900 p-1 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer"
                       title="Cerrar aviso"
                     >
                       <X className="w-4 h-4" />
@@ -1162,15 +1163,15 @@ export default function ArmarPcPresupuestadorPage() {
                   </div>
                 </div>
 
-                <p className="text-xs sm:text-[13px] text-zinc-200 leading-relaxed">
-                  Estos componentes son de <strong className="text-white font-bold">referencia</strong> y se debe verificar si tenemos disponibilidad física en nuestros stocks:
+                <p className="text-xs text-zinc-600 leading-relaxed">
+                  Estos componentes son de <strong className="text-zinc-900 font-bold">referencia</strong> y se debe verificar si tenemos disponibilidad física en nuestros stocks:
                 </p>
 
                 <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
                   {["PA", "Barrail", "Distrito", "Showroom", "Emap"].map((deposito) => (
                     <span
                       key={deposito}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500 text-zinc-950 shadow-xs"
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-zinc-900 text-white shadow-2xs"
                     >
                       {deposito}
                     </span>
@@ -1180,9 +1181,9 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
 
             {/* Barra de progreso de 8 segundos */}
-            <div className="h-1 w-full bg-zinc-800">
+            <div className="h-1 w-full bg-zinc-100">
               <div
-                className="h-full bg-amber-400 transition-all duration-1000 ease-linear"
+                className="h-full bg-zinc-900 transition-all duration-1000 ease-linear"
                 style={{ width: `${(warningSecondsLeft / 8) * 100}%` }}
               />
             </div>
@@ -1543,27 +1544,30 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
 
             <div>
-              <select
+              <CleanSelect
                 value={selectedBrand}
-                onChange={(e) => {
-                  setSelectedBrand(e.target.value);
+                onChange={(val) => {
+                  setSelectedBrand(val);
                   setDisplayLimit(60);
                 }}
-                className="w-full bg-white border border-zinc-200 rounded-lg px-2.5 py-2 text-xs font-semibold text-zinc-800 outline-none focus:border-zinc-900 transition-colors shadow-2xs cursor-pointer"
-              >
-                <option value="TODAS">
-                  {marcasDisponibles.length > 1
-                    ? `Todas las marcas (${marcasDisponibles.length - 1})`
-                    : "Todas las marcas"}
-                </option>
-                {marcasDisponibles
-                  .filter((m) => m !== "TODAS")
-                  .map((b) => (
-                    <option key={b} value={b}>
-                      {b}
-                    </option>
-                  ))}
-              </select>
+                fullWidth
+                dropdownWidth="w-full"
+                options={[
+                  {
+                    value: "TODAS",
+                    label:
+                      marcasDisponibles.length > 1
+                        ? `Todas las marcas (${marcasDisponibles.length - 1})`
+                        : "Todas las marcas",
+                  },
+                  ...marcasDisponibles
+                    .filter((m) => m !== "TODAS")
+                    .map((b) => ({
+                      value: b,
+                      label: b,
+                    })),
+                ]}
+              />
             </div>
           </div>
 
@@ -2015,18 +2019,20 @@ export default function ArmarPcPresupuestadorPage() {
 
             {/* Servicio de Armado & Totales Estrictos Web */}
             <div className="pt-3 border-t border-zinc-100 space-y-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-zinc-600">Servicio de Montaje &amp; QA:</span>
-                <select
-                  value={costoMontajePyg}
-                  onChange={(e) => setCostoMontajePyg(Number(e.target.value))}
-                  className="bg-zinc-50 border border-zinc-200 rounded px-2.5 py-1 text-xs text-zinc-900 font-mono outline-none focus:border-zinc-900"
-                >
-                  <option value={0}>¡Bonificado / GRATIS!</option>
-                  <option value={120000}>Básico (₲ 120.000)</option>
-                  <option value={200000}>Avanzado + AIO (₲ 200.000)</option>
-                  <option value={320000}>Custom Loop / Express (₲ 320.000)</option>
-                </select>
+              <div className="flex items-center justify-between gap-2 text-xs">
+                <span className="text-zinc-600 font-medium">Servicio de Montaje &amp; QA:</span>
+                <CleanSelect
+                  value={String(costoMontajePyg)}
+                  onChange={(val) => setCostoMontajePyg(Number(val))}
+                  align="right"
+                  dropdownWidth="w-60"
+                  options={[
+                    { value: "0", label: "¡Bonificado / GRATIS!" },
+                    { value: "120000", label: "Básico (₲ 120.000)" },
+                    { value: "200000", label: "Avanzado + AIO (₲ 200.000)" },
+                    { value: "320000", label: "Custom Loop / Express (₲ 320.000)" },
+                  ]}
+                />
               </div>
 
               {/* Resumen Total Estricto con https://nissei.com/py/ */}

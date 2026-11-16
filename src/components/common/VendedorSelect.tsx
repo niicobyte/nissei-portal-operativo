@@ -226,12 +226,12 @@ export function VendedorSelect({
         <div
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
-          } mt-1.5 w-full min-w-[290px] max-w-sm sm:max-w-md max-h-[22rem] overflow-y-auto overscroll-contain bg-white rounded-2xl border border-zinc-200 shadow-2xl p-2 z-50 animate-in fade-in zoom-in-95 duration-150`}
+          } mt-1.5 w-full min-w-[290px] max-w-sm sm:max-w-md bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95 duration-150`}
         >
-          {/* 1. Buscador Superior */}
-          <div className="p-1 border-b border-zinc-100 mb-1.5 sticky top-0 bg-white/95 backdrop-blur-xs z-10">
+          {/* 1. Buscador Superior Fijo */}
+          <div className="p-2 border-b border-zinc-100 bg-white shrink-0">
             <div className="relative flex items-center">
-              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 pointer-events-none" />
+              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -243,7 +243,7 @@ export function VendedorSelect({
                   e.stopPropagation();
                 }}
                 placeholder="Buscar por nombre de vendedor..."
-                className="w-full pl-8 pr-7 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all font-medium"
+                className="w-full pl-8 pr-7 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 outline-none focus:border-zinc-900 focus:bg-white transition-all font-medium"
               />
               {searchQuery && (
                 <button
@@ -260,6 +260,8 @@ export function VendedorSelect({
               )}
             </div>
           </div>
+
+          <div className="p-2 max-h-[18rem] overflow-y-auto overscroll-contain">
 
           {/* Formulario Inline para Agregar Nuevo Vendedor */}
           {isAddingModalOpen ? (
@@ -483,6 +485,7 @@ export function VendedorSelect({
               </div>
             </>
           )}
+          </div>
         </div>
       )}
     </div>

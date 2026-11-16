@@ -51,7 +51,6 @@ export const LISTA_VENDEDORES_REALES = [
   "Ruth Rolon",
   "Matias Fleitas",
   "Jose Gomez",
-  "Ecommerce - Web",
   "Sebastian Alcaraz",
   "Patricia Martinez",
   "Monica Perez"
@@ -81,7 +80,6 @@ export const VENDEDORES_TIENDA_BASE: string[] = [
   "Camila Fleytas",
   "Guillermo Perez",
   "Jose Gomez",
-  "Ecommerce - Web",
   "Sebastian Alcaraz",
   "Patricia Martinez"
 ];
@@ -91,7 +89,12 @@ export const VENDEDORES_CON_AREA_STORAGE_KEY = "nissei_vendedores_categorizados_
 
 function isGenericSalonPlaceholder(name: string): boolean {
   const low = name.trim().toLowerCase();
-  return low.startsWith("salón de ventas") || low.startsWith("salon de ventas");
+  return (
+    low.startsWith("salón de ventas") ||
+    low.startsWith("salon de ventas") ||
+    low === "ecommerce - web" ||
+    low === "ecommerce"
+  );
 }
 
 /**
