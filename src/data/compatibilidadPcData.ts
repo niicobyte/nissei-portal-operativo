@@ -363,23 +363,46 @@ export const CATALOGO_PRESUPUESTO_OFICIAL: HardwarePresupuestoItem[] = [
   },
 ];
 
-// Reglas de compatibilidad en tiempo real
+// Reglas de compatibilidad en tiempo real y detección defensiva contra errores de venta
+export type AlertaTipo = "ERROR" | "WARNING" | "INFO" | "SUGGESTION";
+
+export interface AlertaCompatibilidad {
+  tipo: AlertaTipo;
+  titulo: string;
+  detalle: string;
+  categoriaTarget?: HardwarePresupuestoItem["categoria"];
+  accionSugerida?: string;
+  accionTipo?: "CAMBIAR_TAB" | "DUPLICAR_RAM" | "AGREGAR_COOLER";
+}
+
+export interface ChecklistPC {
+  cpu: boolean;
+  mb: boolean;
+  ram: boolean;
+  storage: boolean;
+  gpu: boolean; // tiene tarjeta gráfica o procesador con iGPU
+  psu: boolean;
+  gabinete: boolean;
+  cooler: boolean;
+}
+
 export interface ResultadoCompatibilidad {
   compatible: boolean;
-  alertas: Array<{
-    tipo: "ERROR" | "WARNING" | "INFO";
-    titulo: string;
-    detalle: string;
-  }>;
+  alertas: AlertaCompatibilidad[];
   consumoTotalWatts: number;
   fuenteRecomendadaWatts: number;
   tieneVideo: boolean;
+  checklist: ChecklistPC;
+  totalErrores: number;
+  totalWarnings: number;
+  totalSugerencias: number;
+  porcentajeCompletitud: number;
 }
 
 export function verificarCompatibilidadPC(
   items: HardwarePresupuestoItem[]
 ): ResultadoCompatibilidad {
-  const alertas: ResultadoCompatibilidad["alertas"] = [];
+  const alertas: AlertaCompatibilidad[] = [];
 
   const cpu = items.find((i) => i.categoria === "PROCESADOR");
   const mb = items.find((i) => i.categoria === "PLACA_MADRE");
@@ -388,21 +411,29 @@ export function verificarCompatibilidadPC(
   const psu = items.find((i) => i.categoria === "FUENTE");
   const gabinete = items.find((i) => i.categoria === "GABINETE");
   const cooler = items.find((i) => i.categoria === "REFRIGERACION");
+  const ssds = items.filter((i) => i.categoria === "ALMACENAMIENTO");
 
-  // 1. Socket CPU vs Placa Madre
+  // =========================================================================
+  // 1. COMPATIBILIDAD CRÍTICA DE SOCKET (CPU vs PLACA MADRE)
+  // =========================================================================
   if (cpu && mb) {
     if (cpu.socket && mb.socket && cpu.socket !== "UNIVERSAL" && mb.socket !== "UNIVERSAL") {
       if (cpu.socket !== mb.socket) {
         alertas.push({
           tipo: "ERROR",
-          titulo: "Incompatibilidad de Socket",
-          detalle: `El procesador requiere socket ${cpu.socket}, pero la placa madre tiene socket ${mb.socket}. No podrán ensamblarse físicamente.`,
+          titulo: "Incompatibilidad Crítica de Socket (CPU vs Placa Madre)",
+          detalle: `El procesador requiere socket ${cpu.socket}, pero la placa madre tiene socket ${mb.socket}. Físicamente no pueden ensamblarse.`,
+          categoriaTarget: "PLACA_MADRE",
+          accionSugerida: `Ver placas madre con socket ${cpu.socket}`,
+          accionTipo: "CAMBIAR_TAB",
         });
       }
     }
   }
 
-  // 2. RAM vs Placa Madre / Procesador
+  // =========================================================================
+  // 2. COMPATIBILIDAD CRÍTICA DE MEMORIA RAM (DDR4 vs DDR5)
+  // =========================================================================
   if (rams.length > 0) {
     const requiredRam =
       mb?.ramType && mb.ramType !== "UNIVERSAL"
@@ -416,16 +447,35 @@ export function verificarCompatibilidadPC(
         if (r.ramType && r.ramType !== "UNIVERSAL" && r.ramType !== requiredRam) {
           alertas.push({
             tipo: "ERROR",
-            titulo: "Incompatibilidad de Memoria RAM",
-            detalle: `La plataforma seleccionada requiere memoria ${requiredRam}, pero el módulo elegido (${r.nombreWeb || r.descripcion}) es ${r.ramType}.`,
+            titulo: "Incompatibilidad de Generación de RAM (DDR4 vs DDR5)",
+            detalle: `La plataforma requiere memoria ${requiredRam}, pero el módulo elegido (${r.nombreWeb || r.descripcion}) es ${r.ramType}. La ranura física es diferente y no encajará.`,
+            categoriaTarget: "RAM",
+            accionSugerida: `Ver memorias RAM ${requiredRam}`,
+            accionTipo: "CAMBIAR_TAB",
           });
           break;
         }
       }
     }
+
+    // Verificar si se mezclaron tipos de RAM
+    const hasDdr4 = rams.some((r) => r.ramType === "DDR4");
+    const hasDdr5 = rams.some((r) => r.ramType === "DDR5");
+    if (hasDdr4 && hasDdr5) {
+      alertas.push({
+        tipo: "ERROR",
+        titulo: "Mezcla de Tecnologías de RAM Incompatible",
+        detalle: "Se han agregado módulos DDR4 y DDR5 al mismo tiempo. Una placa madre solo admite una tecnología de memoria.",
+        categoriaTarget: "RAM",
+        accionSugerida: "Homogeneizar tipo de memoria RAM",
+        accionTipo: "CAMBIAR_TAB",
+      });
+    }
   }
 
-  // 3. Tarjeta de Video / Gráficos Integrados
+  // =========================================================================
+  // 3. SALIDA DE VIDEO OBLIGATORIA (ERROR CLÁSICO DE VENTA)
+  // =========================================================================
   let tieneVideo = false;
   if (gpus.length > 0) {
     tieneVideo = true;
@@ -434,29 +484,44 @@ export function verificarCompatibilidadPC(
   } else if (cpu && cpu.hasIGpu === false) {
     alertas.push({
       tipo: "ERROR",
-      titulo: "Falta Placa de Video Dedicada (Sin Salida de Video)",
-      detalle: `El procesador seleccionado (${cpu.nombreWeb || cpu.descripcion}) NO posee gráficos integrados. Es obligatorio agregar una Placa de Video (GPU) para que la PC dé imagen.`,
+      titulo: "PC Sin Salida de Video (Error Crítico de Venta)",
+      detalle: `El procesador (${cpu.nombreWeb || cpu.descripcion}) NO posee gráficos integrados. Es OBLIGATORIO agregar una Placa de Video (GPU); de lo contrario, la computadora no dará imagen.`,
+      categoriaTarget: "GPU",
+      accionSugerida: "Ver Placas de Video compatibles",
+      accionTipo: "CAMBIAR_TAB",
     });
   }
 
-  // 4. Verificación de Cooler de CPU
-  if (cpu && cooler) {
-    if (cpu.includesCooler === false && cooler.sku === "STOCK-COOLER") {
-      alertas.push({
-        tipo: "ERROR",
-        titulo: "Procesador vendido SIN Cooler de fábrica",
-        detalle: `El procesador (${cpu.nombreWeb || cpu.descripcion}) no incluye cooler en su caja. Debe seleccionar un Cooler de CPU por aire o refrigeración líquida AIO.`,
-      });
-    } else if (cpu.includesCooler === false && cooler.isCpuCooler === false) {
-      alertas.push({
-        tipo: "WARNING",
-        titulo: "Ventilador de Gabinete en lugar de Cooler de CPU",
-        detalle: `Seleccionó un ventilador de chasis (${cooler.nombreWeb || cooler.descripcion}), pero este procesador requiere un disipador o Water Cooler para CPU.`,
-      });
+  // =========================================================================
+  // 4. VERIFICACIÓN DE REFRIGERACIÓN Y COOLER DE CPU
+  // =========================================================================
+  if (cpu) {
+    if (cpu.includesCooler === false) {
+      if (!cooler || cooler.sku === "STOCK-COOLER") {
+        alertas.push({
+          tipo: "ERROR",
+          titulo: "Procesador vendido SIN Cooler de Fábrica (Riesgo Térmico)",
+          detalle: `El procesador (${cpu.nombreWeb || cpu.descripcion}) viene de fábrica sin disipador en caja. Es obligatorio cotizar un Cooler por aire o Líquida AIO para que el equipo pueda encender sin sobrecalentarse.`,
+          categoriaTarget: "REFRIGERACION",
+          accionSugerida: "Ver Coolers de CPU / AIO",
+          accionTipo: "CAMBIAR_TAB",
+        });
+      } else if (cooler.isCpuCooler === false) {
+        alertas.push({
+          tipo: "ERROR",
+          titulo: "Ventilador de Gabinete en lugar de Cooler de CPU",
+          detalle: `Se seleccionó un ventilador de chasis (${cooler.nombreWeb || cooler.descripcion}), pero este procesador requiere un disipador térmico para socket ${cpu.socket || "CPU"}.`,
+          categoriaTarget: "REFRIGERACION",
+          accionSugerida: "Ver Coolers para CPU",
+          accionTipo: "CAMBIAR_TAB",
+        });
+      }
     }
   }
 
-  // 5. Consumo Eléctrico & Fuente de Poder
+  // =========================================================================
+  // 5. CONSUMO ELÉCTRICO Y FUENTE DE PODER
+  // =========================================================================
   const cpuWatts = cpu?.tdpWatts || 65;
   const gpuWatts = gpus.reduce((acc, g) => acc + (g.tdpWatts || 150), 0);
   const baseWatts = 60; // Placa madre + RAMs + SSDs + Fans
@@ -472,38 +537,218 @@ export function verificarCompatibilidadPC(
     if (psuPotencia < consumoTotalWatts) {
       alertas.push({
         tipo: "ERROR",
-        titulo: "Fuente de Poder Insuficiente",
-        detalle: `La fuente seleccionada (${psuPotencia}W) no cubre la demanda energética del equipo (${consumoTotalWatts}W). Seleccione una fuente ATX de al menos ${fuenteRecomendadaWatts}W.`,
+        titulo: "Potencia de Fuente Insuficiente (Riesgo de Apagado)",
+        detalle: `La fuente seleccionada (${psuPotencia}W) no cubre la demanda eléctrica del equipo (${consumoTotalWatts}W). Seleccione una fuente ATX de al menos ${fuenteRecomendadaWatts}W.`,
+        categoriaTarget: "FUENTE",
+        accionSugerida: `Ver Fuentes de ${fuenteRecomendadaWatts}W+`,
+        accionTipo: "CAMBIAR_TAB",
       });
     } else if (psuPotencia < fuenteRecomendadaWatts) {
       alertas.push({
         tipo: "WARNING",
-        titulo: "Margen de Fuente Ajustado",
-        detalle: `La fuente (${psuPotencia}W) cubre el consumo base (${consumoTotalWatts}W), pero se recomienda ${fuenteRecomendadaWatts}W+ para picos de carga.`,
+        titulo: "Margen de Fuente Ajustado para Picos de Carga",
+        detalle: `La fuente (${psuPotencia}W) cubre el consumo nominal (${consumoTotalWatts}W), pero para picos de exigencia en juegos o render se recomienda ${fuenteRecomendadaWatts}W+.`,
+        categoriaTarget: "FUENTE",
+        accionSugerida: `Ver Fuentes de ${fuenteRecomendadaWatts}W+`,
+        accionTipo: "CAMBIAR_TAB",
       });
     }
   }
 
-  // 6. Refrigeración líquida 360mm en gabinetes compactos
+  // =========================================================================
+  // 6. BALANCE TÉRMICO / VRM THROTTLING (CPU GAMA ALTA vs PLACA BÁSICA)
+  // =========================================================================
+  if (cpu && mb) {
+    const descCpu = (cpu.nombreWeb || cpu.descripcion).toUpperCase();
+    const descMb = (mb.nombreWeb || mb.descripcion).toUpperCase();
+
+    const esCpuGamaAlta =
+      descCpu.includes("I7") ||
+      descCpu.includes("I9") ||
+      descCpu.includes("RYZEN 9") ||
+      descCpu.includes("7800X3D") ||
+      descCpu.includes("9800X3D") ||
+      descCpu.includes("ULTRA 7") ||
+      descCpu.includes("ULTRA 9");
+
+    const esPlacaEntrada =
+      descMb.includes("H610") ||
+      descMb.includes("H510") ||
+      descMb.includes("H410") ||
+      descMb.includes("H810") ||
+      descMb.includes("A520") ||
+      descMb.includes("A320") ||
+      descMb.includes("A620M-HDV") ||
+      descMb.includes("A620M-E");
+
+    if (esCpuGamaAlta && esPlacaEntrada) {
+      alertas.push({
+        tipo: "WARNING",
+        titulo: "Desbalance de Placa Madre (VRM Throttling)",
+        detalle: `Este procesador de alto consumo sobrecalentará las fases de poder (VRMs) de una placa madre básica de entrada, provocando caídas de FPS por limitación térmica. Se sugiere cotizar una placa chipset B o Z (B760 / B650 / Z790) con disipador en VRMs.`,
+        categoriaTarget: "PLACA_MADRE",
+        accionSugerida: "Ver Placas con disipador en VRM",
+        accionTipo: "CAMBIAR_TAB",
+      });
+    }
+  }
+
+  // =========================================================================
+  // 7. DESBALANCE DE CUELLO DE BOTELLA (CPU vs GPU DE ALTO RENDIMIENTO)
+  // =========================================================================
+  if (cpu && gpus.length > 0) {
+    const gpu = gpus[0];
+    const descGpu = (gpu.nombreWeb || gpu.descripcion).toUpperCase();
+    const descCpu = (cpu.nombreWeb || cpu.descripcion).toUpperCase();
+
+    const esGpuMuyPotente =
+      descGpu.includes("4070") ||
+      descGpu.includes("4080") ||
+      descGpu.includes("4090") ||
+      descGpu.includes("5070") ||
+      descGpu.includes("5080") ||
+      descGpu.includes("5090") ||
+      descGpu.includes("3080") ||
+      descGpu.includes("7800 XT") ||
+      descGpu.includes("7900");
+
+    const esCpuGamaBaja =
+      descCpu.includes("I3") ||
+      descCpu.includes("10100") ||
+      descCpu.includes("12100") ||
+      descCpu.includes("14100") ||
+      descCpu.includes("RYZEN 3") ||
+      descCpu.includes("3200G") ||
+      descCpu.includes("4500");
+
+    if (esGpuMuyPotente && esCpuGamaBaja) {
+      alertas.push({
+        tipo: "WARNING",
+        titulo: "Cuello de Botella Severo (CPU Limitando a la GPU)",
+        detalle: `La placa de video de alto rendimiento (${gpu.nombreWeb || gpu.descripcion}) estará severamente limitada por el procesador ${cpu.nombreWeb || cpu.descripcion}. Para aprovechar los FPS al 100%, se recomienda subir a un Core i5 13ª/14ª Gen o Ryzen 5 7600/7700.`,
+        categoriaTarget: "PROCESADOR",
+        accionSugerida: "Ver Procesadores recomendados",
+        accionTipo: "CAMBIAR_TAB",
+      });
+    }
+  }
+
+  // =========================================================================
+  // 8. SUGERENCIA PRO: DUAL CHANNEL EN MEMORIA RAM
+  // =========================================================================
+  if (rams.length > 0) {
+    const totalModulos = rams.reduce((acc, r) => acc + (r.cantidad || 1), 0);
+    if (totalModulos === 1) {
+      const ram = rams[0];
+      alertas.push({
+        tipo: "SUGGESTION",
+        titulo: "💡 Oportunidad de Venta: Activar Dual Channel en RAM",
+        detalle: `Cotizar 2 módulos activa la tecnología Dual Channel, incrementando entre un +15% y +25% los FPS en juegos y la fluidez del equipo prácticamente sin diferencia de precio.`,
+        categoriaTarget: "RAM",
+        accionSugerida: `Duplicar a 2 módulos (Activar Dual Channel)`,
+        accionTipo: "DUPLICAR_RAM",
+      });
+    }
+  }
+
+  // =========================================================================
+  // 9. SUGERENCIA PRO: CAPACIDAD DE ALMACENAMIENTO SSD
+  // =========================================================================
+  if (ssds.length > 0 && gpus.length > 0) {
+    const totalCapacidad = ssds.reduce((acc, s) => acc + (s.capacidadGb || 0), 0);
+    if (totalCapacidad > 0 && totalCapacidad < 480) {
+      alertas.push({
+        tipo: "SUGGESTION",
+        titulo: "💡 Almacenamiento Ajustado para Juegos Actuales",
+        detalle: `240GB se saturan rápidamente (Windows y utilitarios ocupan ~50GB, y los juegos modernos pesan de 70GB a 150GB c/u). Se recomienda sugerir un SSD M.2 NVMe de 500GB o 1TB.`,
+        categoriaTarget: "ALMACENAMIENTO",
+        accionSugerida: "Ver SSDs de 500GB / 1TB",
+        accionTipo: "CAMBIAR_TAB",
+      });
+    }
+  }
+
+  // =========================================================================
+  // 10. SUGERENCIA PRO: REFRIGERACIÓN LÍQUIDA PARA CPUS CALIENTES
+  // =========================================================================
+  if (cpu) {
+    const descCpu = (cpu.nombreWeb || cpu.descripcion).toUpperCase();
+    const esCpuMuyCaliente =
+      (cpu.tdpWatts || 0) >= 120 ||
+      descCpu.includes("14700") ||
+      descCpu.includes("13700") ||
+      descCpu.includes("14900") ||
+      descCpu.includes("13900") ||
+      descCpu.includes("7800X3D") ||
+      descCpu.includes("9800X3D") ||
+      descCpu.includes("7900X") ||
+      descCpu.includes("7950X");
+
+    if (esCpuMuyCaliente) {
+      const esAioLiquid = cooler && (/240|360|LIQUID|WATER|AIO/i.test(cooler.descripcion) || /240|360|LIQUID|WATER|AIO/i.test(cooler.nombreWeb || ""));
+      if (!esAioLiquid) {
+        alertas.push({
+          tipo: "SUGGESTION",
+          titulo: "💡 Refrigeración Líquida AIO Recomendada",
+          detalle: `Este procesador trabaja a temperaturas elevadas bajo carga plena. Una Refrigeración Líquida AIO de 240mm o 360mm mantendrá el equipo en temperaturas óptimas y totalmente silencioso.`,
+          categoriaTarget: "REFRIGERACION",
+          accionSugerida: "Ver Water Coolers AIO",
+          accionTipo: "CAMBIAR_TAB",
+        });
+      }
+    }
+  }
+
+  // =========================================================================
+  // 11. RADIADOR 360mm EN GABINETES COMPACTOS
+  // =========================================================================
   if (cooler && (cooler.descripcion.includes("360") || cooler.nombreWeb?.includes("360")) && gabinete) {
     const descGabinete = (gabinete.nombreWeb || gabinete.descripcion).toUpperCase();
     if (descGabinete.includes("1103K") || descGabinete.includes("1102K") || descGabinete.includes("MINI") || descGabinete.includes("MICRO")) {
       alertas.push({
         tipo: "WARNING",
-        titulo: "Espacio para Radiador de 360mm",
-        detalle: `Verifique que el gabinete seleccionado soporte radiadores de 360mm en el panel superior o frontal.`,
+        titulo: "Espacio Físico para Radiador de 360mm",
+        detalle: `Verifique que el gabinete seleccionado tenga soporte para radiadores de 360mm en el panel superior o frontal para evitar que choque con la placa madre o las memorias.`,
+        categoriaTarget: "GABINETE",
+        accionSugerida: "Ver Gabinetes ATX amplios",
+        accionTipo: "CAMBIAR_TAB",
       });
     }
   }
 
-  const tieneErrores = alertas.some((a) => a.tipo === "ERROR");
+  // =========================================================================
+  // 12. CHECKLIST DE COMPLETITUD DE LA COMPUTADORA
+  // =========================================================================
+  const checklist: ChecklistPC = {
+    cpu: Boolean(cpu),
+    mb: Boolean(mb),
+    ram: rams.length > 0,
+    storage: ssds.length > 0,
+    gpu: tieneVideo,
+    psu: Boolean(psu),
+    gabinete: Boolean(gabinete),
+    cooler: Boolean(cooler || (cpu && cpu.includesCooler)),
+  };
+
+  const checksKeys = Object.keys(checklist) as Array<keyof ChecklistPC>;
+  const completados = checksKeys.filter((k) => checklist[k]).length;
+  const porcentajeCompletitud = Math.round((completados / checksKeys.length) * 100);
+
+  const totalErrores = alertas.filter((a) => a.tipo === "ERROR").length;
+  const totalWarnings = alertas.filter((a) => a.tipo === "WARNING").length;
+  const totalSugerencias = alertas.filter((a) => a.tipo === "SUGGESTION").length;
 
   return {
-    compatible: !tieneErrores,
+    compatible: totalErrores === 0,
     alertas,
     consumoTotalWatts,
     fuenteRecomendadaWatts,
     tieneVideo,
+    checklist,
+    totalErrores,
+    totalWarnings,
+    totalSugerencias,
+    porcentajeCompletitud,
   };
 }
 

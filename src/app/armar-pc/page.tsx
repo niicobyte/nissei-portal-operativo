@@ -28,6 +28,7 @@ import {
   Sparkles,
   X,
   Clock,
+  ShieldAlert,
 } from "lucide-react";
 import {
   CATALOGO_PRESUPUESTO_OFICIAL,
@@ -35,6 +36,8 @@ import {
   enriquecerComponente,
   verificarCompatibilidadPC,
   TIPO_CAMBIO_PYG_DEFECTO,
+  AlertaCompatibilidad,
+  ChecklistPC,
 } from "@/data/compatibilidadPcData";
 import {
   LISTA_VENDEDORES_REALES,
@@ -281,6 +284,10 @@ export default function ArmarPcPresupuestadorPage() {
   const [displayLimit, setDisplayLimit] = useState<number>(60);
   const [onlyCompatible, setOnlyCompatible] = useState<boolean>(true);
   const [onlyWebStock, setOnlyWebStock] = useState<boolean>(true);
+
+  // Escudo Defensivo Anti-Error de Venta
+  const [showDefensiveModal, setShowDefensiveModal] = useState<boolean>(false);
+  const [pendingGuardedAction, setPendingGuardedAction] = useState<"COPY" | "PRINT" | "ORDEN" | null>(null);
 
   useEffect(() => {
     setVendedores(getStoredVendedores());
@@ -1131,20 +1138,32 @@ export default function ArmarPcPresupuestadorPage() {
     return text;
   };
 
-  const handleCopyPresupuesto = () => {
-    const txt = generarTextoPresupuesto();
-    navigator.clipboard.writeText(txt);
-    setCopiedSuccess(true);
-    setTimeout(() => setCopiedSuccess(false), 3000);
+  // Ejecución directa de acciones de presupuesto
+  const executeGuardedAction = (action: "COPY" | "PRINT" | "ORDEN") => {
+    if (action === "COPY") {
+      const txt = generarTextoPresupuesto();
+      navigator.clipboard.writeText(txt);
+      setCopiedSuccess(true);
+      setTimeout(() => setCopiedSuccess(false), 3000);
+    } else if (action === "PRINT") {
+      setIsThermalPrintModalOpen(true);
+    } else if (action === "ORDEN") {
+      proceedCrearOrdenMontaje();
+    }
   };
 
-  // Convertir a Orden de Montaje Oficial en /tecnicos/nuevo
-  const handleCrearOrdenMontaje = () => {
-    if (selectedComponents.length === 0) {
-      alert("Agregue al menos un componente al presupuesto para generar la orden.");
-      return;
+  // Escudo Defensivo: Si hay errores de compatibilidad críticos, advertir antes de copiar/imprimir para evitar errores de venta
+  const handleGuardedAction = (action: "COPY" | "PRINT" | "ORDEN") => {
+    if (selectedComponents.length === 0) return;
+    if (resultadoCompatibilidad.totalErrores > 0) {
+      setPendingGuardedAction(action);
+      setShowDefensiveModal(true);
+    } else {
+      executeGuardedAction(action);
     }
+  };
 
+  const proceedCrearOrdenMontaje = () => {
     const payload = {
       cliente: clienteNombre || "Cliente Presupuesto",
       vendedor: selectedVendedor || "Sin Asignar",
@@ -1167,6 +1186,37 @@ export default function ArmarPcPresupuestadorPage() {
       router.push("/tecnicos/nuevo?from=presupuesto");
     } catch {
       router.push("/tecnicos/nuevo");
+    }
+  };
+
+  const handleCopyPresupuesto = () => {
+    handleGuardedAction("COPY");
+  };
+
+  // Convertir a Orden de Montaje Oficial en /tecnicos/nuevo
+  const handleCrearOrdenMontaje = () => {
+    if (selectedComponents.length === 0) {
+      alert("Agregue al menos un componente al presupuesto para generar la orden.");
+      return;
+    }
+    handleGuardedAction("ORDEN");
+  };
+
+  // Manejador interactivo de acciones dentro de las alertas inteligentes
+  const handleAlertAction = (alerta: AlertaCompatibilidad) => {
+    if (alerta.accionTipo === "DUPLICAR_RAM") {
+      const ram = selectedComponents.find((c) => c.categoria === "RAM");
+      if (ram) {
+        handleChangeCantidad(ram.sku, 1);
+      }
+    } else if (alerta.categoriaTarget) {
+      setActiveTabSlot(alerta.categoriaTarget);
+      setSelectedBrand("TODAS");
+      setDisplayLimit(60);
+      const el = document.getElementById("catalog-slots-section");
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth" });
+      }
     }
   };
 
@@ -1527,7 +1577,7 @@ export default function ArmarPcPresupuestadorPage() {
           </div>
 
           {/* Ranuras Principales del Ensamble */}
-          <div className="space-y-2">
+          <div id="catalog-slots-section" className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
                 <Sliders className="w-3.5 h-3.5 text-zinc-500" />
@@ -1952,25 +2002,100 @@ export default function ArmarPcPresupuestadorPage() {
                 </span>
               </div>
 
-              {/* Estado de Compatibilidad General */}
+              {/* Estado de Compatibilidad General Dinámico */}
               <div
                 className={`px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 ${
-                  resultadoCompatibilidad.compatible
-                    ? "bg-emerald-50 border-emerald-200 text-emerald-800"
-                    : "bg-rose-50 border-rose-200 text-rose-800 animate-pulse"
+                  resultadoCompatibilidad.totalErrores > 0
+                    ? "bg-rose-50 border-rose-200 text-rose-800 animate-pulse"
+                    : resultadoCompatibilidad.totalWarnings > 0
+                    ? "bg-amber-50 border-amber-200 text-amber-800"
+                    : resultadoCompatibilidad.totalSugerencias > 0
+                    ? "bg-sky-50 border-sky-200 text-sky-800"
+                    : "bg-emerald-50 border-emerald-200 text-emerald-800"
                 }`}
               >
-                {resultadoCompatibilidad.compatible ? (
+                {resultadoCompatibilidad.totalErrores > 0 ? (
+                  <>
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>Incompatible ({resultadoCompatibilidad.totalErrores} {resultadoCompatibilidad.totalErrores === 1 ? "error crítico" : "errores críticos"})</span>
+                  </>
+                ) : resultadoCompatibilidad.totalWarnings > 0 ? (
+                  <>
+                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Revisar ({resultadoCompatibilidad.totalWarnings} advertencias)</span>
+                  </>
+                ) : resultadoCompatibilidad.totalSugerencias > 0 ? (
+                  <>
+                    <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
+                    <span>Compatible ({resultadoCompatibilidad.totalSugerencias} sugerencias pro)</span>
+                  </>
+                ) : (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Compatible 100%</span>
                   </>
-                ) : (
-                  <>
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>Incompatibilidad</span>
-                  </>
                 )}
+              </div>
+            </div>
+
+            {/* Checklist Inteligente de Completitud para Venta Segura */}
+            <div className="p-3 bg-zinc-50 border border-zinc-200/80 rounded-xl space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-bold text-zinc-800 flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  Checklist del Ensamble ({resultadoCompatibilidad.porcentajeCompletitud}%)
+                </span>
+                <span className="text-[11px] font-mono font-semibold text-zinc-500">
+                  {Object.values(resultadoCompatibilidad.checklist).filter(Boolean).length} de 8 partes
+                </span>
+              </div>
+              
+              {/* Barra de Progreso */}
+              <div className="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full transition-all duration-300 ${
+                    resultadoCompatibilidad.porcentajeCompletitud === 100
+                      ? "bg-emerald-500"
+                      : resultadoCompatibilidad.porcentajeCompletitud >= 50
+                      ? "bg-sky-500"
+                      : "bg-amber-500"
+                  }`}
+                  style={{ width: `${resultadoCompatibilidad.porcentajeCompletitud}%` }}
+                />
+              </div>
+
+              {/* Grid de Chips con Shortcut al Catálogo */}
+              <div className="grid grid-cols-4 gap-1.5 pt-0.5 text-[11px]">
+                {[
+                  { key: "cpu", label: "CPU", slot: "PROCESADOR" as const, ready: resultadoCompatibilidad.checklist.cpu },
+                  { key: "mb", label: "Placa", slot: "PLACA_MADRE" as const, ready: resultadoCompatibilidad.checklist.mb },
+                  { key: "ram", label: "RAM", slot: "RAM" as const, ready: resultadoCompatibilidad.checklist.ram },
+                  { key: "storage", label: "Disco", slot: "ALMACENAMIENTO" as const, ready: resultadoCompatibilidad.checklist.storage },
+                  { key: "gpu", label: "Video", slot: "GPU" as const, ready: resultadoCompatibilidad.checklist.gpu },
+                  { key: "psu", label: "Fuente", slot: "FUENTE" as const, ready: resultadoCompatibilidad.checklist.psu },
+                  { key: "gabinete", label: "Gabinete", slot: "GABINETE" as const, ready: resultadoCompatibilidad.checklist.gabinete },
+                  { key: "cooler", label: "Cooler", slot: "REFRIGERACION" as const, ready: resultadoCompatibilidad.checklist.cooler },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => {
+                      setActiveTabSlot(item.slot);
+                      setSelectedBrand("TODAS");
+                      const el = document.getElementById("catalog-slots-section");
+                      if (el) el.scrollIntoView({ behavior: "smooth" });
+                    }}
+                    title={item.ready ? `${item.label} ya seleccionado ✓` : `Click para cotizar ${item.label} compatible`}
+                    className={`px-1.5 py-1.5 rounded-lg font-medium flex items-center justify-center gap-1 transition-all cursor-pointer truncate ${
+                      item.ready
+                        ? "bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold"
+                        : "bg-white border border-dashed border-zinc-300 text-zinc-500 hover:border-zinc-800 hover:text-zinc-900"
+                    }`}
+                  >
+                    <span>{item.ready ? "✓" : "+"}</span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -1986,24 +2111,81 @@ export default function ArmarPcPresupuestadorPage() {
               </button>
             )}
 
-            {/* Alertas de Compatibilidad */}
+            {/* Alertas Inteligentes de Compatibilidad, Prevención de Errores y Sugerencias Pro */}
             {resultadoCompatibilidad.alertas.length > 0 && (
-              <div className="space-y-1.5">
-                {resultadoCompatibilidad.alertas.map((a, idx) => (
-                  <div
-                    key={idx}
-                    className={`p-2.5 rounded-lg border text-xs ${
-                      a.tipo === "ERROR"
-                        ? "bg-rose-50 border-rose-200 text-rose-800"
-                        : a.tipo === "WARNING"
-                        ? "bg-amber-50 border-amber-200 text-amber-800"
-                        : "bg-sky-50 border-sky-200 text-sky-800"
-                    }`}
-                  >
-                    <strong className="block font-bold">{a.titulo}</strong>
-                    <p className="text-[11px] opacity-90 mt-0.5">{a.detalle}</p>
-                  </div>
-                ))}
+              <div className="space-y-2">
+                {resultadoCompatibilidad.alertas.map((a, idx) => {
+                  const isError = a.tipo === "ERROR";
+                  const isWarning = a.tipo === "WARNING";
+                  const isSuggestion = a.tipo === "SUGGESTION";
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`p-3 rounded-xl border text-xs transition-all ${
+                        isError
+                          ? "bg-rose-50/90 border-rose-300 text-rose-950 shadow-2xs"
+                          : isWarning
+                          ? "bg-amber-50/90 border-amber-300 text-amber-950 shadow-2xs"
+                          : "bg-sky-50/90 border-sky-300 text-sky-950 shadow-2xs"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-1.5 font-bold flex-wrap">
+                          {isError && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-rose-200/90 text-rose-900 border border-rose-300">
+                              ⛔ Error Crítico
+                            </span>
+                          )}
+                          {isWarning && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-amber-200/90 text-amber-900 border border-amber-300">
+                              ⚠️ Advertencia
+                            </span>
+                          )}
+                          {isSuggestion && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-sky-200/90 text-sky-900 border border-sky-300">
+                              💡 Sugerencia Pro
+                            </span>
+                          )}
+                          <strong className="block leading-tight">{a.titulo}</strong>
+                        </div>
+                      </div>
+
+                      <p className="text-[11px] opacity-90 mt-1 leading-relaxed">{a.detalle}</p>
+
+                      {/* Botón de acción rápida asistida */}
+                      {a.accionSugerida && (
+                        <div className="pt-2">
+                          {a.accionTipo === "DUPLICAR_RAM" ? (
+                            <button
+                              type="button"
+                              onClick={() => handleAlertAction(a)}
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] shadow-2xs transition-colors cursor-pointer"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>{a.accionSugerida}</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleAlertAction(a)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white font-bold text-[11px] shadow-2xs transition-colors cursor-pointer ${
+                                isError
+                                  ? "bg-rose-700 hover:bg-rose-800"
+                                  : isWarning
+                                  ? "bg-amber-700 hover:bg-amber-800"
+                                  : "bg-zinc-900 hover:bg-black"
+                              }`}
+                            >
+                              <ArrowRight className="w-3.5 h-3.5" />
+                              <span>{a.accionSugerida}</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -2066,7 +2248,7 @@ export default function ArmarPcPresupuestadorPage() {
                         </div>
 
                         <h5
-                          className="text-sm sm:text-base font-bold text-zinc-900 line-clamp-2 leading-snug"
+                          className="text-sm sm:text-base font-bold text-zinc-900 break-words leading-snug"
                           title={cleanTitle}
                         >
                           {cleanTitle}
@@ -2220,7 +2402,7 @@ export default function ArmarPcPresupuestadorPage() {
 
                 <button
                   type="button"
-                  onClick={() => setIsThermalPrintModalOpen(true)}
+                  onClick={() => handleGuardedAction("PRINT")}
                   disabled={selectedComponents.length === 0}
                   className="py-3 px-3.5 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-800 hover:text-zinc-900 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs min-h-[46px]"
                 >
@@ -2276,6 +2458,91 @@ export default function ArmarPcPresupuestadorPage() {
         })),
       }}
     />
+
+    {/* Escudo Defensivo Anti-Error de Venta Modal */}
+    {showDefensiveModal && (
+      <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-150">
+        <div className="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-rose-300 space-y-4 animate-in zoom-in-95 duration-150">
+          <div className="flex items-start gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
+              <ShieldAlert className="w-6 h-6 stroke-[2.2]" />
+            </div>
+            <div>
+              <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[10px] font-black tracking-wider uppercase">
+                <span>Escudo Anti-Error de Venta</span>
+              </div>
+              <h3 className="text-base sm:text-lg font-black text-zinc-900 mt-1">
+                Incompatibilidad Crítica Detectada
+              </h3>
+              <p className="text-xs text-zinc-600 mt-1">
+                Este presupuesto contiene componentes que no encajarán físicamente o no funcionarán juntos. Entregar esta cotización al cliente ocasionará un reclamo inmediato o devolución en el taller de servicio.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+            {resultadoCompatibilidad.alertas
+              .filter((a) => a.tipo === "ERROR")
+              .map((err, idx) => (
+                <div key={idx} className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs">
+                  <div className="font-bold text-rose-900 flex items-center justify-between">
+                    <span>⛔ {err.titulo}</span>
+                    {err.categoriaTarget && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowDefensiveModal(false);
+                          setActiveTabSlot(err.categoriaTarget!);
+                          setSelectedBrand("TODAS");
+                          const el = document.getElementById("catalog-slots-section");
+                          if (el) el.scrollIntoView({ behavior: "smooth" });
+                        }}
+                        className="text-[11px] underline text-rose-700 hover:text-rose-900 font-semibold cursor-pointer ml-2"
+                      >
+                        Corregir pieza →
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-rose-800 text-[11px] mt-1 opacity-90 leading-relaxed">{err.detalle}</p>
+                </div>
+              ))}
+          </div>
+
+          <div className="pt-2 border-t border-zinc-100 flex flex-col sm:flex-row items-center justify-end gap-2.5">
+            <button
+              type="button"
+              onClick={() => {
+                setShowDefensiveModal(false);
+                if (pendingGuardedAction) {
+                  executeGuardedAction(pendingGuardedAction);
+                  setPendingGuardedAction(null);
+                }
+              }}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-zinc-200 hover:bg-zinc-100 text-zinc-600 text-xs font-semibold cursor-pointer order-2 sm:order-1 transition-colors"
+            >
+              Ignorar y continuar de todos modos
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setShowDefensiveModal(false);
+                const firstErr = resultadoCompatibilidad.alertas.find((a) => a.tipo === "ERROR");
+                if (firstErr?.categoriaTarget) {
+                  setActiveTabSlot(firstErr.categoriaTarget);
+                  setSelectedBrand("TODAS");
+                }
+                const el = document.getElementById("catalog-slots-section");
+                if (el) el.scrollIntoView({ behavior: "smooth" });
+              }}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-md cursor-pointer order-1 sm:order-2 transition-colors flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>Resolver y Corregir Incompatibilidad</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </>
   );
 }
