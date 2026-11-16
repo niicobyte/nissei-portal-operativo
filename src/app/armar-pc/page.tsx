@@ -186,6 +186,57 @@ const PRESETS: Array<{
   },
 ];
 
+// Presets por cantidad de Guaraníes (Rangos reales de inversión)
+const PRESETS_PRESUPUESTO: Array<{
+  monto: number;
+  labelMonto: string;
+  nombre: string;
+  gama: string;
+  tag: string;
+  icono: string;
+}> = [
+  {
+    monto: 3500000,
+    labelMonto: "₲ 3.500.000",
+    nombre: "Presupuesto Económico / Oficina",
+    gama: "Ofimática, Facturación & Estudios",
+    tag: "Ryzen 5 / Core i3 con Video + 16GB RAM + SSD NVMe",
+    icono: "💵",
+  },
+  {
+    monto: 6000000,
+    labelMonto: "₲ 6.000.000",
+    nombre: "Presupuesto Gaming 1080p Entrada",
+    gama: "Esports (CS2, Valorant, GTA V, Fortnite)",
+    tag: "Core i5 / Ryzen 5 + RTX 3050 / RX 6600 + 16GB",
+    icono: "🎮",
+  },
+  {
+    monto: 10000000,
+    labelMonto: "₲ 10.000.000",
+    nombre: "Presupuesto 10 Millones (Gaming & Render)",
+    gama: "Juegos 1440p Ultra, Arquitectura & 3D",
+    tag: "AM5 Ryzen 5 o Core i5 14th + RTX 4060 + 32GB RAM + 1TB",
+    icono: "⭐",
+  },
+  {
+    monto: 14000000,
+    labelMonto: "₲ 14.000.000",
+    nombre: "Presupuesto High-End & Creación",
+    gama: "Render Pesado, Lumion & Stream 1440p",
+    tag: "Ryzen 7 / Core i7 + RTX 4070 + 32GB DDR5 + AIO 240",
+    icono: "🚀",
+  },
+  {
+    monto: 20000000,
+    labelMonto: "₲ 20.000.000+",
+    nombre: "Presupuesto Ultra / IA & Workstation",
+    gama: "Inteligencia Artificial, 4K & Render Extremo",
+    tag: "Ryzen 7 7800X3D/9800X3D + RTX 4070 Ti/4080 + 32/64GB",
+    icono: "👑",
+  },
+];
+
 function cleanSkuKey(raw: string): string {
   const trimmed = String(raw || "").trim();
   if (/^\d{4,7}$/.test(trimmed)) return trimmed;
@@ -318,6 +369,11 @@ export default function ArmarPcPresupuestadorPage() {
   // Escudo Defensivo Anti-Error de Venta
   const [showDefensiveModal, setShowDefensiveModal] = useState<boolean>(false);
   const [pendingGuardedAction, setPendingGuardedAction] = useState<"COPY" | "PRINT" | "ORDEN" | null>(null);
+
+  // Modos de Presupuesto Rápido (Por Entorno vs Por Cantidad de Guaraníes)
+  const [presetTabMode, setPresetTabMode] = useState<"ENTORNO" | "PRESUPUESTO">("ENTORNO");
+  const [customTargetBudget, setCustomTargetBudget] = useState<number>(10000000);
+  const [budgetFeedback, setBudgetFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     setVendedores(getStoredVendedores());
@@ -1019,6 +1075,35 @@ export default function ArmarPcPresupuestadorPage() {
     buildSmartPcConfiguration(detectedTier, true);
   };
 
+  // Armado Inteligente Asistido por Presupuesto en Guaraníes (Ej: 10 Millones, 5 Millones, etc.)
+  const buildPcByTargetBudget = (targetAmountPyg: number) => {
+    const inStockPool = catalogoCompleto.filter(
+      (c) => c.stockStatus === "IN_STOCK" && (c.precioPyg || 0) > 0
+    );
+    if (inStockPool.length === 0) return;
+
+    let targetTier: PresetTier = "GAMING_PRO";
+    if (targetAmountPyg < 4800000) {
+      targetTier = "OFICINA_PRO";
+    } else if (targetAmountPyg >= 4800000 && targetAmountPyg < 8000000) {
+      targetTier = "GAMING_PRO";
+    } else if (targetAmountPyg >= 8000000 && targetAmountPyg < 13000000) {
+      // 10 Millones -> Rango equilibrado Gaming 1440p / Render 3D / Arquitectura
+      targetTier = "ARQUITECTURA_3D";
+    } else if (targetAmountPyg >= 13000000 && targetAmountPyg < 18500000) {
+      targetTier = "EDICION_CREATOR";
+    } else {
+      targetTier = "IA_DEEP_LEARNING";
+    }
+
+    buildSmartPcConfiguration(targetTier, false);
+
+    setBudgetFeedback(
+      `Presupuesto objetivo: ₲ ${targetAmountPyg.toLocaleString("es-PY")} · Configuración óptima generada con éxito.`
+    );
+    setTimeout(() => setBudgetFeedback(null), 6000);
+  };
+
   // Limpiar configuración
   const handleReset = () => {
     if (confirm("¿Desea limpiar todos los componentes seleccionados?")) {
@@ -1718,43 +1803,158 @@ export default function ArmarPcPresupuestadorPage() {
               </div>
             </div>
 
-            {/* Plantillas Inteligentes de Ensambles Recomendados por Entorno de Trabajo */}
-            <div className="pt-3.5 border-t border-zinc-100">
-              <div className="flex items-center justify-between mb-2">
+            {/* Selector de Modo de Presupuesto Rápido: Por Entorno vs Por Cantidad de Guaraníes */}
+            <div className="pt-3.5 border-t border-zinc-100 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
                 <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span>Presets Inteligentes por Entorno de Trabajo (100% Compatibles &amp; En Stock):</span>
+                  <span>Presets Inteligentes (100% Compatibles &amp; En Stock):</span>
                 </span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
-                {PRESETS.map((p) => (
+
+                {/* Sub-Pestañas: Por Entorno vs Por Presupuesto */}
+                <div className="inline-flex p-1 bg-zinc-100 rounded-xl border border-zinc-200 text-xs font-bold shrink-0">
                   <button
-                    key={p.id}
                     type="button"
-                    disabled={isLoadingWeb}
-                    onClick={() => buildSmartPcConfiguration(p.id, false)}
-                    className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100/90 border border-zinc-200 hover:border-zinc-300 text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between"
+                    onClick={() => setPresetTabMode("ENTORNO")}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                      presetTabMode === "ENTORNO"
+                        ? "bg-white text-zinc-900 shadow-2xs font-extrabold"
+                        : "text-zinc-600 hover:text-zinc-900"
+                    }`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between gap-1 mb-1.5">
-                        <span className="text-lg">{p.icono}</span>
-                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-200/80 text-zinc-700 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
-                          Cargar Preset
+                    <span>🎯 Por Entorno de Trabajo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPresetTabMode("PRESUPUESTO")}
+                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                      presetTabMode === "PRESUPUESTO"
+                        ? "bg-white text-emerald-800 shadow-2xs font-extrabold"
+                        : "text-zinc-600 hover:text-zinc-900"
+                    }`}
+                  >
+                    <span>💰 Por Presupuesto en Guaraníes</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Modo 1: Por Entorno de Trabajo */}
+              {presetTabMode === "ENTORNO" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5 animate-in fade-in duration-150">
+                  {PRESETS.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      disabled={isLoadingWeb}
+                      onClick={() => buildSmartPcConfiguration(p.id, false)}
+                      className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100/90 border border-zinc-200 hover:border-zinc-300 text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1 mb-1.5">
+                          <span className="text-lg">{p.icono}</span>
+                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-200/80 text-zinc-700 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
+                            Cargar Preset
+                          </span>
+                        </div>
+                        <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
+                          {p.nombre}
+                        </span>
+                        <span className="text-[11px] text-zinc-500 block leading-snug mt-1">
+                          {p.entorno}
                         </span>
                       </div>
-                      <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
-                        {p.nombre}
+                      <span className="text-[10px] sm:text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
+                        {p.tag}
                       </span>
-                      <span className="text-[11px] text-zinc-500 block leading-snug mt-1">
-                        {p.entorno}
-                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Modo 2: Por Cantidad de Guaraníes (Ej: 10 Millones, 5 Millones, etc.) */}
+              {presetTabMode === "PRESUPUESTO" && (
+                <div className="space-y-3 animate-in fade-in duration-150">
+                  {/* Tarjetas de Presupuestos Típicos en Guaraníes */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
+                    {PRESETS_PRESUPUESTO.map((item) => (
+                      <button
+                        key={item.monto}
+                        type="button"
+                        disabled={isLoadingWeb}
+                        onClick={() => buildPcByTargetBudget(item.monto)}
+                        className="p-3 sm:p-3.5 rounded-xl bg-emerald-50/50 hover:bg-emerald-100/70 border border-emerald-200/90 hover:border-emerald-400 text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-1 mb-1.5">
+                            <span className="text-lg">{item.icono}</span>
+                            <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded bg-emerald-600 text-white shadow-2xs">
+                              {item.labelMonto}
+                            </span>
+                          </div>
+                          <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
+                            {item.nombre}
+                          </span>
+                          <span className="text-[11px] text-zinc-600 block leading-snug mt-1">
+                            {item.gama}
+                          </span>
+                        </div>
+                        <span className="text-[10px] sm:text-[11px] font-mono text-zinc-800 bg-white/90 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
+                          {item.tag}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Input Asistido para Monto Personalizado en Guaraníes */}
+                  <div className="p-3 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold shrink-0">
+                        ₲
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-zinc-800 block">
+                          ¿El cliente tiene un monto exacto en mente?
+                        </span>
+                        <span className="text-[11px] text-zinc-500 block truncate">
+                          Escribí el presupuesto (ej: 10.000.000) y el sistema arma la configuración óptima para ese dinero.
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[10px] sm:text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
-                      {p.tag}
-                    </span>
-                  </button>
-                ))}
-              </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-xs font-bold font-mono text-zinc-500">₲</span>
+                        <input
+                          type="number"
+                          step={500000}
+                          min={2500000}
+                          max={60000000}
+                          value={customTargetBudget}
+                          onChange={(e) => setCustomTargetBudget(Number(e.target.value) || 10000000)}
+                          placeholder="10000000"
+                          className="w-40 bg-white border border-zinc-300 rounded-xl pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold text-zinc-900 outline-none focus:border-emerald-600"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => buildPcByTargetBudget(customTargetBudget)}
+                        disabled={isLoadingWeb}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Zap className="w-4 h-4" />
+                        <span>Armar para ₲ {customTargetBudget.toLocaleString("es-PY")}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {budgetFeedback && (
+                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 animate-in fade-in flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{budgetFeedback}</span>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
