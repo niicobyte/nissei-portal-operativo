@@ -27,6 +27,7 @@ import {
   Globe,
   Sparkles,
   X,
+  Clock,
 } from "lucide-react";
 import {
   CATALOGO_PRESUPUESTO_OFICIAL,
@@ -251,8 +252,8 @@ export default function ArmarPcPresupuestadorPage() {
   const [moneda, setMoneda] = useState<"PYG" | "USD">("PYG");
   const [costoMontajePyg, setCostoMontajePyg] = useState<number>(0);
 
-  // Alerta de advertencia de 8 segundos al ingresar a la página de Presupuesto
-  const [showStockWarning, setShowStockWarning] = useState<boolean>(true);
+  // Alertas secuenciales de 8 segundos al ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs)
+  const [warningStage, setWarningStage] = useState<"STOCK" | "TIEMPO_MONTAJE" | null>("STOCK");
   const [warningSecondsLeft, setWarningSecondsLeft] = useState<number>(8);
 
   // Estado de sincronización en vivo con https://nissei.com/py/
@@ -278,9 +279,9 @@ export default function ArmarPcPresupuestadorPage() {
     setVendedores(getStoredVendedores());
   }, []);
 
-  // Temporizador de 8 segundos para la alerta de advertencia de stock al ingresar
+  // Temporizador secuencial de 8 segundos por cada advertencia al ingresar
   useEffect(() => {
-    setShowStockWarning(true);
+    if (!warningStage) return;
     setWarningSecondsLeft(8);
     const interval = setInterval(() => {
       setWarningSecondsLeft((prev) => {
@@ -292,13 +293,13 @@ export default function ArmarPcPresupuestadorPage() {
       });
     }, 1000);
     const timer = setTimeout(() => {
-      setShowStockWarning(false);
+      setWarningStage((prevStage) => (prevStage === "STOCK" ? "TIEMPO_MONTAJE" : null));
     }, 8000);
     return () => {
       clearInterval(interval);
       clearTimeout(timer);
     };
-  }, []);
+  }, [warningStage]);
 
   const syncWithNisseiWeb = async (forceRefresh = false) => {
     setIsLoadingWeb(true);
@@ -1134,49 +1135,93 @@ export default function ArmarPcPresupuestadorPage() {
 
   return (
     <main className="min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans relative">
-      {/* Alerta de Advertencia de 8 Segundos al Ingresar (Estilo de la página) */}
-      {showStockWarning && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[94vw] max-w-xl animate-in fade-in slide-in-from-top-3 duration-200">
+      {/* Alertas Secuenciales de 8 Segundos al Ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs) */}
+      {warningStage && (
+        <div
+          key={warningStage}
+          className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[94vw] max-w-xl animate-in fade-in slide-in-from-top-3 duration-200"
+        >
           <div className="bg-white text-zinc-900 border border-zinc-200 rounded-2xl shadow-xl overflow-hidden">
             <div className="p-4 sm:p-5 flex items-start gap-3.5">
               <div className="w-9 h-9 rounded-xl bg-zinc-900 text-white flex items-center justify-center shrink-0 shadow-xs">
-                <AlertTriangle className="w-4 h-4 text-amber-400" />
+                {warningStage === "STOCK" ? (
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Clock className="w-4 h-4 text-emerald-400" />
+                )}
               </div>
 
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-xs sm:text-sm font-bold text-zinc-900 tracking-tight">
-                    Advertencia de Stock y Disponibilidad
+                    {warningStage === "STOCK"
+                      ? "Advertencia de Stock y Disponibilidad"
+                      : "Tiempo Estimado de Montaje"}
                   </span>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700 border border-zinc-200">
-                      {warningSecondsLeft}s
+                      {warningStage === "STOCK" ? "1/2" : "2/2"} · {warningSecondsLeft}s
                     </span>
                     <button
                       type="button"
-                      onClick={() => setShowStockWarning(false)}
+                      onClick={() =>
+                        setWarningStage((prev) =>
+                          prev === "STOCK" ? "TIEMPO_MONTAJE" : null
+                        )
+                      }
                       className="text-zinc-400 hover:text-zinc-900 p-1 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer"
-                      title="Cerrar aviso"
+                      title={
+                        warningStage === "STOCK"
+                          ? "Siguiente aviso"
+                          : "Cerrar aviso"
+                      }
                     >
                       <X className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
 
-                <p className="text-xs text-zinc-600 leading-relaxed">
-                  Estos componentes son de <strong className="text-zinc-900 font-bold">referencia</strong> y se debe verificar si tenemos disponibilidad física en nuestros stocks:
-                </p>
+                {warningStage === "STOCK" ? (
+                  <>
+                    <p className="text-xs text-zinc-600 leading-relaxed">
+                      Estos componentes son de{" "}
+                      <strong className="text-zinc-900 font-bold">referencia</strong> y se debe
+                      verificar si tenemos disponibilidad física en nuestros stocks:
+                    </p>
 
-                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                  {["PA", "Barrail", "Distrito", "Showroom", "Emap"].map((deposito) => (
-                    <span
-                      key={deposito}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-zinc-900 text-white shadow-2xs"
-                    >
-                      {deposito}
-                    </span>
-                  ))}
-                </div>
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      {["PA", "Barrail", "Distrito", "Showroom", "Emap"].map((deposito) => (
+                        <span
+                          key={deposito}
+                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-zinc-900 text-white shadow-2xs"
+                        >
+                          {deposito}
+                        </span>
+                      ))}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs text-zinc-600 leading-relaxed">
+                      El tiempo de montaje es de{" "}
+                      <strong className="text-zinc-900 font-bold">24 / 48 Hs.</strong> dependiendo
+                      de la carga de trabajo en taller:
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                      {["24 / 48 Hs.", "Sujeto a carga de trabajo", "Montaje & QA"].map(
+                        (etiqueta) => (
+                          <span
+                            key={etiqueta}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-zinc-900 text-white shadow-2xs"
+                          >
+                            {etiqueta}
+                          </span>
+                        )
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
