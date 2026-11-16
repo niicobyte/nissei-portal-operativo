@@ -44,6 +44,10 @@ import {
 } from "@/data/vendedoresData";
 import { VendedorSelect } from "@/components/common/VendedorSelect";
 import { CleanSelect } from "@/components/common/CleanSelect";
+import {
+  PresupuestoThermalPrintModal,
+  PresupuestoThermalData,
+} from "@/components/common/PresupuestoThermalPrintModal";
 
 interface NisseiLiveItemDto {
   sku: string;
@@ -269,6 +273,7 @@ export default function ArmarPcPresupuestadorPage() {
 
   // Feedback y Filtros
   const [copiedSuccess, setCopiedSuccess] = useState<boolean>(false);
+  const [isThermalPrintModalOpen, setIsThermalPrintModalOpen] = useState<boolean>(false);
   const [isOperatorSession, setIsOperatorSession] = useState<boolean>(false);
   const [activeTabSlot, setActiveTabSlot] = useState<HardwarePresupuestoItem["categoria"] | "TODO">("PROCESADOR");
   const [catalogSearchTerm, setCatalogSearchTerm] = useState<string>("");
@@ -1357,10 +1362,10 @@ export default function ArmarPcPresupuestadorPage() {
 
             <button
               type="button"
-              onClick={() => window.print()}
+              onClick={() => setIsThermalPrintModalOpen(true)}
               disabled={selectedComponents.length === 0}
               className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 hover:text-zinc-900 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs min-h-[38px] sm:min-h-[42px]"
-              title="Imprimir cotización"
+              title="Imprimir ticket térmico con detalle del presupuesto"
             >
               <Printer className="w-4 h-4" />
               <span className="hidden sm:inline">Imprimir</span>
@@ -2194,12 +2199,12 @@ export default function ArmarPcPresupuestadorPage() {
 
                 <button
                   type="button"
-                  onClick={() => window.print()}
+                  onClick={() => setIsThermalPrintModalOpen(true)}
                   disabled={selectedComponents.length === 0}
                   className="py-3 px-3.5 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-800 hover:text-zinc-900 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs min-h-[46px]"
                 >
                   <Printer className="w-4 h-4" />
-                  <span>Imprimir Cotización</span>
+                  <span>Imprimir Ticket Térmico</span>
                 </button>
               </div>
 
@@ -2218,6 +2223,32 @@ export default function ArmarPcPresupuestadorPage() {
           </div>
         </section>
       </div>
+
+      {/* Modal de Impresión Térmica Oficial (Ticket 80mm / 58mm) */}
+      <PresupuestoThermalPrintModal
+        isOpen={isThermalPrintModalOpen}
+        onClose={() => setIsThermalPrintModalOpen(false)}
+        data={{
+          vendedor: selectedVendedor || "Salón de Ventas",
+          areaVendedor: selectedArea || (isCorpVendedor ? "Ventas Corp" : "Ventas Tienda"),
+          cliente: clienteNombre.trim() || undefined,
+          servicioMontajeNombre: isCorpVendedor ? "Bonificado / Gratis" : "Servicio Estándar",
+          servicioMontajePyg: costoMontajePyg,
+          totalPyg: totalPresupuestoPyg,
+          totalUsd: totalPresupuestoUsd,
+          tipoCambio: tipoCambio,
+          consumoTotalWatts: resultadoCompatibilidad.consumoTotalWatts,
+          fuenteRecomendadaWatts: resultadoCompatibilidad.fuenteRecomendadaWatts,
+          items: selectedComponents.map((c) => ({
+            sku: c.sku,
+            nombre: cleanDisplayTitle(c.nombreWeb || c.descripcion),
+            categoria: c.categoria,
+            cantidad: c.cantidad || 1,
+            precioUnitarioPyg: c.precioPyg || 0,
+            subtotalPyg: (c.precioPyg || 0) * (c.cantidad || 1),
+          })),
+        }}
+      />
 
       {/* Pie de Página */}
       <footer className="border-t border-zinc-200 bg-white py-3 text-center text-xs text-zinc-500 font-mono">
