@@ -74,7 +74,6 @@ export const VENDEDORES_CORP_BASE: string[] = [
 ];
 
 export const VENDEDORES_TIENDA_BASE: string[] = [
-  "Salón de Ventas CDE / ASU",
   "Helen Rivarola",
   "Fabiola Patiño",
   "Emilio Lopez",
@@ -89,6 +88,11 @@ export const VENDEDORES_TIENDA_BASE: string[] = [
 
 export const VENDEDORES_STORAGE_KEY = "nissei_vendedores_montajes_v1";
 export const VENDEDORES_CON_AREA_STORAGE_KEY = "nissei_vendedores_categorizados_v2";
+
+function isGenericSalonPlaceholder(name: string): boolean {
+  const low = name.trim().toLowerCase();
+  return low.startsWith("salón de ventas") || low.startsWith("salon de ventas");
+}
 
 /**
  * Obtiene la lista completa de vendedores categorizados por área ("Ventas Tienda" o "Ventas Corp").
@@ -112,6 +116,7 @@ export function getStoredVendedoresConArea(): VendedorItem[] {
           (item) =>
             item &&
             typeof item.nombre === "string" &&
+            !isGenericSalonPlaceholder(item.nombre) &&
             (item.area === "Ventas Tienda" || item.area === "Ventas Corp")
         );
       }
@@ -126,6 +131,7 @@ export function getStoredVendedoresConArea(): VendedorItem[] {
           const clean = String(legacyName).trim();
           if (
             clean &&
+            !isGenericSalonPlaceholder(clean) &&
             !baseList.some((b) => b.nombre.toLowerCase() === clean.toLowerCase()) &&
             !customList.some((c) => c.nombre.toLowerCase() === clean.toLowerCase())
           ) {

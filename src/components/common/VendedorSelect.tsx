@@ -31,7 +31,7 @@ export function VendedorSelect({
   value,
   onChange,
   className = "",
-  placeholder = "Seleccionar Vendedor...",
+  placeholder = "Seleccionar vendedor...",
   align = "left",
 }: VendedorSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -112,13 +112,21 @@ export function VendedorSelect({
 
   // Vendedor actual seleccionado
   const currentItem = useMemo(() => {
-    if (!value) return null;
+    const clean = (value || "").trim();
+    if (
+      !clean ||
+      clean.toLowerCase().startsWith("salón de ventas") ||
+      clean.toLowerCase().startsWith("salon de ventas") ||
+      clean.toLowerCase().startsWith("seleccionar")
+    ) {
+      return null;
+    }
     return (
       vendedoresList.find(
-        (v) => v.nombre.toLowerCase() === value.trim().toLowerCase()
+        (v) => v.nombre.toLowerCase() === clean.toLowerCase()
       ) || {
-        nombre: value,
-        area: (value.toLowerCase().includes("corp") ? "Ventas Corp" : "Ventas Tienda") as AreaVendedor,
+        nombre: clean,
+        area: (clean.toLowerCase().includes("corp") ? "Ventas Corp" : "Ventas Tienda") as AreaVendedor,
       }
     );
   }, [value, vendedoresList]);
@@ -181,13 +189,15 @@ export function VendedorSelect({
         } ${className}`}
       >
         <div className="flex items-center gap-2 truncate">
-          {currentItem?.area === "Ventas Corp" ? (
+          {!currentItem ? (
+            <User className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+          ) : currentItem.area === "Ventas Corp" ? (
             <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
           ) : (
             <ShoppingBag className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
           )}
 
-          <span className="truncate font-medium text-zinc-900">
+          <span className={`truncate font-medium ${currentItem ? "text-zinc-900" : "text-zinc-500"}`}>
             {currentItem ? currentItem.nombre : placeholder}
           </span>
 
@@ -306,7 +316,7 @@ export function VendedorSelect({
                     <ShoppingBag className={`w-4 h-4 mb-1 ${nuevaArea === "Ventas Tienda" ? "text-emerald-400" : "text-emerald-600"}`} />
                     <span className="text-[11px] font-bold">Ventas Tienda</span>
                     <span className={`text-[9px] ${nuevaArea === "Ventas Tienda" ? "text-zinc-300" : "text-zinc-400"}`}>
-                      Salón CDE / ASU
+                      Tienda Física
                     </span>
                   </button>
 
@@ -401,7 +411,7 @@ export function VendedorSelect({
                       <span>Ventas Tienda ({tiendaItems.length})</span>
                     </div>
                     <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                      Salón CDE / ASU
+                      Tienda
                     </span>
                   </div>
 

@@ -26,6 +26,7 @@ import {
   FileText,
   Globe,
   Sparkles,
+  X,
 } from "lucide-react";
 import {
   CATALOGO_PRESUPUESTO_OFICIAL,
@@ -241,14 +242,17 @@ export default function ArmarPcPresupuestadorPage() {
 
   // Estados del Presupuesto
   const [vendedores, setVendedores] = useState<string[]>(LISTA_VENDEDORES_REALES);
-  const [selectedVendedor, setSelectedVendedor] = useState<string>("Salón de Ventas CDE / ASU");
+  const [selectedVendedor, setSelectedVendedor] = useState<string>("");
   const [selectedCanal, setSelectedCanal] = useState<"Tienda" | "Ecommerce - Web" | "Empresas / Coorporativo">("Tienda");
   const [clienteNombre, setClienteNombre] = useState<string>("");
-  const [clienteTelefono, setClienteTelefono] = useState<string>("");
   const [observacionesPresupuesto, setObservacionesPresupuesto] = useState<string>("");
   const [tipoCambio, setTipoCambio] = useState<number>(TIPO_CAMBIO_PYG_DEFECTO);
   const [moneda, setMoneda] = useState<"PYG" | "USD">("PYG");
   const [costoMontajePyg, setCostoMontajePyg] = useState<number>(0);
+
+  // Alerta de advertencia de 8 segundos al ingresar a la página de Presupuesto
+  const [showStockWarning, setShowStockWarning] = useState<boolean>(true);
+  const [warningSecondsLeft, setWarningSecondsLeft] = useState<number>(8);
 
   // Estado de sincronización en vivo con https://nissei.com/py/
   const [liveBySku, setLiveBySku] = useState<Record<string, NisseiLiveItemDto>>({});
@@ -271,6 +275,28 @@ export default function ArmarPcPresupuestadorPage() {
 
   useEffect(() => {
     setVendedores(getStoredVendedores());
+  }, []);
+
+  // Temporizador de 8 segundos para la alerta de advertencia de stock al ingresar
+  useEffect(() => {
+    setShowStockWarning(true);
+    setWarningSecondsLeft(8);
+    const interval = setInterval(() => {
+      setWarningSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    const timer = setTimeout(() => {
+      setShowStockWarning(false);
+    }, 8000);
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timer);
+    };
   }, []);
 
   const syncWithNisseiWeb = async (forceRefresh = false) => {
@@ -1030,12 +1056,9 @@ export default function ArmarPcPresupuestadorPage() {
   const generarTextoPresupuesto = () => {
     const fechaHoy = new Date().toLocaleDateString("es-PY");
     let text = `PRESUPUESTO OFICIAL DE PC — NISSEI PARAGUAY (nissei.com/py)\n`;
-    text += `Fecha: ${fechaHoy} | Vendedor: ${selectedVendedor}\n`;
+    text += `Fecha: ${fechaHoy} | Vendedor: ${selectedVendedor || "No especificado"}\n`;
     if (clienteNombre.trim()) {
       text += `Cliente: ${clienteNombre.trim()}\n`;
-    }
-    if (clienteTelefono.trim()) {
-      text += `Contacto: ${clienteTelefono.trim()}\n`;
     }
     text += `--------------------------------------------------\n`;
     text += `DETALLE DE COMPONENTES (PRECIOS Y STOCK VERIFICADOS EN NISSEI.COM/PY):\n`;
@@ -1085,7 +1108,7 @@ export default function ArmarPcPresupuestadorPage() {
 
     const payload = {
       cliente: clienteNombre || "Cliente Presupuesto",
-      vendedor: selectedVendedor,
+      vendedor: selectedVendedor || "Sin Asignar",
       canal: selectedCanal,
       tipoServicio: "Montaje",
       consumoEstimado: `${resultadoCompatibilidad.consumoTotalWatts}W`,
@@ -1109,7 +1132,63 @@ export default function ArmarPcPresupuestadorPage() {
   };
 
   return (
-    <main className="min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans">
+    <main className="min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans relative">
+      {/* Alerta de Advertencia de 8 Segundos al Ingresar */}
+      {showStockWarning && (
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 w-[94vw] max-w-xl animate-in fade-in slide-in-from-top-3 duration-200">
+          <div className="bg-zinc-900 text-white border border-amber-500/50 rounded-2xl shadow-2xl overflow-hidden">
+            <div className="p-4 sm:p-5 flex items-start gap-3.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5 text-amber-400" />
+              </div>
+
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs sm:text-sm font-extrabold text-amber-400 tracking-wide uppercase">
+                    Advertencia de Stock y Disponibilidad
+                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                      {warningSecondsLeft}s
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowStockWarning(false)}
+                      className="text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                      title="Cerrar aviso"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-xs sm:text-[13px] text-zinc-200 leading-relaxed">
+                  Estos componentes son de <strong className="text-white font-bold">referencia</strong> y se debe verificar si tenemos disponibilidad física en nuestros stocks:
+                </p>
+
+                <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                  {["PA", "Barrail", "Distrito", "Showroom", "Emap"].map((deposito) => (
+                    <span
+                      key={deposito}
+                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-amber-500 text-zinc-950 shadow-xs"
+                    >
+                      {deposito}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Barra de progreso de 8 segundos */}
+            <div className="h-1 w-full bg-zinc-800">
+              <div
+                className="h-full bg-amber-400 transition-all duration-1000 ease-linear"
+                style={{ width: `${(warningSecondsLeft / 8) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
       {/* Barra Superior con Navegación y Estado de Conexión a https://nissei.com/py/ */}
       <header className="border-b border-zinc-200 bg-white sticky top-0 z-30 px-4 sm:px-6 py-3 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-3">
@@ -1290,13 +1369,14 @@ export default function ArmarPcPresupuestadorPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="text-[11px] font-semibold text-zinc-600 block mb-1">
                   Vendedor Asignado
                 </label>
                 <VendedorSelect
                   value={selectedVendedor}
+                  placeholder="Seleccionar vendedor..."
                   onChange={(nuevoVendedor, area) => {
                     setSelectedVendedor(nuevoVendedor);
                     if (area === "Ventas Corp") {
@@ -1317,20 +1397,7 @@ export default function ArmarPcPresupuestadorPage() {
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
                   placeholder="Ej: Marcelo Gomez..."
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="text-[11px] font-semibold text-zinc-600 block mb-1">
-                  Teléfono de Contacto
-                </label>
-                <input
-                  type="text"
-                  value={clienteTelefono}
-                  onChange={(e) => setClienteTelefono(e.target.value)}
-                  placeholder="Ej: 0981 123456..."
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
                 />
               </div>
             </div>
