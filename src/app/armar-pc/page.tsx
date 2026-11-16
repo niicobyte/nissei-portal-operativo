@@ -38,6 +38,7 @@ import {
 } from "@/data/compatibilidadPcData";
 import {
   LISTA_VENDEDORES_REALES,
+  VENDEDORES_CORP_BASE,
   getStoredVendedores,
   AreaVendedor,
 } from "@/data/vendedoresData";
@@ -245,12 +246,12 @@ export default function ArmarPcPresupuestadorPage() {
   // Estados del Presupuesto
   const [vendedores, setVendedores] = useState<string[]>(LISTA_VENDEDORES_REALES);
   const [selectedVendedor, setSelectedVendedor] = useState<string>("");
+  const [selectedArea, setSelectedArea] = useState<AreaVendedor | null>(null);
   const [selectedCanal, setSelectedCanal] = useState<"Tienda" | "Ecommerce - Web" | "Empresas / Coorporativo">("Tienda");
   const [clienteNombre, setClienteNombre] = useState<string>("");
   const [observacionesPresupuesto, setObservacionesPresupuesto] = useState<string>("");
   const [tipoCambio, setTipoCambio] = useState<number>(TIPO_CAMBIO_PYG_DEFECTO);
   const [moneda, setMoneda] = useState<"PYG" | "USD">("PYG");
-  const [costoMontajePyg, setCostoMontajePyg] = useState<number>(0);
 
   // Alertas secuenciales de 8 segundos al ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs)
   const [warningStage, setWarningStage] = useState<"STOCK" | "TIEMPO_MONTAJE" | null>("STOCK");
@@ -934,6 +935,20 @@ export default function ArmarPcPresupuestadorPage() {
   };
 
   // Cálculo estricto de totales usando el precio oficial en Guaraníes de https://nissei.com/py/
+  // - Ventas Corp: Servicio de Montaje & QA es 100% Bonificado / GRATIS (US$ 0 / ₲ 0)
+  // - Ventas Tienda: Servicio de Montaje & QA tiene tarifa fija única de US$ 58,77
+  const COSTO_MONTAJE_TIENDA_USD = 58.77;
+  const isCorpVendedor = useMemo(() => {
+    if (selectedArea === "Ventas Corp") return true;
+    if (selectedArea === "Ventas Tienda") return false;
+    const clean = selectedVendedor.trim().toLowerCase();
+    return Boolean(clean && VENDEDORES_CORP_BASE.some((v) => v.toLowerCase() === clean));
+  }, [selectedArea, selectedVendedor]);
+
+  const costoMontajeTiendaPyg = Math.round(COSTO_MONTAJE_TIENDA_USD * tipoCambio);
+  const costoMontajePyg = isCorpVendedor ? 0 : costoMontajeTiendaPyg;
+  const costoMontajeUsd = isCorpVendedor ? 0 : COSTO_MONTAJE_TIENDA_USD;
+
   const totalHardwarePyg = useMemo(() => {
     return selectedComponents.reduce(
       (acc, c) => acc + (c.precioPyg || 0) * (c.cantidad || 1),
@@ -941,9 +956,12 @@ export default function ArmarPcPresupuestadorPage() {
     );
   }, [selectedComponents]);
 
-  const totalPresupuestoPyg = totalHardwarePyg + costoMontajePyg;
+  const totalPresupuestoPyg =
+    selectedComponents.length > 0 ? totalHardwarePyg + costoMontajePyg : 0;
   const totalPresupuestoUsd =
-    tipoCambio > 0 ? Math.round((totalPresupuestoPyg / tipoCambio) * 100) / 100 : 0;
+    selectedComponents.length > 0 && tipoCambio > 0
+      ? Math.round((totalHardwarePyg / tipoCambio + costoMontajeUsd) * 100) / 100
+      : 0;
 
   // Marcas disponibles en la categoría activa
   const marcasDisponibles = useMemo(() => {
@@ -1091,7 +1109,9 @@ export default function ArmarPcPresupuestadorPage() {
     text += `Consumo Estimado: ${resultadoCompatibilidad.consumoTotalWatts} W\n`;
     text += `Fuente Recomendada: ${resultadoCompatibilidad.fuenteRecomendadaWatts} W+\n`;
     text += `Servicio de Montaje & QA: ${
-      costoMontajePyg === 0 ? "Bonificado (Gratis)" : `Gs. ${costoMontajePyg.toLocaleString("es-PY")}`
+      isCorpVendedor
+        ? "¡Bonificado / GRATIS! (Ventas Corp)"
+        : `58,77$ (Gs. ${costoMontajePyg.toLocaleString("es-PY")})`
     }\n`;
     text += `TOTAL COTIZACIÓN OFICIAL (NISSEI.COM/PY):\n`;
     text += `Gs. ${totalPresupuestoPyg.toLocaleString("es-PY")} Guaraníes (IVA 10% Incluido)\n`;
@@ -1434,9 +1454,17 @@ export default function ArmarPcPresupuestadorPage() {
                   placeholder="Seleccionar vendedor..."
                   onChange={(nuevoVendedor, area) => {
                     setSelectedVendedor(nuevoVendedor);
-                    if (area === "Ventas Corp") {
+                    const resolvedArea: AreaVendedor =
+                      area ||
+                      (VENDEDORES_CORP_BASE.some(
+                        (v) => v.toLowerCase() === nuevoVendedor.trim().toLowerCase()
+                      )
+                        ? "Ventas Corp"
+                        : "Ventas Tienda");
+                    setSelectedArea(resolvedArea);
+                    if (resolvedArea === "Ventas Corp") {
                       setSelectedCanal("Empresas / Coorporativo");
-                    } else if (area === "Ventas Tienda") {
+                    } else {
                       setSelectedCanal("Tienda");
                     }
                   }}
@@ -2078,16 +2106,21 @@ export default function ArmarPcPresupuestadorPage() {
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
                 <span className="text-zinc-600 font-medium">Servicio de Montaje &amp; QA:</span>
                 <CleanSelect
-                  value={String(costoMontajePyg)}
-                  onChange={(val) => setCostoMontajePyg(Number(val))}
+                  value={isCorpVendedor ? "0" : String(costoMontajeTiendaPyg)}
+                  onChange={() => {}}
                   align="right"
                   dropdownWidth="w-60"
-                  options={[
-                    { value: "0", label: "¡Bonificado / GRATIS!" },
-                    { value: "120000", label: "Básico (₲ 120.000)" },
-                    { value: "200000", label: "Avanzado + AIO (₲ 200.000)" },
-                    { value: "320000", label: "Custom Loop / Express (₲ 320.000)" },
-                  ]}
+                  options={
+                    isCorpVendedor
+                      ? [{ value: "0", label: "¡Bonificado / GRATIS!" }]
+                      : [
+                          {
+                            value: String(costoMontajeTiendaPyg),
+                            label: "58,77$",
+                            badge: `₲ ${costoMontajeTiendaPyg.toLocaleString("es-PY")}`,
+                          },
+                        ]
+                  }
                 />
               </div>
 
