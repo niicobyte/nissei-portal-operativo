@@ -124,7 +124,42 @@ export function PresupuestoThermalPrintModal({
           opacity: 1 !important;
         }
         @media print {
-          /* En modo de impresión, aislar y forzar visibilidad del wrapper */
+          /* En modo de impresión, aislar y forzar visibilidad del wrapper desde la primera página */
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: auto !important;
+            min-height: 0 !important;
+            overflow: visible !important;
+            background: #ffffff !important;
+          }
+
+          /* Ocultar el backdrop del modal y sus bordes de pantalla para que no ocupe espacio vertical */
+          .fixed.inset-0 {
+            position: static !important;
+            background: transparent !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            display: block !important;
+            width: auto !important;
+            height: auto !important;
+            min-height: 0 !important;
+            inset: auto !important;
+          }
+
+          /* El contenedor del modal se convierte en bloque de flujo directo */
+          .fixed.inset-0 > div {
+            position: static !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            max-height: none !important;
+            width: 100% !important;
+            max-width: none !important;
+          }
+
           body.thermal-80mm-print {
             background: #ffffff !important;
           }
@@ -137,6 +172,13 @@ export function PresupuestoThermalPrintModal({
             opacity: 1 !important;
             text-shadow: none !important;
             filter: none !important;
+          }
+          body.thermal-80mm-print #thermal-sticker-wrapper {
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            margin: 0 auto !important;
           }
           .thermal-ultra-mode,
           .thermal-ultra-mode * {
@@ -302,11 +344,8 @@ export function PresupuestoThermalPrintModal({
                 NISSEI
               </h1>
               <p className="text-[10px] font-mono tracking-tight font-bold text-black uppercase">
-                PRESUPUESTO DE COMPUTADORA
+                PRESUPUESTO DE MONTAJE
               </p>
-              <div className="mt-1 inline-block px-2 py-0.5 font-mono text-[9px] uppercase font-black border border-black bg-white">
-                COTIZACIÓN ESTRICTA NISSEI.COM/PY
-              </div>
             </div>
 
             {/* Metadatos: Vendedor, Cliente, Fecha */}
@@ -372,7 +411,7 @@ export function PresupuestoThermalPrintModal({
             <div className="pt-2 border-t border-dashed border-black text-[11px] font-mono space-y-1">
               <div className="flex justify-between items-center">
                 <span className="font-bold uppercase">
-                  MONTAJE &amp; QA:
+                  COSTO DE SERVICIO DEL MONTAJE:
                 </span>
                 <span className="font-black">
                   {data.servicioMontajePyg === 0
@@ -420,10 +459,7 @@ export function PresupuestoThermalPrintModal({
                 </p>
               </div>
               <p className="text-[9px] font-bold text-black/80 pt-1 leading-tight uppercase">
-                Garantía oficial de 3 meses en componentes · Verificación de stock sujeta a disponibilidad física
-              </p>
-              <p className="text-[9px] font-bold text-black pt-0.5">
-                https://nissei.com/py/
+                Garantía oficial de 3 meses en componentes
               </p>
             </div>
           </div>

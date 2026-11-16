@@ -2136,7 +2136,7 @@ export default function ArmarPcPresupuestadorPage() {
             {/* Servicio de Armado & Totales Estrictos Web */}
             <div className="pt-3 border-t border-zinc-100 space-y-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
-                <span className="text-zinc-700 font-semibold">Servicio de Montaje &amp; QA:</span>
+                <span className="text-zinc-700 font-semibold">Costo de servicio del montaje:</span>
                 <CleanSelect
                   value={isCorpVendedor ? "0" : String(costoMontajeTiendaPyg)}
                   onChange={() => {}}
@@ -2239,7 +2239,7 @@ export default function ArmarPcPresupuestadorPage() {
         vendedor: selectedVendedor || "Salón de Ventas",
         areaVendedor: selectedArea || (isCorpVendedor ? "Ventas Corp" : "Ventas Tienda"),
         cliente: clienteNombre.trim() || undefined,
-        servicioMontajeNombre: isCorpVendedor ? "Bonificado / Gratis" : "Servicio Estándar",
+        servicioMontajeNombre: isCorpVendedor ? "Bonificado / Gratis" : "Costo de servicio del montaje",
         servicioMontajePyg: costoMontajePyg,
         totalPyg: totalPresupuestoPyg,
         totalUsd: totalPresupuestoUsd,
