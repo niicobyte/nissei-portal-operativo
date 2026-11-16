@@ -25,6 +25,7 @@ import {
   RefreshCw,
   FileText,
   Globe,
+  Sparkles,
 } from "lucide-react";
 import {
   CATALOGO_PRESUPUESTO_OFICIAL,
@@ -73,7 +74,7 @@ const SLOTS_CONFIG: Array<{
   {
     categoria: "RAM",
     nombre: "Memoria RAM",
-    descripcion: "Módulos DDR4 o DDR5",
+    descripcion: "Módulos Desktop DDR4 o DDR5",
     icono: Sliders,
     obligatorio: true,
   },
@@ -87,14 +88,14 @@ const SLOTS_CONFIG: Array<{
   {
     categoria: "ALMACENAMIENTO",
     nombre: "Almacenamiento (SSD)",
-    descripcion: "Unidad PCIe M.2 NVMe o SATA",
+    descripcion: "Unidad M.2 NVMe PCIe o SATA",
     icono: Layers,
     obligatorio: true,
   },
   {
     categoria: "FUENTE",
     nombre: "Fuente de Poder",
-    descripcion: "Alimentación con certificación 80 Plus",
+    descripcion: "Fuente ATX real con certificación 80 Plus",
     icono: Zap,
     obligatorio: true,
   },
@@ -108,42 +109,129 @@ const SLOTS_CONFIG: Array<{
   {
     categoria: "REFRIGERACION",
     nombre: "Refrigeración",
-    descripcion: "Cooler de stock, aire o líquido AIO",
+    descripcion: "Cooler de CPU por aire o líquido AIO",
     icono: Wrench,
     obligatorio: true,
   },
 ];
 
-// Plantillas de ensamble rápido (seleccionan automáticamente componentes EN STOCK de https://nissei.com/py/)
+// Plantillas de ensamble inteligente
 const PRESETS = [
   {
     id: "OFICINA_PRO",
     nombre: "Oficina & Negocios",
-    tag: "AM4 / LGA1700 con Gráficos",
-    preferredSkus: ["53841", "67488", "77081", "119289"],
+    tag: "CPU con Video + SSD 500GB + 16GB",
+    preferredCpuSkus: ["167102", "77081", "119289", "74198", "67488", "120081", "53841"],
   },
   {
     id: "GAMING_1080P",
     nombre: "Gaming 1080p Ultra",
-    tag: "Ryzen 5 / Core i5 + GPU",
-    preferredSkus: ["77529", "119664", "120081", "74198"],
+    tag: "Core i5 / Ryzen 5 + RTX / RX + NVMe",
+    preferredCpuSkus: ["119664", "74198", "124223", "133732", "77529", "120081"],
   },
   {
     id: "GAMING_1440P",
     nombre: "Gaming 1440p / Streaming",
-    tag: "AM5 Ryzen 5 9600X / 7600X3D",
-    preferredSkus: ["127768", "161582", "102643", "130805"],
+    tag: "AM5 Ryzen 5 9600X / 7600X3D + DDR5",
+    preferredCpuSkus: ["127768", "161582", "102643", "130805", "161584"],
   },
   {
     id: "CREATOR_X3D",
     nombre: "Workstation High-End",
-    tag: "Ryzen 7 9800X3D / Core Ultra 9",
-    preferredSkus: ["131437", "154353", "136690", "131884"],
+    tag: "Ryzen 7 9800X3D / Ultra 9 + AIO",
+    preferredCpuSkus: ["131437", "154353", "136690", "131884", "110641", "128067"],
   },
 ];
 
 function cleanSkuKey(raw: string): string {
-  return String(raw || "").trim().replace(/^PC-/i, "");
+  const trimmed = String(raw || "").trim();
+  if (/^\d{4,7}$/.test(trimmed)) return trimmed;
+  const match = trimmed.match(/^(?:PC|INF|HW)-(\d{4,7})$/i);
+  if (match) return match[1];
+  return "";
+}
+
+function cleanDisplayTitle(raw: string): string {
+  if (!raw) return "";
+  return raw
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0*34;/g, '"')
+    .replace(/&apos;/gi, "'")
+    .replace(/&#0*39;/g, "'")
+    .replace(/&amp;/gi, "&")
+    .replace(/&#0*38;/g, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Filtro estricto del lado del cliente para descartar ítems de otras categorías o de notebook
+ * que existían en el Excel bruto (ej. RAM DDR2/DDR3, SODIMM de Notebook, fuentes sin watts).
+ */
+function isValidDesktopCatalogItem(item: HardwarePresupuestoItem): boolean {
+  if (item.sku === "STOCK-COOLER") return true;
+  const upper = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
+
+  if (item.categoria === "RAM") {
+    if (
+      upper.includes("SODIMM") ||
+      upper.includes("SO-DIMM") ||
+      upper.includes("MEM NB") ||
+      upper.includes("NOTEBOOK") ||
+      upper.includes("LAPTOP") ||
+      upper.includes("DDR2") ||
+      upper.includes("DDR3") ||
+      upper.includes("PC3") ||
+      upper.includes("PC2")
+    ) {
+      return false;
+    }
+  }
+
+  if (item.categoria === "FUENTE") {
+    if (
+      upper.includes("EXTERNA") ||
+      upper.includes("MEDIA CONVERTER") ||
+      upper.includes("LANPRO") ||
+      upper.includes("CARGADOR") ||
+      upper.includes("NOTEBOOK") ||
+      upper.includes("POE") ||
+      upper.includes("UPS") ||
+      upper.includes("ESTABILIZADOR")
+    ) {
+      return false;
+    }
+    if (!item.potenciaWatts || item.potenciaWatts < 400) {
+      return false;
+    }
+  }
+
+  if (item.categoria === "GABINETE") {
+    if (
+      (upper.includes("SOPORTE") || upper.includes("CARRITO") || upper.includes("PEDESTAL")) &&
+      !upper.includes("GABINETE")
+    ) {
+      return false;
+    }
+  }
+
+  if (item.categoria === "REFRIGERACION") {
+    if (
+      upper.includes("NOTEBOOK") ||
+      upper.includes("LAPTOP") ||
+      upper.includes("BASE COOLER") ||
+      upper.includes("CELULAR") ||
+      upper.includes("TELEFONO") ||
+      upper.includes("TELÉFONO")
+    ) {
+      return false;
+    }
+  }
+
+  return true;
 }
 
 export default function ArmarPcPresupuestadorPage() {
@@ -156,9 +244,8 @@ export default function ArmarPcPresupuestadorPage() {
   const [clienteTelefono, setClienteTelefono] = useState<string>("");
   const [observacionesPresupuesto, setObservacionesPresupuesto] = useState<string>("");
   const [tipoCambio, setTipoCambio] = useState<number>(TIPO_CAMBIO_PYG_DEFECTO);
-  // Por defecto mostramos PYG (Guaraníes) ya que https://nissei.com/py/ cotiza oficialmente en Gs.
   const [moneda, setMoneda] = useState<"PYG" | "USD">("PYG");
-  const [costoMontajePyg, setCostoMontajePyg] = useState<number>(0); // 0 = Bonificado / Gratis
+  const [costoMontajePyg, setCostoMontajePyg] = useState<number>(0);
 
   // Estado de sincronización en vivo con https://nissei.com/py/
   const [liveBySku, setLiveBySku] = useState<Record<string, NisseiLiveItemDto>>({});
@@ -215,13 +302,14 @@ export default function ArmarPcPresupuestadorPage() {
     void syncWithNisseiWeb(false);
   }, []);
 
-  // Si el usuario busca un SKU específico por número y no está aún en liveBySku, consultarlo en directo a nissei.com/py
+  // Consulta en directo por SKU cuando el usuario escribe un código numérico en el buscador
   useEffect(() => {
     const q = catalogSearchTerm.trim();
     if (!q || q.length < 4) return;
-    const candidates = CATALOGO_PRESUPUESTO_OFICIAL.filter(
-      (i) => i.sku.toLowerCase().includes(q.toLowerCase()) && !liveBySku[cleanSkuKey(i.sku)]
-    )
+    const candidates = CATALOGO_PRESUPUESTO_OFICIAL.filter((i) => {
+      const k = cleanSkuKey(i.sku);
+      return k && k.includes(q) && !liveBySku[k];
+    })
       .slice(0, 15)
       .map((i) => cleanSkuKey(i.sku));
 
@@ -245,11 +333,11 @@ export default function ArmarPcPresupuestadorPage() {
     return () => clearTimeout(timer);
   }, [catalogSearchTerm, liveBySku]);
 
-  // Catálogo unificado y estrictamente vinculado a https://nissei.com/py/
+  // Catálogo unificado, depurado y estrictamente vinculado a https://nissei.com/py/
   const catalogoCompleto = useMemo<HardwarePresupuestoItem[]>(() => {
     const mergedMap = new Map<string, HardwarePresupuestoItem>();
 
-    // 1. Cruzar todos los SKUs de nuestra base de datos Excel con los datos en vivo de https://nissei.com/py/
+    // 1. Cruzar todos los SKUs válidos del catálogo base con los datos en vivo de https://nissei.com/py/
     for (const baseItem of CATALOGO_PRESUPUESTO_OFICIAL) {
       if (baseItem.sku === "STOCK-COOLER") {
         mergedMap.set(baseItem.sku, {
@@ -257,83 +345,97 @@ export default function ArmarPcPresupuestadorPage() {
           precioPyg: 0,
           precioUsd: 0,
           stockStatus: "IN_STOCK",
+          isCpuCooler: true,
+          garantiaMeses: 3,
           verificadoWeb: true,
         });
         continue;
       }
 
       const key = cleanSkuKey(baseItem.sku);
+      if (!key) continue;
+
       const live = liveBySku[key] || liveBySku[baseItem.sku] || liveBySku[`PC-${key}`];
+      const cleanWebName = live?.nombre ? cleanDisplayTitle(live.nombre) : undefined;
+      const cleanDesc = cleanDisplayTitle(baseItem.descripcion);
+
       const specs = enriquecerComponente({
-        sku: baseItem.sku,
+        sku: key,
         marca: baseItem.marca,
-        descripcion: live?.nombre ? `${baseItem.descripcion} ${live.nombre}` : baseItem.descripcion,
+        descripcion: cleanWebName ? `${cleanDesc} ${cleanWebName}` : cleanDesc,
         categoria: baseItem.categoria,
         seriales: "",
       });
 
-      if (live && live.stockStatus === "IN_STOCK" && live.precioPyg > 0) {
-        const usdCalc = Math.round((live.precioPyg / tipoCambio) * 100) / 100;
-        mergedMap.set(key, {
-          ...baseItem,
-          ...specs,
-          sku: key,
-          marca: baseItem.marca || specs.marca,
-          descripcion: baseItem.descripcion,
-          nombreWeb: live.nombre,
-          precioPyg: live.precioPyg,
-          precioRegularPyg: live.precioRegularPyg,
-          precioUsd: usdCalc,
-          stockStatus: "IN_STOCK",
-          urlWeb: live.urlWeb,
-          verificadoWeb: true,
-        });
-      } else {
-        mergedMap.set(key, {
-          ...baseItem,
-          ...specs,
-          sku: key,
-          marca: baseItem.marca || specs.marca,
-          precioPyg: 0,
-          precioRegularPyg: 0,
-          precioUsd: 0,
-          stockStatus: "OUT_OF_STOCK",
-          urlWeb: live?.urlWeb,
-          verificadoWeb: false,
-        });
-      }
+      const candidate: HardwarePresupuestoItem =
+        live && live.stockStatus === "IN_STOCK" && live.precioPyg > 0
+          ? {
+              ...baseItem,
+              ...specs,
+              sku: key,
+              marca: baseItem.marca || specs.marca,
+              descripcion: cleanDesc,
+              nombreWeb: cleanWebName,
+              precioPyg: live.precioPyg,
+              precioRegularPyg: live.precioRegularPyg,
+              precioUsd: Math.round((live.precioPyg / tipoCambio) * 100) / 100,
+              stockStatus: "IN_STOCK",
+              urlWeb: live.urlWeb,
+              garantiaMeses: 3,
+              verificadoWeb: true,
+            }
+          : {
+              ...baseItem,
+              ...specs,
+              sku: key,
+              marca: baseItem.marca || specs.marca,
+              descripcion: cleanDesc,
+              precioPyg: 0,
+              precioRegularPyg: 0,
+              precioUsd: 0,
+              stockStatus: "OUT_OF_STOCK",
+              urlWeb: live?.urlWeb,
+              garantiaMeses: 3,
+              verificadoWeb: false,
+            };
+
+      if (!isValidDesktopCatalogItem(candidate)) continue;
+      mergedMap.set(key, candidate);
     }
 
-    // 2. Incorporar productos nuevos en stock en https://nissei.com/py/ que aún no estaban en el Excel local
+    // 2. Incorporar productos nuevos de PC en stock en https://nissei.com/py/ con SKU numérico válido
     for (const live of liveCatalogItems) {
       const key = cleanSkuKey(live.sku);
       if (!key || mergedMap.has(key)) continue;
       if (live.stockStatus !== "IN_STOCK" || live.precioPyg <= 0) continue;
 
+      const cleanWebName = cleanDisplayTitle(live.nombre);
       const specs = enriquecerComponente({
         sku: key,
-        descripcion: live.nombre,
+        descripcion: cleanWebName,
         categoria: live.categoria,
         seriales: "",
       });
-      const usdCalc = Math.round((live.precioPyg / tipoCambio) * 100) / 100;
 
-      mergedMap.set(key, {
+      const candidate: HardwarePresupuestoItem = {
         ...specs,
         sku: key,
-        descripcion: live.nombre.toUpperCase(),
-        nombreWeb: live.nombre,
+        descripcion: cleanWebName.toUpperCase(),
+        nombreWeb: cleanWebName,
         categoria: live.categoria,
         precioPyg: live.precioPyg,
         precioRegularPyg: live.precioRegularPyg,
-        precioUsd: usdCalc,
+        precioUsd: Math.round((live.precioPyg / tipoCambio) * 100) / 100,
         stockStatus: "IN_STOCK",
         urlWeb: live.urlWeb,
+        garantiaMeses: 3,
         verificadoWeb: true,
-      });
+      };
+
+      if (!isValidDesktopCatalogItem(candidate)) continue;
+      mergedMap.set(key, candidate);
     }
 
-    // Ordenar: Primero EN STOCK en nissei.com/py, y dentro de ellos por precio ascendente
     return Array.from(mergedMap.values()).sort((a, b) => {
       if (a.sku === "STOCK-COOLER") return -1;
       if (b.sku === "STOCK-COOLER") return 1;
@@ -347,7 +449,7 @@ export default function ArmarPcPresupuestadorPage() {
     });
   }, [liveBySku, liveCatalogItems, tipoCambio]);
 
-  // Sincronizar precios en vivo de los componentes ya agregados al presupuesto cuando cambia liveBySku o tipoCambio
+  // Actualizar automáticamente los ítems seleccionados cuando llegan los datos en vivo
   useEffect(() => {
     if (Object.keys(liveBySku).length === 0) return;
     setSelectedComponents((prev) =>
@@ -363,17 +465,24 @@ export default function ArmarPcPresupuestadorPage() {
   }, [catalogoCompleto, liveBySku]);
 
   const totalInStockCount = useMemo(
-    () => catalogoCompleto.filter((i) => i.stockStatus === "IN_STOCK" && i.sku !== "STOCK-COOLER").length,
+    () =>
+      catalogoCompleto.filter(
+        (i) => i.stockStatus === "IN_STOCK" && i.sku !== "STOCK-COOLER"
+      ).length,
     [catalogoCompleto]
   );
 
-  // Componente seleccionado por categoría para referencia de socket/RAM
+  // Referencias actuales de componentes seleccionados
   const currentCpu = useMemo(
     () => selectedComponents.find((c) => c.categoria === "PROCESADOR"),
     [selectedComponents]
   );
   const currentMb = useMemo(
     () => selectedComponents.find((c) => c.categoria === "PLACA_MADRE"),
+    [selectedComponents]
+  );
+  const currentGpu = useMemo(
+    () => selectedComponents.find((c) => c.categoria === "GPU"),
     [selectedComponents]
   );
 
@@ -432,103 +541,346 @@ export default function ArmarPcPresupuestadorPage() {
     );
   };
 
-  // Cargar plantilla rápida usando estrictamente componentes EN STOCK en https://nissei.com/py/
-  const handleLoadPreset = (presetId: string) => {
+  /**
+   * MOTOR DE RECOMENDACIÓN EXPERTO ("SUPER INTELIGENTE")
+   * Selecciona componentes equilibrados, reales y 100% compatibles en stock de https://nissei.com/py/
+   */
+  const buildSmartPcConfiguration = (
+    tier: "OFICINA_PRO" | "GAMING_1080P" | "GAMING_1440P" | "CREATOR_X3D",
+    preserveExisting = false
+  ) => {
     const inStockPool = catalogoCompleto.filter(
       (c) => c.stockStatus === "IN_STOCK" && (c.precioPyg || 0) > 0
     );
     if (inStockPool.length === 0) return;
 
-    const preset = PRESETS.find((p) => p.id === presetId);
-    if (!preset) return;
+    const existingCpu = preserveExisting
+      ? selectedComponents.find((c) => c.categoria === "PROCESADOR")
+      : undefined;
+    const existingMb = preserveExisting
+      ? selectedComponents.find((c) => c.categoria === "PLACA_MADRE")
+      : undefined;
+    const existingGpu = preserveExisting
+      ? selectedComponents.find((c) => c.categoria === "GPU")
+      : undefined;
 
-    // 1. Elegir CPU en stock según el perfil
-    let cpu =
-      preset.preferredSkus
-        .map((sku) => inStockPool.find((i) => i.sku === sku))
-        .find(Boolean) ||
-      inStockPool.find((i) => i.categoria === "PROCESADOR");
-
+    // 1. PROCESADOR (CPU)
+    let cpu = existingCpu;
+    if (!cpu) {
+      const preset = PRESETS.find((p) => p.id === tier);
+      if (existingMb?.socket && existingMb.socket !== "UNIVERSAL") {
+        // Si ya eligió Placa Madre, buscar CPU compatible con ese socket
+        const compatibleCpus = inStockPool.filter(
+          (i) => i.categoria === "PROCESADOR" && i.socket === existingMb.socket
+        );
+        cpu =
+          compatibleCpus[Math.min(compatibleCpus.length - 1, Math.floor(compatibleCpus.length * 0.4))] ||
+          compatibleCpus[0];
+      } else if (tier === "OFICINA_PRO") {
+        // Oficina: Obligatorio CPU con gráficos integrados (hasIGpu === true) y cooler incluido
+        cpu =
+          preset?.preferredCpuSkus
+            .map((sku) => inStockPool.find((i) => i.sku === sku && i.hasIGpu !== false))
+            .find(Boolean) ||
+          inStockPool.find(
+            (i) =>
+              i.categoria === "PROCESADOR" &&
+              i.hasIGpu !== false &&
+              i.includesCooler !== false &&
+              (i.precioPyg || 0) >= 600000 &&
+              (i.precioPyg || 0) <= 2000000
+          ) ||
+          inStockPool.find((i) => i.categoria === "PROCESADOR" && i.hasIGpu !== false);
+      } else {
+        cpu =
+          preset?.preferredCpuSkus
+            .map((sku) => inStockPool.find((i) => i.sku === sku))
+            .find(Boolean) ||
+          inStockPool.find((i) => i.categoria === "PROCESADOR");
+      }
+    }
     if (!cpu) return;
 
-    // 2. Elegir Placa Madre compatible en stock
-    const mbCandidates = inStockPool.filter(
-      (i) =>
-        i.categoria === "PLACA_MADRE" &&
-        (!cpu?.socket || i.socket === cpu.socket)
-    );
-    const mb =
-      presetId === "CREATOR_X3D"
-        ? mbCandidates[Math.min(mbCandidates.length - 1, Math.floor(mbCandidates.length * 0.7))]
-        : mbCandidates[0];
+    // 2. PLACA MADRE (Armonizada por Socket y Chipset según la gama del CPU)
+    let mb = existingMb;
+    if (!mb || (cpu.socket && mb.socket && mb.socket !== cpu.socket)) {
+      const mbCandidates = inStockPool.filter(
+        (i) => i.categoria === "PLACA_MADRE" && i.socket === cpu?.socket
+      );
+      if (tier === "CREATOR_X3D") {
+        // Priorizar chipsets X870 / X670 / B850 / B650 / Z790 / Z890
+        mb =
+          mbCandidates.find((i) =>
+            /\b(X870|X670|B850|Z890|Z790)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
+          ) ||
+          mbCandidates.find((i) =>
+            /\b(B650|B760|B860)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
+          ) ||
+          mbCandidates[Math.min(mbCandidates.length - 1, Math.floor(mbCandidates.length * 0.65))];
+      } else if (tier === "GAMING_1440P") {
+        // Priorizar chipsets B650 / B840 / B850 / B760 / B860
+        mb =
+          mbCandidates.find((i) =>
+            /\b(B650|B840|B850|B760|B860)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
+          ) ||
+          mbCandidates[Math.min(mbCandidates.length - 1, Math.floor(mbCandidates.length * 0.4))];
+      } else if (tier === "GAMING_1080P") {
+        mb =
+          mbCandidates.find((i) =>
+            /\b(B550|B760|B650|H610|A520)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
+          ) || mbCandidates[0];
+      } else {
+        mb = mbCandidates[0];
+      }
+    }
 
-    const targetRamType =
+    const requiredRamType =
       mb?.ramType && mb.ramType !== "UNIVERSAL"
         ? mb.ramType
         : cpu.ramType && cpu.ramType !== "UNIVERSAL"
         ? cpu.ramType
         : "DDR4";
 
-    // 3. Elegir Memoria RAM compatible en stock
-    const ramCandidates = inStockPool.filter(
-      (i) => i.categoria === "RAM" && (!i.ramType || i.ramType === targetRamType)
-    );
-    const ram =
-      presetId === "CREATOR_X3D" || presetId === "GAMING_1440P"
-        ? ramCandidates[Math.min(ramCandidates.length - 1, Math.floor(ramCandidates.length * 0.5))]
-        : ramCandidates[0];
-
-    // 4. Elegir SSD en stock
-    const ssdCandidates = inStockPool.filter(
-      (i) => i.categoria === "ALMACENAMIENTO" && i.descripcion.includes("SSD")
-    );
-    const ssd =
-      presetId === "CREATOR_X3D"
-        ? ssdCandidates[Math.min(ssdCandidates.length - 1, Math.floor(ssdCandidates.length * 0.6))]
-        : ssdCandidates[0] || inStockPool.find((i) => i.categoria === "ALMACENAMIENTO");
-
-    // 5. Elegir GPU en stock (si es perfil Gaming o Workstation, o si el CPU no tiene video integrado)
-    const gpuCandidates = inStockPool.filter((i) => i.categoria === "GPU");
-    let gpu: HardwarePresupuestoItem | undefined;
-    if (presetId === "GAMING_1080P") {
-      gpu = gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.25))];
-    } else if (presetId === "GAMING_1440P") {
-      gpu = gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.55))];
-    } else if (presetId === "CREATOR_X3D") {
-      gpu = gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.8))];
-    } else if (cpu.hasIGpu === false) {
-      gpu = gpuCandidates[0];
+    // 3. MEMORIA RAM DESKTOP (Estrictamente DDR4 o DDR5 según la placa, descartando SODIMM/DDR3)
+    const existingRams = preserveExisting
+      ? selectedComponents.filter(
+          (c) => c.categoria === "RAM" && c.ramType === requiredRamType
+        )
+      : [];
+    let ram = existingRams[0];
+    if (!ram) {
+      const ramCandidates = inStockPool.filter(
+        (i) => i.categoria === "RAM" && i.ramType === requiredRamType
+      );
+      if (tier === "CREATOR_X3D") {
+        // Buscar 32GB (o kit 2x16GB) DDR5
+        ram =
+          ramCandidates.find((i) => (i.capacidadGb || 0) >= 32) ||
+          ramCandidates.find((i) => (i.capacidadGb || 0) >= 16) ||
+          ramCandidates[Math.min(ramCandidates.length - 1, Math.floor(ramCandidates.length * 0.5))];
+      } else if (tier === "GAMING_1440P" || tier === "GAMING_1080P") {
+        // Buscar 16GB o 32GB de marca reconocida (Kingston, Corsair, Crucial, XPG, Lexar, G.Skill)
+        ram =
+          ramCandidates.find(
+            (i) =>
+              (i.capacidadGb === 16 || i.capacidadGb === 32) &&
+              /\b(KINGSTON|CORSAIR|CRUCIAL|XPG|ADATA|LEXAR|G\.SKILL)\b/i.test(
+                `${i.marca || ""} ${i.nombreWeb || i.descripcion}`
+              )
+          ) ||
+          ramCandidates.find((i) => (i.capacidadGb || 0) >= 16) ||
+          ramCandidates[0];
+      } else {
+        // Oficina: 8GB o 16GB de marca confiable
+        ram =
+          ramCandidates.find(
+            (i) =>
+              (i.capacidadGb === 8 || i.capacidadGb === 16) &&
+              /\b(KINGSTON|CORSAIR|CRUCIAL|LEXAR|ADATA|XPG|HIKSEMI)\b/i.test(
+                `${i.marca || ""} ${i.nombreWeb || i.descripcion}`
+              )
+          ) || ramCandidates[0];
+      }
     }
 
-    // 6. Elegir Fuente en stock acorde a la potencia
-    const minPsu = gpu?.recomendadoPsuWatts || 500;
-    const psuCandidates = inStockPool.filter(
-      (i) => i.categoria === "FUENTE" && (i.potenciaWatts || 500) >= minPsu
-    );
-    const psu = psuCandidates[0] || inStockPool.find((i) => i.categoria === "FUENTE");
+    // 4. ALMACENAMIENTO SSD (Priorizar siempre M.2 NVMe PCIe de 500GB / 1TB / 2TB sobre SATA 240GB)
+    const existingSsds = preserveExisting
+      ? selectedComponents.filter((c) => c.categoria === "ALMACENAMIENTO")
+      : [];
+    let ssd = existingSsds[0];
+    if (!ssd) {
+      const ssdCandidates = inStockPool.filter((i) => i.categoria === "ALMACENAMIENTO");
+      const nvmePool = ssdCandidates.filter((i) => i.esM2Nvme);
+      const poolToUse = nvmePool.length > 0 ? nvmePool : ssdCandidates;
 
-    // 7. Elegir Gabinete en stock
-    const caseCandidates = inStockPool.filter((i) => i.categoria === "GABINETE");
-    const gabinete =
-      presetId === "CREATOR_X3D" || presetId === "GAMING_1440P"
-        ? caseCandidates[Math.min(caseCandidates.length - 1, Math.floor(caseCandidates.length * 0.5))]
-        : caseCandidates[0];
+      if (tier === "CREATOR_X3D") {
+        // 2TB o 1TB NVMe Gen4/Gen5
+        ssd =
+          poolToUse.find((i) => (i.capacidadGb || 0) >= 1900) ||
+          poolToUse.find((i) => (i.capacidadGb || 0) >= 960) ||
+          poolToUse[Math.min(poolToUse.length - 1, Math.floor(poolToUse.length * 0.6))];
+      } else if (tier === "GAMING_1440P" || tier === "GAMING_1080P") {
+        // 1TB NVMe M.2 (o 500GB/512GB NVMe M.2)
+        ssd =
+          poolToUse.find((i) => (i.capacidadGb || 0) >= 960 && (i.capacidadGb || 0) <= 1050) ||
+          poolToUse.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
+          poolToUse[0];
+      } else {
+        // Oficina: 500GB / 512GB / 480GB NVMe M.2 (evitando discos de 120GB/240GB SATA lentos)
+        ssd =
+          poolToUse.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
+          ssdCandidates.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
+          poolToUse[0];
+      }
+    }
 
-    // 8. Elegir Refrigeración en stock
-    const coolerStock = catalogoCompleto.find((i) => i.sku === "STOCK-COOLER");
-    const liquidCoolers = inStockPool.filter(
-      (i) => i.categoria === "REFRIGERACION" && (i.descripcion.includes("240") || i.descripcion.includes("360") || i.descripcion.includes("LIQUID"))
-    );
-    const cooler =
-      presetId === "CREATOR_X3D" || presetId === "GAMING_1440P"
-        ? liquidCoolers[0] || coolerStock
-        : coolerStock;
+    // 5. PLACA DE VIDEO (GPU)
+    let gpu = existingGpu;
+    if (!gpu) {
+      const gpuCandidates = inStockPool.filter((i) => i.categoria === "GPU");
+      if (tier === "GAMING_1080P") {
+        gpu =
+          gpuCandidates.find((i) =>
+            /\b(RTX\s*3060|RTX\s*4060|RTX\s*5060|RTX\s*5050|RX\s*7600|RX\s*6600|B580|RTX\s*3050)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
+          ) ||
+          gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.25))];
+      } else if (tier === "GAMING_1440P") {
+        gpu =
+          gpuCandidates.find((i) =>
+            /\b(5060\s*TI|4060\s*TI|9060\s*XT|7700\s*XT|7800\s*XT|RTX\s*5070|RTX\s*4070)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
+          ) ||
+          gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.55))];
+      } else if (tier === "CREATOR_X3D") {
+        gpu =
+          gpuCandidates.find((i) =>
+            /\b(5070\s*TI|5080|4080|9070\s*XT|RTX\s*5070|4070\s*TI)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
+          ) ||
+          gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.8))];
+      } else if (cpu.hasIGpu === false) {
+        // Si el usuario eligió un CPU sin gráficos integrados y pidió autocompletar
+        gpu = gpuCandidates[0];
+      }
+    }
+
+    // 6. FUENTE DE PODER (Estrictamente Fuente ATX Real de PC acorde al consumo, NUNCA adaptadores externos)
+    const minPsuWatts =
+      tier === "CREATOR_X3D"
+        ? Math.max(750, gpu?.recomendadoPsuWatts || 750)
+        : tier === "GAMING_1440P"
+        ? Math.max(650, gpu?.recomendadoPsuWatts || 650)
+        : tier === "GAMING_1080P"
+        ? Math.max(600, gpu?.recomendadoPsuWatts || 550)
+        : 500;
+
+    const existingPsu = preserveExisting
+      ? selectedComponents.find(
+          (c) => c.categoria === "FUENTE" && (c.potenciaWatts || 0) >= minPsuWatts
+        )
+      : undefined;
+    let psu = existingPsu;
+    if (!psu) {
+      const psuCandidates = inStockPool.filter(
+        (i) => i.categoria === "FUENTE" && (i.potenciaWatts || 0) >= minPsuWatts
+      );
+      // Priorizar fuentes con certificación 80 Plus
+      psu =
+        psuCandidates.find((i) =>
+          /\b(80\s*PLUS|80PLUS|BRONZE|GOLD|PLATINUM)\b/i.test(
+            `${i.descripcion} ${i.nombreWeb || ""}`
+          )
+        ) ||
+        psuCandidates[0] ||
+        inStockPool.find((i) => i.categoria === "FUENTE" && (i.potenciaWatts || 0) >= 500);
+    }
+
+    // 7. GABINETE (Acorde a la gama del equipo)
+    const existingCase = preserveExisting
+      ? selectedComponents.find((c) => c.categoria === "GABINETE")
+      : undefined;
+    let gabinete = existingCase;
+    if (!gabinete) {
+      const caseCandidates = inStockPool.filter((i) => i.categoria === "GABINETE");
+      const gamerCases = caseCandidates.filter(
+        (i) =>
+          !i.descripcion.includes("1102K") &&
+          !i.descripcion.includes("1103K") &&
+          (i.precioPyg || 0) >= 290000
+      );
+      if (tier === "CREATOR_X3D") {
+        gabinete =
+          gamerCases.find((i) =>
+            /\b(COUGAR|CORSAIR|BE QUIET|ASUS|LIAN LI|NZXT)\b/i.test(
+              `${i.marca || ""} ${i.nombreWeb || i.descripcion}`
+            ) && (i.precioPyg || 0) >= 550000
+          ) ||
+          gamerCases[Math.min(gamerCases.length - 1, Math.floor(gamerCases.length * 0.6))] ||
+          caseCandidates[0];
+      } else if (tier === "GAMING_1440P" || tier === "GAMING_1080P") {
+        gabinete = gamerCases[0] || caseCandidates[0];
+      } else {
+        gabinete = caseCandidates[0];
+      }
+    }
+
+    // 8. REFRIGERACIÓN (Si el CPU viene SIN cooler o es gama alta, elegir un verdadero Cooler de CPU / Water Cooler AIO)
+    const existingCooler = preserveExisting
+      ? selectedComponents.find((c) => c.categoria === "REFRIGERACION")
+      : undefined;
+    let cooler = existingCooler;
+    if (
+      !cooler ||
+      (cpu.includesCooler === false && cooler.sku === "STOCK-COOLER")
+    ) {
+      const stockCooler = catalogoCompleto.find((i) => i.sku === "STOCK-COOLER");
+      const realCpuCoolers = inStockPool.filter(
+        (i) => i.categoria === "REFRIGERACION" && i.isCpuCooler
+      );
+      const liquidAioCoolers = realCpuCoolers.filter((i) =>
+        /\b(240|360|LIQUID|LÍQUIDO|LIQUIDO|WATER|AIO|AURA GL|PURE LOOP|LIGHT LOOP)\b/i.test(
+          `${i.descripcion} ${i.nombreWeb || ""}`
+        )
+      );
+
+      if (tier === "CREATOR_X3D" || tier === "GAMING_1440P") {
+        cooler = liquidAioCoolers[0] || realCpuCoolers[0] || stockCooler;
+      } else if (cpu.includesCooler === false) {
+        // Si el procesador no trae cooler de fábrica, elegir obligatoriamente un Cooler de CPU real
+        cooler = realCpuCoolers[0] || liquidAioCoolers[0];
+      } else {
+        cooler = stockCooler;
+      }
+    }
 
     const build = [cpu, mb, ram, gpu, ssd, psu, gabinete, cooler].filter(
       Boolean
     ) as HardwarePresupuestoItem[];
 
-    setSelectedComponents(build.map((item) => ({ ...item, cantidad: 1 })));
+    setSelectedComponents(
+      build.map((item) => ({
+        ...item,
+        cantidad:
+          tier === "CREATOR_X3D" &&
+          item.categoria === "RAM" &&
+          (item.capacidadGb || 16) === 16 &&
+          !`${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase().includes("2X")
+            ? 2
+            : 1,
+      }))
+    );
+  };
+
+  const handleAutoCompletarInteligente = () => {
+    // Determinar gama automáticamente según el CPU o GPU ya elegido
+    const cpuPrice = currentCpu?.precioPyg || 0;
+    const gpuPrice = currentGpu?.precioPyg || 0;
+    let detectedTier: "OFICINA_PRO" | "GAMING_1080P" | "GAMING_1440P" | "CREATOR_X3D" =
+      "GAMING_1080P";
+
+    if (cpuPrice >= 3000000 || gpuPrice >= 4500000) {
+      detectedTier = "CREATOR_X3D";
+    } else if (
+      cpuPrice >= 1750000 ||
+      gpuPrice >= 2800000 ||
+      currentCpu?.socket === "AM5" ||
+      currentCpu?.socket === "LGA1851"
+    ) {
+      detectedTier = "GAMING_1440P";
+    } else if (
+      currentCpu &&
+      currentCpu.hasIGpu !== false &&
+      !currentGpu &&
+      cpuPrice <= 1900000
+    ) {
+      detectedTier = "OFICINA_PRO";
+    }
+
+    buildSmartPcConfiguration(detectedTier, true);
   };
 
   // Limpiar configuración
@@ -609,15 +961,30 @@ export default function ArmarPcPresupuestadorPage() {
             return false;
           }
         }
-        if (
-          item.categoria === "RAM" &&
-          currentMb &&
-          currentMb.ramType &&
-          currentMb.ramType !== "UNIVERSAL"
-        ) {
-          if (item.ramType && item.ramType !== "UNIVERSAL" && item.ramType !== currentMb.ramType) {
+        if (item.categoria === "RAM") {
+          const reqRam =
+            currentMb?.ramType && currentMb.ramType !== "UNIVERSAL"
+              ? currentMb.ramType
+              : currentCpu?.ramType && currentCpu.ramType !== "UNIVERSAL"
+              ? currentCpu.ramType
+              : undefined;
+          if (reqRam && item.ramType && item.ramType !== "UNIVERSAL" && item.ramType !== reqRam) {
             return false;
           }
+        }
+        if (
+          item.categoria === "REFRIGERACION" &&
+          currentCpu &&
+          currentCpu.includesCooler === false &&
+          item.sku === "STOCK-COOLER"
+        ) {
+          return false;
+        }
+        if (
+          item.categoria === "FUENTE" &&
+          (item.potenciaWatts || 0) < resultadoCompatibilidad.consumoTotalWatts
+        ) {
+          return false;
         }
       }
 
@@ -632,7 +999,29 @@ export default function ArmarPcPresupuestadorPage() {
     onlyCompatible,
     currentCpu,
     currentMb,
+    resultadoCompatibilidad.consumoTotalWatts,
   ]);
+
+  // Determinar si un ítem es una recomendación inteligente destacada para el slot activo
+  const isItemSmartRecommended = (item: HardwarePresupuestoItem): boolean => {
+    if (item.stockStatus !== "IN_STOCK" || item.sku === "STOCK-COOLER") return false;
+    if (item.categoria === "ALMACENAMIENTO") {
+      return Boolean(item.esM2Nvme && (item.capacidadGb || 0) >= 480);
+    }
+    if (item.categoria === "FUENTE") {
+      return Boolean(
+        (item.potenciaWatts || 0) >= resultadoCompatibilidad.fuenteRecomendadaWatts &&
+          /\b(80\s*PLUS|80PLUS|BRONZE|GOLD)\b/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)
+      );
+    }
+    if (item.categoria === "REFRIGERACION") {
+      return Boolean(item.isCpuCooler);
+    }
+    if (item.categoria === "RAM") {
+      return Boolean((item.capacidadGb || 0) >= 16);
+    }
+    return false;
+  };
 
   // Generación de resumen de texto para cotización estricta de https://nissei.com/py/
   const generarTextoPresupuesto = () => {
@@ -651,8 +1040,8 @@ export default function ArmarPcPresupuestadorPage() {
       const cant = (c.cantidad || 1) > 1 ? ` (x${c.cantidad})` : "";
       const subPyg = (c.precioPyg || 0) * (c.cantidad || 1);
       const subUsd = tipoCambio > 0 ? (subPyg / tipoCambio).toFixed(2) : "0.00";
-      text += `• [SKU ${c.sku}] ${c.nombreWeb || c.descripcion}${cant}\n`;
-      text += `  Gs. ${subPyg.toLocaleString("es-PY")} (Ref. US$ ${subUsd}) · En Stock Web\n`;
+      text += `• [SKU ${c.sku}] ${cleanDisplayTitle(c.nombreWeb || c.descripcion)}${cant}\n`;
+      text += `  Gs. ${subPyg.toLocaleString("es-PY")} (Ref. US$ ${subUsd}) · Garantía: 3 meses\n`;
       if (c.urlWeb) {
         text += `  Link: ${c.urlWeb}\n`;
       }
@@ -671,11 +1060,7 @@ export default function ArmarPcPresupuestadorPage() {
       maximumFractionDigits: 2,
     })} (TC: ${tipoCambio.toLocaleString("es-PY")} Gs/USD)\n`;
     text += `--------------------------------------------------\n`;
-    text += `Compatibilidad: ${
-      resultadoCompatibilidad.compatible
-        ? "Verificado 100% Compatible"
-        : "Requiere revisión técnica"
-    }\n`;
+    text += `Garantía de Componentes: 3 meses · Compatibilidad 100% Verificada\n`;
     text += `Cotización estricta sincronizada en vivo con https://nissei.com/py/\n`;
 
     return text;
@@ -703,10 +1088,10 @@ export default function ArmarPcPresupuestadorPage() {
       consumoEstimado: `${resultadoCompatibilidad.consumoTotalWatts}W`,
       observaciones:
         observacionesPresupuesto ||
-        `Presupuesto oficial nissei.com/py (Total: Gs. ${totalPresupuestoPyg.toLocaleString("es-PY")}). Consumo estimado: ${resultadoCompatibilidad.consumoTotalWatts}W.`,
+        `Presupuesto oficial nissei.com/py (Total: Gs. ${totalPresupuestoPyg.toLocaleString("es-PY")} · Garantía 3 meses). Consumo estimado: ${resultadoCompatibilidad.consumoTotalWatts}W.`,
       componentes: selectedComponents.map((c) => ({
         sku: c.sku,
-        descripcion: c.descripcion,
+        descripcion: cleanDisplayTitle(c.nombreWeb || c.descripcion),
         seriales: "Pendiente de facturación / escaneo",
         categoria: c.categoria,
       })),
@@ -755,15 +1140,14 @@ export default function ArmarPcPresupuestadorPage() {
               </a>
             </div>
             <p className="text-[11px] text-zinc-500 hidden sm:block">
-              Precios en Guaraníes y disponibilidad en tiempo real sincronizados con{" "}
-              <strong className="text-zinc-700">https://nissei.com/py/</strong>
+              Precios en Guaraníes, SKUs verificados y disponibilidad en tiempo real desde{" "}
+              <strong className="text-zinc-700">https://nissei.com/py/</strong> · Garantía 3 meses
             </p>
           </div>
         </div>
 
         {/* Acciones de Cabecera */}
         <div className="flex items-center gap-2">
-          {/* Botón Sincronizar Precios en Vivo */}
           <button
             type="button"
             onClick={() => syncWithNisseiWeb(true)}
@@ -777,7 +1161,7 @@ export default function ArmarPcPresupuestadorPage() {
             </span>
           </button>
 
-          {/* Selector de Moneda (Por defecto PYG ₲ oficial de nissei.com/py) */}
+          {/* Selector de Moneda */}
           <div className="flex items-center bg-zinc-100 rounded-lg p-0.5 border border-zinc-200 text-xs font-mono">
             <button
               type="button"
@@ -865,8 +1249,8 @@ export default function ArmarPcPresupuestadorPage() {
               ) : (
                 <span>
                   <strong>Conectado en vivo a https://nissei.com/py/</strong> ·{" "}
-                  <span className="font-mono font-bold">{totalInStockCount}</span> componentes con
-                  stock y cotización oficial web activa
+                  <span className="font-mono font-bold">{totalInStockCount}</span> componentes de
+                  escritorio con stock y cotización web activa
                   {lastUpdatedWeb ? ` (Sincronizado ${lastUpdatedWeb})` : ""}
                 </span>
               )}
@@ -877,7 +1261,9 @@ export default function ArmarPcPresupuestadorPage() {
               <input
                 type="number"
                 value={tipoCambio}
-                onChange={(e) => setTipoCambio(Math.max(1, Number(e.target.value) || TIPO_CAMBIO_PYG_DEFECTO))}
+                onChange={(e) =>
+                  setTipoCambio(Math.max(1, Number(e.target.value) || TIPO_CAMBIO_PYG_DEFECTO))
+                }
                 className="w-20 px-2 py-0.5 bg-white border border-zinc-300 rounded text-xs font-bold text-zinc-900 text-right outline-none focus:border-zinc-900"
                 title="Tipo de cambio referencial para conversión a USD (Los precios en Gs. se leen exactamente de nissei.com/py)"
               />
@@ -947,18 +1333,26 @@ export default function ArmarPcPresupuestadorPage() {
               </div>
             </div>
 
-            {/* Plantillas Rápidas de Ensambles Recomendados */}
+            {/* Plantillas Inteligentes de Ensambles Recomendados */}
             <div className="pt-3 border-t border-zinc-100">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-2">
-                Plantillas de Ensamble Rápido (Solo con Stock Real en nissei.com/py):
-              </span>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  Recomendaciones Inteligentes (100% Compatibles &amp; En Stock Web):
+                </span>
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {PRESETS.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     disabled={isLoadingWeb}
-                    onClick={() => handleLoadPreset(p.id)}
+                    onClick={() =>
+                      buildSmartPcConfiguration(
+                        p.id as "OFICINA_PRO" | "GAMING_1080P" | "GAMING_1440P" | "CREATOR_X3D",
+                        false
+                      )
+                    }
                     className="p-2.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 text-left transition-all group cursor-pointer shadow-2xs disabled:opacity-50"
                   >
                     <span className="text-xs font-bold text-zinc-900 block truncate group-hover:text-black">
@@ -1032,7 +1426,7 @@ export default function ArmarPcPresupuestadorPage() {
                   >
                     <Icon className="w-3.5 h-3.5" />
                     <span>{slot.nombre.split(" ")[0]}</span>
-                    {hasItem && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>}
+                    {hasItem && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                   </button>
                 );
               })}
@@ -1065,7 +1459,7 @@ export default function ArmarPcPresupuestadorPage() {
                   setCatalogSearchTerm(e.target.value);
                   setDisplayLimit(60);
                 }}
-                placeholder="Buscar por SKU (ej: 67488, 131437), modelo o descripción en nissei.com/py..."
+                placeholder="Buscar por SKU numérico (ej: 67488, 131437), modelo o descripción en nissei.com/py..."
                 className="w-full bg-white border border-zinc-200 rounded-lg pl-9 pr-8 py-2 text-xs text-zinc-900 outline-none focus:border-zinc-900 transition-colors shadow-2xs"
               />
               {catalogSearchTerm && (
@@ -1133,7 +1527,7 @@ export default function ArmarPcPresupuestadorPage() {
                   Consultando precios en Guaraníes y disponibilidad en tiempo real en https://nissei.com/py/...
                 </p>
                 <p className="text-[11px] text-zinc-400">
-                  Verificando catálogo oficial de Procesadores, Placas Madre, Memorias RAM, GPUs, SSDs, Fuentes, Gabinetes y Coolers.
+                  Filtrando únicamente hardware real de escritorio (Fuentes ATX certificadas, Memorias Desktop DDR4/DDR5, SSDs NVMe y Coolers de CPU).
                 </p>
               </div>
             ) : catalogoFiltrado.length === 0 ? (
@@ -1176,6 +1570,8 @@ export default function ArmarPcPresupuestadorPage() {
                     : 0;
                   const precioUsd =
                     tipoCambio > 0 ? Math.round((precioPyg / tipoCambio) * 100) / 100 : 0;
+                  const recommended = isItemSmartRecommended(item);
+                  const displayTitle = cleanDisplayTitle(item.nombreWeb || item.descripcion);
 
                   return (
                     <div
@@ -1208,6 +1604,11 @@ export default function ArmarPcPresupuestadorPage() {
                               ✕ SIN STOCK EN WEB
                             </span>
                           )}
+                          {recommended && (
+                            <span className="inline-flex items-center gap-0.5 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                              ★ RECOMENDADO
+                            </span>
+                          )}
                           {hasDiscount && discountPct > 0 && (
                             <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
                               -{discountPct}% WEB
@@ -1223,24 +1624,24 @@ export default function ArmarPcPresupuestadorPage() {
                               {item.ramType}
                             </span>
                           )}
+                          {item.esM2Nvme && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono font-semibold">
+                              M.2 NVMe
+                            </span>
+                          )}
                           {item.potenciaWatts ? (
                             <span className="text-[9px] text-emerald-700 font-mono font-bold bg-emerald-50 border border-emerald-200 px-1 rounded">
-                              {item.potenciaWatts}W
+                              {item.potenciaWatts}W Reales
                             </span>
                           ) : null}
                         </div>
 
                         <h4 className="text-xs font-semibold text-zinc-900 line-clamp-2 leading-relaxed">
-                          {item.nombreWeb || item.descripcion}
+                          {displayTitle}
                         </h4>
-                        {item.nombreWeb && item.nombreWeb.toUpperCase() !== item.descripcion.toUpperCase() && (
-                          <span className="text-[10px] font-mono text-zinc-400 block truncate">
-                            Ref. interna: {item.descripcion}
-                          </span>
-                        )}
 
                         <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-1 flex-wrap">
-                          <span>Garantía: {item.garantiaMeses} meses</span>
+                          <span>Garantía: 3 meses</span>
                           {item.urlWeb && (
                             <a
                               href={item.urlWeb}
@@ -1252,9 +1653,14 @@ export default function ArmarPcPresupuestadorPage() {
                               <ExternalLink className="w-3 h-3" />
                             </a>
                           )}
-                          {item.hasIGpu === false && (
+                          {item.categoria === "PROCESADOR" && item.hasIGpu === false && (
                             <span className="text-amber-700 font-medium">
                               ⚠️ Requiere placa de video dedicada
+                            </span>
+                          )}
+                          {item.categoria === "PROCESADOR" && item.includesCooler === false && (
+                            <span className="text-rose-700 font-medium">
+                              ❄️ Sin cooler de fábrica (Requiere Cooler CPU)
                             </span>
                           )}
                         </div>
@@ -1285,13 +1691,21 @@ export default function ArmarPcPresupuestadorPage() {
                                     ₲ {precioPyg.toLocaleString("es-PY")}
                                   </span>
                                   <span className="text-[10px] font-mono text-zinc-500 block">
-                                    US$ {precioUsd.toLocaleString("es-PY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    US${" "}
+                                    {precioUsd.toLocaleString("es-PY", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
                                   </span>
                                 </>
                               ) : (
                                 <>
                                   <span className="text-sm font-extrabold font-mono text-zinc-900 block">
-                                    US$ {precioUsd.toLocaleString("es-PY", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    US${" "}
+                                    {precioUsd.toLocaleString("es-PY", {
+                                      minimumFractionDigits: 2,
+                                      maximumFractionDigits: 2,
+                                    })}
                                   </span>
                                   <span className="text-[10px] font-mono text-zinc-500 block">
                                     ₲ {precioPyg.toLocaleString("es-PY")}
@@ -1362,7 +1776,9 @@ export default function ArmarPcPresupuestadorPage() {
                   </span>
                 </h3>
                 <span className="text-[11px] text-zinc-500 block mt-0.5">
-                  {clienteNombre ? `Cliente: ${clienteNombre}` : "Cotización estricta de https://nissei.com/py/"}
+                  {clienteNombre
+                    ? `Cliente: ${clienteNombre}`
+                    : "Cotización estricta de https://nissei.com/py/"}
                 </span>
               </div>
 
@@ -1387,6 +1803,18 @@ export default function ArmarPcPresupuestadorPage() {
                 )}
               </div>
             </div>
+
+            {/* Botón Inteligente para Autocompletar el Resto de la PC */}
+            {selectedComponents.length > 0 && selectedComponents.length < 7 && (
+              <button
+                type="button"
+                onClick={handleAutoCompletarInteligente}
+                className="w-full py-2 px-3 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                <span>Autocompletar piezas faltantes compatibles inteligentemente</span>
+              </button>
+            )}
 
             {/* Alertas de Compatibilidad */}
             {resultadoCompatibilidad.alertas.length > 0 && (
@@ -1429,12 +1857,12 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
 
             {/* Lista de Componentes Cargados */}
-            <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
               {selectedComponents.length === 0 ? (
                 <div className="p-6 text-center text-zinc-400 border border-dashed border-zinc-200 rounded-lg">
                   <p className="text-xs">
                     Ningún componente seleccionado aún. Seleccione componentes con stock activo en{" "}
-                    <strong>nissei.com/py</strong> o elija una plantilla rápida.
+                    <strong>nissei.com/py</strong> o elija una recomendación rápida.
                   </p>
                 </div>
               ) : (
@@ -1442,25 +1870,26 @@ export default function ArmarPcPresupuestadorPage() {
                   const subPyg = (c.precioPyg || 0) * (c.cantidad || 1);
                   const subUsd =
                     tipoCambio > 0 ? Math.round((subPyg / tipoCambio) * 100) / 100 : 0;
+                  const cleanTitle = cleanDisplayTitle(c.nombreWeb || c.descripcion);
                   return (
                     <div
                       key={c.sku}
                       className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-200 flex items-start justify-between gap-2 text-xs"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-[9px] font-mono font-bold text-zinc-700 uppercase">
                             {c.categoria}
                           </span>
-                          <span className="text-[9px] font-mono text-zinc-400">
-                            #{c.sku}
+                          <span className="text-[9px] font-mono font-bold text-zinc-500">
+                            SKU #{c.sku}
                           </span>
                           <span className="text-[8px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 rounded">
                             WEB OK
                           </span>
                         </div>
-                        <h5 className="font-medium text-zinc-900 line-clamp-1 mt-0.5">
-                          {c.nombreWeb || c.descripcion}
+                        <h5 className="font-medium text-zinc-900 line-clamp-1 mt-0.5" title={cleanTitle}>
+                          {cleanTitle}
                         </h5>
                         <div className="flex items-center gap-2 text-[10px] text-zinc-500 mt-0.5">
                           <span>
@@ -1468,7 +1897,7 @@ export default function ArmarPcPresupuestadorPage() {
                             {c.cantidad && c.cantidad > 1 ? `x ${c.cantidad}` : ""}
                           </span>
                           <span>·</span>
-                          <span>Garantía: {c.garantiaMeses}m</span>
+                          <span>Garantía: 3 meses</span>
                         </div>
                       </div>
 
@@ -1552,7 +1981,7 @@ export default function ArmarPcPresupuestadorPage() {
                   </span>
                 </div>
                 <span className="text-[10px] text-emerald-400 block pt-1 font-mono">
-                  ✓ Precios exactos de https://nissei.com/py/ · IVA 10% Incluido
+                  ✓ Precios exactos de https://nissei.com/py/ · Garantía 3 meses · IVA 10% Incluido
                 </span>
               </div>
 

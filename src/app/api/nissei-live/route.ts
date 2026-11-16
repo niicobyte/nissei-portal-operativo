@@ -35,7 +35,6 @@ const CATEGORY_MAP: Array<{ id: string; categoria: NisseiHardwareCategory }> = [
   { id: "173", categoria: "FUENTE" },
   { id: "174", categoria: "GABINETE" },
   { id: "1012", categoria: "REFRIGERACION" },
-  { id: "2302", categoria: "REFRIGERACION" },
 ];
 
 const CATEGORY_PRODUCTS_QUERY = `
@@ -149,24 +148,232 @@ const CACHE_TTL_MS = 3 * 60 * 1000; // 3 minutos
 let cachedCatalog: CacheState | null = null;
 let inflightPromise: Promise<CacheState> | null = null;
 
-function isRelevantHardwareItem(categoria: NisseiHardwareCategory, name: string): boolean {
-  const upper = name.toUpperCase();
-  if (categoria === "PROCESADOR") {
-    if (upper.includes("ULTIMATTE") || upper.includes("BLACKMAGIC")) return false;
+/**
+ * Decodifica entidades HTML devueltas por Magento GraphQL (ej. 2.5&quot; -> 2.5")
+ */
+function decodeHtmlEntities(text: string): string {
+  if (!text) return "";
+  return text
+    .replace(/&quot;/gi, '"')
+    .replace(/&#0*34;/g, '"')
+    .replace(/&apos;/gi, "'")
+    .replace(/&#0*39;/g, "'")
+    .replace(/&amp;/gi, "&")
+    .replace(/&#0*38;/g, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(Number(dec)))
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Extrae y normaliza inteligentemente el SKU numérico de PC de Nissei.
+ * Acepta SKUs numéricos puros ("67488", "154022") o con prefijo de informática ("PC-124882" -> "124882").
+ * Rechaza prefijos de otros rubros (ej. "FX-53037", "ELE-128657", "PET-TR17152").
+ */
+function normalizeCleanSku(rawSku: string): string {
+  const trimmed = String(rawSku || "").trim();
+  if (/^\d{4,7}$/.test(trimmed)) {
+    return trimmed;
   }
-  if (categoria === "GABINETE") {
+  const pcMatch = trimmed.match(/^PC-(\d{4,7})$/i);
+  if (pcMatch) {
+    return pcMatch[1];
+  }
+  return "";
+}
+
+/**
+ * Filtro experto para garantizar que solo entren componentes reales de PC de Escritorio
+ * y descartar fuentes externas de routers, memorias de notebook SODIMM, soportes o accesorios.
+ */
+function isValidDesktopHardware(
+  categoria: NisseiHardwareCategory,
+  name: string,
+  precioPyg: number
+): boolean {
+  const upper = name.toUpperCase();
+
+  if (precioPyg <= 0) return false;
+
+  if (categoria === "PROCESADOR") {
     if (
-      (upper.includes("SOPORTE") || upper.includes("CARRITO") || upper.includes("BANDEJA")) &&
-      !upper.includes("GABINETE")
+      upper.includes("ULTIMATTE") ||
+      upper.includes("BLACKMAGIC") ||
+      upper.includes("MINI PC") ||
+      upper.includes("NOTEBOOK") ||
+      upper.includes("ALL IN ONE")
     ) {
       return false;
     }
+    return (
+      upper.includes("RYZEN") ||
+      upper.includes("INTEL") ||
+      upper.includes("CORE") ||
+      upper.includes("ATHLON") ||
+      upper.includes("THREADRIPPER") ||
+      upper.includes("PENTIUM") ||
+      upper.includes("PROCESADOR")
+    );
   }
-  return true;
-}
 
-function normalizeCleanSku(rawSku: string): string {
-  return String(rawSku || "").trim().replace(/^PC-/i, "");
+  if (categoria === "PLACA_MADRE") {
+    if (
+      upper.includes("CABLE") ||
+      upper.includes("ADAPTADOR") ||
+      upper.includes("SOPORTE") ||
+      upper.includes("ANTENA") ||
+      upper.includes("CONTROLADOR")
+    ) {
+      return false;
+    }
+    return (
+      upper.includes("PLACA MADRE") ||
+      upper.includes("MOTHERBOARD") ||
+      upper.includes("MAINBOARD") ||
+      /\b(H310|H410|H510|B460|B560|H610|B660|B760|Z690|Z790|H810|B860|Z890|A320|A520|B450|B550|X570|A620|B650|B840|B850|X670|X870)\b/i.test(
+        upper
+      )
+    );
+  }
+
+  if (categoria === "RAM") {
+    // Excluir memorias de Notebook (SODIMM), memorias antiguas DDR2/DDR3 o accesorios
+    if (
+      upper.includes("SODIMM") ||
+      upper.includes("SO-DIMM") ||
+      upper.includes("NOTEBOOK") ||
+      upper.includes("LAPTOP") ||
+      upper.includes("MACBOOK") ||
+      upper.includes("DDR3") ||
+      upper.includes("DDR2") ||
+      upper.includes("PC3") ||
+      upper.includes("PC2") ||
+      upper.includes("DISIPADOR PARA") ||
+      upper.includes("DUMMY")
+    ) {
+      return false;
+    }
+    return /\b(DDR4|DDR5)\b/i.test(upper) && precioPyg >= 85000;
+  }
+
+  if (categoria === "GPU") {
+    if (
+      upper.includes("SOPORTE") ||
+      upper.includes("CABLE") ||
+      upper.includes("RISER") ||
+      upper.includes("ADAPTADOR") ||
+      upper.includes("EXTENSOR") ||
+      upper.includes("CAJA EXTERNA")
+    ) {
+      return false;
+    }
+    return (
+      /\b(RTX|GTX|RADEON|RX\s*\d{3,4}|ARC\s*[AB]\d{3}|GEFORCE|GT\s*(710|730|1030))\b/i.test(
+        upper
+      ) && precioPyg >= 280000
+    );
+  }
+
+  if (categoria === "ALMACENAMIENTO") {
+    if (
+      upper.includes("EXTERNO") ||
+      upper.includes("PORTATIL") ||
+      upper.includes("PORTÁTIL") ||
+      upper.includes("CARCASA") ||
+      upper.includes("CASE PARA") ||
+      upper.includes("COFRE") ||
+      upper.includes("ADAPTADOR") ||
+      upper.includes("CADDY") ||
+      upper.includes("DOCK") ||
+      upper.includes("PENDRIVE") ||
+      upper.includes("MICROSD") ||
+      upper.includes("SDXC")
+    ) {
+      return false;
+    }
+    return (
+      (upper.includes("SSD") ||
+        upper.includes("DISCO DURO") ||
+        upper.includes("M.2") ||
+        upper.includes("NVME")) &&
+      precioPyg >= 100000
+    );
+  }
+
+  if (categoria === "FUENTE") {
+    // Excluir estrictamente fuentes externas (ej. LanPro Media Converters), cargadores, UPS o adaptadores 12V/24V
+    if (
+      upper.includes("EXTERNA") ||
+      upper.includes("EXTERNO") ||
+      upper.includes("MEDIA CONVERTER") ||
+      upper.includes("LANPRO") ||
+      upper.includes("CARGADOR") ||
+      upper.includes("NOTEBOOK") ||
+      upper.includes("LAPTOP") ||
+      upper.includes("CCTV") ||
+      upper.includes("POE") ||
+      upper.includes("IMPRESORA") ||
+      upper.includes("MONITOR") ||
+      upper.includes("TIRA LED") ||
+      upper.includes("ADAPTADOR") ||
+      upper.includes("UPS") ||
+      upper.includes("ESTABILIZADOR") ||
+      upper.includes("CABLE") ||
+      /\b(12V|24V|48V|9V|5V)\b/i.test(upper)
+    ) {
+      return false;
+    }
+    // Debe tener potencia real de fuente de PC entre 400W y 1600W y precio de fuente ATX/SFX
+    const hasRealPsuWatts =
+      /\b(400|450|500|550|600|650|700|750|800|850|900|1000|1050|1200|1300|1600)\s*W\b/i.test(
+        upper
+      );
+    return hasRealPsuWatts && precioPyg >= 150000;
+  }
+
+  if (categoria === "GABINETE") {
+    if (
+      upper.includes("SOPORTE") ||
+      upper.includes("CARRITO") ||
+      upper.includes("BANDEJA") ||
+      upper.includes("RACK") ||
+      upper.includes("PEDESTAL") ||
+      upper.includes("BRAZO")
+    ) {
+      return false;
+    }
+    return upper.includes("GABINETE") && precioPyg >= 150000;
+  }
+
+  if (categoria === "REFRIGERACION") {
+    if (
+      upper.includes("NOTEBOOK") ||
+      upper.includes("LAPTOP") ||
+      upper.includes("BASE COOLER") ||
+      upper.includes("SOPORTE") ||
+      upper.includes("CELULAR") ||
+      upper.includes("TELEFONO") ||
+      upper.includes("TELÉFONO") ||
+      upper.includes("SMARTPHONE") ||
+      upper.includes("MAGSAFE") ||
+      upper.includes("TABLET")
+    ) {
+      return false;
+    }
+    return (
+      (upper.includes("COOLER") ||
+        upper.includes("VENTILADOR") ||
+        upper.includes("WATER") ||
+        upper.includes("LIQUIDO") ||
+        upper.includes("LÍQUIDO")) &&
+      precioPyg >= 45000
+    );
+  }
+
+  return true;
 }
 
 async function fetchCategoryPage(
@@ -231,57 +438,43 @@ async function fetchAllCategoryItems(
 
   for (const item of allRaw) {
     if (!item || !item.sku || !item.name) continue;
-    if (!isRelevantHardwareItem(categoria, String(item.name))) continue;
 
+    const cleanName = decodeHtmlEntities(String(item.name));
     const finalVal = Math.round(
       Number(item?.price_range?.minimum_price?.final_price?.value || 0)
     );
     const regVal = Math.round(
       Number(item?.price_range?.minimum_price?.regular_price?.value || finalVal)
     );
+
+    if (!isValidDesktopHardware(categoria, cleanName, finalVal)) continue;
+
     const stockStatus: "IN_STOCK" | "OUT_OF_STOCK" =
       item.stock_status === "IN_STOCK" && finalVal > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
     const urlKey = String(item.url_key || "").trim();
     const urlWeb = urlKey ? `${NISSEI_PY_BASE_URL}/${urlKey}` : NISSEI_PY_BASE_URL;
 
-    const rawSku = String(item.sku).trim();
-    const cleanSku = normalizeCleanSku(rawSku);
-
-    const mainEntry: NisseiLiveItem = {
-      sku: cleanSku,
-      nombre: String(item.name).trim(),
-      categoria,
-      precioPyg: finalVal,
-      precioRegularPyg: Math.max(regVal, finalVal),
-      stockStatus,
-      urlWeb,
-    };
-    parsed.push(mainEntry);
-
-    if (rawSku !== cleanSku) {
-      parsed.push({
-        ...mainEntry,
-        sku: rawSku,
-      });
-    }
-
-    // Si es un producto configurable, extraer también cada variante simple
-    if (Array.isArray(item.variants)) {
+    // Si es un producto configurable con variantes, extraer cada variante con su propio SKU numérico limpio
+    if (Array.isArray(item.variants) && item.variants.length > 0) {
       for (const v of item.variants) {
         const prod = v?.product;
         if (!prod || !prod.sku) continue;
+        const vSku = normalizeCleanSku(String(prod.sku));
+        if (!vSku) continue;
+        const vName = decodeHtmlEntities(String(prod.name || cleanName));
         const vFinal = Math.round(
           Number(prod?.price_range?.minimum_price?.final_price?.value || finalVal)
         );
         const vReg = Math.round(
           Number(prod?.price_range?.minimum_price?.regular_price?.value || vFinal)
         );
+        if (!isValidDesktopHardware(categoria, vName, vFinal)) continue;
         const vStock: "IN_STOCK" | "OUT_OF_STOCK" =
           prod.stock_status === "IN_STOCK" && vFinal > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
-        const vSku = normalizeCleanSku(String(prod.sku));
+
         parsed.push({
           sku: vSku,
-          nombre: String(prod.name || item.name).trim(),
+          nombre: vName,
           categoria,
           precioPyg: vFinal,
           precioRegularPyg: Math.max(vReg, vFinal),
@@ -289,6 +482,19 @@ async function fetchAllCategoryItems(
           urlWeb,
         });
       }
+    }
+
+    const cleanSku = normalizeCleanSku(String(item.sku));
+    if (cleanSku) {
+      parsed.push({
+        sku: cleanSku,
+        nombre: cleanName,
+        categoria,
+        precioPyg: finalVal,
+        precioRegularPyg: Math.max(regVal, finalVal),
+        stockStatus,
+        urlWeb,
+      });
     }
   }
 
@@ -309,11 +515,10 @@ async function syncFullNisseiCatalog(): Promise<CacheState> {
       const existing = bySku[item.sku];
       if (!existing || (existing.stockStatus !== "IN_STOCK" && item.stockStatus === "IN_STOCK")) {
         bySku[item.sku] = item;
+        bySku[`PC-${item.sku}`] = item;
       }
-      // Para la lista maestra, usar solo el SKU limpio sin prefijo PC- duplicado
-      const cleanSku = normalizeCleanSku(item.sku);
-      if (item.sku === cleanSku && item.stockStatus === "IN_STOCK" && item.precioPyg > 0) {
-        uniqueItemsMap.set(cleanSku, item);
+      if (item.stockStatus === "IN_STOCK" && item.precioPyg > 0) {
+        uniqueItemsMap.set(item.sku, item);
       }
     }
   }
@@ -393,7 +598,7 @@ export async function POST(req: NextRequest) {
     const cleanSkus = Array.from(
       new Set(
         rawSkus
-          .map((s) => String(s || "").trim())
+          .map((s) => normalizeCleanSku(String(s || "")))
           .filter(Boolean)
           .slice(0, 40)
           .flatMap((s) => [s, `PC-${s}`])
@@ -430,6 +635,9 @@ export async function POST(req: NextRequest) {
     const foundBySku: Record<string, NisseiLiveItem> = {};
     for (const item of rawItems) {
       if (!item || !item.sku) continue;
+      const cleanSku = normalizeCleanSku(String(item.sku));
+      if (!cleanSku) continue;
+
       const finalVal = Math.round(
         Number(item?.price_range?.minimum_price?.final_price?.value || 0)
       );
@@ -440,11 +648,11 @@ export async function POST(req: NextRequest) {
         item.stock_status === "IN_STOCK" && finalVal > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
       const urlKey = String(item.url_key || "").trim();
       const urlWeb = urlKey ? `${NISSEI_PY_BASE_URL}/${urlKey}` : NISSEI_PY_BASE_URL;
-      const cleanSku = normalizeCleanSku(String(item.sku));
+      const cleanName = decodeHtmlEntities(String(item.name || ""));
 
       const entry: NisseiLiveItem = {
         sku: cleanSku,
-        nombre: String(item.name || "").trim(),
+        nombre: cleanName,
         categoria: "PROCESADOR",
         precioPyg: finalVal,
         precioRegularPyg: Math.max(regVal, finalVal),
@@ -452,7 +660,7 @@ export async function POST(req: NextRequest) {
         urlWeb,
       };
       foundBySku[cleanSku] = entry;
-      foundBySku[String(item.sku).trim()] = entry;
+      foundBySku[`PC-${cleanSku}`] = entry;
 
       if (cachedCatalog) {
         cachedCatalog.bySku[cleanSku] = entry;
