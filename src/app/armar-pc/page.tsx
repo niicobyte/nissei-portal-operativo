@@ -2041,6 +2041,11 @@ export default function ArmarPcPresupuestadorPage() {
                   const subUsd =
                     tipoCambio > 0 ? Math.round((subPyg / tipoCambio) * 100) / 100 : 0;
                   const cleanTitle = cleanDisplayTitle(c.nombreWeb || c.descripcion);
+                  const itemUrl =
+                    c.urlWeb ||
+                    (/^\d+$/.test(c.sku)
+                      ? `https://nissei.com/py/catalogsearch/result/?q=${c.sku}`
+                      : null);
                   return (
                     <div
                       key={c.sku}
@@ -2074,6 +2079,21 @@ export default function ArmarPcPresupuestadorPage() {
                           </span>
                           <span>·</span>
                           <span className="font-medium">Garantía: 3 meses</span>
+                          {itemUrl && (
+                            <>
+                              <span>·</span>
+                              <a
+                                href={itemUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-bold hover:underline print:hidden"
+                                title="Ver este producto en nissei.com/py"
+                              >
+                                <span>Ver en nissei.com/py</span>
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            </>
+                          )}
                         </div>
                       </div>
 
