@@ -86,7 +86,7 @@ const SLOTS_CONFIG: Array<{
   },
   {
     categoria: "GPU",
-    nombre: "Placa de Video",
+    nombre: "Tarjeta Gráfica",
     descripcion: "Gráficos dedicados para gaming y trabajo",
     icono: Zap,
     obligatorio: false,
@@ -1578,7 +1578,13 @@ export default function ArmarPcPresupuestadorPage() {
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
-                    <span>{slot.nombre.split(" ")[0]}</span>
+                    <span>
+                      {slot.categoria === "GPU"
+                        ? "Tarjeta gráfica"
+                        : slot.categoria === "PLACA_MADRE"
+                        ? "Placa Madre"
+                        : slot.nombre.split(" ")[0]}
+                    </span>
                     {hasItem && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
                   </button>
                 );
