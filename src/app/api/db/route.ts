@@ -32,6 +32,20 @@ export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   try {
+    const { user, outdatedDeploy } = resolveAuthenticatedUser(req);
+    if (!user && !hasValidAdminHeader(req)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: outdatedDeploy
+            ? "Portal actualizado. Inicie sesión nuevamente para continuar."
+            : "Acceso denegado. Debe autenticarse en el portal operativo.",
+          outdatedDeploy,
+        },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const mod = searchParams.get("module") || "all";
     const serverInfo = getMysqlInfo();
@@ -107,6 +121,20 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, outdatedDeploy } = resolveAuthenticatedUser(req);
+    if (!user && !hasValidAdminHeader(req)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: outdatedDeploy
+            ? "Portal actualizado. Inicie sesión nuevamente para continuar."
+            : "Acceso denegado. Debe autenticarse en el portal operativo.",
+          outdatedDeploy,
+        },
+        { status: 401 }
+      );
+    }
+
     await ensureDatabaseInitialized();
     const pool = getPool();
     const body = await req.json();

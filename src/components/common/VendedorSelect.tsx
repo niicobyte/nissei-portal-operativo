@@ -17,7 +17,7 @@ import {
   VendedorItem,
   getStoredVendedoresConArea,
   addCustomVendedorConArea
-} from "@/data/montajesData";
+} from "@/data/vendedoresData";
 
 interface VendedorSelectProps {
   value: string;
@@ -235,6 +235,7 @@ export function VendedorSelect({
               <input
                 ref={searchInputRef}
                 type="text"
+                maxLength={70}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onClick={(e) => e.stopPropagation()}
@@ -294,6 +295,7 @@ export function VendedorSelect({
                 <input
                   type="text"
                   autoFocus
+                  maxLength={70}
                   value={nuevoNombre}
                   onChange={(e) => setNuevoNombre(e.target.value)}
                   placeholder="Ej: Marcos Ramírez"

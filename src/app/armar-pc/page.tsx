@@ -40,7 +40,7 @@ import {
   LISTA_VENDEDORES_REALES,
   getStoredVendedores,
   AreaVendedor,
-} from "@/data/montajesData";
+} from "@/data/vendedoresData";
 import { VendedorSelect } from "@/components/common/VendedorSelect";
 import { CleanSelect } from "@/components/common/CleanSelect";
 
@@ -1390,9 +1390,13 @@ export default function ArmarPcPresupuestadorPage() {
               <span className="text-zinc-600">TC Ref Gs/USD:</span>
               <input
                 type="number"
+                min={100}
+                max={50000}
                 value={tipoCambio}
                 onChange={(e) =>
-                  setTipoCambio(Math.max(1, Number(e.target.value) || TIPO_CAMBIO_PYG_DEFECTO))
+                  setTipoCambio(
+                    Math.min(50000, Math.max(100, Number(e.target.value) || TIPO_CAMBIO_PYG_DEFECTO))
+                  )
                 }
                 className="w-20 px-2 py-0.5 bg-white border border-zinc-300 rounded text-xs font-bold text-zinc-900 text-right outline-none focus:border-zinc-900"
                 title="Tipo de cambio referencial para conversión a USD (Los precios en Gs. se leen exactamente de nissei.com/py)"
@@ -1442,6 +1446,7 @@ export default function ArmarPcPresupuestadorPage() {
                 </label>
                 <input
                   type="text"
+                  maxLength={80}
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
                   placeholder="Ej: Marcelo Gomez..."
@@ -1571,6 +1576,7 @@ export default function ArmarPcPresupuestadorPage() {
               <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
               <input
                 type="text"
+                maxLength={100}
                 value={catalogSearchTerm}
                 onChange={(e) => {
                   setCatalogSearchTerm(e.target.value);

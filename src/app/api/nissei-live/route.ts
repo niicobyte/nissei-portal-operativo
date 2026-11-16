@@ -451,7 +451,10 @@ async function fetchAllCategoryItems(
 
     const stockStatus: "IN_STOCK" | "OUT_OF_STOCK" =
       item.stock_status === "IN_STOCK" && finalVal > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
-    const urlKey = String(item.url_key || "").trim();
+    const urlKey = String(item.url_key || "")
+      .trim()
+      .replace(/[^a-zA-Z0-9._/-]/g, "")
+      .replace(/^\/+/, "");
     const urlWeb = urlKey ? `${NISSEI_PY_BASE_URL}/${urlKey}` : NISSEI_PY_BASE_URL;
 
     // Si es un producto configurable con variantes, extraer cada variante con su propio SKU numérico limpio
@@ -535,16 +538,20 @@ async function syncFullNisseiCatalog(): Promise<CacheState> {
   return state;
 }
 
+const MIN_FORCE_REFRESH_INTERVAL_MS = 20 * 1000; // Cooldown anti-abuso de 20s
+
 async function getOrFetchCatalog(forceRefresh = false): Promise<CacheState> {
-  if (
-    !forceRefresh &&
-    cachedCatalog &&
-    Date.now() - cachedCatalog.timestamp < CACHE_TTL_MS
-  ) {
-    return cachedCatalog;
+  if (cachedCatalog) {
+    const age = Date.now() - cachedCatalog.timestamp;
+    if (!forceRefresh && age < CACHE_TTL_MS) {
+      return cachedCatalog;
+    }
+    if (forceRefresh && age < MIN_FORCE_REFRESH_INTERVAL_MS) {
+      return cachedCatalog;
+    }
   }
 
-  if (!forceRefresh && inflightPromise) {
+  if (inflightPromise) {
     return inflightPromise;
   }
 
@@ -646,7 +653,10 @@ export async function POST(req: NextRequest) {
       );
       const stockStatus: "IN_STOCK" | "OUT_OF_STOCK" =
         item.stock_status === "IN_STOCK" && finalVal > 0 ? "IN_STOCK" : "OUT_OF_STOCK";
-      const urlKey = String(item.url_key || "").trim();
+      const urlKey = String(item.url_key || "")
+        .trim()
+        .replace(/[^a-zA-Z0-9._/-]/g, "")
+        .replace(/^\/+/, "");
       const urlWeb = urlKey ? `${NISSEI_PY_BASE_URL}/${urlKey}` : NISSEI_PY_BASE_URL;
       const cleanName = decodeHtmlEntities(String(item.name || ""));
 

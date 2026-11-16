@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sendWhapiMessage, WhapiChannel } from "@/lib/whapi";
+import { resolveAuthenticatedUser, hasValidAdminHeader } from "@/middleware";
 
 const ALLOWED_CHANNELS: WhapiChannel[] = ["MONTAJES", "RECEPCION", "TALLER"];
 
 export async function POST(req: NextRequest) {
   try {
+    const { user, outdatedDeploy } = resolveAuthenticatedUser(req);
+    if (!user && !hasValidAdminHeader(req)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: outdatedDeploy
+            ? "Portal actualizado. Inicie sesión nuevamente para continuar."
+            : "Acceso denegado. Debe autenticarse en el portal operativo.",
+          outdatedDeploy,
+        },
+        { status: 401 }
+      );
+    }
+
     const payload = await req.json();
     const { to, channel, body } = payload || {};
 
