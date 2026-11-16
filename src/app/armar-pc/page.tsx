@@ -698,6 +698,14 @@ export default function ArmarPcPresupuestadorPage() {
     () => selectedComponents.find((c) => c.categoria === "GPU"),
     [selectedComponents]
   );
+  const currentGabinete = useMemo(
+    () => selectedComponents.find((c) => c.categoria === "GABINETE"),
+    [selectedComponents]
+  );
+  const currentCooler = useMemo(
+    () => selectedComponents.find((c) => c.categoria === "REFRIGERACION"),
+    [selectedComponents]
+  );
 
   // Verificación reactiva de compatibilidad
   const resultadoCompatibilidad = useMemo(() => {
@@ -1300,7 +1308,22 @@ export default function ArmarPcPresupuestadorPage() {
 
     // 7. GABINETE
     if (item.categoria === "GABINETE") {
+      const hasLiquidCooler = currentCooler && (currentCooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`));
+      const needs360 = currentCooler && (currentCooler.radiatorSizeMm === 360 || /360/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`));
+      const hasGpu = Boolean(currentGpu);
+
+      if ((hasLiquidCooler || hasGpu) && item.isKitOficina) {
+        return false;
+      }
+      if (needs360 && (item.maxRadiatorMm !== undefined && item.maxRadiatorMm < 360)) {
+        return false;
+      }
+      if (currentMb?.formFactor === "ATX" && (item.maxMbFormFactor === "MATX" || item.maxMbFormFactor === "ITX")) {
+        return false;
+      }
+
       return (
+        !item.isKitOficina &&
         !item.descripcion.includes("1102K") &&
         !item.descripcion.includes("1103K") &&
         (item.precioPyg || 0) >= 290000
@@ -1309,7 +1332,14 @@ export default function ArmarPcPresupuestadorPage() {
 
     // 8. REFRIGERACIÓN
     if (item.categoria === "REFRIGERACION") {
-      return Boolean(item.isCpuCooler);
+      if (!item.isCpuCooler) return false;
+      if (currentGabinete?.isKitOficina && (item.isAioLiquid || item.radiatorSizeMm)) {
+        return false;
+      }
+      if (currentGabinete?.maxRadiatorMm !== undefined && currentGabinete.maxRadiatorMm < 360 && item.radiatorSizeMm === 360) {
+        return false;
+      }
+      return true;
     }
 
     return false;
@@ -1371,14 +1401,28 @@ export default function ArmarPcPresupuestadorPage() {
             return false;
           }
         }
-        if (
-          item.categoria === "REFRIGERACION" &&
-          currentCpu &&
-          currentCpu.includesCooler === false &&
-          item.sku === "STOCK-COOLER"
-        ) {
-          return false;
+        if (item.categoria === "GABINETE") {
+          const isLiquid = currentCooler && (currentCooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`));
+          const is360 = currentCooler && (currentCooler.radiatorSizeMm === 360 || /360/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`));
+          if (isLiquid && item.isKitOficina) return false;
+          if (is360 && item.maxRadiatorMm !== undefined && item.maxRadiatorMm < 360) return false;
+          if (currentMb?.formFactor === "ATX" && (item.maxMbFormFactor === "MATX" || item.maxMbFormFactor === "ITX")) return false;
         }
+
+        if (item.categoria === "REFRIGERACION") {
+          const isLiquid = item.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${item.descripcion} ${item.nombreWeb || ""}`);
+          const is360 = item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`);
+          if (currentGabinete?.isKitOficina && isLiquid) return false;
+          if (currentGabinete?.maxRadiatorMm !== undefined && currentGabinete.maxRadiatorMm < 360 && is360) return false;
+          if (
+            currentCpu &&
+            currentCpu.includesCooler === false &&
+            item.sku === "STOCK-COOLER"
+          ) {
+            return false;
+          }
+        }
+
         if (
           item.categoria === "FUENTE" &&
           (item.potenciaWatts || 0) < resultadoCompatibilidad.consumoTotalWatts
@@ -1424,6 +1468,9 @@ export default function ArmarPcPresupuestadorPage() {
     onlyCompatible,
     currentCpu,
     currentMb,
+    currentGpu,
+    currentGabinete,
+    currentCooler,
     resultadoCompatibilidad.consumoTotalWatts,
     resultadoCompatibilidad.fuenteRecomendadaWatts,
     selectedComponents,
@@ -2385,6 +2432,36 @@ export default function ArmarPcPresupuestadorPage() {
                           {item.categoria === "PROCESADOR" && item.includesCooler === false && (
                             <span className="text-rose-700 font-semibold">
                               ❄️ Sin cooler de fábrica (Requiere Cooler CPU)
+                            </span>
+                          )}
+                          {item.categoria === "GABINETE" && item.isKitOficina && (
+                            <span className="text-[11px] font-bold text-zinc-700 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md">
+                              📦 Kit Oficina (Fuente {item.fuenteIncluidaWatts || 200}W + Periféricos)
+                            </span>
+                          )}
+                          {item.categoria === "GABINETE" && item.isKitOficina && currentCooler && (currentCooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && (
+                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                              ❌ Incompatible: No admite Water Cooler
+                            </span>
+                          )}
+                          {item.categoria === "GABINETE" && currentCooler && (currentCooler.radiatorSizeMm === 360 || /360/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && item.maxRadiatorMm !== undefined && item.maxRadiatorMm < 360 && (
+                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                              ❌ Incompatible con radiador 360mm
+                            </span>
+                          )}
+                          {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && (
+                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200 font-mono font-bold">
+                              Radiador 360mm
+                            </span>
+                          )}
+                          {item.categoria === "REFRIGERACION" && (item.isAioLiquid || item.radiatorSizeMm) && currentGabinete?.isKitOficina && (
+                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                              ❌ Incompatible: No entra en el Gabinete Kit ({currentGabinete.sku})
+                            </span>
+                          )}
+                          {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && currentGabinete?.maxRadiatorMm !== undefined && currentGabinete.maxRadiatorMm < 360 && !currentGabinete.isKitOficina && (
+                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                              ❌ Incompatible: Gabinete actual solo admite hasta {currentGabinete.maxRadiatorMm}mm
                             </span>
                           )}
                         </div>

@@ -4,7 +4,7 @@ import catalogoNisseiRaw from "./catalogoNisseiHardware.json";
 
 export type SocketType = "LGA1700" | "LGA1851" | "AM4" | "AM5" | "LGA1200" | "LGA1151" | "UNIVERSAL";
 export type MemoryType = "DDR4" | "DDR5" | "UNIVERSAL";
-export type FormFactor = "ATX" | "MATX" | "EATX" | "UNIVERSAL";
+export type FormFactor = "ATX" | "MATX" | "ITX" | "EATX" | "UNIVERSAL";
 
 export interface HardwarePresupuestoItem {
   sku: string;
@@ -38,6 +38,12 @@ export interface HardwarePresupuestoItem {
   formFactor?: FormFactor;
   potenciaWatts?: number;
   recomendadoPsuWatts?: number;
+  isKitOficina?: boolean;
+  fuenteIncluidaWatts?: number;
+  maxRadiatorMm?: number;
+  maxMbFormFactor?: FormFactor;
+  radiatorSizeMm?: number;
+  isAioLiquid?: boolean;
   garantiaMeses: number;
   cantidad?: number;
 }
@@ -195,7 +201,23 @@ export function enriquecerComponente(
 
   // 2. PLACAS MADRE
   if (cat === "PLACA_MADRE") {
-    formFactor = d.includes("E-ATX") || d.includes("EATX") ? "EATX" : d.includes("/ATX") || d.includes(" ATX") ? "ATX" : "MATX";
+    if (d.includes("E-ATX") || d.includes("EATX")) {
+      formFactor = "EATX";
+    } else if (d.includes("MINI-ITX") || d.includes("ITX")) {
+      formFactor = "MATX";
+    } else if (
+      d.includes("MICRO ATX") ||
+      d.includes("MICRO-ATX") ||
+      d.includes("M-ATX") ||
+      d.includes("MATX") ||
+      /\b[A-Z0-9]+M\b/.test(d)
+    ) {
+      formFactor = "MATX";
+    } else if (d.includes("ATX")) {
+      formFactor = "ATX";
+    } else {
+      formFactor = "MATX";
+    }
 
     if (d.includes("1851") || /\b(H810|B860|Z890)[A-Z0-9-]*\b/.test(d)) {
       socket = "LGA1851";
@@ -275,41 +297,148 @@ export function enriquecerComponente(
   }
 
   // 7. GABINETES
+  let isKitOficina = false;
+  let fuenteIncluidaWatts = 0;
+  let maxRadiatorMm = 360;
+  let maxMbFormFactor: FormFactor = "ATX";
+
   if (cat === "GABINETE") {
-    formFactor = "ATX";
+    const esKit =
+      d.includes("KIT") ||
+      d.includes("TEC.ESP") ||
+      d.includes("TEC.POR") ||
+      d.includes("TECLADO") ||
+      d.includes("SPEAKER") ||
+      /\b(K701|K731|K761|MKT2802)\b/.test(d);
+
+    if (esKit) {
+      isKitOficina = true;
+      maxRadiatorMm = 0; // Cero soporte para refrigeración líquida
+      maxMbFormFactor = d.includes("ITX") && !d.includes("ATX") ? "MATX" : "ATX";
+      const matchW = d.match(/FUENTE\s*(?:\((\d+)\s*W\)?|(\d+)\s*W)/i) || d.match(/(\d+)\s*W/i);
+      if (matchW) {
+        fuenteIncluidaWatts = Number(matchW[1] || matchW[2]);
+      } else {
+        fuenteIncluidaWatts = 200;
+      }
+      formFactor = "ATX";
+    } else {
+      if (d.includes("E-ATX") || d.includes("EATX")) {
+        maxMbFormFactor = "EATX";
+        formFactor = "EATX";
+      } else if (
+        (d.includes("MINI-ITX") || d.includes("ITX")) &&
+        !d.includes("ATX")
+      ) {
+        maxMbFormFactor = "ITX";
+        formFactor = "MATX";
+      } else if (
+        d.includes("M-ATX") ||
+        d.includes("MATX") ||
+        d.includes("MICRO ATX") ||
+        d.includes("MICRO TOWER") ||
+        d.includes("MINI TOWER")
+      ) {
+        if (!d.includes("ATX/") && !d.includes("MID TOWER") && !d.includes("/ATX")) {
+          maxMbFormFactor = "MATX";
+          formFactor = "MATX";
+        } else {
+          maxMbFormFactor = "ATX";
+          formFactor = "ATX";
+        }
+      } else {
+        maxMbFormFactor = "ATX";
+        formFactor = "ATX";
+      }
+
+      const esCompactoSin360 =
+        d.includes("PURITY") ||
+        d.includes("MB311L") ||
+        d.includes("Q300L") ||
+        d.includes("MX110") ||
+        d.includes("CFV-235") ||
+        d.includes("DUST 2") ||
+        d.includes("1100K") ||
+        d.includes("1101K") ||
+        d.includes("1102K") ||
+        d.includes("1103K") ||
+        d.includes("1300K") ||
+        d.includes("K8502") ||
+        d.includes("ATHENA M4M") ||
+        d.includes("AURA GC10M") ||
+        d.includes("D300") ||
+        d.includes("TK-1") ||
+        d.includes("T6") ||
+        d.includes("T7") ||
+        d.includes("N2") ||
+        d.includes("V12") ||
+        d.includes("BO400") ||
+        d.includes("MCG-IB4500") ||
+        (maxMbFormFactor === "MATX" && !d.includes("A3-MATX")) ||
+        maxMbFormFactor === "ITX";
+
+      if (esCompactoSin360) {
+        maxRadiatorMm = 240;
+      } else {
+        maxRadiatorMm = 360;
+      }
+    }
   }
 
   // 8. REFRIGERACIÓN
+  let radiatorSizeMm = 0;
+  let isAioLiquid = false;
+
   if (cat === "REFRIGERACION") {
     socket = "UNIVERSAL";
-    // Distinguir un verdadero Cooler de Procesador (Aire o Líquido AIO) de un simple ventilador de gabinete
-    isCpuCooler =
-      d.includes("PARA CPU") ||
-      d.includes("P/ CPU") ||
-      d.includes("P/CPU") ||
-      d.includes("CPU COOLER") ||
-      d.includes("COOLER CPU") ||
+    isAioLiquid =
       d.includes("WATER") ||
       d.includes("LIQUIDO") ||
       d.includes("LÍQUIDO") ||
       d.includes("LIQUID") ||
       d.includes("AIO") ||
-      d.includes("240MM") ||
-      d.includes("240 MM") ||
-      d.includes("360MM") ||
-      d.includes("360 MM") ||
-      d.includes("ASSASSIN") ||
-      d.includes("PURE ROCK") ||
-      d.includes("DARK ROCK") ||
       d.includes("PURE LOOP") ||
       d.includes("LIGHT LOOP") ||
       d.includes("SILENT LOOP") ||
+      d.includes("AURA GL") ||
+      d.includes("CHIONE");
+
+    if (d.includes("360MM") || d.includes("360 MM") || /\b360\b/.test(d)) {
+      radiatorSizeMm = 360;
+      isAioLiquid = true;
+    } else if (d.includes("240MM") || d.includes("240 MM") || /\b240\b/.test(d)) {
+      radiatorSizeMm = 240;
+      isAioLiquid = true;
+    } else if (d.includes("280MM") || d.includes("280 MM") || /\b280\b/.test(d)) {
+      radiatorSizeMm = 280;
+      isAioLiquid = true;
+    } else if (d.includes("120MM") || d.includes("120 MM") || /\b120\b/.test(d)) {
+      radiatorSizeMm = 120;
+      isAioLiquid = true;
+    } else if (d.includes("420MM") || d.includes("420 MM") || /\b420\b/.test(d)) {
+      radiatorSizeMm = 420;
+      isAioLiquid = true;
+    }
+
+    isCpuCooler =
+      isAioLiquid ||
+      d.includes("PARA CPU") ||
+      d.includes("P/ CPU") ||
+      d.includes("P/CPU") ||
+      d.includes("CPU COOLER") ||
+      d.includes("COOLER CPU") ||
+      d.includes("ASSASSIN") ||
+      d.includes("PURE ROCK") ||
+      d.includes("DARK ROCK") ||
       d.includes("AK400") ||
       d.includes("AK500") ||
       d.includes("AK620") ||
       d.includes("AG400") ||
-      d.includes("AURA GL") ||
-      d.includes("CHIONE");
+      d.includes("FROZN") ||
+      d.includes("PEERLESS") ||
+      d.includes("PHANTOM SPIRIT") ||
+      d.includes("THERMALRIGHT") ||
+      d.includes("DISIPADOR");
   }
 
   return {
@@ -329,6 +458,12 @@ export function enriquecerComponente(
     formFactor,
     potenciaWatts,
     recomendadoPsuWatts,
+    isKitOficina,
+    fuenteIncluidaWatts,
+    maxRadiatorMm,
+    maxMbFormFactor,
+    radiatorSizeMm,
+    isAioLiquid,
     garantiaMeses,
     cantidad: 1,
   };
@@ -553,6 +688,27 @@ export function verificarCompatibilidadPC(
         accionTipo: "CAMBIAR_TAB",
       });
     }
+  } else if (gabinete && gabinete.isKitOficina && gabinete.fuenteIncluidaWatts) {
+    // Si no seleccionó fuente independiente pero tiene un gabinete kit con fuente integrada (ej. 200W)
+    if (gpus.length > 0) {
+      alertas.push({
+        tipo: "ERROR",
+        titulo: "Fuente de Kit Insuficiente para Placa de Video Dedicada",
+        detalle: `El gabinete kit (${gabinete.nombreWeb || gabinete.descripcion}) incluye una fuente genérica de ${gabinete.fuenteIncluidaWatts}W sin conectores PCIe de 6 u 8 pines. La placa de video (${gpus[0].nombreWeb || gpus[0].descripcion}) requiere alimentación dedicada y una fuente certificada de al menos ${fuenteRecomendadaWatts}W. Debe agregar una fuente ATX certificada.`,
+        categoriaTarget: "FUENTE",
+        accionSugerida: `Ver Fuentes de ${fuenteRecomendadaWatts}W+`,
+        accionTipo: "CAMBIAR_TAB",
+      });
+    } else if (consumoTotalWatts > gabinete.fuenteIncluidaWatts) {
+      alertas.push({
+        tipo: "ERROR",
+        titulo: `Consumo del Equipo (${consumoTotalWatts}W) Supera la Fuente del Kit (${gabinete.fuenteIncluidaWatts}W)`,
+        detalle: `El consumo estimado (${consumoTotalWatts}W) supera la capacidad máxima de la fuente de ${gabinete.fuenteIncluidaWatts}W incluida en el kit. Riesgo inminente de sobrecalentamiento, apagado o daño eléctrico. Se requiere una fuente ATX de al menos ${fuenteRecomendadaWatts}W.`,
+        categoriaTarget: "FUENTE",
+        accionSugerida: `Ver Fuentes de ${fuenteRecomendadaWatts}W+`,
+        accionTipo: "CAMBIAR_TAB",
+      });
+    }
   }
 
   // =========================================================================
@@ -700,32 +856,95 @@ export function verificarCompatibilidadPC(
   }
 
   // =========================================================================
-  // 11. RADIADOR 360mm EN GABINETES COMPACTOS
+  // 11. INCOMPATIBILIDAD FÍSICA: COOLER / WATER COOLER vs GABINETE
   // =========================================================================
-  if (cooler && (cooler.descripcion.includes("360") || cooler.nombreWeb?.includes("360")) && gabinete) {
-    const descGabinete = (gabinete.nombreWeb || gabinete.descripcion).toUpperCase();
-    if (descGabinete.includes("1103K") || descGabinete.includes("1102K") || descGabinete.includes("MINI") || descGabinete.includes("MICRO")) {
+  if (cooler && cooler.sku !== "STOCK-COOLER" && gabinete) {
+    const coolerDesc = cooler.nombreWeb || cooler.descripcion;
+    const gabineteDesc = gabinete.nombreWeb || gabinete.descripcion;
+    const isLiquid = Boolean(cooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(coolerDesc));
+    const is360 = Boolean(cooler.radiatorSizeMm === 360 || /360\s*MM|\b360\b/i.test(coolerDesc));
+    const is240 = Boolean(cooler.radiatorSizeMm === 240 || /240\s*MM|\b240\b/i.test(coolerDesc));
+
+    // Caso A: Refrigeración Líquida (AIO) en Gabinete Kit de Oficina
+    if (isLiquid && gabinete.isKitOficina) {
       alertas.push({
-        tipo: "WARNING",
-        titulo: "Espacio Físico para Radiador de 360mm",
-        detalle: `Verifique que el gabinete seleccionado tenga soporte para radiadores de 360mm en el panel superior o frontal para evitar que choque con la placa madre o las memorias.`,
+        tipo: "ERROR",
+        titulo: "Incompatibilidad Física Absoluta: Cooler Líquido en Gabinete Kit de Oficina",
+        detalle: `El ${coolerDesc} es una refrigeración líquida que requiere anclajes para radiador (${is360 ? "360mm" : is240 ? "240mm" : "AIO"}). El gabinete (${gabineteDesc}) es un kit básico de oficina cerrado sin espacio ni rejillas para radiadores de agua. Debe cambiar a un Gabinete Gamer Mid-Tower con soporte de refrigeración líquida o usar un cooler de aire convencional.`,
         categoriaTarget: "GABINETE",
-        accionSugerida: "Ver Gabinetes ATX amplios",
+        accionSugerida: "Cambiar a Gabinete Gamer Compatible",
+        accionTipo: "CAMBIAR_TAB",
+      });
+    }
+    // Caso B: Radiador de 360mm en Gabinete que no admite 360mm
+    else if (is360 && (gabinete.maxRadiatorMm !== undefined && gabinete.maxRadiatorMm < 360)) {
+      alertas.push({
+        tipo: "ERROR",
+        titulo: "Incompatibilidad Física: Radiador de 360mm No Cabe en este Gabinete",
+        detalle: `El Cooler Líquido (${coolerDesc}) posee un radiador de 360mm (~40 cm de largo con 3 ventiladores de 120mm) que no entra físicamente en el gabinete (${gabineteDesc}). Este gabinete solo admite coolers de aire o radiadores de hasta 240mm. Seleccione un gabinete Mid-Tower amplio o Full-Tower con soporte de 360mm (ej: Cougar MX600 / Airface Pro, Lian Li Lancool / O11, Corsair 4000D/5000D, Satellite K880/K896/K904).`,
+        categoriaTarget: "GABINETE",
+        accionSugerida: "Ver Gabinetes con Soporte 360mm",
+        accionTipo: "CAMBIAR_TAB",
+      });
+    }
+    // Caso C: Radiador de 240mm en Gabinete sin soporte de radiador
+    else if (is240 && gabinete.maxRadiatorMm === 0) {
+      alertas.push({
+        tipo: "ERROR",
+        titulo: "Incompatibilidad Física: Radiador de 240mm No Compatible con Gabinete",
+        detalle: `El gabinete seleccionado (${gabineteDesc}) no admite la instalación del radiador de 240mm del ${coolerDesc}.`,
+        categoriaTarget: "GABINETE",
+        accionSugerida: "Ver Gabinetes Compatibles",
         accionTipo: "CAMBIAR_TAB",
       });
     }
   }
 
   // =========================================================================
-  // 12. CHECKLIST DE COMPLETITUD DE LA COMPUTADORA
+  // 12. INCOMPATIBILIDAD FÍSICA: PLACA MADRE vs GABINETE (FACTOR DE FORMA)
   // =========================================================================
+  if (mb && gabinete) {
+    const mbDesc = mb.nombreWeb || mb.descripcion;
+    const gabineteDesc = gabinete.nombreWeb || gabinete.descripcion;
+    if (mb.formFactor === "ATX" && (gabinete.maxMbFormFactor === "MATX" || gabinete.maxMbFormFactor === "ITX")) {
+      alertas.push({
+        tipo: "ERROR",
+        titulo: "Incompatibilidad de Tamaño: Placa Madre ATX en Gabinete Micro-ATX / ITX",
+        detalle: `La placa madre (${mbDesc}) es de tamaño ATX estándar (305x244 mm) y no cabe físicamente dentro del gabinete (${gabineteDesc}), que solo admite placas compactas Micro-ATX o Mini-ITX. Debe cambiar a una Placa Micro-ATX o a un Gabinete compatible con ATX.`,
+        categoriaTarget: "GABINETE",
+        accionSugerida: "Ver Gabinetes ATX",
+        accionTipo: "CAMBIAR_TAB",
+      });
+    } else if (mb.formFactor === "EATX" && gabinete.maxMbFormFactor !== "EATX") {
+      alertas.push({
+        tipo: "ERROR",
+        titulo: "Placa Madre E-ATX Requiere Gabinete Full-Tower E-ATX",
+        detalle: `La placa madre (${mbDesc}) es de formato extendido E-ATX y requiere un gabinete espacioso certificado para E-ATX.`,
+        categoriaTarget: "GABINETE",
+        accionSugerida: "Ver Gabinetes E-ATX",
+        accionTipo: "CAMBIAR_TAB",
+      });
+    }
+  }
+
+  // =========================================================================
+  // 13. CHECKLIST DE COMPLETITUD DE LA COMPUTADORA
+  // =========================================================================
+  const tienePsuAdecuada = Boolean(
+    psu ||
+    (gabinete?.isKitOficina &&
+     gabinete.fuenteIncluidaWatts &&
+     gpus.length === 0 &&
+     consumoTotalWatts <= gabinete.fuenteIncluidaWatts)
+  );
+
   const checklist: ChecklistPC = {
     cpu: Boolean(cpu),
     mb: Boolean(mb),
     ram: rams.length > 0,
     storage: ssds.length > 0,
     gpu: tieneVideo,
-    psu: Boolean(psu),
+    psu: tienePsuAdecuada,
     gabinete: Boolean(gabinete),
     cooler: Boolean(cooler || (cpu && cpu.includesCooler)),
   };
