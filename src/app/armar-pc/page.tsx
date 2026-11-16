@@ -2038,58 +2038,75 @@ export default function ArmarPcPresupuestadorPage() {
                   return (
                     <div
                       key={c.sku}
-                      className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 flex items-start justify-between gap-3 text-xs sm:text-sm"
+                      className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex items-start sm:items-center justify-between gap-3 sm:gap-3.5"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <span className="text-[10px] sm:text-[11px] font-mono font-bold text-zinc-700 uppercase bg-zinc-200/80 px-1.5 py-0.5 rounded">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1.5">
+                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-200/90 text-zinc-800 border border-zinc-300 uppercase">
                             {c.categoria}
                           </span>
-                          <span className="text-[10px] sm:text-[11px] font-mono font-bold text-zinc-600">
+                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200">
                             SKU #{c.sku}
                           </span>
-                          <span className="text-[9px] sm:text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                          <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                             WEB OK
                           </span>
                         </div>
-                        <h5 className="font-bold text-zinc-900 text-xs sm:text-sm line-clamp-2 leading-snug" title={cleanTitle}>
+
+                        <h5
+                          className="text-sm sm:text-base font-bold text-zinc-900 line-clamp-2 leading-snug"
+                          title={cleanTitle}
+                        >
                           {cleanTitle}
                         </h5>
-                        <div className="flex items-center gap-2 text-xs text-zinc-500 mt-1 flex-wrap">
-                          <span className="font-semibold text-zinc-700">
+
+                        <div className="flex items-center gap-3.5 text-xs sm:text-sm text-zinc-600 mt-1.5 flex-wrap">
+                          <span className="font-medium">
                             ₲ {(c.precioPyg || 0).toLocaleString("es-PY")}{" "}
                             {c.cantidad && c.cantidad > 1 ? `x ${c.cantidad}` : ""}
                           </span>
                           <span>·</span>
-                          <span>Garantía: 3 meses</span>
+                          <span className="font-medium">Garantía: 3 meses</span>
                         </div>
                       </div>
 
-                      <div className="text-right shrink-0">
-                        <span className="font-mono font-black text-sm sm:text-base text-zinc-900 block">
-                          {moneda === "PYG"
-                            ? `₲ ${subPyg.toLocaleString("es-PY")}`
-                            : `US$ ${subUsd.toLocaleString("es-PY", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}`}
-                        </span>
-                        <div className="flex items-center gap-1.5 mt-2 justify-end">
+                      <div className="sm:text-right shrink-0 flex items-center justify-between sm:justify-end gap-3.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-200/60">
+                        <div>
+                          <span className="font-mono font-extrabold text-sm sm:text-base text-zinc-900 block">
+                            {moneda === "PYG"
+                              ? `₲ ${subPyg.toLocaleString("es-PY")}`
+                              : `US$ ${subUsd.toLocaleString("es-PY", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`}
+                          </span>
+                          <span className="text-[11px] font-mono text-zinc-500 block">
+                            {moneda === "PYG"
+                              ? `US$ ${subUsd.toLocaleString("es-PY", {
+                                  minimumFractionDigits: 2,
+                                  maximumFractionDigits: 2,
+                                })}`
+                              : `₲ ${subPyg.toLocaleString("es-PY")}`}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 justify-end">
                           <button
                             type="button"
                             onClick={() => handleChangeCantidad(c.sku, -1)}
-                            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-700 text-sm font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                            className="w-9 h-9 rounded-xl bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-800 text-sm font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
                             title="Disminuir cantidad"
                           >
                             -
                           </button>
-                          <span className="font-mono text-sm px-1.5 text-zinc-900 font-bold min-w-[20px] text-center">
+                          <span className="font-mono text-sm sm:text-base px-2 text-zinc-900 font-black min-w-[24px] text-center">
                             {c.cantidad || 1}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleChangeCantidad(c.sku, 1)}
-                            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-700 text-sm font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                            className="w-9 h-9 rounded-xl bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-800 text-sm font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
                             title="Aumentar cantidad"
                           >
                             +
@@ -2097,7 +2114,7 @@ export default function ArmarPcPresupuestadorPage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveComponent(c.sku)}
-                            className="w-8 h-8 rounded-lg bg-white hover:bg-rose-50 border border-zinc-200 text-zinc-400 hover:text-rose-600 text-sm flex items-center justify-center ml-1 cursor-pointer shadow-2xs transition-colors"
+                            className="w-9 h-9 rounded-xl bg-white hover:bg-rose-50 border border-zinc-200 text-zinc-400 hover:text-rose-600 text-sm flex items-center justify-center ml-1 cursor-pointer shadow-2xs transition-colors"
                             title="Quitar componente"
                           >
                             <Trash2 className="w-4 h-4" />
