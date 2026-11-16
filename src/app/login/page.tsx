@@ -725,38 +725,26 @@ function LoginForm() {
                     </span>
                   </div>
 
-                  {/* Acceso Directo: Armar PC & Presupuestos Compatibles para Vendedores */}
-                  <Link
-                    href="/armar-pc"
-                    onClick={(e) => e.stopPropagation()}
-                    className={`p-2 rounded-lg border flex flex-col justify-between transition-all group/armar cursor-pointer ${
-                      activeSector === "MONTAJES"
-                        ? "bg-gradient-to-br from-cyan-950/80 to-zinc-900 border-cyan-400/50 text-white hover:border-cyan-300 hover:bg-cyan-900/60 shadow-sm"
-                        : "bg-gradient-to-br from-cyan-50/80 to-white border-cyan-300 text-zinc-900 hover:border-cyan-500 hover:bg-cyan-100/40 shadow-2xs"
-                    }`}
-                    title="Abrir Configurador & Presupuestador de PC con Hardware Compatible"
-                  >
+                  <div className={`p-2 rounded-lg border flex flex-col justify-between ${
+                    activeSector === "MONTAJES"
+                      ? "bg-white/10 border-white/10 text-white"
+                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                  }`}>
                     <span className={`text-[8.5px] sm:text-[10px] font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "MONTAJES" ? "text-cyan-300" : "text-cyan-700"
+                      activeSector === "MONTAJES" ? "text-zinc-300" : "text-zinc-500"
                     }`}>
-                      <span className="truncate flex items-center gap-1 font-extrabold">
-                        <Wrench className="w-3 h-3 text-cyan-400 shrink-0" />
-                        Armar PC
-                      </span>
-                      <ArrowRight className={`w-3 h-3 shrink-0 transition-transform group-hover/armar:translate-x-0.5 ${
-                        activeSector === "MONTAJES" ? "text-cyan-300" : "text-cyan-600"
-                      }`} />
+                      <span className="truncate">Finalizados</span>
+                      <CheckCircle2 className="w-3 h-3 shrink-0 opacity-70" />
                     </span>
-                    <span className="text-xs sm:text-[13px] font-black font-mono mt-0.5 text-cyan-400 leading-tight">
-                      Presupuestos
+                    <span className="text-base sm:text-lg font-black font-mono mt-0.5">
+                      {telemetry.montajes.finalizados}
                     </span>
-                    <span className={`text-[8px] sm:text-[9.5px] mt-0.5 truncate font-semibold flex items-center gap-1 ${
-                      activeSector === "MONTAJES" ? "text-zinc-300" : "text-cyan-800"
+                    <span className={`text-[8.5px] sm:text-[10px] mt-0.5 truncate ${
+                      activeSector === "MONTAJES" ? "text-zinc-400" : "text-zinc-500"
                     }`}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse shrink-0"></span>
-                      Compatibilidad OK
+                      Entregados
                     </span>
-                  </Link>
+                  </div>
                 </div>
               </button>
 

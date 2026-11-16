@@ -1740,7 +1740,7 @@ export default function ArmarPcPresupuestadorPage() {
                   return (
                     <div
                       key={item.sku}
-                      className={`p-3 sm:p-3.5 2xl:p-4 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 ${
+                      className={`p-3.5 sm:p-4 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-3.5 ${
                         isSelected
                           ? "bg-zinc-50/90 border-l-4 border-l-zinc-900"
                           : !isInStock
@@ -1749,81 +1749,81 @@ export default function ArmarPcPresupuestadorPage() {
                       }`}
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                          <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200">
+                        <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 flex-wrap">
+                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200">
                             SKU {item.sku}
                           </span>
                           {item.marca && (
-                            <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-800 border border-zinc-300">
+                            <span className="font-mono text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-300">
                               {item.marca}
                             </span>
                           )}
                           {isInStock ? (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
                               EN STOCK · NISSEI.COM/PY
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200">
+                            <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
                               ✕ SIN STOCK EN WEB
                             </span>
                           )}
                           {recommended && (
-                            <span className="inline-flex items-center gap-0.5 text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+                            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
                               ★ RECOMENDADO
                             </span>
                           )}
                           {hasDiscount && discountPct > 0 && (
-                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                            <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
                               -{discountPct}% WEB
                             </span>
                           )}
                           {item.socket && item.socket !== "UNIVERSAL" && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-sky-50 text-sky-700 border border-sky-200 font-mono font-semibold">
+                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-sky-50 text-sky-800 border border-sky-200 font-mono font-semibold">
                               {item.socket}
                             </span>
                           )}
                           {item.ramType && item.ramType !== "UNIVERSAL" && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-purple-50 text-purple-700 border border-purple-200 font-mono font-semibold">
+                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200 font-mono font-semibold">
                               {item.ramType}
                             </span>
                           )}
                           {item.esM2Nvme && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-mono font-semibold">
+                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 font-mono font-semibold">
                               M.2 NVMe
                             </span>
                           )}
                           {item.potenciaWatts ? (
-                            <span className="text-[9px] text-emerald-700 font-mono font-bold bg-emerald-50 border border-emerald-200 px-1 rounded">
+                            <span className="text-[10px] sm:text-[11px] text-emerald-800 font-mono font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
                               {item.potenciaWatts}W Reales
                             </span>
                           ) : null}
                         </div>
 
-                        <h4 className="text-xs font-semibold text-zinc-900 line-clamp-2 leading-relaxed">
+                        <h4 className="text-sm sm:text-base font-bold text-zinc-900 line-clamp-2 leading-snug">
                           {displayTitle}
                         </h4>
 
-                        <div className="flex items-center gap-3 text-[11px] text-zinc-500 mt-1 flex-wrap">
-                          <span>Garantía: 3 meses</span>
+                        <div className="flex items-center gap-3.5 text-xs sm:text-sm text-zinc-600 mt-1.5 flex-wrap">
+                          <span className="font-medium">Garantía: 3 meses</span>
                           {item.urlWeb && (
                             <a
                               href={item.urlWeb}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-semibold hover:underline"
+                              className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-bold hover:underline"
                             >
                               <span>Ver en nissei.com/py</span>
-                              <ExternalLink className="w-3 h-3" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
                           {item.categoria === "PROCESADOR" && item.hasIGpu === false && (
-                            <span className="text-amber-700 font-medium">
+                            <span className="text-amber-700 font-semibold">
                               ⚠️ Requiere placa de video dedicada
                             </span>
                           )}
                           {item.categoria === "PROCESADOR" && item.includesCooler === false && (
-                            <span className="text-rose-700 font-medium">
+                            <span className="text-rose-700 font-semibold">
                               ❄️ Sin cooler de fábrica (Requiere Cooler CPU)
                             </span>
                           )}
