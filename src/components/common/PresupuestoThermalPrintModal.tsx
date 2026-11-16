@@ -124,9 +124,13 @@ export function PresupuestoThermalPrintModal({
           opacity: 1 !important;
         }
         @media print {
-          body.thermal-80mm-print,
-          body.thermal-80mm-print #thermal-sticker-80mm,
-          body.thermal-80mm-print #thermal-sticker-80mm * {
+          /* En modo de impresión, aislar y forzar visibilidad del wrapper */
+          body.thermal-80mm-print {
+            background: #ffffff !important;
+          }
+          body.thermal-80mm-print #thermal-sticker-wrapper,
+          body.thermal-80mm-print #thermal-sticker-wrapper * {
+            visibility: visible !important;
             color: #000000 !important;
             -webkit-text-fill-color: #000000 !important;
             border-color: #000000 !important;
@@ -202,8 +206,9 @@ export function PresupuestoThermalPrintModal({
             <div className="space-y-1.5">
               <span className="font-bold text-zinc-700 block">Ancho de Rollo / Papel:</span>
               <div className="grid grid-cols-3 gap-1.5">
-                {(["80_72", "80_68", "58_48"] as ThermalPaperProfile[]).map((prof) => {
+                {(["80_72", "80_76", "58_48"] as ThermalPaperProfile[]).map((prof) => {
                   const meta = THERMAL_PROFILE_META[prof];
+                  if (!meta) return null;
                   const isSel = thermalSettings.paperProfile === prof;
                   return (
                     <button

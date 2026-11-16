@@ -1171,6 +1171,7 @@ export default function ArmarPcPresupuestadorPage() {
   };
 
   return (
+    <>
     <main className="min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans relative">
       {/* Alertas Secuenciales de 8 Segundos al Ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs) */}
       {warningStage && (
@@ -2224,36 +2225,37 @@ export default function ArmarPcPresupuestadorPage() {
         </section>
       </div>
 
-      {/* Modal de Impresión Térmica Oficial (Ticket 80mm / 58mm) */}
-      <PresupuestoThermalPrintModal
-        isOpen={isThermalPrintModalOpen}
-        onClose={() => setIsThermalPrintModalOpen(false)}
-        data={{
-          vendedor: selectedVendedor || "Salón de Ventas",
-          areaVendedor: selectedArea || (isCorpVendedor ? "Ventas Corp" : "Ventas Tienda"),
-          cliente: clienteNombre.trim() || undefined,
-          servicioMontajeNombre: isCorpVendedor ? "Bonificado / Gratis" : "Servicio Estándar",
-          servicioMontajePyg: costoMontajePyg,
-          totalPyg: totalPresupuestoPyg,
-          totalUsd: totalPresupuestoUsd,
-          tipoCambio: tipoCambio,
-          consumoTotalWatts: resultadoCompatibilidad.consumoTotalWatts,
-          fuenteRecomendadaWatts: resultadoCompatibilidad.fuenteRecomendadaWatts,
-          items: selectedComponents.map((c) => ({
-            sku: c.sku,
-            nombre: cleanDisplayTitle(c.nombreWeb || c.descripcion),
-            categoria: c.categoria,
-            cantidad: c.cantidad || 1,
-            precioUnitarioPyg: c.precioPyg || 0,
-            subtotalPyg: (c.precioPyg || 0) * (c.cantidad || 1),
-          })),
-        }}
-      />
-
       {/* Pie de Página */}
       <footer className="border-t border-zinc-200 bg-white py-3 text-center text-xs text-zinc-500 font-mono">
         NISSEI Tech Service Ops · Cotizador conectado en tiempo real a https://nissei.com/py/
       </footer>
     </main>
+
+    {/* Modal de Impresión Térmica Oficial (Ticket 80mm / 58mm) fuera de <main> para que no sea ocultado por CSS print */}
+    <PresupuestoThermalPrintModal
+      isOpen={isThermalPrintModalOpen}
+      onClose={() => setIsThermalPrintModalOpen(false)}
+      data={{
+        vendedor: selectedVendedor || "Salón de Ventas",
+        areaVendedor: selectedArea || (isCorpVendedor ? "Ventas Corp" : "Ventas Tienda"),
+        cliente: clienteNombre.trim() || undefined,
+        servicioMontajeNombre: isCorpVendedor ? "Bonificado / Gratis" : "Servicio Estándar",
+        servicioMontajePyg: costoMontajePyg,
+        totalPyg: totalPresupuestoPyg,
+        totalUsd: totalPresupuestoUsd,
+        tipoCambio: tipoCambio,
+        consumoTotalWatts: resultadoCompatibilidad.consumoTotalWatts,
+        fuenteRecomendadaWatts: resultadoCompatibilidad.fuenteRecomendadaWatts,
+        items: selectedComponents.map((c) => ({
+          sku: c.sku,
+          nombre: cleanDisplayTitle(c.nombreWeb || c.descripcion),
+          categoria: c.categoria,
+          cantidad: c.cantidad || 1,
+          precioUnitarioPyg: c.precioPyg || 0,
+          subtotalPyg: (c.precioPyg || 0) * (c.cantidad || 1),
+        })),
+      }}
+    />
+    </>
   );
 }
