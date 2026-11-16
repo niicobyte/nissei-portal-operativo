@@ -1933,13 +1933,13 @@ export default function ArmarPcPresupuestadorPage() {
           <div className="bg-white border border-zinc-200 rounded-xl p-3.5 sm:p-5 space-y-4 shadow-sm lg:sticky lg:top-20">
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 pb-3">
               <div className="min-w-0">
-                <h3 className="text-sm font-extrabold text-zinc-900 flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-black text-zinc-900 flex items-center gap-2 flex-wrap">
                   <span>Presupuesto de PC</span>
-                  <span className="text-xs font-mono font-normal text-zinc-500">
+                  <span className="text-xs sm:text-sm font-mono font-medium text-zinc-500">
                     ({selectedComponents.length} componentes)
                   </span>
                 </h3>
-                <span className="text-[11px] text-zinc-500 block mt-0.5 truncate">
+                <span className="text-xs sm:text-sm text-zinc-600 block mt-0.5 truncate">
                   {clienteNombre
                     ? `Cliente: ${clienteNombre}`
                     : "Cotización estricta de https://nissei.com/py/"}
@@ -1948,7 +1948,7 @@ export default function ArmarPcPresupuestadorPage() {
 
               {/* Estado de Compatibilidad General */}
               <div
-                className={`px-2.5 py-1 rounded-lg border text-xs font-bold flex items-center gap-1.5 shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 ${
                   resultadoCompatibilidad.compatible
                     ? "bg-emerald-50 border-emerald-200 text-emerald-800"
                     : "bg-rose-50 border-rose-200 text-rose-800 animate-pulse"
@@ -1956,12 +1956,12 @@ export default function ArmarPcPresupuestadorPage() {
               >
                 {resultadoCompatibilidad.compatible ? (
                   <>
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Compatible 100%</span>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
                     <span>Incompatibilidad</span>
                   </>
                 )}
@@ -1973,9 +1973,9 @@ export default function ArmarPcPresupuestadorPage() {
               <button
                 type="button"
                 onClick={handleAutoCompletarInteligente}
-                className="w-full py-2 px-3 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                className="w-full py-2.5 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs min-h-[42px]"
               >
-                <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
                 <span>Autocompletar piezas faltantes compatibles inteligentemente</span>
               </button>
             )}
@@ -2002,26 +2002,26 @@ export default function ArmarPcPresupuestadorPage() {
             )}
 
             {/* Barra de Consumo Eléctrico & Fuente */}
-            <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 space-y-1.5 text-xs font-mono">
+            <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-2 text-xs sm:text-sm font-mono">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-600 flex items-center gap-1 font-sans">
-                  <Zap className="w-3.5 h-3.5 text-amber-600" />
+                <span className="text-zinc-600 flex items-center gap-1.5 font-sans font-medium">
+                  <Zap className="w-4 h-4 text-amber-600 shrink-0" />
                   Consumo Estimado:
                 </span>
-                <span className="font-bold text-zinc-900">
+                <span className="font-bold text-zinc-900 text-sm sm:text-base">
                   {resultadoCompatibilidad.consumoTotalWatts} W
                 </span>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-600 font-sans">Fuente Recomendada:</span>
-                <span className="font-bold text-zinc-900">
+              <div className="flex items-center justify-between border-t border-zinc-200/60 pt-1.5">
+                <span className="text-zinc-600 font-sans font-medium">Fuente Recomendada:</span>
+                <span className="font-bold text-zinc-900 text-sm sm:text-base">
                   {resultadoCompatibilidad.fuenteRecomendadaWatts} W+
                 </span>
               </div>
             </div>
 
             {/* Lista de Componentes Cargados */}
-            <div className="space-y-2 max-h-[42dvh] sm:max-h-[340px] 2xl:max-h-[460px] 3xl:max-h-[560px] overflow-y-auto overscroll-contain pr-1">
+            <div className="space-y-2.5 max-h-[42dvh] sm:max-h-[360px] 2xl:max-h-[480px] 3xl:max-h-[580px] overflow-y-auto overscroll-contain pr-1">
               {selectedComponents.length === 0 ? (
                 <div className="p-6 text-center text-zinc-400 border border-dashed border-zinc-200 rounded-lg">
                   <p className="text-xs">
@@ -2038,25 +2038,25 @@ export default function ArmarPcPresupuestadorPage() {
                   return (
                     <div
                       key={c.sku}
-                      className="p-2.5 rounded-lg bg-zinc-50 border border-zinc-200 flex items-start justify-between gap-2 text-xs"
+                      className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 border border-zinc-200 flex items-start justify-between gap-3 text-xs sm:text-sm"
                     >
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[9px] font-mono font-bold text-zinc-700 uppercase">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className="text-[10px] sm:text-[11px] font-mono font-bold text-zinc-700 uppercase bg-zinc-200/80 px-1.5 py-0.5 rounded">
                             {c.categoria}
                           </span>
-                          <span className="text-[9px] font-mono font-bold text-zinc-500">
+                          <span className="text-[10px] sm:text-[11px] font-mono font-bold text-zinc-600">
                             SKU #{c.sku}
                           </span>
-                          <span className="text-[8px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1 rounded">
+                          <span className="text-[9px] sm:text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
                             WEB OK
                           </span>
                         </div>
-                        <h5 className="font-medium text-zinc-900 line-clamp-1 mt-0.5" title={cleanTitle}>
+                        <h5 className="font-bold text-zinc-900 text-xs sm:text-sm line-clamp-2 leading-snug" title={cleanTitle}>
                           {cleanTitle}
                         </h5>
-                        <div className="flex items-center gap-2 text-[10px] text-zinc-500 mt-0.5 flex-wrap">
-                          <span>
+                        <div className="flex items-center gap-2 text-xs text-zinc-500 mt-1 flex-wrap">
+                          <span className="font-semibold text-zinc-700">
                             ₲ {(c.precioPyg || 0).toLocaleString("es-PY")}{" "}
                             {c.cantidad && c.cantidad > 1 ? `x ${c.cantidad}` : ""}
                           </span>
@@ -2066,7 +2066,7 @@ export default function ArmarPcPresupuestadorPage() {
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="font-mono font-bold text-sm sm:text-base text-zinc-900 block">
+                        <span className="font-mono font-black text-sm sm:text-base text-zinc-900 block">
                           {moneda === "PYG"
                             ? `₲ ${subPyg.toLocaleString("es-PY")}`
                             : `US$ ${subUsd.toLocaleString("es-PY", {
@@ -2074,7 +2074,7 @@ export default function ArmarPcPresupuestadorPage() {
                                 maximumFractionDigits: 2,
                               })}`}
                         </span>
-                        <div className="flex items-center gap-1.5 mt-1.5 justify-end">
+                        <div className="flex items-center gap-1.5 mt-2 justify-end">
                           <button
                             type="button"
                             onClick={() => handleChangeCantidad(c.sku, -1)}
@@ -2111,14 +2111,15 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
 
             {/* Servicio de Armado & Totales Estrictos Web */}
-            <div className="pt-3 border-t border-zinc-100 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <span className="text-zinc-600 font-medium">Servicio de Montaje &amp; QA:</span>
+            <div className="pt-3 border-t border-zinc-100 space-y-3.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
+                <span className="text-zinc-700 font-semibold">Servicio de Montaje &amp; QA:</span>
                 <CleanSelect
                   value={isCorpVendedor ? "0" : String(costoMontajeTiendaPyg)}
                   onChange={() => {}}
                   align="right"
-                  dropdownWidth="w-60"
+                  dropdownWidth="w-64"
+                  className="min-h-[44px] !py-2.5 !text-xs sm:!text-sm !rounded-xl"
                   options={
                     isCorpVendedor
                       ? [{ value: "0", label: "¡Bonificado / GRATIS!" }]
@@ -2134,18 +2135,18 @@ export default function ArmarPcPresupuestadorPage() {
               </div>
 
               {/* Resumen Total Estricto con https://nissei.com/py/ */}
-              <div className="p-4 bg-zinc-900 text-white rounded-xl space-y-1 shadow-sm">
+              <div className="p-4 sm:p-5 bg-zinc-900 text-white rounded-2xl space-y-1.5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase font-bold text-zinc-400">
+                  <span className="text-xs sm:text-sm uppercase font-bold text-zinc-400">
                     Total Oficial Web (Gs.):
                   </span>
-                  <span className="text-2xl font-black font-mono text-white">
+                  <span className="text-2xl sm:text-3xl font-black font-mono text-white">
                     ₲ {totalPresupuestoPyg.toLocaleString("es-PY")}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs pt-1 border-t border-zinc-800">
+                <div className="flex items-center justify-between text-xs sm:text-sm pt-1.5 border-t border-zinc-800">
                   <span className="text-zinc-400 font-mono">Equivalente en Dólares:</span>
-                  <span className="font-mono font-bold text-zinc-200">
+                  <span className="font-mono font-bold text-zinc-200 text-sm sm:text-base">
                     US${" "}
                     {totalPresupuestoUsd.toLocaleString("es-PY", {
                       minimumFractionDigits: 2,
@@ -2153,7 +2154,7 @@ export default function ArmarPcPresupuestadorPage() {
                     })}
                   </span>
                 </div>
-                <span className="text-[10px] text-emerald-400 block pt-1 font-mono">
+                <span className="text-xs text-emerald-400 block pt-1 font-mono font-medium">
                   ✓ Precios exactos de https://nissei.com/py/ · Garantía 3 meses · IVA 10% Incluido
                 </span>
               </div>
