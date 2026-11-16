@@ -1,11 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Printer,
   SlidersHorizontal,
   RotateCcw,
   X,
+  Info,
 } from "lucide-react";
 import {
   ThermalPrintSettings,
@@ -54,11 +56,16 @@ export function PresupuestoThermalPrintModal({
   onClose,
   data,
 }: PresupuestoThermalPrintModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [thermalSettings, setThermalSettings] = useState<ThermalPrintSettings>(
     DEFAULT_THERMAL_PRINT_SETTINGS
   );
   const [showThermalConfig, setShowThermalConfig] = useState(false);
   const [isUltraBlack, setIsUltraBlack] = useState(true);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -77,7 +84,7 @@ export function PresupuestoThermalPrintModal({
     };
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const updateThermalSetting = <K extends keyof ThermalPrintSettings>(
     key: K,
@@ -113,18 +120,28 @@ export function PresupuestoThermalPrintModal({
       minute: "2-digit",
     });
 
-  return (
-    <div className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 print:p-0 print:bg-white print:static">
-      <style>{buildThermalPrintCss(thermalSettings)}</style>
-
+  const modalContent = (
+    <div
+      id="thermal-print-modal-overlay"
+      className="fixed inset-0 z-[120] bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 print:p-0 print:m-0 print:bg-transparent print:static print:block print:min-h-0 print:h-auto print:w-full"
+    >
       <style>{`
+        @page {
+          size: ${thermalSettings.paperProfile === "58_48" ? "58mm" : "80mm"} auto;
+          margin: 0 !important;
+          margin-top: 0mm !important;
+          margin-bottom: 0mm !important;
+          margin-left: 0mm !important;
+          margin-right: 0mm !important;
+        }
+
         #thermal-sticker-80mm {
           color: #000000 !important;
           -webkit-text-fill-color: #000000 !important;
           opacity: 1 !important;
         }
+
         @media print {
-          /* En modo de impresión, aislar y forzar visibilidad del wrapper desde la primera página */
           html, body {
             margin: 0 !important;
             padding: 0 !important;
@@ -134,35 +151,77 @@ export function PresupuestoThermalPrintModal({
             background: #ffffff !important;
           }
 
-          /* Ocultar el backdrop del modal y sus bordes de pantalla para que no ocupe espacio vertical */
-          .fixed.inset-0 {
-            position: static !important;
-            background: transparent !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            display: block !important;
-            width: auto !important;
-            height: auto !important;
+          /* Ocultar absolutamente cualquier otro elemento de la página */
+          body.thermal-80mm-print > *:not(#thermal-print-modal-overlay) {
+            display: none !important;
+            height: 0 !important;
             min-height: 0 !important;
-            inset: auto !important;
+            max-height: 0 !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
 
-          /* El contenedor del modal se convierte en bloque de flujo directo */
-          .fixed.inset-0 > div {
+          /* Eliminar completamente el modal container del flujo y dejarlo plano */
+          #thermal-print-modal-overlay {
             position: static !important;
+            display: block !important;
+            inset: auto !important;
+            width: 100% !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            filter: none !important;
+            transform: none !important;
+          }
+
+          #thermal-print-modal-card {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            height: auto !important;
+            min-height: 0 !important;
+            max-height: none !important;
             padding: 0 !important;
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
             background: transparent !important;
-            max-height: none !important;
-            width: 100% !important;
-            max-width: none !important;
+            overflow: visible !important;
+            filter: none !important;
+            transform: none !important;
           }
 
           body.thermal-80mm-print {
             background: #ffffff !important;
           }
+
+          /* El ticket inicia arriba de la primera página, centrado en el rollo */
+          body.thermal-80mm-print #thermal-sticker-wrapper {
+            position: relative !important;
+            top: ${thermalSettings.offsetYMm}mm !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: ${activeThermalContentMm}mm !important;
+            max-width: ${activeThermalContentMm}mm !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            padding-left: ${thermalSettings.marginMm}mm !important;
+            padding-right: ${thermalSettings.marginMm}mm !important;
+            overflow: visible !important;
+            transform: ${thermalSettings.offsetXMm !== 0 ? `translateX(${thermalSettings.offsetXMm}mm)` : "none"} !important;
+            page-break-before: avoid !important;
+            break-before: avoid !important;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
+          }
+
           body.thermal-80mm-print #thermal-sticker-wrapper,
           body.thermal-80mm-print #thermal-sticker-wrapper * {
             visibility: visible !important;
@@ -173,13 +232,23 @@ export function PresupuestoThermalPrintModal({
             text-shadow: none !important;
             filter: none !important;
           }
-          body.thermal-80mm-print #thermal-sticker-wrapper {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            margin: 0 auto !important;
+
+          body.thermal-80mm-print #thermal-sticker-80mm {
+            display: block !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            page-break-inside: auto !important;
+            break-inside: auto !important;
           }
+
+          body.thermal-80mm-print #thermal-sticker-80mm * {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
           .thermal-ultra-mode,
           .thermal-ultra-mode * {
             color: #000000 !important;
@@ -189,7 +258,10 @@ export function PresupuestoThermalPrintModal({
         }
       `}</style>
 
-      <div className="bg-white rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
+      <div
+        id="thermal-print-modal-card"
+        className="bg-white rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-full print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none print:bg-transparent print:static print:block print:min-h-0 print:h-auto"
+      >
         {/* Cabecera del modal (oculta al imprimir) */}
         <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-3 print:hidden">
           <div className="min-w-0">
@@ -310,6 +382,82 @@ export function PresupuestoThermalPrintModal({
                   {isUltraBlack ? "✓ Negro Intenso ON" : "Desactivado"}
                 </button>
               </div>
+            </div>
+
+            {/* Margen y Ajuste Fino Vertical Y */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-bold text-zinc-700">Subir/Bajar (Y):</span>
+                  <span className="font-mono font-bold text-zinc-900">
+                    {thermalSettings.offsetYMm > 0 ? `+${thermalSettings.offsetYMm}` : thermalSettings.offsetYMm}mm
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={-30}
+                  max={15}
+                  step={1}
+                  value={thermalSettings.offsetYMm}
+                  onChange={(e) => updateThermalSetting("offsetYMm", Number(e.target.value))}
+                  className="w-full accent-zinc-900 cursor-pointer"
+                  title="Ajuste vertical de inicio. Valores negativos (-15mm, -10mm) suben el texto hacia el inicio del rollo"
+                />
+                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetYMm", -15)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    -15mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetYMm", -10)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    -10mm
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateThermalSetting("offsetYMm", 0)}
+                    className="hover:text-zinc-900 underline cursor-pointer"
+                  >
+                    0mm
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <span className="font-bold text-zinc-700 block text-[11px]">Márgenes Laterales:</span>
+                <div className="grid grid-cols-3 gap-1">
+                  {[0, 2, 4].map((mm) => (
+                    <button
+                      key={mm}
+                      type="button"
+                      onClick={() => updateThermalSetting("marginMm", mm)}
+                      className={`py-1.5 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-colors ${
+                        thermalSettings.marginMm === mm
+                          ? "bg-zinc-900 text-white border-zinc-900"
+                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
+                      }`}
+                    >
+                      {mm}mm
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Tip POS-80 / 3nStar */}
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[10.5px] text-amber-900 leading-tight space-y-1">
+              <div className="flex items-center gap-1 font-bold">
+                <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                <span>Configuración recomendada para POS-80 / Térmica:</span>
+              </div>
+              <p className="text-amber-950">
+                En la ventana de impresión de Chrome/Edge: dejar <strong>Márgenes: Ninguno</strong> y <strong>Escala: 100%</strong>. Si tu impresora lo admite en Tamaño de papel, seleccioná <strong>80 x Receipt</strong> o <strong>Continuous</strong> para que no pagine a hojas de 210mm.
+              </p>
             </div>
           </div>
         )}
@@ -486,4 +634,6 @@ export function PresupuestoThermalPrintModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

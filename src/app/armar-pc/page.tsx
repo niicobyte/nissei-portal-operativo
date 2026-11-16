@@ -1113,7 +1113,7 @@ export default function ArmarPcPresupuestadorPage() {
     text += `--------------------------------------------------\n`;
     text += `Consumo Estimado: ${resultadoCompatibilidad.consumoTotalWatts} W\n`;
     text += `Fuente Recomendada: ${resultadoCompatibilidad.fuenteRecomendadaWatts} W+\n`;
-    text += `Servicio de Montaje & QA: ${
+    text += `Costo de servicio del montaje: ${
       isCorpVendedor
         ? "¡Bonificado / GRATIS! (Ventas Corp)"
         : `58,77$ (Gs. ${costoMontajePyg.toLocaleString("es-PY")})`
@@ -1172,7 +1172,7 @@ export default function ArmarPcPresupuestadorPage() {
 
   return (
     <>
-    <main className="min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans relative">
+    <main className={`min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans relative ${isThermalPrintModalOpen ? "print:hidden" : ""}`}>
       {/* Alertas Secuenciales de 8 Segundos al Ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs) */}
       {warningStage && (
         <div

@@ -446,16 +446,27 @@ samp {
   }
 
   /* Si está activo el modo térmico, ocultar el flujo de la aplicación para no generar hojas extra */
-  body.thermal-80mm-print main,
+  body.thermal-80mm-print main:not(:has(#thermal-sticker-wrapper)),
   body.thermal-80mm-print header,
   body.thermal-80mm-print nav,
   body.thermal-80mm-print footer {
-    visibility: hidden !important;
+    display: none !important;
     height: 0 !important;
+    min-height: 0 !important;
     max-height: 0 !important;
     overflow: hidden !important;
     margin: 0 !important;
     padding: 0 !important;
+  }
+
+  body.thermal-80mm-print main:has(#thermal-sticker-wrapper) {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
   }
 }
 
