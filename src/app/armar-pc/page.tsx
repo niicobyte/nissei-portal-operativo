@@ -1299,26 +1299,26 @@ export default function ArmarPcPresupuestadorPage() {
           </div>
 
           {/* Acciones de Cabecera */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap ml-auto">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 flex-wrap ml-auto">
             <button
               type="button"
               onClick={() => syncWithNisseiWeb(true)}
               disabled={isLoadingWeb}
-              className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 min-h-[38px] sm:min-h-[42px]"
               title="Refrescar precios y disponibilidad ahora mismo desde https://nissei.com/py/"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoadingWeb ? "animate-spin text-emerald-600" : ""}`} />
+              <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${isLoadingWeb ? "animate-spin text-emerald-600" : ""}`} />
               <span className="hidden md:inline">
                 {isLoadingWeb ? "Sincronizando..." : "Actualizar Web"}
               </span>
             </button>
 
             {/* Selector de Moneda */}
-            <div className="flex items-center bg-zinc-100 rounded-lg p-0.5 border border-zinc-200 text-xs font-mono">
+            <div className="flex items-center bg-zinc-100 rounded-xl p-1 border border-zinc-200 text-xs sm:text-sm font-mono min-h-[38px] sm:min-h-[42px]">
               <button
                 type="button"
                 onClick={() => setMoneda("PYG")}
-                className={`px-2 sm:px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors cursor-pointer ${
                   moneda === "PYG"
                     ? "bg-white text-zinc-900 font-bold shadow-xs"
                     : "text-zinc-600 hover:text-zinc-900"
@@ -1329,7 +1329,7 @@ export default function ArmarPcPresupuestadorPage() {
               <button
                 type="button"
                 onClick={() => setMoneda("USD")}
-                className={`px-2 sm:px-2.5 py-1 rounded transition-colors cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors cursor-pointer ${
                   moneda === "USD"
                     ? "bg-white text-zinc-900 font-bold shadow-xs"
                     : "text-zinc-600 hover:text-zinc-900"
@@ -1343,13 +1343,13 @@ export default function ArmarPcPresupuestadorPage() {
               type="button"
               onClick={handleCopyPresupuesto}
               disabled={selectedComponents.length === 0}
-              className={`px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs min-h-[38px] sm:min-h-[42px] ${
                 copiedSuccess
                   ? "bg-emerald-600 text-white"
                   : "bg-zinc-900 hover:bg-black text-white disabled:opacity-40 disabled:cursor-not-allowed"
               }`}
             >
-              {copiedSuccess ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+              {copiedSuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               <span className="hidden xs:inline">
                 {copiedSuccess ? "¡Copiado!" : "Copiar Presupuesto"}
               </span>
@@ -1359,10 +1359,10 @@ export default function ArmarPcPresupuestadorPage() {
               type="button"
               onClick={() => window.print()}
               disabled={selectedComponents.length === 0}
-              className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 hover:text-zinc-900 text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+              className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 hover:text-zinc-900 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs min-h-[38px] sm:min-h-[42px]"
               title="Imprimir cotización"
             >
-              <Printer className="w-3.5 h-3.5" />
+              <Printer className="w-4 h-4" />
               <span className="hidden sm:inline">Imprimir</span>
             </button>
           </div>
@@ -1444,9 +1444,9 @@ export default function ArmarPcPresupuestadorPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
               <div>
-                <label className="text-[11px] font-semibold text-zinc-600 block mb-1">
+                <label className="text-xs sm:text-sm font-semibold text-zinc-700 block mb-1.5">
                   Vendedor Asignado
                 </label>
                 <VendedorSelect
@@ -1472,7 +1472,7 @@ export default function ArmarPcPresupuestadorPage() {
               </div>
 
               <div>
-                <label className="text-[11px] font-semibold text-zinc-600 block mb-1">
+                <label className="text-xs sm:text-sm font-semibold text-zinc-700 block mb-1.5">
                   Nombre del Cliente
                 </label>
                 <input
@@ -1481,20 +1481,20 @@ export default function ArmarPcPresupuestadorPage() {
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
                   placeholder="Ej: Marcelo Gomez..."
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-2 text-xs sm:text-sm text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors min-h-[46px]"
                 />
               </div>
             </div>
 
             {/* Plantillas Inteligentes de Ensambles Recomendados */}
-            <div className="pt-3 border-t border-zinc-100">
+            <div className="pt-3.5 border-t border-zinc-100">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-600 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                   <span>Recomendaciones Inteligentes (100% Compatibles &amp; En Stock Web):</span>
                 </span>
               </div>
-              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2.5">
                 {PRESETS.map((p) => (
                   <button
                     key={p.id}
@@ -1506,12 +1506,12 @@ export default function ArmarPcPresupuestadorPage() {
                         false
                       )
                     }
-                    className="p-2.5 rounded-lg bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 text-left transition-all group cursor-pointer shadow-2xs disabled:opacity-50"
+                    className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 text-left transition-all group cursor-pointer shadow-2xs disabled:opacity-50 min-h-[58px]"
                   >
-                    <span className="text-xs font-bold text-zinc-900 block truncate group-hover:text-black">
+                    <span className="text-xs sm:text-sm font-bold text-zinc-900 block truncate group-hover:text-black">
                       {p.nombre}
                     </span>
-                    <span className="text-[10px] text-zinc-500 block truncate mt-0.5">
+                    <span className="text-[11px] sm:text-xs text-zinc-500 block truncate mt-1">
                       {p.tag}
                     </span>
                   </button>
@@ -1555,7 +1555,7 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
 
             {/* Pestañas de Ranuras */}
-            <div className="flex items-center gap-1.5 overflow-x-auto xl:flex-wrap pb-1.5 scrollbar-none">
+            <div className="flex items-center gap-2 overflow-x-auto xl:flex-wrap pb-2 pt-1 scrollbar-none touch-pan-x">
               {SLOTS_CONFIG.map((slot) => {
                 const Icon = slot.icono;
                 const isSelected = activeTabSlot === slot.categoria;
@@ -1569,7 +1569,7 @@ export default function ArmarPcPresupuestadorPage() {
                       setSelectedBrand("TODAS");
                       setDisplayLimit(60);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap flex items-center gap-1.5 transition-all cursor-pointer ${
+                    className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all cursor-pointer min-h-[42px] sm:min-h-[46px] ${
                       isSelected
                         ? "bg-zinc-900 text-white font-bold shadow-xs"
                         : hasItem
@@ -1577,7 +1577,7 @@ export default function ArmarPcPresupuestadorPage() {
                         : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5" />
+                    <Icon className="w-4 h-4 shrink-0" />
                     <span>
                       {slot.categoria === "GPU"
                         ? "Tarjeta gráfica"
@@ -1585,7 +1585,7 @@ export default function ArmarPcPresupuestadorPage() {
                         ? "Placa Madre"
                         : slot.nombre.split(" ")[0]}
                     </span>
-                    {hasItem && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />}
+                    {hasItem && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
                   </button>
                 );
               })}
@@ -1596,7 +1596,7 @@ export default function ArmarPcPresupuestadorPage() {
                   setSelectedBrand("TODAS");
                   setDisplayLimit(60);
                 }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer min-h-[42px] sm:min-h-[46px] ${
                   activeTabSlot === "TODO"
                     ? "bg-zinc-900 text-white font-bold shadow-xs"
                     : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
@@ -1608,9 +1608,9 @@ export default function ArmarPcPresupuestadorPage() {
           </div>
 
           {/* Buscador en Catálogo & Selector de Marca */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             <div className="sm:col-span-2 relative">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3.5" />
               <input
                 type="text"
                 maxLength={100}
@@ -1620,13 +1620,13 @@ export default function ArmarPcPresupuestadorPage() {
                   setDisplayLimit(60);
                 }}
                 placeholder="Buscar por SKU numérico (ej: 67488, 131437), modelo o descripción en nissei.com/py..."
-                className="w-full bg-white border border-zinc-200 rounded-lg pl-9 pr-8 py-2 text-xs text-zinc-900 outline-none focus:border-zinc-900 transition-colors shadow-2xs"
+                className="w-full bg-white border border-zinc-200 rounded-xl pl-10 pr-9 py-2.5 sm:py-3 text-xs sm:text-sm text-zinc-900 outline-none focus:border-zinc-900 transition-colors shadow-2xs min-h-[46px]"
               />
               {catalogSearchTerm && (
                 <button
                   type="button"
                   onClick={() => setCatalogSearchTerm("")}
-                  className="absolute right-3 top-2 text-xs text-zinc-400 hover:text-zinc-700"
+                  className="absolute right-3.5 top-3 text-sm text-zinc-400 hover:text-zinc-700 p-1"
                 >
                   ✕
                 </button>
@@ -1642,6 +1642,7 @@ export default function ArmarPcPresupuestadorPage() {
                 }}
                 fullWidth
                 dropdownWidth="w-full"
+                className="min-h-[46px] !py-2.5 !text-xs sm:!text-sm !rounded-xl"
                 options={[
                   {
                     value: "TODAS",
@@ -1830,30 +1831,30 @@ export default function ArmarPcPresupuestadorPage() {
                       </div>
 
                       {/* Precios Estrictos de https://nissei.com/py/ y Botón de Selección */}
-                      <div className="sm:text-right shrink-0 flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100">
+                      <div className="sm:text-right shrink-0 flex items-center justify-between sm:justify-end gap-3.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100">
                         <div>
                           {item.sku === "STOCK-COOLER" ? (
                             <>
-                              <span className="text-sm font-extrabold font-mono text-emerald-700 block">
+                              <span className="text-sm sm:text-base font-extrabold font-mono text-emerald-700 block">
                                 BONIFICADO
                               </span>
-                              <span className="text-[10px] font-mono text-zinc-500 block">
+                              <span className="text-[11px] font-mono text-zinc-500 block">
                                 Incluido con CPU
                               </span>
                             </>
                           ) : isInStock ? (
                             <>
                               {hasDiscount && (
-                                <span className="text-[10px] font-mono text-zinc-400 line-through block">
+                                <span className="text-[11px] font-mono text-zinc-400 line-through block">
                                   ₲ {precioRegPyg.toLocaleString("es-PY")}
                                 </span>
                               )}
                               {moneda === "PYG" ? (
                                 <>
-                                  <span className="text-sm font-extrabold font-mono text-zinc-900 block">
+                                  <span className="text-sm sm:text-base font-extrabold font-mono text-zinc-900 block">
                                     ₲ {precioPyg.toLocaleString("es-PY")}
                                   </span>
-                                  <span className="text-[10px] font-mono text-zinc-500 block">
+                                  <span className="text-[11px] font-mono text-zinc-500 block">
                                     US${" "}
                                     {precioUsd.toLocaleString("es-PY", {
                                       minimumFractionDigits: 2,
@@ -1863,14 +1864,14 @@ export default function ArmarPcPresupuestadorPage() {
                                 </>
                               ) : (
                                 <>
-                                  <span className="text-sm font-extrabold font-mono text-zinc-900 block">
+                                  <span className="text-sm sm:text-base font-extrabold font-mono text-zinc-900 block">
                                     US${" "}
                                     {precioUsd.toLocaleString("es-PY", {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
                                     })}
                                   </span>
-                                  <span className="text-[10px] font-mono text-zinc-500 block">
+                                  <span className="text-[11px] font-mono text-zinc-500 block">
                                     ₲ {precioPyg.toLocaleString("es-PY")}
                                   </span>
                                 </>
@@ -1878,10 +1879,10 @@ export default function ArmarPcPresupuestadorPage() {
                             </>
                           ) : (
                             <>
-                              <span className="text-xs font-bold font-mono text-rose-700 block">
+                              <span className="text-xs sm:text-sm font-bold font-mono text-rose-700 block">
                                 Sin stock web
                               </span>
-                              <span className="text-[10px] font-mono text-zinc-400 block">
+                              <span className="text-[11px] font-mono text-zinc-400 block">
                                 No cotizable
                               </span>
                             </>
@@ -1892,12 +1893,12 @@ export default function ArmarPcPresupuestadorPage() {
                           type="button"
                           disabled={!isInStock}
                           onClick={() => handleSelectComponent(item)}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 min-h-[40px] sm:min-h-[44px] min-w-[90px] text-center ${
                             !isInStock
                               ? "bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed"
                               : isSelected
                               ? "bg-zinc-900 text-white shadow-xs cursor-pointer"
-                              : "bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200 cursor-pointer"
+                              : "bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200 cursor-pointer shadow-2xs"
                           }`}
                         >
                           {!isInStock
@@ -2065,7 +2066,7 @@ export default function ArmarPcPresupuestadorPage() {
                       </div>
 
                       <div className="text-right shrink-0">
-                        <span className="font-mono font-bold text-zinc-900 block">
+                        <span className="font-mono font-bold text-sm sm:text-base text-zinc-900 block">
                           {moneda === "PYG"
                             ? `₲ ${subPyg.toLocaleString("es-PY")}`
                             : `US$ ${subUsd.toLocaleString("es-PY", {
@@ -2073,31 +2074,33 @@ export default function ArmarPcPresupuestadorPage() {
                                 maximumFractionDigits: 2,
                               })}`}
                         </span>
-                        <div className="flex items-center gap-1 mt-1 justify-end">
+                        <div className="flex items-center gap-1.5 mt-1.5 justify-end">
                           <button
                             type="button"
                             onClick={() => handleChangeCantidad(c.sku, -1)}
-                            className="w-5 h-5 rounded bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-700 text-xs flex items-center justify-center cursor-pointer"
+                            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-700 text-sm font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                            title="Disminuir cantidad"
                           >
                             -
                           </button>
-                          <span className="font-mono text-xs px-1 text-zinc-900 font-semibold">
+                          <span className="font-mono text-sm px-1.5 text-zinc-900 font-bold min-w-[20px] text-center">
                             {c.cantidad || 1}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleChangeCantidad(c.sku, 1)}
-                            className="w-5 h-5 rounded bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-700 text-xs flex items-center justify-center cursor-pointer"
+                            className="w-8 h-8 rounded-lg bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-700 text-sm font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                            title="Aumentar cantidad"
                           >
                             +
                           </button>
                           <button
                             type="button"
                             onClick={() => handleRemoveComponent(c.sku)}
-                            className="w-5 h-5 rounded hover:bg-rose-50 text-zinc-400 hover:text-rose-600 text-xs flex items-center justify-center ml-1 cursor-pointer"
+                            className="w-8 h-8 rounded-lg bg-white hover:bg-rose-50 border border-zinc-200 text-zinc-400 hover:text-rose-600 text-sm flex items-center justify-center ml-1 cursor-pointer shadow-2xs transition-colors"
                             title="Quitar componente"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </div>
@@ -2156,18 +2159,18 @@ export default function ArmarPcPresupuestadorPage() {
               </div>
 
               {/* Acciones del Presupuesto (Copiar / Imprimir para Vendedores; Orden Oficial solo Operadores) */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
                 <button
                   type="button"
                   onClick={handleCopyPresupuesto}
                   disabled={selectedComponents.length === 0}
-                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
+                  className={`py-3 px-3.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs min-h-[46px] ${
                     copiedSuccess
                       ? "bg-emerald-600 text-white"
                       : "bg-zinc-900 hover:bg-black text-white disabled:opacity-40 disabled:cursor-not-allowed"
                   }`}
                 >
-                  {copiedSuccess ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedSuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
                   <span>{copiedSuccess ? "¡Copiado!" : "Copiar Presupuesto"}</span>
                 </button>
 
@@ -2175,9 +2178,9 @@ export default function ArmarPcPresupuestadorPage() {
                   type="button"
                   onClick={() => window.print()}
                   disabled={selectedComponents.length === 0}
-                  className="py-2.5 px-3 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-800 hover:text-zinc-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                  className="py-3 px-3.5 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-800 hover:text-zinc-900 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs min-h-[46px]"
                 >
-                  <Printer className="w-3.5 h-3.5" />
+                  <Printer className="w-4 h-4" />
                   <span>Imprimir Cotización</span>
                 </button>
               </div>

@@ -182,7 +182,7 @@ export function VendedorSelect({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`w-full inline-flex items-center justify-between gap-2 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-150 cursor-pointer shadow-xs select-none ${
+        className={`w-full inline-flex items-center justify-between gap-2 px-3.5 py-2.5 text-sm font-semibold rounded-xl border transition-all duration-150 cursor-pointer shadow-xs select-none min-h-[46px] ${
           isOpen
             ? "border-zinc-900 ring-2 ring-zinc-900/10 bg-white text-zinc-900"
             : "bg-zinc-50 hover:bg-white border-zinc-200 text-zinc-900 hover:border-zinc-300"
@@ -190,11 +190,11 @@ export function VendedorSelect({
       >
         <div className="flex items-center gap-2 truncate">
           {!currentItem ? (
-            <User className="w-3.5 h-3.5 text-zinc-400 shrink-0" />
+            <User className="w-4 h-4 text-zinc-400 shrink-0" />
           ) : currentItem.area === "Ventas Corp" ? (
-            <Building2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+            <Building2 className="w-4 h-4 text-purple-600 shrink-0" />
           ) : (
-            <ShoppingBag className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <ShoppingBag className="w-4 h-4 text-emerald-600 shrink-0" />
           )}
 
           <span className={`truncate font-medium ${currentItem ? "text-zinc-900" : "text-zinc-500"}`}>
@@ -229,9 +229,9 @@ export function VendedorSelect({
           } mt-1.5 w-full min-w-[240px] max-w-[calc(100vw-1.5rem)] sm:max-w-md bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95 duration-150`}
         >
           {/* 1. Buscador Superior Fijo */}
-          <div className="p-2 border-b border-zinc-100 bg-white shrink-0">
+          <div className="p-2.5 border-b border-zinc-100 bg-white shrink-0">
             <div className="relative flex items-center">
-              <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-3 pointer-events-none" />
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 pointer-events-none" />
               <input
                 ref={searchInputRef}
                 type="text"
@@ -244,7 +244,7 @@ export function VendedorSelect({
                   e.stopPropagation();
                 }}
                 placeholder="Buscar por nombre de vendedor..."
-                className="w-full pl-8 pr-7 py-2 text-xs bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 outline-none focus:border-zinc-900 focus:bg-white transition-all font-medium"
+                className="w-full pl-9 pr-8 py-2.5 text-xs sm:text-sm bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-900 placeholder-zinc-400 outline-none focus:border-zinc-900 focus:bg-white transition-all font-medium min-h-[42px]"
               />
               {searchQuery && (
                 <button
@@ -254,9 +254,9 @@ export function VendedorSelect({
                     setSearchQuery("");
                     searchInputRef.current?.focus();
                   }}
-                  className="absolute right-2 text-zinc-400 hover:text-zinc-600 p-1"
+                  className="absolute right-2.5 text-zinc-400 hover:text-zinc-600 p-1"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               )}
             </div>
@@ -387,7 +387,7 @@ export function VendedorSelect({
                             setSearchQuery("");
                             setIsOpen(false);
                           }}
-                          className={`flex items-center justify-between w-full px-3 py-2 text-xs font-semibold rounded-xl text-left transition-colors cursor-pointer ${
+                          className={`flex items-center justify-between w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl text-left transition-colors cursor-pointer min-h-[40px] ${
                             isSelected
                               ? "bg-zinc-900 text-white shadow-sm font-bold"
                               : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
@@ -432,7 +432,7 @@ export function VendedorSelect({
                             setSearchQuery("");
                             setIsOpen(false);
                           }}
-                          className={`flex items-center justify-between w-full px-3 py-2 text-xs font-semibold rounded-xl text-left transition-colors cursor-pointer ${
+                          className={`flex items-center justify-between w-full px-3.5 py-2.5 text-xs sm:text-sm font-semibold rounded-xl text-left transition-colors cursor-pointer min-h-[40px] ${
                             isSelected
                               ? "bg-zinc-900 text-white shadow-sm font-bold"
                               : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
