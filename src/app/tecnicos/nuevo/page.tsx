@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
+import { VendedorSelect } from "@/components/common/VendedorSelect";
 import { CleanDatePicker } from "@/components/common/CleanDatePicker";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -315,6 +316,7 @@ export default function NuevoIngresoMontajePage() {
           if (pres && Array.isArray(pres.componentes) && pres.componentes.length > 0) {
             if (pres.cliente) setClientName(pres.cliente);
             if (pres.vendedor) setSalesAgent(pres.vendedor);
+            if (pres.canal) setSalesChannel(pres.canal);
             if (pres.tipoServicio) setTipoServicio(pres.tipoServicio);
             if (pres.observaciones) setObservations(pres.observaciones);
             setComponents(pres.componentes);
@@ -979,56 +981,23 @@ export default function NuevoIngresoMontajePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                {/* Vendedor */}
+                {/* Vendedor Comercial Categorizado */}
                 <div>
                   <label className="text-xs text-zinc-600 font-semibold block mb-1">
                     Vendedor Comercial *
                   </label>
-                  <CleanSelect
+                  <VendedorSelect
                     value={salesAgent}
-                    onChange={(val) => setSalesAgent(val)}
-                    options={vendedorOptions}
-                    fullWidth
-                    dropdownWidth="w-full"
-                    searchable
-                    searchPlaceholder="Buscar vendedor..."
-                    className="w-full justify-between"
+                    onChange={(val, area) => {
+                      setSalesAgent(val);
+                      if (area === "Ventas Corp") {
+                        setSalesChannel("Empresas / Coorporativo");
+                      } else if (area === "Ventas Tienda") {
+                        setSalesChannel("Tienda");
+                      }
+                    }}
                   />
                 </div>
-
-                {/* Vendedor personalizado si seleccionó OTRO */}
-                {salesAgent === "OTRO" && (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs text-zinc-600 font-semibold block">
-                        Nombre del Asesor *
-                      </label>
-                      <span className="text-[10px] text-zinc-400 font-mono">
-                        Enter confirma
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        id="input-custom-sales-agent"
-                        type="text"
-                        required
-                        value={customSalesAgent}
-                        onChange={(e) => setCustomSalesAgent(e.target.value)}
-                        onBlur={handleConfirmCustomSalesAgent}
-                        placeholder="Ej: Laura Benítez"
-                        className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none text-zinc-900"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleConfirmCustomSalesAgent}
-                        className="px-2.5 py-2 text-xs font-semibold bg-zinc-900 hover:bg-black text-white rounded-lg whitespace-nowrap shadow-xs"
-                        title="Guardar asesor en la lista"
-                      >
-                        Añadir
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 {/* Canal de Venta: Tienda, Ecommerce - Web, Empresas / Coorporativo */}
                 <div>

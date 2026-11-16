@@ -53,44 +53,161 @@ export const LISTA_VENDEDORES_REALES = [
   "Jose Gomez",
   "Ecommerce - Web",
   "Sebastian Alcaraz",
+  "Patricia Martinez",
+  "Monica Perez"
+];
+
+export type AreaVendedor = "Ventas Tienda" | "Ventas Corp";
+
+export interface VendedorItem {
+  nombre: string;
+  area: AreaVendedor;
+}
+
+// Subcategorías oficiales estrictas de la gerencia comercial NISSEI
+export const VENDEDORES_CORP_BASE: string[] = [
+  "Diego Vera",
+  "Sabrina Bogarin",
+  "Ruth Rolon",
+  "Matias Fleitas",
+  "Monica Perez"
+];
+
+export const VENDEDORES_TIENDA_BASE: string[] = [
+  "Salón de Ventas CDE / ASU",
+  "Helen Rivarola",
+  "Fabiola Patiño",
+  "Emilio Lopez",
+  "Kamila Guarie",
+  "Camila Fleytas",
+  "Guillermo Perez",
+  "Jose Gomez",
+  "Ecommerce - Web",
+  "Sebastian Alcaraz",
   "Patricia Martinez"
 ];
 
 export const VENDEDORES_STORAGE_KEY = "nissei_vendedores_montajes_v1";
+export const VENDEDORES_CON_AREA_STORAGE_KEY = "nissei_vendedores_categorizados_v2";
+
+/**
+ * Obtiene la lista completa de vendedores categorizados por área ("Ventas Tienda" o "Ventas Corp").
+ * Combina la base oficial con los vendedores agregados dinámicamente con persistencia en localStorage.
+ */
+export function getStoredVendedoresConArea(): VendedorItem[] {
+  const baseList: VendedorItem[] = [
+    ...VENDEDORES_CORP_BASE.map((nombre) => ({ nombre, area: "Ventas Corp" as AreaVendedor })),
+    ...VENDEDORES_TIENDA_BASE.map((nombre) => ({ nombre, area: "Ventas Tienda" as AreaVendedor }))
+  ];
+
+  if (typeof window === "undefined") return baseList;
+
+  try {
+    const raw = localStorage.getItem(VENDEDORES_CON_AREA_STORAGE_KEY);
+    let customList: VendedorItem[] = [];
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        customList = parsed.filter(
+          (item) =>
+            item &&
+            typeof item.nombre === "string" &&
+            (item.area === "Ventas Tienda" || item.area === "Ventas Corp")
+        );
+      }
+    }
+
+    // Compatibilidad con registros legacy de localStorage
+    const legacyRaw = localStorage.getItem(VENDEDORES_STORAGE_KEY);
+    if (legacyRaw) {
+      const legacyList = JSON.parse(legacyRaw);
+      if (Array.isArray(legacyList)) {
+        legacyList.forEach((legacyName) => {
+          const clean = String(legacyName).trim();
+          if (
+            clean &&
+            !baseList.some((b) => b.nombre.toLowerCase() === clean.toLowerCase()) &&
+            !customList.some((c) => c.nombre.toLowerCase() === clean.toLowerCase())
+          ) {
+            const isCorp = VENDEDORES_CORP_BASE.some(
+              (c) => c.toLowerCase() === clean.toLowerCase()
+            );
+            customList.push({
+              nombre: clean,
+              area: isCorp ? "Ventas Corp" : "Ventas Tienda"
+            });
+          }
+        });
+      }
+    }
+
+    // Mapa único por nombre (insensible a mayúsculas/minúsculas)
+    const map = new Map<string, VendedorItem>();
+    [...baseList, ...customList].forEach((item) => {
+      const key = item.nombre.trim().toLowerCase();
+      if (!map.has(key)) {
+        map.set(key, { nombre: item.nombre.trim(), area: item.area });
+      }
+    });
+
+    return Array.from(map.values());
+  } catch (e) {
+    console.warn("Error leyendo vendedores con área de localStorage:", e);
+    return baseList;
+  }
+}
+
+/**
+ * Registra un nuevo vendedor comercial con nombre y apellido y área obligatoria.
+ */
+export function addCustomVendedorConArea(nombre: string, area: AreaVendedor): VendedorItem[] {
+  const cleanNombre = nombre.trim();
+  if (!cleanNombre || cleanNombre.toUpperCase() === "OTRO") {
+    return getStoredVendedoresConArea();
+  }
+
+  const current = getStoredVendedoresConArea();
+  const existingIdx = current.findIndex(
+    (v) => v.nombre.toLowerCase() === cleanNombre.toLowerCase()
+  );
+
+  let updated: VendedorItem[];
+  if (existingIdx >= 0) {
+    updated = [...current];
+    updated[existingIdx] = { nombre: cleanNombre, area };
+  } else {
+    updated = [...current, { nombre: cleanNombre, area }];
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const customOnly = updated.filter(
+        (v) =>
+          !VENDEDORES_CORP_BASE.includes(v.nombre) &&
+          !VENDEDORES_TIENDA_BASE.includes(v.nombre)
+      );
+      localStorage.setItem(VENDEDORES_CON_AREA_STORAGE_KEY, JSON.stringify(customOnly));
+      localStorage.setItem(VENDEDORES_STORAGE_KEY, JSON.stringify(updated.map((v) => v.nombre)));
+    } catch (e) {
+      console.warn("Error guardando nuevo vendedor con área:", e);
+    }
+  }
+
+  return updated;
+}
 
 export function getStoredVendedores(): string[] {
-  if (typeof window === "undefined") return LISTA_VENDEDORES_REALES;
-  try {
-    const raw = localStorage.getItem(VENDEDORES_STORAGE_KEY);
-    if (!raw) return LISTA_VENDEDORES_REALES;
-    const list = JSON.parse(raw);
-    if (Array.isArray(list) && list.length > 0) {
-      const merged = Array.from(new Set([...LISTA_VENDEDORES_REALES, ...list]));
-      return merged;
-    }
-  } catch (e) {
-    console.warn("Error leyendo vendedores de localStorage:", e);
-  }
-  return LISTA_VENDEDORES_REALES;
+  return getStoredVendedoresConArea().map((v) => v.nombre);
 }
 
 export function addCustomVendedor(nuevoVendedor: string): string[] {
-  const clean = nuevoVendedor.trim();
-  if (!clean || clean.toUpperCase() === "OTRO") return getStoredVendedores();
-  const current = getStoredVendedores();
-  const exists = current.some((v) => v.toLowerCase() === clean.toLowerCase());
-  if (!exists) {
-    const updated = [...current, clean];
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem(VENDEDORES_STORAGE_KEY, JSON.stringify(updated));
-      } catch (e) {
-        console.warn("Error guardando nuevo vendedor:", e);
-      }
-    }
-    return updated;
-  }
-  return current;
+  const isCorp = VENDEDORES_CORP_BASE.some(
+    (c) => c.toLowerCase() === nuevoVendedor.trim().toLowerCase()
+  );
+  return addCustomVendedorConArea(
+    nuevoVendedor,
+    isCorp ? "Ventas Corp" : "Ventas Tienda"
+  ).map((v) => v.nombre);
 }
 
 // Técnicos responsables oficiales (solo nombres sin bancos)

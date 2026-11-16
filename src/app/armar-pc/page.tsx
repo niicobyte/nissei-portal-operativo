@@ -37,7 +37,9 @@ import {
 import {
   LISTA_VENDEDORES_REALES,
   getStoredVendedores,
+  AreaVendedor,
 } from "@/data/montajesData";
+import { VendedorSelect } from "@/components/common/VendedorSelect";
 
 interface NisseiLiveItemDto {
   sku: string;
@@ -239,7 +241,8 @@ export default function ArmarPcPresupuestadorPage() {
 
   // Estados del Presupuesto
   const [vendedores, setVendedores] = useState<string[]>(LISTA_VENDEDORES_REALES);
-  const [selectedVendedor, setSelectedVendedor] = useState<string>("Salón de Ventas");
+  const [selectedVendedor, setSelectedVendedor] = useState<string>("Salón de Ventas CDE / ASU");
+  const [selectedCanal, setSelectedCanal] = useState<"Tienda" | "Ecommerce - Web" | "Empresas / Coorporativo">("Tienda");
   const [clienteNombre, setClienteNombre] = useState<string>("");
   const [clienteTelefono, setClienteTelefono] = useState<string>("");
   const [observacionesPresupuesto, setObservacionesPresupuesto] = useState<string>("");
@@ -1083,7 +1086,7 @@ export default function ArmarPcPresupuestadorPage() {
     const payload = {
       cliente: clienteNombre || "Cliente Presupuesto",
       vendedor: selectedVendedor,
-      canal: "Tienda",
+      canal: selectedCanal,
       tipoServicio: "Montaje",
       consumoEstimado: `${resultadoCompatibilidad.consumoTotalWatts}W`,
       observaciones:
@@ -1292,18 +1295,17 @@ export default function ArmarPcPresupuestadorPage() {
                 <label className="text-[11px] font-semibold text-zinc-600 block mb-1">
                   Vendedor Asignado
                 </label>
-                <select
+                <VendedorSelect
                   value={selectedVendedor}
-                  onChange={(e) => setSelectedVendedor(e.target.value)}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 text-xs text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
-                >
-                  <option value="Salón de Ventas">Salón de Ventas CDE / ASU</option>
-                  {vendedores.map((v) => (
-                    <option key={v} value={v}>
-                      {v}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(nuevoVendedor, area) => {
+                    setSelectedVendedor(nuevoVendedor);
+                    if (area === "Ventas Corp") {
+                      setSelectedCanal("Empresas / Coorporativo");
+                    } else if (area === "Ventas Tienda") {
+                      setSelectedCanal("Tienda");
+                    }
+                  }}
+                />
               </div>
 
               <div>
