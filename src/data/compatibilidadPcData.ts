@@ -21,6 +21,12 @@ export interface HardwarePresupuestoItem {
     | "REFRIGERACION"
     | "OTROS";
   precioUsd: number;
+  precioPyg?: number;
+  precioRegularPyg?: number;
+  stockStatus?: "IN_STOCK" | "OUT_OF_STOCK";
+  urlWeb?: string;
+  nombreWeb?: string;
+  verificadoWeb?: boolean;
   socket?: SocketType;
   ramType?: MemoryType;
   tdpWatts?: number;
@@ -32,8 +38,29 @@ export interface HardwarePresupuestoItem {
   cantidad?: number;
 }
 
-// Detección automática inteligente de especificaciones a partir de la descripción real del SKU
-export function enriquecerComponente(c: ComponenteMontaje): HardwarePresupuestoItem {
+const KNOWN_BRANDS = [
+  "AMD", "INTEL", "ASUS", "ASROCK", "GIGABYTE", "MSI", "BIOSTAR", "MAXSUN",
+  "CORSAIR", "KINGSTON", "CRUCIAL", "ADATA", "XPG", "PATRIOT", "TEAMGROUP", "LEXAR",
+  "ZOTAC", "PNY", "PALIT", "SAPPHIRE", "XFX", "POWERCOLOR",
+  "WESTERN DIGITAL", "WD", "SEAGATE", "SAMSUNG", "HIKSEMI", "SANDISK",
+  "COUGAR", "BE QUIET!", "BE QUIET", "THERMALTAKE", "COOLER MASTER", "DEEPCOOL",
+  "NZXT", "LIAN LI", "GAMDIAS", "REDRAGON", "AIGO", "DARKFLASH", "SATE", "XTECH",
+  "EVGA", "SEASONIC", "FSP", "ANTEC", "AEROCOOL", "THERMALRIGHT", "ARCTIC",
+];
+
+function detectBrandFromText(upperDesc: string): string | undefined {
+  for (const b of KNOWN_BRANDS) {
+    if (upperDesc.includes(b)) {
+      return b === "BE QUIET" ? "BE QUIET!" : b === "WD" ? "WESTERN DIGITAL" : b;
+    }
+  }
+  return undefined;
+}
+
+// Detección automática inteligente de especificaciones técnicas (sin precios inventados)
+export function enriquecerComponente(
+  c: ComponenteMontaje & { marca?: string }
+): HardwarePresupuestoItem {
   const d = c.descripcion.toUpperCase();
   const cat = c.categoria as HardwarePresupuestoItem["categoria"];
 
@@ -44,40 +71,110 @@ export function enriquecerComponente(c: ComponenteMontaje): HardwarePresupuestoI
   let formFactor: FormFactor | undefined;
   let potenciaWatts = 0;
   let recomendadoPsuWatts = 500;
-  let precioUsd = 50;
+  const precioUsd = 0; // Estricto: los precios provienen únicamente de https://nissei.com/py/
   let garantiaMeses = 12;
+  const marca = c.marca || detectBrandFromText(d);
 
   // 1. PROCESADORES
   if (cat === "PROCESADOR") {
     garantiaMeses = 36;
+    if (
+      d.includes("F ") ||
+      d.endsWith("F") ||
+      d.includes("KF") ||
+      d.includes("10100F") ||
+      d.includes("12100F") ||
+      d.includes("12400F") ||
+      d.includes("12600KF") ||
+      d.includes("12900KF") ||
+      d.includes("14100F") ||
+      d.includes("14400F") ||
+      d.includes("14700F") ||
+      d.includes("14700KF") ||
+      d.includes("14900F") ||
+      d.includes("225F") ||
+      d.includes("250KF") ||
+      d.includes("8400F") ||
+      d.includes("4500") ||
+      d.includes("5500") ||
+      d.includes("5600X") ||
+      d.includes("5700X") ||
+      d.includes("5800X") ||
+      d.includes("5900X") ||
+      d.includes("5950X")
+    ) {
+      hasIGpu = false;
+    }
+
     if (d.includes("1851") || d.includes("ULTRA")) {
       socket = "LGA1851";
       ramType = "DDR5";
-      tdpWatts = 125;
-      precioUsd = 320;
-    } else if (d.includes("LGA1700") || d.includes("1700") || d.includes("I3-") || d.includes("I5-") || d.includes("I7-") || d.includes("I9-")) {
-      socket = "LGA1700";
-      ramType = "UNIVERSAL"; // Soporta DDR4 o DDR5 según la placa
-      if (d.includes("I3-12100")) { tdpWatts = 65; precioUsd = 105; }
-      else if (d.includes("I5-12400F") || d.includes("I5-14400F")) { tdpWatts = 65; hasIGpu = false; precioUsd = d.includes("14400") ? 195 : 140; }
-      else if (d.includes("I5-12400")) { tdpWatts = 65; precioUsd = 155; }
-      else if (d.includes("I7-12700")) { tdpWatts = 125; precioUsd = 295; }
-      else if (d.includes("I7-14700KF")) { tdpWatts = 250; hasIGpu = false; precioUsd = 410; }
-      else if (d.includes("I9-14900")) { tdpWatts = 250; precioUsd = 580; }
-      else { tdpWatts = 65; precioUsd = 180; }
-    } else if (d.includes("AM5") || d.includes("7700X") || d.includes("9600X") || d.includes("8500G") || d.includes("7900")) {
-      socket = "AM5";
-      ramType = "DDR5";
-      if (d.includes("7700X")) { tdpWatts = 105; precioUsd = 340; }
-      else if (d.includes("9600X")) { tdpWatts = 65; precioUsd = 280; }
-      else if (d.includes("8500G")) { tdpWatts = 65; precioUsd = 175; }
-      else if (d.includes("7900")) { tdpWatts = 65; precioUsd = 420; }
-      else { tdpWatts = 105; precioUsd = 250; }
-    } else if (d.includes("AM4") || d.includes("5600") || d.includes("5700")) {
-      socket = "AM4";
+      tdpWatts = d.includes("285K") ? 250 : 125;
+    } else if (
+      d.includes("LGA1200") ||
+      d.includes("LGA 1200") ||
+      d.includes("10100") ||
+      d.includes("10400") ||
+      d.includes("11400")
+    ) {
+      socket = "LGA1200";
       ramType = "DDR4";
       tdpWatts = 65;
-      precioUsd = d.includes("5700G") ? 185 : 135;
+    } else if (
+      d.includes("LGA1700") ||
+      d.includes("LGA 1700") ||
+      d.includes("1700") ||
+      d.includes("12100") ||
+      d.includes("12400") ||
+      d.includes("12500") ||
+      d.includes("12600") ||
+      d.includes("12700") ||
+      d.includes("12900") ||
+      d.includes("14100") ||
+      d.includes("14400") ||
+      d.includes("14700") ||
+      d.includes("14900")
+    ) {
+      socket = "LGA1700";
+      ramType = "UNIVERSAL";
+      tdpWatts = d.includes("14700") || d.includes("14900") || d.includes("12900") ? 220 : d.includes("12700") || d.includes("12600") ? 125 : 65;
+    } else if (
+      d.includes("AM5") ||
+      d.includes("7600") ||
+      d.includes("7700") ||
+      d.includes("7800") ||
+      d.includes("7900") ||
+      d.includes("7950") ||
+      d.includes("8400") ||
+      d.includes("8500") ||
+      d.includes("8600") ||
+      d.includes("8700") ||
+      d.includes("9600") ||
+      d.includes("9700") ||
+      d.includes("9800") ||
+      d.includes("9850") ||
+      d.includes("9900") ||
+      d.includes("9950")
+    ) {
+      socket = "AM5";
+      ramType = "DDR5";
+      tdpWatts = d.includes("9900") || d.includes("9950") || d.includes("9800") || d.includes("9850") || d.includes("7800") ? 120 : d.includes("7700") ? 105 : 65;
+    } else if (
+      d.includes("AM4") ||
+      d.includes("3200G") ||
+      d.includes("3400G") ||
+      d.includes("4100") ||
+      d.includes("4500") ||
+      d.includes("5300G") ||
+      d.includes("5500") ||
+      d.includes("5600") ||
+      d.includes("5700") ||
+      d.includes("5800") ||
+      d.includes("5900")
+    ) {
+      socket = "AM4";
+      ramType = "DDR4";
+      tdpWatts = d.includes("5800") || d.includes("5900") ? 105 : 65;
     }
   }
 
@@ -85,99 +182,98 @@ export function enriquecerComponente(c: ComponenteMontaje): HardwarePresupuestoI
   if (cat === "PLACA_MADRE") {
     garantiaMeses = 36;
     formFactor = d.includes("/ATX") || d.includes(" ATX") ? "ATX" : "MATX";
-    if (d.includes("DDR4") || d.includes("D4")) {
+    if (d.includes("DDR4") || d.includes(" D4")) {
       ramType = "DDR4";
-    } else if (d.includes("DDR5") || d.includes("D5")) {
+    } else if (d.includes("DDR5") || d.includes(" D5")) {
       ramType = "DDR5";
     }
 
-    if (d.includes("1851") || d.includes("B860")) {
+    if (d.includes("1851") || d.includes("B860") || d.includes("Z890") || d.includes("H810")) {
       socket = "LGA1851";
       ramType = "DDR5";
-      precioUsd = 145;
-    } else if (d.includes("1700") || d.includes("H610") || d.includes("B760")) {
+    } else if (d.includes("1200") || d.includes("H510") || d.includes("B560") || d.includes("H410")) {
+      socket = "LGA1200";
+      ramType = "DDR4";
+    } else if (d.includes("1700") || d.includes("H610") || d.includes("B760") || d.includes("Z790") || d.includes("B660")) {
       socket = "LGA1700";
-      if (!ramType) ramType = d.includes("B760M-AYW") ? "DDR5" : "DDR4";
-      precioUsd = d.includes("B760") ? 125 : 78;
-    } else if (d.includes("AM5") || d.includes("A620") || d.includes("B650") || d.includes("B840") || d.includes("X870")) {
+      if (!ramType) ramType = d.includes("DDR5") || d.includes("D5") ? "DDR5" : "DDR4";
+    } else if (
+      d.includes("AM5") ||
+      d.includes("A620") ||
+      d.includes("B650") ||
+      d.includes("B840") ||
+      d.includes("B850") ||
+      d.includes("X670") ||
+      d.includes("X870")
+    ) {
       socket = "AM5";
       ramType = "DDR5";
-      precioUsd = d.includes("X870") ? 295 : d.includes("B840") ? 165 : d.includes("B650") ? 125 : 95;
-    } else if (d.includes("AM4") || d.includes("A520") || d.includes("B450") || d.includes("B550")) {
+    } else if (
+      d.includes("AM4") ||
+      d.includes("A320") ||
+      d.includes("A520") ||
+      d.includes("B450") ||
+      d.includes("B550") ||
+      d.includes("X570")
+    ) {
       socket = "AM4";
       ramType = "DDR4";
-      precioUsd = 72;
     }
   }
 
   // 3. MEMORIA RAM
   if (cat === "RAM") {
     garantiaMeses = 36;
-    if (d.includes("DDR5") || d.includes("D5")) {
+    if (d.includes("DDR5") || d.includes("D5") || d.includes("5200") || d.includes("5600") || d.includes("6000") || d.includes("6400")) {
       ramType = "DDR5";
-      precioUsd = d.includes("32GB") ? 120 : 58;
     } else {
       ramType = "DDR4";
-      precioUsd = d.includes("32GB") ? 75 : d.includes("16GB") ? 38 : 24;
     }
   }
 
   // 4. TARJETAS DE VIDEO (GPU)
   if (cat === "GPU") {
     garantiaMeses = 36;
-    if (d.includes("5070")) { tdpWatts = 250; recomendadoPsuWatts = 750; precioUsd = 680; }
-    else if (d.includes("5060 TI")) { tdpWatts = 180; recomendadoPsuWatts = 650; precioUsd = 465; }
-    else if (d.includes("5060")) { tdpWatts = 145; recomendadoPsuWatts = 550; precioUsd = 350; }
-    else if (d.includes("5050")) { tdpWatts = 115; recomendadoPsuWatts = 500; precioUsd = 260; }
-    else if (d.includes("3060")) { tdpWatts = 170; recomendadoPsuWatts = 550; precioUsd = 295; }
-    else if (d.includes("RX580") || d.includes("RX 580")) { tdpWatts = 150; recomendadoPsuWatts = 500; precioUsd = 110; }
-    else { tdpWatts = 150; recomendadoPsuWatts = 500; precioUsd = 250; }
+    if (d.includes("5090") || d.includes("4090")) { tdpWatts = 450; recomendadoPsuWatts = 1000; }
+    else if (d.includes("5080") || d.includes("4080") || d.includes("7900 XTX")) { tdpWatts = 320; recomendadoPsuWatts = 850; }
+    else if (d.includes("5070") || d.includes("4070") || d.includes("7800 XT") || d.includes("9070")) { tdpWatts = 250; recomendadoPsuWatts = 750; }
+    else if (d.includes("5060 TI") || d.includes("4060 TI") || d.includes("7700 XT") || d.includes("6750")) { tdpWatts = 180; recomendadoPsuWatts = 650; }
+    else if (d.includes("5060") || d.includes("4060") || d.includes("3060") || d.includes("7600") || d.includes("6600")) { tdpWatts = 160; recomendadoPsuWatts = 550; }
+    else if (d.includes("3050") || d.includes("1650") || d.includes("RX 580") || d.includes("RX580")) { tdpWatts = 130; recomendadoPsuWatts = 500; }
+    else { tdpWatts = 150; recomendadoPsuWatts = 550; }
   }
 
-  // 5. ALMACENAMIENTO (SSD)
+  // 5. ALMACENAMIENTO (SSD / HDD)
   if (cat === "ALMACENAMIENTO") {
     garantiaMeses = 36;
-    if (d.includes("2TB")) { precioUsd = 115; }
-    else if (d.includes("1TB")) { precioUsd = d.includes("GEN5") || d.includes("8100") ? 125 : d.includes("SN3000") || d.includes("NV3") ? 65 : 58; }
-    else if (d.includes("500GB") || d.includes("512GB") || d.includes("480GB")) { precioUsd = 38; }
-    else { precioUsd = 22; }
   }
 
   // 6. FUENTES DE PODER
   if (cat === "FUENTE") {
     garantiaMeses = 36;
-    if (d.includes("850W")) { potenciaWatts = 850; precioUsd = 125; }
-    else if (d.includes("750W")) { potenciaWatts = 750; precioUsd = 98; }
-    else if (d.includes("650W")) { potenciaWatts = 650; precioUsd = 72; }
-    else if (d.includes("600W")) { potenciaWatts = 600; precioUsd = 54; }
-    else if (d.includes("550W")) { potenciaWatts = 550; precioUsd = 48; }
-    else if (d.includes("500W")) { potenciaWatts = 500; precioUsd = 42; }
-    else { potenciaWatts = 500; precioUsd = 40; }
+    const matchW = d.match(/\b(1600|1300|1200|1050|1000|850|750|700|650|600|550|500|450|400)\s*W\b/);
+    if (matchW) {
+      potenciaWatts = Number(matchW[1]);
+    } else {
+      potenciaWatts = 500;
+    }
   }
 
   // 7. GABINETES
   if (cat === "GABINETE") {
     garantiaMeses = 12;
-    formFactor = "ATX"; // Casi todos soportan ATX y mATX
-    if (d.includes("KIT")) { precioUsd = 38; }
-    else if (d.includes("LIGHT BASE 900")) { precioUsd = 195; }
-    else if (d.includes("PURE BASE 501")) { precioUsd = d.includes("LX") ? 125 : 95; }
-    else if (d.includes("COUGAR AIRFACE") || d.includes("FV150")) { precioUsd = d.includes("PRO") ? 85 : 65; }
-    else { precioUsd = 34; }
+    formFactor = "ATX";
   }
 
   // 8. REFRIGERACIÓN
   if (cat === "REFRIGERACION") {
     garantiaMeses = 12;
     socket = "UNIVERSAL";
-    if (d.includes("360")) { precioUsd = 98; }
-    else if (d.includes("240") || d.includes("LCD")) { precioUsd = 88; }
-    else if (d.includes("PEERLESS ASSASSIN")) { precioUsd = 45; }
-    else { precioUsd = 24; }
   }
 
   return {
     sku: c.sku,
+    marca,
     descripcion: c.descripcion,
     categoria: cat,
     precioUsd,
@@ -209,6 +305,9 @@ export const CATALOGO_PRESUPUESTO_OFICIAL: HardwarePresupuestoItem[] = [
     descripcion: "COOLER DE FÁBRICA / STOCK (INCLUIDO CON PROCESADOR)",
     categoria: "REFRIGERACION",
     precioUsd: 0,
+    precioPyg: 0,
+    stockStatus: "IN_STOCK",
+    verificadoWeb: true,
     socket: "UNIVERSAL",
     garantiaMeses: 36,
     cantidad: 1,
