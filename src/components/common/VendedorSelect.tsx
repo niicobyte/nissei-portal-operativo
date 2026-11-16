@@ -226,7 +226,7 @@ export function VendedorSelect({
         <div
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
-          } mt-1.5 w-full min-w-[290px] max-w-sm sm:max-w-md bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95 duration-150`}
+          } mt-1.5 w-full min-w-[240px] max-w-[calc(100vw-1.5rem)] sm:max-w-md bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden flex flex-col z-50 animate-in fade-in zoom-in-95 duration-150`}
         >
           {/* 1. Buscador Superior Fijo */}
           <div className="p-2 border-b border-zinc-100 bg-white shrink-0">
@@ -261,7 +261,7 @@ export function VendedorSelect({
             </div>
           </div>
 
-          <div className="p-2 max-h-[18rem] overflow-y-auto overscroll-contain">
+          <div className="p-2 max-h-[min(18rem,55dvh)] overflow-y-auto overscroll-contain">
 
           {/* Formulario Inline para Agregar Nuevo Vendedor */}
           {isAddingModalOpen ? (
@@ -305,7 +305,7 @@ export function VendedorSelect({
                 <label className="text-[11px] font-semibold text-zinc-700 block mb-1.5">
                   Área Operativa Obligatoria *
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setNuevaArea("Ventas Tienda")}
