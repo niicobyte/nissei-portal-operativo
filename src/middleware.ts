@@ -52,6 +52,49 @@ export function resolveAuthenticatedUser(req: NextRequest): ResolvedSession {
   }
 }
 
+const KIOSK_SELLER_COOKIE = "nissei_kiosk_vendedor";
+const DEFAULT_OPERATOR_HOST = "system-integrated.up.railway.app";
+
+/**
+ * Determina si la petición proviene del segundo dominio exclusivo de vendedores en Railway.
+ * Cualquier dominio adicional en Railway distinto al dominio operativo principal (system-integrated.up.railway.app)
+ * queda bloqueado al 100% para mostrar únicamente /armar-pc.
+ */
+export function isSellerOnlyDomain(req: NextRequest): boolean {
+  const rawHost = (
+    req.headers.get("x-forwarded-host") ||
+    req.headers.get("host") ||
+    req.nextUrl.hostname ||
+    ""
+  )
+    .split(",")[0]
+    .trim()
+    .toLowerCase()
+    .replace(/:\d+$/, "");
+
+  if (!rawHost || rawHost === "localhost" || rawHost === "127.0.0.1") {
+    return false;
+  }
+
+  const explicitSellerHosts = (process.env.SELLER_ONLY_HOSTS || "")
+    .split(",")
+    .map((h) => h.trim().toLowerCase())
+    .filter(Boolean);
+
+  if (explicitSellerHosts.includes(rawHost)) {
+    return true;
+  }
+
+  const primaryOperatorHost = (
+    process.env.PRIMARY_OPERATOR_HOST || DEFAULT_OPERATOR_HOST
+  )
+    .trim()
+    .toLowerCase();
+
+  // Si es un dominio desplegado que NO es el dominio principal de operadores, es el dominio exclusivo de vendedores
+  return rawHost !== primaryOperatorHost;
+}
+
 export function hasValidAdminHeader(req: NextRequest): boolean {
   const headerClientKey = req.headers.get(ADMIN_HEADER_NAME);
   if (!headerClientKey) return false;
@@ -60,8 +103,70 @@ export function hasValidAdminHeader(req: NextRequest): boolean {
 }
 
 export function middleware(req: NextRequest) {
-  const { pathname, search } = req.nextUrl;
+  const { pathname, search, searchParams } = req.nextUrl;
   const { user, outdatedDeploy } = resolveAuthenticatedUser(req);
+  const sellerDomain = isSellerOnlyDomain(req);
+
+  // 0. MODO DOMINIO EXCLUSIVO DE VENDEDORES (Segundo dominio en Railway):
+  // En el dominio de vendedores jamás se puede ver /login, / ni ningún módulo interno.
+  if (sellerDomain) {
+    if (
+      pathname.startsWith("/api/db") ||
+      pathname.startsWith("/api/whatsapp") ||
+      pathname.startsWith("/api/telemetry")
+    ) {
+      return NextResponse.json(
+        { ok: false, error: "No disponible en el dominio de cotizaciones." },
+        { status: 403 }
+      );
+    }
+
+    if (
+      pathname !== "/armar-pc" &&
+      !pathname.startsWith("/api/nissei-live") &&
+      !pathname.startsWith("/api/version")
+    ) {
+      const armarUrl = new URL("/armar-pc", req.url);
+      return NextResponse.redirect(armarUrl, 307);
+    }
+
+    return NextResponse.next();
+  }
+
+  // 0.1. BLOQUEO KIOSCO PARA VENDEDORES EN EL DOMINIO PRINCIPAL:
+  // Si un vendedor sin sesión entró por /armar-pc, se le marca con cookie de kiosco.
+  // Si intenta borrar '/armar-pc' y escribir '/' o '/login' en la barra de direcciones, se lo devuelve a /armar-pc.
+  if (pathname === "/armar-pc") {
+    const res = NextResponse.next();
+    if (!user) {
+      res.cookies.set(KIOSK_SELLER_COOKIE, "1", {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 30, // 30 días
+      });
+    }
+    return res;
+  }
+
+  if (pathname === "/" || pathname === "/login") {
+    const unlockOperator =
+      searchParams.get("operador") === "1" ||
+      searchParams.get("sati") === "1" ||
+      Boolean(searchParams.get("reason"));
+
+    if (unlockOperator) {
+      const res = NextResponse.next();
+      res.cookies.delete(KIOSK_SELLER_COOKIE);
+      return res;
+    }
+
+    const isKioskSeller = req.cookies.get(KIOSK_SELLER_COOKIE)?.value === "1";
+    if (isKioskSeller && !user) {
+      const armarUrl = new URL("/armar-pc", req.url);
+      return NextResponse.redirect(armarUrl, 307);
+    }
+  }
 
   // 1. Protección de Endpoints de API (/api/db y /api/whatsapp)
   if (pathname.startsWith("/api/db") || pathname.startsWith("/api/whatsapp")) {
@@ -89,6 +194,12 @@ export function middleware(req: NextRequest) {
     pathname.startsWith("/tecnicos")
   ) {
     if (!user) {
+      const isKioskSeller = req.cookies.get(KIOSK_SELLER_COOKIE)?.value === "1";
+      if (isKioskSeller) {
+        const armarUrl = new URL("/armar-pc", req.url);
+        return NextResponse.redirect(armarUrl, 307);
+      }
+
       const loginUrl = new URL("/login", req.url);
       loginUrl.searchParams.set("reason", outdatedDeploy ? "updated" : "expired");
       loginUrl.searchParams.set("returnTo", `${pathname}${search}`);
@@ -109,10 +220,14 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
+    "/",
+    "/login",
+    "/armar-pc",
     "/recepcion/:path*",
     "/reparaciones/:path*",
     "/tecnicos/:path*",
     "/api/db/:path*",
     "/api/whatsapp/:path*",
+    "/api/telemetry/:path*",
   ],
 };

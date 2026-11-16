@@ -268,6 +268,7 @@ export default function ArmarPcPresupuestadorPage() {
 
   // Feedback y Filtros
   const [copiedSuccess, setCopiedSuccess] = useState<boolean>(false);
+  const [isOperatorSession, setIsOperatorSession] = useState<boolean>(false);
   const [activeTabSlot, setActiveTabSlot] = useState<HardwarePresupuestoItem["categoria"] | "TODO">("PROCESADOR");
   const [catalogSearchTerm, setCatalogSearchTerm] = useState<string>("");
   const [selectedBrand, setSelectedBrand] = useState<string>("TODAS");
@@ -277,6 +278,17 @@ export default function ArmarPcPresupuestadorPage() {
 
   useEffect(() => {
     setVendedores(getStoredVendedores());
+    try {
+      const rawSession =
+        sessionStorage.getItem("nissei_active_session_v4") ||
+        localStorage.getItem("nissei_active_session_v4");
+      if (rawSession) {
+        const parsed = JSON.parse(rawSession);
+        setIsOperatorSession(Boolean(parsed?.id && parsed?.clientKey));
+      }
+    } catch {
+      setIsOperatorSession(false);
+    }
   }, []);
 
   // Temporizador secuencial de 8 segundos por cada advertencia al ingresar
@@ -1239,15 +1251,6 @@ export default function ArmarPcPresupuestadorPage() {
       <header className="border-b border-zinc-200 bg-white sticky top-0 z-30 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-xs">
         <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-            <Link
-              href="/login"
-              className="group inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-1.5 text-xs font-semibold text-zinc-700 bg-white hover:bg-zinc-50 hover:text-zinc-900 border border-zinc-200 rounded-lg shadow-2xs transition-all shrink-0"
-              title="Volver a la pantalla de Acceso"
-            >
-              <ArrowLeft className="w-4 h-4 text-zinc-500 group-hover:-translate-x-0.5 group-hover:text-zinc-900 transition-transform" />
-              <span className="hidden xs:inline">Volver</span>
-            </Link>
-
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-zinc-900 text-white flex items-center justify-center font-bold shrink-0">
@@ -2113,16 +2116,44 @@ export default function ArmarPcPresupuestadorPage() {
                 </span>
               </div>
 
-              {/* Botón Convertir en Orden Oficial */}
-              <button
-                type="button"
-                onClick={handleCrearOrdenMontaje}
-                disabled={selectedComponents.length === 0}
-                className="w-full py-2.5 rounded-lg bg-zinc-900 hover:bg-black disabled:opacity-40 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>Generar Orden de Montaje Oficial</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              {/* Acciones del Presupuesto (Copiar / Imprimir para Vendedores; Orden Oficial solo Operadores) */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleCopyPresupuesto}
+                  disabled={selectedComponents.length === 0}
+                  className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs ${
+                    copiedSuccess
+                      ? "bg-emerald-600 text-white"
+                      : "bg-zinc-900 hover:bg-black text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  }`}
+                >
+                  {copiedSuccess ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedSuccess ? "¡Copiado!" : "Copiar Presupuesto"}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  disabled={selectedComponents.length === 0}
+                  className="py-2.5 px-3 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-800 hover:text-zinc-900 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  <span>Imprimir Cotización</span>
+                </button>
+              </div>
+
+              {isOperatorSession && (
+                <button
+                  type="button"
+                  onClick={handleCrearOrdenMontaje}
+                  disabled={selectedComponents.length === 0}
+                  className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-black disabled:opacity-40 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Generar Orden de Montaje Oficial</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
             </div>
           </div>
         </section>
