@@ -261,6 +261,42 @@ function cleanDisplayTitle(raw: string): string {
     .trim();
 }
 
+function parsePygNumber(val: string | number): number {
+  const digits = String(val || "").replace(/\D/g, "");
+  return digits ? parseInt(digits, 10) : 0;
+}
+
+function formatPygInputWithCursor(
+  rawValue: string,
+  selectionStart: number
+): { formatted: string; cursorPos: number; numericValue: number } {
+  const digitsBeforeCursor = rawValue.slice(0, selectionStart).replace(/\D/g, "").length;
+  const rawDigits = rawValue.replace(/\D/g, "");
+  if (!rawDigits) {
+    return { formatted: "", cursorPos: 0, numericValue: 0 };
+  }
+  const numericValue = parseInt(rawDigits, 10);
+  if (isNaN(numericValue)) {
+    return { formatted: "", cursorPos: 0, numericValue: 0 };
+  }
+  const formatted = numericValue.toLocaleString("es-PY");
+  let newCursorPos = 0;
+  let count = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    if (/\d/.test(formatted[i])) {
+      count++;
+    }
+    if (count === digitsBeforeCursor) {
+      newCursorPos = i + 1;
+      break;
+    }
+  }
+  if (count < digitsBeforeCursor) {
+    newCursorPos = formatted.length;
+  }
+  return { formatted, cursorPos: newCursorPos, numericValue };
+}
+
 /**
  * Filtro estricto del lado del cliente para descartar ítems de otras categorías o de notebook
  * que existían en el Excel bruto (ej. RAM DDR2/DDR3, SODIMM de Notebook, fuentes sin watts).
@@ -339,6 +375,9 @@ export default function ArmarPcPresupuestadorPage() {
   const [clienteNombre, setClienteNombre] = useState<string>("");
   const [observacionesPresupuesto, setObservacionesPresupuesto] = useState<string>("");
   const [tipoCambio, setTipoCambio] = useState<number>(TIPO_CAMBIO_PYG_DEFECTO);
+  const [tipoCambioInput, setTipoCambioInput] = useState<string>(
+    TIPO_CAMBIO_PYG_DEFECTO.toLocaleString("es-PY")
+  );
   const [moneda, setMoneda] = useState<"PYG" | "USD">("PYG");
 
   // Alertas secuenciales de 8 segundos al ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs)
@@ -373,7 +412,39 @@ export default function ArmarPcPresupuestadorPage() {
   // Modos de Presupuesto Rápido (Por Entorno vs Por Cantidad de Guaraníes)
   const [presetTabMode, setPresetTabMode] = useState<"ENTORNO" | "PRESUPUESTO">("ENTORNO");
   const [customTargetBudget, setCustomTargetBudget] = useState<number>(10000000);
+  const [customTargetBudgetInput, setCustomTargetBudgetInput] = useState<string>("10.000.000");
   const [budgetFeedback, setBudgetFeedback] = useState<string | null>(null);
+
+  const handleTipoCambioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cursor = e.target.selectionStart || 0;
+    const raw = e.target.value;
+    const { formatted, cursorPos, numericValue } = formatPygInputWithCursor(raw, cursor);
+    setTipoCambioInput(formatted);
+    if (numericValue > 0) {
+      setTipoCambio(numericValue);
+    }
+    requestAnimationFrame(() => {
+      e.target.setSelectionRange(cursorPos, cursorPos);
+    });
+  };
+
+  const handleTipoCambioBlur = () => {
+    if (!tipoCambioInput.trim() || parsePygNumber(tipoCambioInput) === 0) {
+      setTipoCambio(TIPO_CAMBIO_PYG_DEFECTO);
+      setTipoCambioInput(TIPO_CAMBIO_PYG_DEFECTO.toLocaleString("es-PY"));
+    }
+  };
+
+  const handleCustomBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const cursor = e.target.selectionStart || 0;
+    const raw = e.target.value;
+    const { formatted, cursorPos, numericValue } = formatPygInputWithCursor(raw, cursor);
+    setCustomTargetBudgetInput(formatted);
+    setCustomTargetBudget(numericValue);
+    requestAnimationFrame(() => {
+      e.target.setSelectionRange(cursorPos, cursorPos);
+    });
+  };
 
   useEffect(() => {
     setVendedores(getStoredVendedores());
@@ -520,7 +591,7 @@ export default function ArmarPcPresupuestadorPage() {
               nombreWeb: cleanWebName,
               precioPyg: live.precioPyg,
               precioRegularPyg: live.precioRegularPyg,
-              precioUsd: Math.round((live.precioPyg / tipoCambio) * 100) / 100,
+              precioUsd: Math.round((live.precioPyg / (tipoCambio > 0 ? tipoCambio : TIPO_CAMBIO_PYG_DEFECTO)) * 100) / 100,
               stockStatus: "IN_STOCK",
               urlWeb: live.urlWeb,
               garantiaMeses: 3,
@@ -567,7 +638,7 @@ export default function ArmarPcPresupuestadorPage() {
         categoria: live.categoria,
         precioPyg: live.precioPyg,
         precioRegularPyg: live.precioRegularPyg,
-        precioUsd: Math.round((live.precioPyg / tipoCambio) * 100) / 100,
+        precioUsd: Math.round((live.precioPyg / (tipoCambio > 0 ? tipoCambio : TIPO_CAMBIO_PYG_DEFECTO)) * 100) / 100,
         stockStatus: "IN_STOCK",
         urlWeb: live.urlWeb,
         garantiaMeses: 3,
@@ -1077,6 +1148,7 @@ export default function ArmarPcPresupuestadorPage() {
 
   // Armado Inteligente Asistido por Presupuesto en Guaraníes (Ej: 10 Millones, 5 Millones, etc.)
   const buildPcByTargetBudget = (targetAmountPyg: number) => {
+    if (!targetAmountPyg || targetAmountPyg <= 0) return;
     const inStockPool = catalogoCompleto.filter(
       (c) => c.stockStatus === "IN_STOCK" && (c.precioPyg || 0) > 0
     );
@@ -1122,7 +1194,7 @@ export default function ArmarPcPresupuestadorPage() {
     return Boolean(clean && VENDEDORES_CORP_BASE.some((v) => v.toLowerCase() === clean));
   }, [selectedArea, selectedVendedor]);
 
-  const costoMontajeTiendaPyg = Math.round(COSTO_MONTAJE_TIENDA_USD * tipoCambio);
+  const costoMontajeTiendaPyg = Math.round(COSTO_MONTAJE_TIENDA_USD * (tipoCambio > 0 ? tipoCambio : TIPO_CAMBIO_PYG_DEFECTO));
   const costoMontajePyg = isCorpVendedor ? 0 : costoMontajeTiendaPyg;
   const costoMontajeUsd = isCorpVendedor ? 0 : COSTO_MONTAJE_TIENDA_USD;
 
@@ -1729,17 +1801,14 @@ export default function ArmarPcPresupuestadorPage() {
             <div className="flex items-center gap-2 text-[11px] font-mono shrink-0">
               <span className="text-zinc-600">TC Ref Gs/USD:</span>
               <input
-                type="number"
-                min={100}
-                max={50000}
-                value={tipoCambio}
-                onChange={(e) =>
-                  setTipoCambio(
-                    Math.min(50000, Math.max(100, Number(e.target.value) || TIPO_CAMBIO_PYG_DEFECTO))
-                  )
-                }
-                className="w-20 px-2 py-0.5 bg-white border border-zinc-300 rounded text-xs font-bold text-zinc-900 text-right outline-none focus:border-zinc-900"
-                title="Tipo de cambio referencial para conversión a USD (Los precios en Gs. se leen exactamente de nissei.com/py)"
+                type="text"
+                inputMode="numeric"
+                value={tipoCambioInput}
+                onChange={handleTipoCambioChange}
+                onBlur={handleTipoCambioBlur}
+                placeholder={TIPO_CAMBIO_PYG_DEFECTO.toLocaleString("es-PY")}
+                className="w-24 px-2 py-0.5 bg-white border border-zinc-300 rounded text-xs font-bold text-zinc-900 text-right outline-none focus:border-zinc-900"
+                title="Tipo de cambio referencial para conversión a USD (Permite borrar y escribir ej: 7.600)"
               />
             </div>
           </div>
@@ -1881,7 +1950,11 @@ export default function ArmarPcPresupuestadorPage() {
                         key={item.monto}
                         type="button"
                         disabled={isLoadingWeb}
-                        onClick={() => buildPcByTargetBudget(item.monto)}
+                        onClick={() => {
+                          setCustomTargetBudget(item.monto);
+                          setCustomTargetBudgetInput(item.monto.toLocaleString("es-PY"));
+                          buildPcByTargetBudget(item.monto);
+                        }}
                         className="p-3 sm:p-3.5 rounded-xl bg-emerald-50/50 hover:bg-emerald-100/70 border border-emerald-200/90 hover:border-emerald-400 text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between"
                       >
                         <div>
@@ -1916,7 +1989,7 @@ export default function ArmarPcPresupuestadorPage() {
                           ¿El cliente tiene un monto exacto en mente?
                         </span>
                         <span className="text-[11px] text-zinc-500 block truncate">
-                          Escribí el presupuesto (ej: 10.000.000) y el sistema arma la configuración óptima para ese dinero.
+                          Escribí el presupuesto (ej: 7.000.000 o 10.000.000) y el sistema arma la configuración óptima para ese dinero.
                         </span>
                       </div>
                     </div>
@@ -1925,24 +1998,35 @@ export default function ArmarPcPresupuestadorPage() {
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 text-xs font-bold font-mono text-zinc-500">₲</span>
                         <input
-                          type="number"
-                          step={500000}
-                          min={2500000}
-                          max={60000000}
-                          value={customTargetBudget}
-                          onChange={(e) => setCustomTargetBudget(Number(e.target.value) || 10000000)}
-                          placeholder="10000000"
-                          className="w-40 bg-white border border-zinc-300 rounded-xl pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold text-zinc-900 outline-none focus:border-emerald-600"
+                          type="text"
+                          inputMode="numeric"
+                          value={customTargetBudgetInput}
+                          onChange={handleCustomBudgetChange}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && customTargetBudget > 0) {
+                              buildPcByTargetBudget(customTargetBudget);
+                            }
+                          }}
+                          placeholder="10.000.000"
+                          className="w-44 bg-white border border-zinc-300 rounded-xl pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold text-zinc-900 outline-none focus:border-emerald-600"
                         />
                       </div>
                       <button
                         type="button"
-                        onClick={() => buildPcByTargetBudget(customTargetBudget)}
-                        disabled={isLoadingWeb}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                        onClick={() => {
+                          if (customTargetBudget > 0) {
+                            buildPcByTargetBudget(customTargetBudget);
+                          }
+                        }}
+                        disabled={isLoadingWeb || customTargetBudget <= 0}
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
                       >
                         <Zap className="w-4 h-4" />
-                        <span>Armar para ₲ {customTargetBudget.toLocaleString("es-PY")}</span>
+                        <span>
+                          {customTargetBudget > 0
+                            ? `Armar para ₲ ${customTargetBudget.toLocaleString("es-PY")}`
+                            : "Armar para Presupuesto"}
+                        </span>
                       </button>
                     </div>
                   </div>
