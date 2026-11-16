@@ -128,31 +128,61 @@ const SLOTS_CONFIG: Array<{
   },
 ];
 
-// Plantillas de ensamble inteligente
-const PRESETS = [
+// Plantillas de ensamble inteligente por entorno de trabajo y productividad
+export type PresetTier =
+  | "OFICINA_PRO"
+  | "GAMING_PRO"
+  | "ARQUITECTURA_3D"
+  | "IA_DEEP_LEARNING"
+  | "EDICION_CREATOR";
+
+const PRESETS: Array<{
+  id: PresetTier;
+  nombre: string;
+  entorno: string;
+  icono: string;
+  tag: string;
+  preferredCpuSkus: string[];
+}> = [
   {
     id: "OFICINA_PRO",
-    nombre: "Oficina & Negocios",
-    tag: "CPU con Video + SSD 500GB + 16GB",
+    nombre: "Oficina & Productividad",
+    entorno: "Administración, Facturación & CRM",
+    icono: "💼",
+    tag: "CPU con Gráficos + SSD NVMe + 16GB",
     preferredCpuSkus: ["167102", "77081", "119289", "74198", "67488", "120081", "53841"],
   },
   {
-    id: "GAMING_1080P",
-    nombre: "Gaming 1080p Ultra",
-    tag: "Core i5 / Ryzen 5 + RTX / RX + NVMe",
+    id: "GAMING_PRO",
+    nombre: "Gaming & Streaming",
+    entorno: "Esports & Juegos AAA (Altos FPS)",
+    icono: "🎮",
+    tag: "Core i5 / Ryzen 5 + GeForce RTX + NVMe",
     preferredCpuSkus: ["119664", "74198", "124223", "133732", "77529", "120081"],
   },
   {
-    id: "GAMING_1440P",
-    nombre: "Gaming 1440p / Streaming",
-    tag: "AM5 Ryzen 5 9600X / 7600X3D + DDR5",
-    preferredCpuSkus: ["127768", "161582", "102643", "130805", "161584"],
+    id: "ARQUITECTURA_3D",
+    nombre: "Arquitectura & Render 3D",
+    entorno: "AutoCAD, Revit, Lumion & SketchUp",
+    icono: "🏛️",
+    tag: "32GB RAM + GPU RTX CUDA + NVMe Rápido",
+    preferredCpuSkus: ["127768", "161582", "102643", "130805", "119664", "131437"],
   },
   {
-    id: "CREATOR_X3D",
-    nombre: "Workstation High-End",
-    tag: "Ryzen 7 9800X3D / Ultra 9 + AIO",
-    preferredCpuSkus: ["131437", "154353", "136690", "131884", "110641", "128067"],
+    id: "IA_DEEP_LEARNING",
+    nombre: "Inteligencia Artificial & IA",
+    entorno: "PyTorch, LLMs Locales & Stable Diffusion",
+    icono: "🧠",
+    tag: "GPU RTX VRAM + 32GB/64GB RAM + PSU 750W+",
+    preferredCpuSkus: ["131437", "154353", "127768", "136690", "131884", "110641"],
+  },
+  {
+    id: "EDICION_CREATOR",
+    nombre: "Edición 4K & Creación",
+    entorno: "Premiere Pro, DaVinci Resolve & After Effects",
+    icono: "🎬",
+    tag: "CPU Multi-núcleo + GPU RTX NVENC + 1TB/2TB",
+    preferredCpuSkus: ["131437", "161582", "127768", "119664", "128067", "154353"],
   },
 ];
 
@@ -602,7 +632,7 @@ export default function ArmarPcPresupuestadorPage() {
    * Selecciona componentes equilibrados, reales y 100% compatibles en stock de https://nissei.com/py/
    */
   const buildSmartPcConfiguration = (
-    tier: "OFICINA_PRO" | "GAMING_1080P" | "GAMING_1440P" | "CREATOR_X3D",
+    tier: PresetTier,
     preserveExisting = false
   ) => {
     const inStockPool = catalogoCompleto.filter(
@@ -647,11 +677,47 @@ export default function ArmarPcPresupuestadorPage() {
               (i.precioPyg || 0) <= 2000000
           ) ||
           inStockPool.find((i) => i.categoria === "PROCESADOR" && i.hasIGpu !== false);
-      } else {
+      } else if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR") {
+        // Alta demanda de cómputo / renderizado
         cpu =
           preset?.preferredCpuSkus
             .map((sku) => inStockPool.find((i) => i.sku === sku))
             .find(Boolean) ||
+          inStockPool.find(
+            (i) =>
+              i.categoria === "PROCESADOR" &&
+              /\b(7800X3D|9800X3D|14700|13700|7900X|14900|14600|9600X)\b/i.test(
+                `${i.descripcion} ${i.nombreWeb || ""}`
+              )
+          ) ||
+          inStockPool.find((i) => i.categoria === "PROCESADOR");
+      } else if (tier === "ARQUITECTURA_3D") {
+        // Modelado 3D BIM, AutoCAD, Revit, Lumion
+        cpu =
+          preset?.preferredCpuSkus
+            .map((sku) => inStockPool.find((i) => i.sku === sku))
+            .find(Boolean) ||
+          inStockPool.find(
+            (i) =>
+              i.categoria === "PROCESADOR" &&
+              /\b(9600X|7600X|7700|7800X3D|14600|14400|13400|5700X)\b/i.test(
+                `${i.descripcion} ${i.nombreWeb || ""}`
+              )
+          ) ||
+          inStockPool.find((i) => i.categoria === "PROCESADOR");
+      } else {
+        // Gaming & Streaming
+        cpu =
+          preset?.preferredCpuSkus
+            .map((sku) => inStockPool.find((i) => i.sku === sku))
+            .find(Boolean) ||
+          inStockPool.find(
+            (i) =>
+              i.categoria === "PROCESADOR" &&
+              /\b(14400|12400|5600|5700|7600|7500)\b/i.test(
+                `${i.descripcion} ${i.nombreWeb || ""}`
+              )
+          ) ||
           inStockPool.find((i) => i.categoria === "PROCESADOR");
       }
     }
@@ -663,7 +729,7 @@ export default function ArmarPcPresupuestadorPage() {
       const mbCandidates = inStockPool.filter(
         (i) => i.categoria === "PLACA_MADRE" && i.socket === cpu?.socket
       );
-      if (tier === "CREATOR_X3D") {
+      if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR") {
         // Priorizar chipsets X870 / X670 / B850 / B650 / Z790 / Z890
         mb =
           mbCandidates.find((i) =>
@@ -673,17 +739,19 @@ export default function ArmarPcPresupuestadorPage() {
             /\b(B650|B760|B860)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
           ) ||
           mbCandidates[Math.min(mbCandidates.length - 1, Math.floor(mbCandidates.length * 0.65))];
-      } else if (tier === "GAMING_1440P") {
-        // Priorizar chipsets B650 / B840 / B850 / B760 / B860
+      } else if (tier === "ARQUITECTURA_3D") {
         mb =
           mbCandidates.find((i) =>
-            /\b(B650|B840|B850|B760|B860)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
+            /\b(B650|B760|B850|Z790|X670)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
           ) ||
-          mbCandidates[Math.min(mbCandidates.length - 1, Math.floor(mbCandidates.length * 0.4))];
-      } else if (tier === "GAMING_1080P") {
+          mbCandidates.find((i) =>
+            /\b(B550)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
+          ) ||
+          mbCandidates[0];
+      } else if (tier === "GAMING_PRO") {
         mb =
           mbCandidates.find((i) =>
-            /\b(B550|B760|B650|H610|A520)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
+            /\b(B550|B760|B650|A520|H610)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
           ) || mbCandidates[0];
       } else {
         mb = mbCandidates[0];
@@ -697,7 +765,7 @@ export default function ArmarPcPresupuestadorPage() {
         ? cpu.ramType
         : "DDR4";
 
-    // 3. MEMORIA RAM DESKTOP (Estrictamente DDR4 o DDR5 según la placa, descartando SODIMM/DDR3)
+    // 3. MEMORIA RAM DESKTOP (Estrictamente DDR4 o DDR5 según la plataforma)
     const existingRams = preserveExisting
       ? selectedComponents.filter(
           (c) => c.categoria === "RAM" && c.ramType === requiredRamType
@@ -708,14 +776,14 @@ export default function ArmarPcPresupuestadorPage() {
       const ramCandidates = inStockPool.filter(
         (i) => i.categoria === "RAM" && i.ramType === requiredRamType
       );
-      if (tier === "CREATOR_X3D") {
-        // Buscar 32GB (o kit 2x16GB) DDR5
+      if (tier === "IA_DEEP_LEARNING" || tier === "ARQUITECTURA_3D" || tier === "EDICION_CREATOR") {
+        // Buscar 32GB (o kit de alta velocidad)
         ram =
           ramCandidates.find((i) => (i.capacidadGb || 0) >= 32) ||
           ramCandidates.find((i) => (i.capacidadGb || 0) >= 16) ||
           ramCandidates[Math.min(ramCandidates.length - 1, Math.floor(ramCandidates.length * 0.5))];
-      } else if (tier === "GAMING_1440P" || tier === "GAMING_1080P") {
-        // Buscar 16GB o 32GB de marca reconocida (Kingston, Corsair, Crucial, XPG, Lexar, G.Skill)
+      } else if (tier === "GAMING_PRO") {
+        // 16GB o 32GB de marca de renombre
         ram =
           ramCandidates.find(
             (i) =>
@@ -727,7 +795,7 @@ export default function ArmarPcPresupuestadorPage() {
           ramCandidates.find((i) => (i.capacidadGb || 0) >= 16) ||
           ramCandidates[0];
       } else {
-        // Oficina: 8GB o 16GB de marca confiable
+        // Oficina: 8GB o 16GB
         ram =
           ramCandidates.find(
             (i) =>
@@ -739,7 +807,7 @@ export default function ArmarPcPresupuestadorPage() {
       }
     }
 
-    // 4. ALMACENAMIENTO SSD (Priorizar siempre M.2 NVMe PCIe de 500GB / 1TB / 2TB sobre SATA 240GB)
+    // 4. ALMACENAMIENTO SSD (Priorizar M.2 NVMe PCIe de alta velocidad)
     const existingSsds = preserveExisting
       ? selectedComponents.filter((c) => c.categoria === "ALMACENAMIENTO")
       : [];
@@ -749,20 +817,20 @@ export default function ArmarPcPresupuestadorPage() {
       const nvmePool = ssdCandidates.filter((i) => i.esM2Nvme);
       const poolToUse = nvmePool.length > 0 ? nvmePool : ssdCandidates;
 
-      if (tier === "CREATOR_X3D") {
-        // 2TB o 1TB NVMe Gen4/Gen5
+      if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR" || tier === "ARQUITECTURA_3D") {
+        // 1TB o 2TB NVMe PCIe Gen4/Gen5
         ssd =
           poolToUse.find((i) => (i.capacidadGb || 0) >= 1900) ||
           poolToUse.find((i) => (i.capacidadGb || 0) >= 960) ||
           poolToUse[Math.min(poolToUse.length - 1, Math.floor(poolToUse.length * 0.6))];
-      } else if (tier === "GAMING_1440P" || tier === "GAMING_1080P") {
+      } else if (tier === "GAMING_PRO") {
         // 1TB NVMe M.2 (o 500GB/512GB NVMe M.2)
         ssd =
           poolToUse.find((i) => (i.capacidadGb || 0) >= 960 && (i.capacidadGb || 0) <= 1050) ||
           poolToUse.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
           poolToUse[0];
       } else {
-        // Oficina: 500GB / 512GB / 480GB NVMe M.2 (evitando discos de 120GB/240GB SATA lentos)
+        // Oficina: 500GB / 512GB NVMe M.2
         ssd =
           poolToUse.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
           ssdCandidates.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
@@ -774,43 +842,56 @@ export default function ArmarPcPresupuestadorPage() {
     let gpu = existingGpu;
     if (!gpu) {
       const gpuCandidates = inStockPool.filter((i) => i.categoria === "GPU");
-      if (tier === "GAMING_1080P") {
+      if (tier === "IA_DEEP_LEARNING") {
+        // NVIDIA con máxima VRAM y núcleos Tensor (CUDA)
         gpu =
           gpuCandidates.find((i) =>
-            /\b(RTX\s*3060|RTX\s*4060|RTX\s*5060|RTX\s*5050|RX\s*7600|RX\s*6600|B580|RTX\s*3050)\b/i.test(
+            /\b(5080|4080|5070\s*TI|4070\s*TI|RTX\s*5070|RTX\s*4070|3060\s*12GB|4060\s*TI)\b/i.test(
               `${i.descripcion} ${i.nombreWeb || ""}`
             )
           ) ||
-          gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.25))];
-      } else if (tier === "GAMING_1440P") {
+          gpuCandidates.find((i) => /RTX/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)) ||
+          gpuCandidates[0];
+      } else if (tier === "ARQUITECTURA_3D") {
+        // NVIDIA RTX para aceleración de renders Lumion, Revit, V-Ray, AutoCAD
         gpu =
           gpuCandidates.find((i) =>
-            /\b(5060\s*TI|4060\s*TI|9060\s*XT|7700\s*XT|7800\s*XT|RTX\s*5070|RTX\s*4070)\b/i.test(
+            /\b(4070|5070|4060\s*TI|4060|3060|3050)\b/i.test(
               `${i.descripcion} ${i.nombreWeb || ""}`
             )
           ) ||
-          gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.55))];
-      } else if (tier === "CREATOR_X3D") {
+          gpuCandidates.find((i) => /RTX/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)) ||
+          gpuCandidates[0];
+      } else if (tier === "EDICION_CREATOR") {
+        // GPU con soporte NVENC para exportación 4K
         gpu =
           gpuCandidates.find((i) =>
-            /\b(5070\s*TI|5080|4080|9070\s*XT|RTX\s*5070|4070\s*TI)\b/i.test(
+            /\b(4070|5070|4060\s*TI|4060|3060)\b/i.test(
               `${i.descripcion} ${i.nombreWeb || ""}`
             )
           ) ||
-          gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.8))];
+          gpuCandidates.find((i) => /RTX/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)) ||
+          gpuCandidates[0];
+      } else if (tier === "GAMING_PRO") {
+        gpu =
+          gpuCandidates.find((i) =>
+            /\b(RTX\s*4060|RTX\s*3060|RTX\s*5060|RX\s*7600|RX\s*6600|RTX\s*3050|RTX\s*4070)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
+          ) ||
+          gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.35))];
       } else if (cpu.hasIGpu === false) {
-        // Si el usuario eligió un CPU sin gráficos integrados y pidió autocompletar
         gpu = gpuCandidates[0];
       }
     }
 
-    // 6. FUENTE DE PODER (Estrictamente Fuente ATX Real de PC acorde al consumo, NUNCA adaptadores externos)
+    // 6. FUENTE DE PODER (Acorde a los Watts reales de consumo)
     const minPsuWatts =
-      tier === "CREATOR_X3D"
+      tier === "IA_DEEP_LEARNING"
         ? Math.max(750, gpu?.recomendadoPsuWatts || 750)
-        : tier === "GAMING_1440P"
+        : tier === "ARQUITECTURA_3D" || tier === "EDICION_CREATOR"
         ? Math.max(650, gpu?.recomendadoPsuWatts || 650)
-        : tier === "GAMING_1080P"
+        : tier === "GAMING_PRO"
         ? Math.max(600, gpu?.recomendadoPsuWatts || 550)
         : 500;
 
@@ -824,7 +905,6 @@ export default function ArmarPcPresupuestadorPage() {
       const psuCandidates = inStockPool.filter(
         (i) => i.categoria === "FUENTE" && (i.potenciaWatts || 0) >= minPsuWatts
       );
-      // Priorizar fuentes con certificación 80 Plus
       psu =
         psuCandidates.find((i) =>
           /\b(80\s*PLUS|80PLUS|BRONZE|GOLD|PLATINUM)\b/i.test(
@@ -835,7 +915,7 @@ export default function ArmarPcPresupuestadorPage() {
         inStockPool.find((i) => i.categoria === "FUENTE" && (i.potenciaWatts || 0) >= 500);
     }
 
-    // 7. GABINETE (Acorde a la gama del equipo)
+    // 7. GABINETE
     const existingCase = preserveExisting
       ? selectedComponents.find((c) => c.categoria === "GABINETE")
       : undefined;
@@ -848,23 +928,23 @@ export default function ArmarPcPresupuestadorPage() {
           !i.descripcion.includes("1103K") &&
           (i.precioPyg || 0) >= 290000
       );
-      if (tier === "CREATOR_X3D") {
+      if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR" || tier === "ARQUITECTURA_3D") {
         gabinete =
           gamerCases.find((i) =>
             /\b(COUGAR|CORSAIR|BE QUIET|ASUS|LIAN LI|NZXT)\b/i.test(
               `${i.marca || ""} ${i.nombreWeb || i.descripcion}`
-            ) && (i.precioPyg || 0) >= 550000
+            ) && (i.precioPyg || 0) >= 500000
           ) ||
           gamerCases[Math.min(gamerCases.length - 1, Math.floor(gamerCases.length * 0.6))] ||
           caseCandidates[0];
-      } else if (tier === "GAMING_1440P" || tier === "GAMING_1080P") {
+      } else if (tier === "GAMING_PRO") {
         gabinete = gamerCases[0] || caseCandidates[0];
       } else {
         gabinete = caseCandidates[0];
       }
     }
 
-    // 8. REFRIGERACIÓN (Si el CPU viene SIN cooler o es gama alta, elegir un verdadero Cooler de CPU / Water Cooler AIO)
+    // 8. REFRIGERACIÓN
     const existingCooler = preserveExisting
       ? selectedComponents.find((c) => c.categoria === "REFRIGERACION")
       : undefined;
@@ -883,10 +963,9 @@ export default function ArmarPcPresupuestadorPage() {
         )
       );
 
-      if (tier === "CREATOR_X3D" || tier === "GAMING_1440P") {
+      if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR" || tier === "ARQUITECTURA_3D") {
         cooler = liquidAioCoolers[0] || realCpuCoolers[0] || stockCooler;
       } else if (cpu.includesCooler === false) {
-        // Si el procesador no trae cooler de fábrica, elegir obligatoriamente un Cooler de CPU real
         cooler = realCpuCoolers[0] || liquidAioCoolers[0];
       } else {
         cooler = stockCooler;
@@ -898,16 +977,23 @@ export default function ArmarPcPresupuestadorPage() {
     ) as HardwarePresupuestoItem[];
 
     setSelectedComponents(
-      build.map((item) => ({
-        ...item,
-        cantidad:
-          tier === "CREATOR_X3D" &&
-          item.categoria === "RAM" &&
-          (item.capacidadGb || 16) === 16 &&
-          !`${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase().includes("2X")
-            ? 2
-            : 1,
-      }))
+      build.map((item) => {
+        let cant = 1;
+        if (item.categoria === "RAM") {
+          const isDualKit = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase().includes("2X");
+          if (!isDualKit) {
+            if (tier === "ARQUITECTURA_3D" || tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR") {
+              if ((item.capacidadGb || 16) <= 16) cant = 2; // 32GB en Dual Channel
+            } else if (tier === "GAMING_PRO") {
+              if ((item.capacidadGb || 8) <= 8) cant = 2; // 16GB en Dual Channel
+            }
+          }
+        }
+        return {
+          ...item,
+          cantidad: cant,
+        };
+      })
     );
   };
 
@@ -915,18 +1001,12 @@ export default function ArmarPcPresupuestadorPage() {
     // Determinar gama automáticamente según el CPU o GPU ya elegido
     const cpuPrice = currentCpu?.precioPyg || 0;
     const gpuPrice = currentGpu?.precioPyg || 0;
-    let detectedTier: "OFICINA_PRO" | "GAMING_1080P" | "GAMING_1440P" | "CREATOR_X3D" =
-      "GAMING_1080P";
+    let detectedTier: PresetTier = "GAMING_PRO";
 
-    if (cpuPrice >= 3000000 || gpuPrice >= 4500000) {
-      detectedTier = "CREATOR_X3D";
-    } else if (
-      cpuPrice >= 1750000 ||
-      gpuPrice >= 2800000 ||
-      currentCpu?.socket === "AM5" ||
-      currentCpu?.socket === "LGA1851"
-    ) {
-      detectedTier = "GAMING_1440P";
+    if (cpuPrice >= 3200000 || gpuPrice >= 4800000) {
+      detectedTier = "IA_DEEP_LEARNING";
+    } else if (cpuPrice >= 2200000 || gpuPrice >= 3200000) {
+      detectedTier = "ARQUITECTURA_3D";
     } else if (
       currentCpu &&
       currentCpu.hasIGpu !== false &&
@@ -989,9 +1069,98 @@ export default function ArmarPcPresupuestadorPage() {
     return ["TODAS", ...Array.from(brands).sort()];
   }, [catalogoCompleto, activeTabSlot, onlyWebStock]);
 
-  // Filtrado del catálogo en pantalla
+  // Determinar si un ítem es una recomendación inteligente destacada y compatible para el slot activo
+  const isItemSmartRecommended = (item: HardwarePresupuestoItem): boolean => {
+    if (item.stockStatus !== "IN_STOCK" || item.sku === "STOCK-COOLER") return false;
+
+    // 1. PROCESADOR
+    if (item.categoria === "PROCESADOR") {
+      if (currentMb?.socket && currentMb.socket !== "UNIVERSAL") {
+        return item.socket === currentMb.socket;
+      }
+      const desc = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
+      return (
+        desc.includes("5600") ||
+        desc.includes("5700") ||
+        desc.includes("12400") ||
+        desc.includes("14400") ||
+        desc.includes("7600") ||
+        desc.includes("7800X3D") ||
+        desc.includes("9600X") ||
+        desc.includes("14600")
+      );
+    }
+
+    // 2. PLACA MADRE
+    if (item.categoria === "PLACA_MADRE") {
+      if (currentCpu?.socket && currentCpu.socket !== "UNIVERSAL") {
+        return item.socket === currentCpu.socket;
+      }
+      const desc = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
+      return desc.includes("B550") || desc.includes("B650") || desc.includes("B760") || desc.includes("X870");
+    }
+
+    // 3. MEMORIA RAM
+    if (item.categoria === "RAM") {
+      const reqRam =
+        currentMb?.ramType && currentMb.ramType !== "UNIVERSAL"
+          ? currentMb.ramType
+          : currentCpu?.ramType && currentCpu.ramType !== "UNIVERSAL"
+          ? currentCpu.ramType
+          : undefined;
+
+      if (reqRam && item.ramType && item.ramType !== "UNIVERSAL") {
+        if (item.ramType !== reqRam) return false;
+      }
+
+      const cap = item.capacidadGb || 0;
+      return cap >= 16;
+    }
+
+    // 4. ALMACENAMIENTO (SSD)
+    if (item.categoria === "ALMACENAMIENTO") {
+      return Boolean(item.esM2Nvme && (item.capacidadGb || 0) >= 480);
+    }
+
+    // 5. TARJETA GRÁFICA (GPU)
+    if (item.categoria === "GPU") {
+      const desc = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
+      return (
+        desc.includes("RTX") ||
+        desc.includes("RX 7600") ||
+        desc.includes("RX 6600") ||
+        desc.includes("RADEON")
+      );
+    }
+
+    // 6. FUENTE DE PODER
+    if (item.categoria === "FUENTE") {
+      return Boolean(
+        (item.potenciaWatts || 0) >= resultadoCompatibilidad.fuenteRecomendadaWatts &&
+          /\b(80\s*PLUS|80PLUS|BRONZE|GOLD)\b/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)
+      );
+    }
+
+    // 7. GABINETE
+    if (item.categoria === "GABINETE") {
+      return (
+        !item.descripcion.includes("1102K") &&
+        !item.descripcion.includes("1103K") &&
+        (item.precioPyg || 0) >= 290000
+      );
+    }
+
+    // 8. REFRIGERACIÓN
+    if (item.categoria === "REFRIGERACION") {
+      return Boolean(item.isCpuCooler);
+    }
+
+    return false;
+  };
+
+  // Filtrado y ordenamiento inteligente del catálogo en pantalla
   const catalogoFiltrado = useMemo(() => {
-    return catalogoCompleto.filter((item) => {
+    const filtered = catalogoCompleto.filter((item) => {
       if (activeTabSlot !== "TODO" && item.categoria !== activeTabSlot) {
         return false;
       }
@@ -1063,6 +1232,32 @@ export default function ArmarPcPresupuestadorPage() {
 
       return true;
     });
+
+    // Orden inteligente asistido: Lo recomendado y compatible aparece PRIMERO
+    return filtered.sort((a, b) => {
+      // 1. Ítems seleccionados actualmente al tope
+      const aSelected = selectedComponents.some((c) => c.sku === a.sku) ? 1 : 0;
+      const bSelected = selectedComponents.some((c) => c.sku === b.sku) ? 1 : 0;
+      if (aSelected !== bSelected) return bSelected - aSelected;
+
+      // 2. Stock web (en stock primero)
+      const aStock = a.stockStatus === "IN_STOCK" ? 1 : 0;
+      const bStock = b.stockStatus === "IN_STOCK" ? 1 : 0;
+      if (aStock !== bStock) return bStock - aStock;
+
+      // 3. Recomendados y compatibles al inicio del catálogo para armado 1 a 1 asistido
+      const aRec = isItemSmartRecommended(a) ? 1 : 0;
+      const bRec = isItemSmartRecommended(b) ? 1 : 0;
+      if (aRec !== bRec) return bRec - aRec;
+
+      // 4. Descuento web
+      const aDisc = (a.precioRegularPyg || 0) > (a.precioPyg || 0) ? 1 : 0;
+      const bDisc = (b.precioRegularPyg || 0) > (b.precioPyg || 0) ? 1 : 0;
+      if (aDisc !== bDisc) return bDisc - aDisc;
+
+      // 5. Precio
+      return (a.precioPyg || 0) - (b.precioPyg || 0);
+    });
   }, [
     catalogoCompleto,
     activeTabSlot,
@@ -1073,28 +1268,9 @@ export default function ArmarPcPresupuestadorPage() {
     currentCpu,
     currentMb,
     resultadoCompatibilidad.consumoTotalWatts,
+    resultadoCompatibilidad.fuenteRecomendadaWatts,
+    selectedComponents,
   ]);
-
-  // Determinar si un ítem es una recomendación inteligente destacada para el slot activo
-  const isItemSmartRecommended = (item: HardwarePresupuestoItem): boolean => {
-    if (item.stockStatus !== "IN_STOCK" || item.sku === "STOCK-COOLER") return false;
-    if (item.categoria === "ALMACENAMIENTO") {
-      return Boolean(item.esM2Nvme && (item.capacidadGb || 0) >= 480);
-    }
-    if (item.categoria === "FUENTE") {
-      return Boolean(
-        (item.potenciaWatts || 0) >= resultadoCompatibilidad.fuenteRecomendadaWatts &&
-          /\b(80\s*PLUS|80PLUS|BRONZE|GOLD)\b/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)
-      );
-    }
-    if (item.categoria === "REFRIGERACION") {
-      return Boolean(item.isCpuCooler);
-    }
-    if (item.categoria === "RAM") {
-      return Boolean((item.capacidadGb || 0) >= 16);
-    }
-    return false;
-  };
 
   // Generación de resumen de texto para cotización estricta de https://nissei.com/py/
   const generarTextoPresupuesto = () => {
@@ -1542,32 +1718,38 @@ export default function ArmarPcPresupuestadorPage() {
               </div>
             </div>
 
-            {/* Plantillas Inteligentes de Ensambles Recomendados */}
+            {/* Plantillas Inteligentes de Ensambles Recomendados por Entorno de Trabajo */}
             <div className="pt-3.5 border-t border-zinc-100">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-600 flex items-center gap-1.5">
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  <span>Recomendaciones Inteligentes (100% Compatibles &amp; En Stock Web):</span>
+                  <span>Presets Inteligentes por Entorno de Trabajo (100% Compatibles &amp; En Stock):</span>
                 </span>
               </div>
-              <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
                 {PRESETS.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     disabled={isLoadingWeb}
-                    onClick={() =>
-                      buildSmartPcConfiguration(
-                        p.id as "OFICINA_PRO" | "GAMING_1080P" | "GAMING_1440P" | "CREATOR_X3D",
-                        false
-                      )
-                    }
-                    className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 hover:border-zinc-300 text-left transition-all group cursor-pointer shadow-2xs disabled:opacity-50 min-h-[58px]"
+                    onClick={() => buildSmartPcConfiguration(p.id, false)}
+                    className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100/90 border border-zinc-200 hover:border-zinc-300 text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between"
                   >
-                    <span className="text-xs sm:text-sm font-bold text-zinc-900 block truncate group-hover:text-black">
-                      {p.nombre}
-                    </span>
-                    <span className="text-[11px] sm:text-xs text-zinc-500 block truncate mt-1">
+                    <div>
+                      <div className="flex items-center justify-between gap-1 mb-1.5">
+                        <span className="text-lg">{p.icono}</span>
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-200/80 text-zinc-700 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
+                          Cargar Preset
+                        </span>
+                      </div>
+                      <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
+                        {p.nombre}
+                      </span>
+                      <span className="text-[11px] text-zinc-500 block leading-snug mt-1">
+                        {p.entorno}
+                      </span>
+                    </div>
+                    <span className="text-[10px] sm:text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
                       {p.tag}
                     </span>
                   </button>
@@ -1738,6 +1920,42 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
           </div>
 
+          {/* Barra de Guía Inteligente de Ranura Activa (Armado 1 a 1 Asistido) */}
+          {activeTabSlot !== "TODO" && (
+            <div className="p-2.5 px-3.5 rounded-xl bg-sky-50/90 border border-sky-200 text-xs text-sky-950 flex items-center justify-between flex-wrap gap-2 shadow-2xs">
+              <span className="flex items-center gap-1.5 font-medium">
+                <Sparkles className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                <span>
+                  {activeTabSlot === "PROCESADOR" &&
+                    (currentMb?.socket
+                      ? `Filtrando procesadores recomendados y compatibles con Socket ${currentMb.socket}`
+                      : "Mostrando procesadores recomendados en stock de https://nissei.com/py/")}
+                  {activeTabSlot === "PLACA_MADRE" &&
+                    (currentCpu?.socket
+                      ? `Filtrando placas recomendadas y 100% compatibles con tu CPU (Socket ${currentCpu.socket})`
+                      : "Mostrando placas madre equilibradas y compatibles")}
+                  {activeTabSlot === "RAM" &&
+                    `Mostrando memorias RAM recomendadas (${currentMb?.ramType || currentCpu?.ramType || "DDR4 / DDR5"}) compatibles`}
+                  {activeTabSlot === "ALMACENAMIENTO" &&
+                    "Mostrando unidades SSD M.2 NVMe PCIe recomendadas de alta velocidad"}
+                  {activeTabSlot === "GPU" &&
+                    "Mostrando tarjetas gráficas recomendadas para gaming, arquitectura y creación"}
+                  {activeTabSlot === "FUENTE" &&
+                    `Mostrando fuentes certificadas 80 Plus recomendadas para tu consumo (${resultadoCompatibilidad.consumoTotalWatts}W)`}
+                  {activeTabSlot === "GABINETE" &&
+                    "Mostrando gabinetes recomendados con espacio adecuado y flujo de aire"}
+                  {activeTabSlot === "REFRIGERACION" &&
+                    (currentCpu && !currentCpu.includesCooler
+                      ? "⚠️ Tu procesador requiere cooler dedicado. Mostrando coolers de CPU compatibles al inicio"
+                      : "Mostrando opciones de disipación y Water Coolers AIO recomendados")}
+                </span>
+              </span>
+              <span className="text-[11px] font-mono font-bold text-sky-800 bg-white/90 px-2 py-0.5 rounded-md border border-sky-200 shadow-2xs">
+                ⭐ Recomendados al inicio
+              </span>
+            </div>
+          )}
+
           {/* Lista de Componentes Disponibles en Catálogo */}
           <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden divide-y divide-zinc-100 max-h-[58dvh] sm:max-h-[540px] 2xl:max-h-[680px] 3xl:max-h-[780px] overflow-y-auto overscroll-contain shadow-sm">
             {isLoadingWeb && Object.keys(liveBySku).length === 0 ? (
@@ -1799,6 +2017,8 @@ export default function ArmarPcPresupuestadorPage() {
                       className={`p-3.5 sm:p-4 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-3.5 ${
                         isSelected
                           ? "bg-zinc-50/90 border-l-4 border-l-zinc-900"
+                          : recommended
+                          ? "bg-amber-50/20 border-l-4 border-l-amber-500 hover:bg-amber-50/35"
                           : !isInStock
                           ? "bg-zinc-50/40 opacity-65"
                           : "hover:bg-zinc-50/60"
@@ -1825,8 +2045,8 @@ export default function ArmarPcPresupuestadorPage() {
                             </span>
                           )}
                           {recommended && (
-                            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200">
-                              ★ RECOMENDADO
+                            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500 text-white shadow-2xs">
+                              ⭐ RECOMENDADO &amp; COMPATIBLE
                             </span>
                           )}
                           {hasDiscount && discountPct > 0 && (
