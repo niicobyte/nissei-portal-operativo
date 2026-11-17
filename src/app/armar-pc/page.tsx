@@ -405,6 +405,19 @@ export default function ArmarPcPresupuestadorPage() {
   const [onlyCompatible, setOnlyCompatible] = useState<boolean>(true);
   const [onlyWebStock, setOnlyWebStock] = useState<boolean>(true);
 
+  // Filtros interactivos de Plataforma & Perfil Productivo
+  const [slotPlatformFilter, setSlotPlatformFilter] = useState<string>("TODOS");
+  const [slotWorkProfileFilter, setSlotWorkProfileFilter] = useState<string>("TODOS");
+  const [showProductivityInsight, setShowProductivityInsight] = useState<boolean>(true);
+
+  const switchActiveSlot = (slot: HardwarePresupuestoItem["categoria"] | "TODO") => {
+    setActiveTabSlot(slot);
+    setSelectedBrand("TODAS");
+    setSlotPlatformFilter("TODOS");
+    setSlotWorkProfileFilter("TODOS");
+    setDisplayLimit(60);
+  };
+
   // Escudo Defensivo Anti-Error de Venta
   const [showDefensiveModal, setShowDefensiveModal] = useState<boolean>(false);
   const [pendingGuardedAction, setPendingGuardedAction] = useState<"COPY" | "PRINT" | "ORDEN" | null>(null);
@@ -1360,6 +1373,66 @@ export default function ArmarPcPresupuestadorPage() {
         return false;
       }
 
+      // Filtro interactivo de Plataforma / Arquitectura
+      if (slotPlatformFilter !== "TODOS") {
+        const fullTxt = `${item.descripcion} ${item.nombreWeb || ""} ${item.marca || ""}`.toUpperCase();
+        if (activeTabSlot === "PROCESADOR") {
+          const isAmd = item.marca === "AMD" || /RYZEN|ATHLON|AM4|AM5/i.test(fullTxt);
+          const isIntel = item.marca === "INTEL" || /CORE|LGA1700|LGA1851|INTEL/i.test(fullTxt);
+          if (slotPlatformFilter === "AMD" && !isAmd) return false;
+          if (slotPlatformFilter === "INTEL" && !isIntel) return false;
+        } else if (activeTabSlot === "PLACA_MADRE") {
+          if (slotPlatformFilter === "AM5" && item.socket !== "AM5") return false;
+          if (slotPlatformFilter === "AM4" && item.socket !== "AM4") return false;
+          if (slotPlatformFilter === "LGA1700" && item.socket !== "LGA1700") return false;
+          if (slotPlatformFilter === "AMD" && item.socket !== "AM5" && item.socket !== "AM4") return false;
+          if (slotPlatformFilter === "INTEL" && item.socket !== "LGA1700") return false;
+        } else if (activeTabSlot === "GPU") {
+          const isNvidia = item.marca === "NVIDIA" || /GEFORCE|RTX|GTX|PALIT|ZOTAC|PNY|GALAX/i.test(fullTxt);
+          const isAmd = item.marca === "AMD" || /RADEON|RX/i.test(fullTxt);
+          if (slotPlatformFilter === "NVIDIA" && !isNvidia) return false;
+          if (slotPlatformFilter === "AMD" && !isAmd) return false;
+        } else if (activeTabSlot === "RAM") {
+          if (slotPlatformFilter === "DDR5" && item.ramType !== "DDR5") return false;
+          if (slotPlatformFilter === "DDR4" && item.ramType !== "DDR4") return false;
+        } else if (activeTabSlot === "ALMACENAMIENTO") {
+          const cap = item.capacidadGb || 0;
+          if (slotPlatformFilter === "500GB" && cap > 600) return false;
+          if (slotPlatformFilter === "1TB" && (cap < 900 || cap > 1500)) return false;
+          if (slotPlatformFilter === "2TB" && cap < 1900) return false;
+        } else if (activeTabSlot === "FUENTE") {
+          const w = item.potenciaWatts || 0;
+          if (slotPlatformFilter === "550W" && w > 590) return false;
+          if (slotPlatformFilter === "650W_750W" && (w < 600 || w > 800)) return false;
+          if (slotPlatformFilter === "850W" && w < 850) return false;
+        } else if (activeTabSlot === "GABINETE") {
+          if (slotPlatformFilter === "AIRFLOW" && (item.isKitOficina || /ACUARIO|VISION|PANORAMIC/i.test(fullTxt))) return false;
+          if (slotPlatformFilter === "ACUARIO" && !/ACUARIO|VISION|PANORAMIC|TK-|DH80/i.test(fullTxt)) return false;
+          if (slotPlatformFilter === "OFICINA" && !item.isKitOficina) return false;
+        } else if (activeTabSlot === "REFRIGERACION") {
+          if (slotPlatformFilter === "AIRE" && (item.isAioLiquid || item.radiatorSizeMm)) return false;
+          if (slotPlatformFilter === "AIO_240" && item.radiatorSizeMm !== 240) return false;
+          if (slotPlatformFilter === "AIO_360" && item.radiatorSizeMm !== 360) return false;
+        }
+      }
+
+      // Filtro interactivo de Tipo de Trabajo / Perfil Productivo
+      if (slotWorkProfileFilter !== "TODOS") {
+        const perfil = (item.perfilProductivo || "").toLowerCase();
+        const desc = `${item.descripcion} ${item.nombreWeb || ""}`.toLowerCase();
+        if (slotWorkProfileFilter === "OFICINA") {
+          if (!perfil.includes("oficina") && !perfil.includes("ofimática") && !perfil.includes("comercial") && !desc.includes("oficina") && !desc.includes("facturación")) return false;
+        } else if (slotWorkProfileFilter === "GAMING_1080P") {
+          if (!perfil.includes("1080p") && !perfil.includes("esports") && !perfil.includes("entrada")) return false;
+        } else if (slotWorkProfileFilter === "GAMING_1440P") {
+          if (!perfil.includes("1440p") && !perfil.includes("ultra") && !perfil.includes("balanceada") && !perfil.includes("stream")) return false;
+        } else if (slotWorkProfileFilter === "GAMING_X3D") {
+          if (!perfil.includes("3d v-cache") && !desc.includes("x3d") && !perfil.includes("extremo")) return false;
+        } else if (slotWorkProfileFilter === "RENDER_IA") {
+          if (!perfil.includes("render") && !perfil.includes("workstation") && !perfil.includes("ia") && !perfil.includes("arquitectura") && !perfil.includes("creación")) return false;
+        }
+      }
+
       if (catalogSearchTerm.trim()) {
         const q = catalogSearchTerm.toLowerCase();
         const matchSku = item.sku.toLowerCase().includes(q);
@@ -1474,6 +1547,8 @@ export default function ArmarPcPresupuestadorPage() {
     resultadoCompatibilidad.consumoTotalWatts,
     resultadoCompatibilidad.fuenteRecomendadaWatts,
     selectedComponents,
+    slotPlatformFilter,
+    slotWorkProfileFilter,
   ]);
 
   // Generación de resumen de texto para cotización estricta de https://nissei.com/py/
@@ -1590,9 +1665,7 @@ export default function ArmarPcPresupuestadorPage() {
         handleChangeCantidad(ram.sku, 1);
       }
     } else if (alerta.categoriaTarget) {
-      setActiveTabSlot(alerta.categoriaTarget);
-      setSelectedBrand("TODAS");
-      setDisplayLimit(60);
+      switchActiveSlot(alerta.categoriaTarget);
       const el = document.getElementById("catalog-slots-section");
       if (el) {
         el.scrollIntoView({ behavior: "smooth" });
@@ -2133,11 +2206,7 @@ export default function ArmarPcPresupuestadorPage() {
                   <button
                     key={slot.categoria}
                     type="button"
-                    onClick={() => {
-                      setActiveTabSlot(slot.categoria);
-                      setSelectedBrand("TODAS");
-                      setDisplayLimit(60);
-                    }}
+                    onClick={() => switchActiveSlot(slot.categoria)}
                     className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all cursor-pointer min-h-[42px] sm:min-h-[46px] ${
                       isSelected
                         ? "bg-zinc-900 text-white font-bold shadow-xs"
@@ -2160,11 +2229,7 @@ export default function ArmarPcPresupuestadorPage() {
               })}
               <button
                 type="button"
-                onClick={() => {
-                  setActiveTabSlot("TODO");
-                  setSelectedBrand("TODAS");
-                  setDisplayLimit(60);
-                }}
+                onClick={() => switchActiveSlot("TODO")}
                 className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer min-h-[42px] sm:min-h-[46px] ${
                   activeTabSlot === "TODO"
                     ? "bg-zinc-900 text-white font-bold shadow-xs"
@@ -2175,6 +2240,791 @@ export default function ArmarPcPresupuestadorPage() {
               </button>
             </div>
           </div>
+
+          {/* Panel Interactivo de Orientación Asistida, Plataforma & Perfil Productivo */}
+          {activeTabSlot !== "TODO" && (
+            <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+              {/* Encabezado con reset */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <h3 className="text-xs sm:text-sm font-bold text-zinc-900 uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                    Orientación Asistida &amp; Perfiles ·{" "}
+                    {SLOTS_CONFIG.find((s) => s.categoria === activeTabSlot)?.nombre || activeTabSlot}
+                  </h3>
+                </div>
+                <div className="flex items-center gap-3">
+                  {(slotPlatformFilter !== "TODOS" || slotWorkProfileFilter !== "TODOS") && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSlotPlatformFilter("TODOS");
+                        setSlotWorkProfileFilter("TODOS");
+                      }}
+                      className="text-xs text-zinc-600 hover:text-zinc-900 font-semibold underline cursor-pointer"
+                    >
+                      Limpiar filtros de perfil
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowProductivityInsight(!showProductivityInsight)}
+                    className="text-xs text-sky-700 hover:text-sky-900 font-semibold cursor-pointer flex items-center gap-1"
+                  >
+                    <span>{showProductivityInsight ? "Ocultar guía productiva" : "Ver guía de potencia productiva"}</span>
+                    <span className="text-[10px]">{showProductivityInsight ? "▲" : "▼"}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 1. Selector de Plataforma / Arquitectura */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-zinc-900 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                    Seleccionar Plataforma / Arquitectura:
+                  </span>
+                  {slotPlatformFilter !== "TODOS" && (
+                    <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
+                      Filtro: {slotPlatformFilter}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none flex-wrap">
+                  {/* Botones de plataforma según slot */}
+                  {activeTabSlot === "PROCESADOR" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("TODOS");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          slotPlatformFilter === "TODOS"
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        }`}
+                      >
+                        Todas las CPUs
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("AMD");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AMD"
+                            ? "bg-rose-700 text-white shadow-xs"
+                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span>🔴 AMD Ryzen (AM4 / AM5)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Gaming &amp; Longevidad</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("INTEL");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "INTEL"
+                            ? "bg-sky-700 text-white shadow-xs"
+                            : "bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-sky-500" />
+                        <span>🔵 Intel Core (LGA 1700)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· QuickSync &amp; Híbrido P+E</span>
+                      </button>
+                    </>
+                  )}
+
+                  {activeTabSlot === "PLACA_MADRE" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("TODOS");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          slotPlatformFilter === "TODOS"
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        }`}
+                      >
+                        Todos los Sockets
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("AM5");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AM5"
+                            ? "bg-rose-700 text-white shadow-xs"
+                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        }`}
+                      >
+                        <span>🔴 AMD Socket AM5 (DDR5)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Ryzen 7000/8000/9000</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("AM4");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AM4"
+                            ? "bg-amber-700 text-white shadow-xs"
+                            : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                        }`}
+                      >
+                        <span>🔴 AMD Socket AM4 (DDR4)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Máxima Economía</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("LGA1700");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "LGA1700"
+                            ? "bg-sky-700 text-white shadow-xs"
+                            : "bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100"
+                        }`}
+                      >
+                        <span>🔵 Intel Socket LGA1700</span>
+                        <span className="text-[10px] opacity-80 font-normal">· 12ª, 13ª y 14ª Gen</span>
+                      </button>
+                    </>
+                  )}
+
+                  {activeTabSlot === "GPU" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("TODOS");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          slotPlatformFilter === "TODOS"
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        }`}
+                      >
+                        Todas las GPUs
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("NVIDIA");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "NVIDIA"
+                            ? "bg-emerald-700 text-white shadow-xs"
+                            : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span>🟢 NVIDIA GeForce RTX</span>
+                        <span className="text-[10px] opacity-80 font-normal">· CUDA, OptiX, IA &amp; DLSS 3.5</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("AMD");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AMD"
+                            ? "bg-rose-700 text-white shadow-xs"
+                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span>🔴 AMD Radeon RX</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Más VRAM &amp; FSR 3</span>
+                      </button>
+                    </>
+                  )}
+
+                  {activeTabSlot === "RAM" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("TODOS");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          slotPlatformFilter === "TODOS"
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        }`}
+                      >
+                        Todas las Memorias
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("DDR5");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "DDR5"
+                            ? "bg-purple-700 text-white shadow-xs"
+                            : "bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100"
+                        }`}
+                      >
+                        <span>⚡ DDR5 (5200 - 6000 MHz)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Nueva Generación</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("DDR4");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "DDR4"
+                            ? "bg-blue-700 text-white shadow-xs"
+                            : "bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100"
+                        }`}
+                      >
+                        <span>💎 DDR4 (3200 MHz)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Económica &amp; Probada</span>
+                      </button>
+                    </>
+                  )}
+
+                  {activeTabSlot === "ALMACENAMIENTO" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("TODOS");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          slotPlatformFilter === "TODOS"
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        }`}
+                      >
+                        Todas las Capacidades
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("1TB");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "1TB"
+                            ? "bg-emerald-700 text-white shadow-xs"
+                            : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                        }`}
+                      >
+                        <span>⚡ 1 TB NVMe</span>
+                        <span className="text-[10px] font-bold text-emerald-800">⭐ Recomendado</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("2TB");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "2TB"
+                            ? "bg-indigo-700 text-white shadow-xs"
+                            : "bg-indigo-50 text-indigo-900 border border-indigo-200 hover:bg-indigo-100"
+                        }`}
+                      >
+                        <span>🚀 2 TB+ NVMe</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Creación 3D &amp; Juegos AAA</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("500GB");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "500GB"
+                            ? "bg-zinc-800 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
+                        }`}
+                      >
+                        <span>📦 500 GB NVMe</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Oficina / Entrada</span>
+                      </button>
+                    </>
+                  )}
+
+                  {activeTabSlot === "FUENTE" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("TODOS");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          slotPlatformFilter === "TODOS"
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        }`}
+                      >
+                        Todas las Fuentes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("650W_750W");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "650W_750W"
+                            ? "bg-emerald-700 text-white shadow-xs"
+                            : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                        }`}
+                      >
+                        <span>🏆 650W - 750W (80 Plus)</span>
+                        <span className="text-[10px] font-bold text-emerald-800">⭐ Recomendado Gaming</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("850W");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "850W"
+                            ? "bg-amber-700 text-white shadow-xs"
+                            : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                        }`}
+                      >
+                        <span>⚡ 850W+ Gold</span>
+                        <span className="text-[10px] opacity-80 font-normal">· RTX 4080/4090 &amp; Workstations</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("550W");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "550W"
+                            ? "bg-zinc-800 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
+                        }`}
+                      >
+                        <span>💼 450W - 550W</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Oficina / Video Integrado</span>
+                      </button>
+                    </>
+                  )}
+
+                  {activeTabSlot === "GABINETE" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("TODOS");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          slotPlatformFilter === "TODOS"
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        }`}
+                      >
+                        Todos los Diseños
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("AIRFLOW");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AIRFLOW"
+                            ? "bg-teal-700 text-white shadow-xs"
+                            : "bg-teal-50 text-teal-900 border border-teal-200 hover:bg-teal-100"
+                        }`}
+                      >
+                        <span>🌬️ Gamer Mesh Airflow</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Máxima Ventilación</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("ACUARIO");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "ACUARIO"
+                            ? "bg-cyan-700 text-white shadow-xs"
+                            : "bg-cyan-50 text-cyan-900 border border-cyan-200 hover:bg-cyan-100"
+                        }`}
+                      >
+                        <span>💎 Acuario Panorámico</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Visión 270° Vidrio Templado</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("OFICINA");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "OFICINA"
+                            ? "bg-zinc-800 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
+                        }`}
+                      >
+                        <span>💼 Kit Comercial / Oficina</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Incluye Fuente y Periféricos</span>
+                      </button>
+                    </>
+                  )}
+
+                  {activeTabSlot === "REFRIGERACION" && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("TODOS");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                          slotPlatformFilter === "TODOS"
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                        }`}
+                      >
+                        Todas las Opciones
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("AIRE");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AIRE"
+                            ? "bg-teal-700 text-white shadow-xs"
+                            : "bg-teal-50 text-teal-900 border border-teal-200 hover:bg-teal-100"
+                        }`}
+                      >
+                        <span>🌪️ Cooler Torre por Aire</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Silencioso &amp; Cero Mantenimiento</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("AIO_240");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AIO_240"
+                            ? "bg-sky-700 text-white shadow-xs"
+                            : "bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100"
+                        }`}
+                      >
+                        <span>💧 Water Cooler AIO 240mm</span>
+                        <span className="text-[10px] opacity-80 font-normal">· 2 Ventiladores</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("AIO_360");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AIO_360"
+                            ? "bg-purple-700 text-white shadow-xs"
+                            : "bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100"
+                        }`}
+                      >
+                        <span>🌊 Water Cooler AIO 360mm</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Máxima Disipación (3 Fans)</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* 2. Selector de Perfil Productivo / Tipo de Trabajo */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-4 h-4 rounded-full bg-zinc-900 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                    Tipo de Trabajo / Potencia Productiva Requerida:
+                  </span>
+                  {slotWorkProfileFilter !== "TODOS" && (
+                    <span className="text-[10px] font-mono text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 font-semibold">
+                      Perfil: {slotWorkProfileFilter}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSlotWorkProfileFilter("TODOS");
+                      setDisplayLimit(60);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                      slotWorkProfileFilter === "TODOS"
+                        ? "bg-zinc-900 text-white shadow-xs"
+                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
+                    }`}
+                  >
+                    Todos los Perfiles
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSlotWorkProfileFilter("OFICINA");
+                      setDisplayLimit(60);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      slotWorkProfileFilter === "OFICINA"
+                        ? "bg-emerald-700 text-white shadow-xs"
+                        : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                    }`}
+                  >
+                    <span>💼 Oficina, Facturación &amp; Estudios</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSlotWorkProfileFilter("GAMING_1080P");
+                      setDisplayLimit(60);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      slotWorkProfileFilter === "GAMING_1080P"
+                        ? "bg-blue-700 text-white shadow-xs"
+                        : "bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100"
+                    }`}
+                  >
+                    <span>🎮 Gaming 1080p Entrada / Esports</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSlotWorkProfileFilter("GAMING_1440P");
+                      setDisplayLimit(60);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      slotWorkProfileFilter === "GAMING_1440P"
+                        ? "bg-indigo-700 text-white shadow-xs"
+                        : "bg-indigo-50 text-indigo-900 border border-indigo-200 hover:bg-indigo-100"
+                    }`}
+                  >
+                    <span>🚀 Gaming 1440p Ultra &amp; Streaming</span>
+                  </button>
+                  {activeTabSlot === "PROCESADOR" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSlotWorkProfileFilter("GAMING_X3D");
+                        setDisplayLimit(60);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                        slotWorkProfileFilter === "GAMING_X3D"
+                          ? "bg-amber-600 text-white shadow-xs"
+                          : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                      }`}
+                    >
+                      <span>🏆 Gaming Extremo (AMD 3D V-Cache)</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSlotWorkProfileFilter("RENDER_IA");
+                      setDisplayLimit(60);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      slotWorkProfileFilter === "RENDER_IA"
+                        ? "bg-violet-700 text-white shadow-xs"
+                        : "bg-violet-50 text-violet-900 border border-violet-200 hover:bg-violet-100"
+                    }`}
+                  >
+                    <span>🎬 Render 3D, Arquitectura, Lumion &amp; IA</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Panel Educativo de Potencia Productiva (Intel vs AMD / NVIDIA / Componentes) */}
+              {showProductivityInsight && (
+                <div className="pt-2 border-t border-zinc-100">
+                  {activeTabSlot === "PROCESADOR" && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Potencia Intel */}
+                      <div className="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2 font-bold text-sky-950">
+                          <span className="w-2.5 h-2.5 rounded-full bg-sky-600" />
+                          <span>🔵 Potencia Productiva de Intel Core</span>
+                        </div>
+                        <ul className="text-zinc-700 space-y-1 text-[11px] leading-relaxed">
+                          <li>
+                            <strong>• Intel QuickSync Video:</strong> Motor en silicio para Adobe Premiere Pro y DaVinci Resolve. Decodificación y renderizado de video 4K sin tirones en línea de tiempo.
+                          </li>
+                          <li>
+                            <strong>• Arquitectura Híbrida (P-Cores + E-Cores):</strong> Núcleos de potencia para modelado activo en AutoCAD y Revit; núcleos de eficiencia para antivirus, descargas y tareas de fondo.
+                          </li>
+                          <li>
+                            <strong>• Frecuencia Mononúcleo:</strong> Altas frecuencias en GHz que aceleran programas de ingeniería dependientes del rendimiento por hilo único.
+                          </li>
+                        </ul>
+                      </div>
+
+                      {/* Potencia AMD */}
+                      <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2 font-bold text-rose-950">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                          <span>🔴 Potencia Productiva de AMD Ryzen</span>
+                        </div>
+                        <ul className="text-zinc-700 space-y-1 text-[11px] leading-relaxed">
+                          <li>
+                            <strong>• Tecnología 3D V-Cache (X3D):</strong> Memoria caché L3 apilada en el chip. Reduce la latencia de RAM, logrando los FPS más altos del mundo en juegos competitivos y simuladores.
+                          </li>
+                          <li>
+                            <strong>• Longevidad Socket AM5:</strong> Soporte garantizado a futuro hasta 2027+, permitiendo cambiar de CPU en unos años sin tener que comprar otra placa madre ni memorias.
+                          </li>
+                          <li>
+                            <strong>• Eficiencia Térmica &amp; Multihilo Puro:</strong> Menor consumo de vatios y todos los núcleos de alto poder trabajando al unísono para renders pesados en Blender y Cinema 4D.
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTabSlot === "PLACA_MADRE" && (
+                    <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs space-y-1.5">
+                      <div className="flex items-center gap-2 font-bold text-emerald-950">
+                        <Sparkles className="w-4 h-4 text-emerald-600" />
+                        <span>💡 Clave de Elección en Placas Madre (VRM &amp; Disipación)</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                        Para gaming y trabajo continuo se recomienda la <strong>Gama B (B650 para AMD / B760 para Intel)</strong>: incluye disipadores de aluminio en los módulos reguladores de voltaje (VRM) para evitar que el procesador baje sus frecuencias por calor, y ranuras M.2 NVMe blindadas para cuidar la vida útil del SSD.
+                      </p>
+                    </div>
+                  )}
+
+                  {activeTabSlot === "GPU" && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2 font-bold text-emerald-950">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+                          <span>🟢 Potencia de NVIDIA GeForce RTX</span>
+                        </div>
+                        <ul className="text-zinc-700 space-y-1 text-[11px] leading-relaxed">
+                          <li>
+                            <strong>• Ecosistema CUDA &amp; OptiX:</strong> Estándar obligatorio para aceleración en Blender Cycles, V-Ray, Lumion, Unreal Engine 5 y Adobe After Effects.
+                          </li>
+                          <li>
+                            <strong>• Tensor Cores para IA:</strong> Ejecución ultrarrápida de modelos de Inteligencia Artificial local, Stable Diffusion y DLSS 3.5 con generación de fotogramas por IA.
+                          </li>
+                          <li>
+                            <strong>• Codificador NVENC:</strong> Transmisión en vivo para Twitch o YouTube sin consumir recursos del procesador.
+                          </li>
+                        </ul>
+                      </div>
+                      <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200 text-xs space-y-1.5">
+                        <div className="flex items-center gap-2 font-bold text-rose-950">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                          <span>🔴 Potencia de AMD Radeon RX</span>
+                        </div>
+                        <ul className="text-zinc-700 space-y-1 text-[11px] leading-relaxed">
+                          <li>
+                            <strong>• Mayor Memoria VRAM por Dólar:</strong> Búferes de memoria generosos que evitan caídas de rendimiento en texturas ultra en juegos modernos exigentes.
+                          </li>
+                          <li>
+                            <strong>• Rendimiento Raster Puro:</strong> Excelente tasa de cuadros por segundo en resolución 1080p y 1440p nativa a un precio altamente competitivo.
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  {activeTabSlot === "RAM" && (
+                    <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200 text-xs space-y-1.5">
+                      <div className="flex items-center gap-2 font-bold text-purple-950">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                        <span>💡 Clave Productiva: Dual Channel Obligatorio &amp; Estándar 32GB</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                        Cotizar siempre <strong>2 módulos de memoria idénticos</strong> (ej: 2x16GB) duplica el ancho de banda del bus a 128 bits, incrementando entre un <strong>+15% y +25% los FPS</strong> en juegos y eliminando micro-tirones en edición de video. Hoy en día <strong>32 GB</strong> es el estándar recomendado para evitar que Windows recurra al archivo de paginación.
+                      </p>
+                    </div>
+                  )}
+
+                  {activeTabSlot === "ALMACENAMIENTO" && (
+                    <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 text-xs space-y-1.5">
+                      <div className="flex items-center gap-2 font-bold text-indigo-950">
+                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                        <span>💡 Clave Productiva: SSD M.2 NVMe PCIe Gen4 de 1TB</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                        Con lecturas de hasta 5.000 MB/s, Windows arranca en menos de 8 segundos y los juegos cargan de inmediato mediante DirectStorage. <strong>1 TB</strong> es el punto de equilibrio ideal para albergar el sistema operativo, herramientas de trabajo pesadas y múltiples juegos simultáneos.
+                      </p>
+                    </div>
+                  )}
+
+                  {activeTabSlot === "FUENTE" && (
+                    <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-1.5">
+                      <div className="flex items-center gap-2 font-bold text-amber-950">
+                        <Sparkles className="w-4 h-4 text-amber-600" />
+                        <span>💡 Clave de Seguridad: Certificación 80 Plus &amp; Margen del 25%</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                        Una fuente certificada 80 Plus garantiza más del 80% de eficiencia y protecciones eléctricas activas (OVP, OPP, SCP). Mantener una fuente de <strong>650W a 750W</strong> asegura que trabaje al 50-60% de su capacidad total, prolongando su vida útil, manteniéndose fría y silenciosa.
+                      </p>
+                    </div>
+                  )}
+
+                  {activeTabSlot === "GABINETE" && (
+                    <div className="p-3.5 rounded-xl bg-teal-50/70 border border-teal-200 text-xs space-y-1.5">
+                      <div className="flex items-center gap-2 font-bold text-teal-950">
+                        <Sparkles className="w-4 h-4 text-teal-600" />
+                        <span>💡 Clave Estética &amp; Térmica: Frente Mesh (Airflow) vs Vidrio (Acuario)</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                        Los gabinetes <strong>Mesh Airflow</strong> priorizan la entrada directa de aire fresco manteniendo los componentes hasta 8°C más fríos. Los gabinetes <strong>Acuario Panorámicos</strong> ofrecen una vista limpia de 270° de componentes con iluminación ARGB mediante paneles de vidrio templado continuo.
+                      </p>
+                    </div>
+                  )}
+
+                  {activeTabSlot === "REFRIGERACION" && (
+                    <div className="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200 text-xs space-y-1.5">
+                      <div className="flex items-center gap-2 font-bold text-sky-950">
+                        <Sparkles className="w-4 h-4 text-sky-600" />
+                        <span>💡 Clave Térmica: Cooler Torre por Aire vs Water Cooler Líquido AIO (240mm / 360mm)</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                        Los <strong>Coolers de Torre por Aire</strong> son indestructibles, no requieren mantenimiento y enfrían eficazmente procesadores de hasta 100W TDP. Para procesadores de alto rendimiento (Core i7/i9, Ryzen 7/9) en renders sostenidos, una <strong>Refrigeración Líquida AIO de 240mm o 360mm</strong> disipa el calor rápidamente hacia el exterior del gabinete sin saturar el interior.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Buscador en Catálogo & Selector de Marca */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
@@ -2465,6 +3315,45 @@ export default function ArmarPcPresupuestadorPage() {
                             </span>
                           )}
                         </div>
+
+                        {/* Perfil Productivo & Resumen de Trabajo */}
+                        {item.perfilProductivo && (
+                          <div className="mt-2.5 p-2 rounded-lg bg-zinc-50 border border-zinc-200/80 flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-900 border border-blue-200 inline-flex items-center gap-1">
+                                <span>🎯</span> {item.perfilProductivo}
+                              </span>
+                              {item.categoria === "PROCESADOR" && (
+                                item.marca === "AMD" || /RYZEN/i.test(item.descripcion) ? (
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
+                                    🔴 AMD Ryzen
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
+                                    🔵 Intel Core
+                                  </span>
+                                )
+                              )}
+                              {item.categoria === "GPU" && (
+                                item.marca === "NVIDIA" || /RTX|GEFORCE|GTX/i.test(item.descripcion) ? (
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                    🟢 NVIDIA RTX
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
+                                    🔴 AMD Radeon
+                                  </span>
+                                )
+                              )}
+                            </div>
+                            {item.resumenTrabajo && (
+                              <p className="text-[11px] sm:text-xs text-zinc-600 leading-snug flex items-center gap-1">
+                                <span className="not-italic text-amber-500 font-bold">💡</span>
+                                <span>{item.resumenTrabajo}</span>
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       {/* Precios Estrictos de https://nissei.com/py/ y Botón de Selección */}
@@ -2661,8 +3550,7 @@ export default function ArmarPcPresupuestadorPage() {
                     key={item.key}
                     type="button"
                     onClick={() => {
-                      setActiveTabSlot(item.slot);
-                      setSelectedBrand("TODAS");
+                      switchActiveSlot(item.slot);
                       const el = document.getElementById("catalog-slots-section");
                       if (el) el.scrollIntoView({ behavior: "smooth" });
                     }}
@@ -3073,8 +3961,7 @@ export default function ArmarPcPresupuestadorPage() {
                         type="button"
                         onClick={() => {
                           setShowDefensiveModal(false);
-                          setActiveTabSlot(err.categoriaTarget!);
-                          setSelectedBrand("TODAS");
+                          switchActiveSlot(err.categoriaTarget!);
                           const el = document.getElementById("catalog-slots-section");
                           if (el) el.scrollIntoView({ behavior: "smooth" });
                         }}
@@ -3109,8 +3996,7 @@ export default function ArmarPcPresupuestadorPage() {
                 setShowDefensiveModal(false);
                 const firstErr = resultadoCompatibilidad.alertas.find((a) => a.tipo === "ERROR");
                 if (firstErr?.categoriaTarget) {
-                  setActiveTabSlot(firstErr.categoriaTarget);
-                  setSelectedBrand("TODAS");
+                  switchActiveSlot(firstErr.categoriaTarget);
                 }
                 const el = document.getElementById("catalog-slots-section");
                 if (el) el.scrollIntoView({ behavior: "smooth" });

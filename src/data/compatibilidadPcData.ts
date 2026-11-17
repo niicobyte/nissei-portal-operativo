@@ -44,6 +44,8 @@ export interface HardwarePresupuestoItem {
   maxMbFormFactor?: FormFactor;
   radiatorSizeMm?: number;
   isAioLiquid?: boolean;
+  perfilProductivo?: string;
+  resumenTrabajo?: string;
   garantiaMeses: number;
   cantidad?: number;
 }
@@ -84,6 +86,283 @@ function detectCapacityGb(upperDesc: string): number | undefined {
     return Math.max(...gbMatches);
   }
   return undefined;
+}
+
+export function detectarPerfilComponente(
+  cat: HardwarePresupuestoItem["categoria"],
+  d: string,
+  marca?: string,
+  socket?: SocketType,
+  ramType?: MemoryType,
+  tdpWatts?: number,
+  isKitOficina?: boolean,
+  radiatorSizeMm?: number,
+  isAioLiquid?: boolean,
+  capacidadGb?: number,
+  potenciaWatts?: number
+): { perfilProductivo: string; resumenTrabajo: string } {
+  // 1. PROCESADOR
+  if (cat === "PROCESADOR") {
+    const esAmd = marca === "AMD" || d.includes("RYZEN") || d.includes("ATHLON") || d.includes("AM4") || d.includes("AM5");
+    if (esAmd) {
+      if (/\b(3200G|4600G|5600G|5600GE|5700G|8500G|8600G|8700G)\b/.test(d)) {
+        return {
+          perfilProductivo: "Oficina & Estudios (Gráficos Radeon Integrados)",
+          resumenTrabajo: "Ideal para ofimática, facturación y juegos ligeros sin necesidad de placa de video dedicada.",
+        };
+      }
+      if (/\b(7800X3D|9800X3D|5800X3D|7600X3D)\b/.test(d)) {
+        return {
+          perfilProductivo: "Gaming Competitivo Extremo (AMD 3D V-Cache)",
+          resumenTrabajo: "Líder mundial indiscutido en FPS para esports y juegos AAA con memoria caché L3 3D apilada.",
+        };
+      }
+      if (/\b(7950X|7900X|9950X|9900X|5950X|5900X)\b/.test(d)) {
+        return {
+          perfilProductivo: "Workstation, Render 3D & Arquitectura Pesada",
+          resumenTrabajo: "12 a 16 núcleos físicos de alta potencia para Blender, V-Ray, AutoCAD, Revit y compilación rápida.",
+        };
+      }
+      if (/\b(9600X|9700X|7600|7700|5600X|5700X)\b/.test(d)) {
+        return {
+          perfilProductivo: "Gaming 1440p & Creación Multimedia Balanceada",
+          resumenTrabajo: "Excelente rendimiento para juegos modernos, streaming y diseño gráfico con bajo consumo.",
+        };
+      }
+      return {
+        perfilProductivo: "Gaming & Tareas Productivas Generales",
+        resumenTrabajo: "Plataforma AMD confiable y eficiente para trabajo diario y gaming equilibrado.",
+      };
+    } else {
+      // INTEL
+      if (/\b(14900|13900|285K)\b/.test(d)) {
+        return {
+          perfilProductivo: "Workstation 4K/8K, Render Pesado & Productividad Extrema",
+          resumenTrabajo: "24 núcleos (8P + 16E) para edición pesada de video, modelado 3D e ingeniería avanzada.",
+        };
+      }
+      if (/\b(14700|13700|265K)\b/.test(d)) {
+        return {
+          perfilProductivo: "Render 3D, Arquitectura & Gaming Ultra (QuickSync)",
+          resumenTrabajo: "20 núcleos de alto rendimiento con Intel QuickSync para edición acelerada en Adobe y DaVinci.",
+        };
+      }
+      if (/\b(14600|13600|14400|13400|12600|245K)\b/.test(d)) {
+        return {
+          perfilProductivo: "Gaming 1440p & Multitarea Versátil",
+          resumenTrabajo: "Arquitectura híbrida P-Cores + E-Cores para juegos exigentes y multitarea fluida sin tirones.",
+        };
+      }
+      if (/\b(12400|14100|12100|13100)\b/.test(d)) {
+        return {
+          perfilProductivo: "Gaming 1080p Entrada & Oficina Ágil",
+          resumenTrabajo: "Rendimiento fluido para gaming de 1080p, suites de oficina y navegación pesada.",
+        };
+      }
+      return {
+        perfilProductivo: "Ofimática & Tareas Comerciales",
+        resumenTrabajo: "Procesador confiable para tareas diarias y sistemas administrativos.",
+      };
+    }
+  }
+
+  // 2. PLACA MADRE
+  if (cat === "PLACA_MADRE") {
+    if (socket === "AM5") {
+      return {
+        perfilProductivo: "AMD Socket AM5 (DDR5 & Futuro Asegurado)",
+        resumenTrabajo: "Plataforma de última generación con soporte a futuro para Ryzen serie 7000, 8000 y 9000.",
+      };
+    }
+    if (socket === "AM4") {
+      return {
+        perfilProductivo: "AMD Socket AM4 (DDR4 Máxima Economía)",
+        resumenTrabajo: "La plataforma más vendida y económica para presupuestos accesibles de gran rendimiento.",
+      };
+    }
+    if (socket === "LGA1700") {
+      return {
+        perfilProductivo: "Intel LGA1700 (12ª, 13ª y 14ª Generación)",
+        resumenTrabajo: "Soporte para procesadores Intel Core i3, i5, i7 e i9 con arquitectura híbrida.",
+      };
+    }
+    if (socket === "LGA1851") {
+      return {
+        perfilProductivo: "Intel LGA1851 (Core Ultra serie 200)",
+        resumenTrabajo: "Plataforma moderna Intel Core Ultra con NPU dedicada para Inteligencia Artificial.",
+      };
+    }
+    return {
+      perfilProductivo: "Placa Madre Estándar",
+      resumenTrabajo: "Conectividad esencial para componentes de escritorio.",
+    };
+  }
+
+  // 3. TARJETA GRÁFICA (GPU)
+  if (cat === "GPU") {
+    const esNvidia = marca === "NVIDIA" || d.includes("GEFORCE") || d.includes("RTX");
+    if (esNvidia) {
+      if (d.includes("4090") || d.includes("5090")) {
+        return {
+          perfilProductivo: "Inteligencia Artificial, Deep Learning & 4K Extremo",
+          resumenTrabajo: "24GB VRAM, Tensor Cores de 4ª Gen y máxima aceleración CUDA para IA y modelado 3D.",
+        };
+      }
+      if (d.includes("4080") || d.includes("5080") || d.includes("4070 TI") || d.includes("5070 TI")) {
+        return {
+          perfilProductivo: "Render 3D Pesado, Lumion, Unreal Engine & 4K Ultra",
+          resumenTrabajo: "16GB VRAM con aceleración OptiX en Blender y máxima tasa de FPS en 4K.",
+        };
+      }
+      if (d.includes("4070") || d.includes("5070")) {
+        return {
+          perfilProductivo: "Gaming 1440p Ultra & Streaming Profesional",
+          resumenTrabajo: "12GB VRAM, DLSS 3.5 con Ray Tracing y codificador de video NVENC AV1.",
+        };
+      }
+      if (d.includes("4060") || d.includes("5060") || d.includes("3060")) {
+        return {
+          perfilProductivo: "Gaming 1080p/1440p & Diseño Gráfico (AutoCAD/Revit)",
+          resumenTrabajo: "El estándar para esports competitivos, renderizado básico y edición fotográfica.",
+        };
+      }
+      return {
+        perfilProductivo: "Gaming 1080p Entrada & Aceleración Gráfica",
+        resumenTrabajo: "Aceleración gráfica para juegos ligeros y tareas multimedia multimonitor.",
+      };
+    } else {
+      if (d.includes("7900") || d.includes("9070")) {
+        return {
+          perfilProductivo: "Gaming 4K Nativo & Alta VRAM (16GB - 24GB)",
+          resumenTrabajo: "Gran ancho de banda de memoria para texturas ultra y renderizado abierto.",
+        };
+      }
+      if (d.includes("7700") || d.includes("7800")) {
+        return {
+          perfilProductivo: "Gaming 1440p Ultra & Stream",
+          resumenTrabajo: "12GB a 16GB de VRAM para juegos AAA exigentes con tecnología FSR.",
+        };
+      }
+      return {
+        perfilProductivo: "Gaming 1080p Máxima Relación Calidad/Precio",
+        resumenTrabajo: "Excelente tasa de cuadros por segundo por Guaraní en juegos tradicionales.",
+      };
+    }
+  }
+
+  // 4. MEMORIA RAM
+  if (cat === "RAM") {
+    const cap = capacidadGb || 0;
+    if (cap >= 64) {
+      return {
+        perfilProductivo: "Capacidad Extrema 64GB+ (Render 3D, IA & Virtualización)",
+        resumenTrabajo: "Capacidad masiva para proyectos gigantes de arquitectura, edición 4K/8K y machine learning.",
+      };
+    }
+    if (cap >= 32) {
+      return {
+        perfilProductivo: "Capacidad Óptima 32GB [Recomendado] (Gaming Moderno & Multitarea)",
+        resumenTrabajo: "El estándar actual indispensable para evitar saturación en juegos pesados y software de arquitectura.",
+      };
+    }
+    return {
+      perfilProductivo: "Capacidad Básica 8GB - 16GB (Ofimática, Navegación & Juegos Estándar)",
+      resumenTrabajo: "Ideal para tareas de oficina, estudios y juegos competitivos ligeros.",
+    };
+  }
+
+  // 5. ALMACENAMIENTO
+  if (cat === "ALMACENAMIENTO") {
+    const cap = capacidadGb || 0;
+    if (cap >= 2000) {
+      return {
+        perfilProductivo: "Capacidad Masiva NVMe 2TB+ (Librerías 3D & Juegos AAA)",
+        resumenTrabajo: "Velocidades ultrarrápidas con espacio de sobra para no tener que desinstalar juegos o proyectos.",
+      };
+    }
+    if (cap >= 960) {
+      return {
+        perfilProductivo: "Capacidad Recomendada NVMe 1TB (Windows + Juegos & Programas)",
+        resumenTrabajo: "El equilibrio perfecto recomendado en tienda. Carga el sistema en segundos y aloja múltiples juegos.",
+      };
+    }
+    return {
+      perfilProductivo: "Capacidad Inicial NVMe 240GB - 500GB (Sistema Operativo & Utilitarios)",
+      resumenTrabajo: "Velocidad de arranque rápida para oficina y programas esenciales de trabajo.",
+    };
+  }
+
+  // 6. FUENTE DE PODER
+  if (cat === "FUENTE") {
+    const w = potenciaWatts || 0;
+    if (w >= 850) {
+      return {
+        perfilProductivo: "Gama Alta Enthusiast 850W+ (RTX 4080/4090, i9 & Workstations)",
+        resumenTrabajo: "Potencia de sobra con certificaciones de alta eficiencia para tarjetas gráficas de gama alta.",
+      };
+    }
+    if (w >= 650) {
+      return {
+        perfilProductivo: "Gama Media Gamer 650W - 750W [Recomendado] (RTX 4060/4070, Ryzen 7)",
+        resumenTrabajo: "Potencia ideal y balanceada para gaming moderno con amplio margen de seguridad eléctrica.",
+      };
+    }
+    return {
+      perfilProductivo: "Gama de Entrada 450W - 550W (Video Integrado / GPUs Ligeras)",
+      resumenTrabajo: "Alimentación confiable para equipos de oficina y configuraciones de consumo moderado.",
+    };
+  }
+
+  // 7. GABINETE
+  if (cat === "GABINETE") {
+    if (isKitOficina) {
+      return {
+        perfilProductivo: "Kit Comercial / Oficina (Fuente Integrada + Periféricos)",
+        resumenTrabajo: "Chasis económico con teclado, mouse y fuente básica para empresas y mostradores comerciales.",
+      };
+    }
+    if (d.includes("ACUARIO") || d.includes("VISION") || d.includes("PANORAMIC") || d.includes("TK-") || d.includes("DH80")) {
+      return {
+        perfilProductivo: "Gabinete Panorámico / Acuario (Vidrio Templado Continuo)",
+        resumenTrabajo: "Estética visual premium para lucir componentes gaming con iluminación ARGB.",
+      };
+    }
+    return {
+      perfilProductivo: "Gabinete Gamer Airflow (Frente Mesh Ventilado)",
+      resumenTrabajo: "Excelente flujo de aire continuo para refrigerar placas de video y procesadores de alta exigencia.",
+    };
+  }
+
+  // 8. REFRIGERACIÓN
+  if (cat === "REFRIGERACION") {
+    if (radiatorSizeMm === 360) {
+      return {
+        perfilProductivo: "Refrigeración Líquida AIO 360mm (Máxima Disipación Térmica)",
+        resumenTrabajo: "Radiador de 3 ventiladores de 120mm (~40 cm) para procesadores potentes (i7/i9, Ryzen 7/9).",
+      };
+    }
+    if (radiatorSizeMm === 240) {
+      return {
+        perfilProductivo: "Refrigeración Líquida AIO 240mm (Refrigeración Líquida Compacta)",
+        resumenTrabajo: "Gran capacidad térmica en formato de 2 ventiladores de 120mm para chasis medianos.",
+      };
+    }
+    if (isAioLiquid) {
+      return {
+        perfilProductivo: "Refrigeración Líquida AIO",
+        resumenTrabajo: "Disipación líquida silenciosa para estabilidad térmica constante.",
+      };
+    }
+    return {
+      perfilProductivo: "Cooler Torre de Aire (Silencioso, Durable & Cero Mantenimiento)",
+      resumenTrabajo: "Disipación confiable con heatpipes de cobre y ventilador PWM para procesadores de 65W a 120W.",
+    };
+  }
+
+  return {
+    perfilProductivo: "Componente Estándar",
+    resumenTrabajo: "Componente compatible para ensamble de PC.",
+  };
 }
 
 // Detección automática experta de especificaciones técnicas (Garantía oficial: 3 meses)
@@ -441,6 +720,20 @@ export function enriquecerComponente(
       d.includes("DISIPADOR");
   }
 
+  const { perfilProductivo, resumenTrabajo } = detectarPerfilComponente(
+    cat,
+    d,
+    marca,
+    socket,
+    ramType,
+    tdpWatts,
+    isKitOficina,
+    radiatorSizeMm,
+    isAioLiquid,
+    capacidadGb,
+    potenciaWatts
+  );
+
   return {
     sku: c.sku,
     marca,
@@ -464,6 +757,8 @@ export function enriquecerComponente(
     maxMbFormFactor,
     radiatorSizeMm,
     isAioLiquid,
+    perfilProductivo,
+    resumenTrabajo,
     garantiaMeses,
     cantidad: 1,
   };
