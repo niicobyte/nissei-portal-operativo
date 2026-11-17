@@ -1172,6 +1172,9 @@ export default function RecepcionDashboardPage() {
         ? `El equipo de *${ticket.cliente || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro`
         : `Actualización del servicio técnico para el equipo de *${ticket.cliente || "Cliente"}* en el sector de Post-Venta`;
 
+    const fechaIngresoVal = ticket.fechaIngreso && ticket.fechaIngreso.trim() ? ticket.fechaIngreso.trim() : "N/A";
+    const fechaVentaVal = ticket.fechaVenta && ticket.fechaVenta.trim() ? ticket.fechaVenta.trim() : "N/A";
+
     return `${introLine}
 
 📋 *Orden SATI:* #${ticket.idOrden}
@@ -1179,6 +1182,8 @@ export default function RecepcionDashboardPage() {
 💻 *Equipo:* ${ticket.marca} ${ticket.modelo || "Equipo"}
 📦 *Categoría:* ${ticket.tipoComponente || "GENERAL"}
 🔢 *Serie:* ${ticket.serial && ticket.serial !== "S/N" && !ticket.serial.toUpperCase().includes("SIN SERIAL") ? ticket.serial : "SIN SERIAL"}
+📅 *Fecha de Ingreso:* ${fechaIngresoVal}
+🛒 *Fecha de Venta:* ${fechaVentaVal}
 📌 *Estado:* ${dictamen.estadoActual}
 
 📊 *Dictamen Técnico:*
@@ -3116,7 +3121,7 @@ ${dictamen.accText}`;
                           </div>
                         </div>
                       ) : (
-                        <div className="text-xs text-zinc-800 space-y-1 bg-white/90 p-2.5 rounded-lg border border-emerald-100">
+                        <div className="text-xs text-zinc-800 space-y-1.5 bg-white/90 p-2.5 rounded-lg border border-emerald-100">
                           <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
                           <p className="text-zinc-600 leading-relaxed">{preview.body}</p>
                           {preview.detalleTexto ? (
@@ -3128,6 +3133,10 @@ ${dictamen.accText}`;
                               Complete &quot;Informe Técnico / Mensaje de Servicio&quot; arriba para incluir el detalle.
                             </p>
                           )}
+                          <div className="text-[10px] text-zinc-500 pt-1.5 border-t border-emerald-100/60 flex items-center justify-between flex-wrap gap-1 font-mono">
+                            <span>📅 Ingreso: <strong className="text-zinc-700 font-semibold">{selectedTicket.fechaIngreso || "N/A"}</strong></span>
+                            <span>🛒 Venta: <strong className="text-zinc-700 font-semibold">{selectedTicket.fechaVenta || "N/A"}</strong></span>
+                          </div>
                         </div>
                       )}
                     </div>

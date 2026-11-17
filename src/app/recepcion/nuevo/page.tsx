@@ -340,6 +340,17 @@ export default function NuevoIngresoRetornoPage() {
     }
 
     const accText = accessories.length > 0 ? accessories.join(", ") : "Sin accesorios adicionales";
+    const fechaIngresoVal =
+      foundOrder?.fechaIngreso?.trim() ||
+      new Date().toLocaleDateString("es-PY", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    const fechaVentaVal =
+      fechaVenta?.trim() ||
+      (foundOrder as RecepcionTicket)?.fechaVenta?.trim() ||
+      "N/A";
 
     return `El equipo de *${clientName || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
 
@@ -348,6 +359,8 @@ export default function NuevoIngresoRetornoPage() {
 💻 *Equipo:* ${marca} ${productModel || "Equipo"}
 📦 *Categoría:* ${tipoComponente}
 🔢 *Serie:* ${serialNumber || "SIN SERIAL"}
+📅 *Fecha de Ingreso:* ${fechaIngresoVal}
+🛒 *Fecha de Venta:* ${fechaVentaVal}
 
 📊 *Dictamen Técnico:*
 ${statusText}

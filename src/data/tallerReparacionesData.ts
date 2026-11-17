@@ -414,6 +414,7 @@ export function generarMensajeGrupoWhatsApp(orden: OrdenReparacion): string {
 💻 *Equipo:* ${orden.equipo}
 🏷️ *Categoría:* ${orden.tipoComponente}
 🔢 *Nº de Serie:* ${orden.serial}
+📅 *Fecha de Ingreso:* ${orden.fechaIngreso || "N/A"}
 ${orden.fallaReportada ? `\n⚠️ *Falla Asignada:* ${orden.fallaReportada}` : ""}
 
 👨‍🔧 *Técnico Responsable:* ${orden.tecnicoAsignado || "Taller NISSEI"}
