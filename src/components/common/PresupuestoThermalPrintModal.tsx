@@ -146,7 +146,6 @@ export function PresupuestoThermalPrintModal({
   data,
 }: PresupuestoThermalPrintModalProps) {
   const [mounted, setMounted] = useState(false);
-  const [useShortNames, setUseShortNames] = useState(true);
   const [thermalSettings, setThermalSettings] = useState<ThermalPrintSettings>(
     DEFAULT_THERMAL_PRINT_SETTINGS
   );
@@ -583,43 +582,15 @@ export function PresupuestoThermalPrintModal({
                 </div>
               </div>
 
-              {/* Formato de nombres de componentes en el ticket */}
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Formato de Nombres en Ticket:</span>
-                  <span className="font-mono font-bold text-zinc-900 text-[10px]">
-                    {useShortNames ? "Básico / Limpio" : "Descripción Completa"}
-                  </span>
+              {/* Formato de nombres de componentes en el ticket (Permanente Básico / Limpio) */}
+              <div className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-xs flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-zinc-800 block text-[11px]">Formato de Nombres en Ticket:</span>
+                  <span className="text-[10px] text-zinc-500">Muestra el modelo principal limpio y legible sin descripciones redundantes.</span>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setUseShortNames(true)}
-                    className={`py-1.5 px-2 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-all ${
-                      useShortNames
-                        ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
-                        : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
-                    }`}
-                  >
-                    ✓ Básico (ej: Ryzen 5 7900X)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setUseShortNames(false)}
-                    className={`py-1.5 px-2 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-all ${
-                      !useShortNames
-                        ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
-                        : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
-                    }`}
-                  >
-                    Descripción Web Completa
-                  </button>
-                </div>
-                <p className="text-[10px] text-zinc-500 leading-tight">
-                  {useShortNames
-                    ? "Limpio y directo: Muestra el modelo principal sin datos redundantes de socket ni núcleos."
-                    : "Muestra la descripción completa del producto sin recortar nada con puntos (...)."}
-                </p>
+                <span className="font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] whitespace-nowrap">
+                  ✓ Básico Permanente
+                </span>
               </div>
             </div>
 
@@ -709,9 +680,7 @@ export function PresupuestoThermalPrintModal({
 
               <div className="space-y-2 pt-1">
                 {data.items.map((item, idx) => {
-                  const displayNombre = useShortNames
-                    ? formatearNombreComponenteBasico(item.nombre, item.categoria)
-                    : item.nombre;
+                  const displayNombre = formatearNombreComponenteBasico(item.nombre, item.categoria);
                   return (
                     <div key={idx} className="text-[11px] font-mono leading-tight space-y-0.5">
                       <div className="flex items-start justify-between gap-1.5">
@@ -750,13 +719,6 @@ export function PresupuestoThermalPrintModal({
                     : `₲ ${data.servicioMontajePyg.toLocaleString("es-PY")}`}
                 </span>
               </div>
-
-              {data.consumoTotalWatts ? (
-                <div className="flex justify-between text-[10px] text-black/80 font-bold">
-                  <span>CONSUMO EST.: {data.consumoTotalWatts}W</span>
-                  <span>FUENTE REC.: {data.fuenteRecomendadaWatts || 500}W+</span>
-                </div>
-              ) : null}
             </div>
 
             {/* Totales */}
