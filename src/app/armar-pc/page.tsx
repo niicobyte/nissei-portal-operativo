@@ -406,6 +406,7 @@ export default function ArmarPcPresupuestadorPage() {
   const [onlyWebStock, setOnlyWebStock] = useState<boolean>(true);
 
   // Filtros interactivos de Plataforma & Perfil Productivo
+  const [selectedSocketFilter, setSelectedSocketFilter] = useState<"TODOS" | "AM4" | "AM5" | "LGA1700" | "LGA1851">("TODOS");
   const [slotPlatformFilter, setSlotPlatformFilter] = useState<string>("TODOS");
   const [slotWorkProfileFilter, setSlotWorkProfileFilter] = useState<string>("TODOS");
   const [showProductivityInsight, setShowProductivityInsight] = useState<boolean>(true);
@@ -719,6 +720,36 @@ export default function ArmarPcPresupuestadorPage() {
     () => selectedComponents.find((c) => c.categoria === "REFRIGERACION"),
     [selectedComponents]
   );
+
+  // Socket activo efectivo (determinado por CPU en carrito, Placa Madre o selección explícita del usuario)
+  const effectiveSocket = useMemo<"TODOS" | "AM4" | "AM5" | "LGA1700" | "LGA1851">(() => {
+    if (currentCpu?.socket && currentCpu.socket !== "UNIVERSAL") {
+      return currentCpu.socket as "AM4" | "AM5" | "LGA1700" | "LGA1851";
+    }
+    if (currentMb?.socket && currentMb.socket !== "UNIVERSAL") {
+      return currentMb.socket as "AM4" | "AM5" | "LGA1700" | "LGA1851";
+    }
+    return selectedSocketFilter;
+  }, [currentCpu?.socket, currentMb?.socket, selectedSocketFilter]);
+
+  // Tipo de memoria RAM compatible efectiva (DDR4 vs DDR5)
+  const effectiveRamType = useMemo<"DDR4" | "DDR5" | "TODAS">(() => {
+    if (currentMb?.ramType && currentMb.ramType !== "UNIVERSAL") {
+      return currentMb.ramType;
+    }
+    if (effectiveSocket === "AM4") {
+      return "DDR4";
+    }
+    if (effectiveSocket === "AM5" || effectiveSocket === "LGA1851") {
+      return "DDR5";
+    }
+    if (currentCpu?.ramType && currentCpu.ramType !== "UNIVERSAL") {
+      return currentCpu.ramType;
+    }
+    if (slotPlatformFilter === "DDR4") return "DDR4";
+    if (slotPlatformFilter === "DDR5") return "DDR5";
+    return "TODAS";
+  }, [currentMb?.ramType, currentCpu?.ramType, effectiveSocket, slotPlatformFilter]);
 
   // Verificación reactiva de compatibilidad
   const resultadoCompatibilidad = useMemo(() => {
@@ -1253,8 +1284,8 @@ export default function ArmarPcPresupuestadorPage() {
 
     // 1. PROCESADOR
     if (item.categoria === "PROCESADOR") {
-      if (currentMb?.socket && currentMb.socket !== "UNIVERSAL") {
-        return item.socket === currentMb.socket;
+      if (effectiveSocket !== "TODOS" && item.socket && item.socket !== "UNIVERSAL") {
+        if (item.socket !== effectiveSocket) return false;
       }
       const desc = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
       return (
@@ -1271,24 +1302,17 @@ export default function ArmarPcPresupuestadorPage() {
 
     // 2. PLACA MADRE
     if (item.categoria === "PLACA_MADRE") {
-      if (currentCpu?.socket && currentCpu.socket !== "UNIVERSAL") {
-        return item.socket === currentCpu.socket;
+      if (effectiveSocket !== "TODOS" && item.socket && item.socket !== "UNIVERSAL") {
+        if (item.socket !== effectiveSocket) return false;
       }
       const desc = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
-      return desc.includes("B550") || desc.includes("B650") || desc.includes("B760") || desc.includes("X870");
+      return desc.includes("B550") || desc.includes("B650") || desc.includes("B760") || desc.includes("X870") || desc.includes("A520");
     }
 
     // 3. MEMORIA RAM
     if (item.categoria === "RAM") {
-      const reqRam =
-        currentMb?.ramType && currentMb.ramType !== "UNIVERSAL"
-          ? currentMb.ramType
-          : currentCpu?.ramType && currentCpu.ramType !== "UNIVERSAL"
-          ? currentCpu.ramType
-          : undefined;
-
-      if (reqRam && item.ramType && item.ramType !== "UNIVERSAL") {
-        if (item.ramType !== reqRam) return false;
+      if (effectiveRamType !== "TODAS" && item.ramType && item.ramType !== "UNIVERSAL") {
+        if (item.ramType !== effectiveRamType) return false;
       }
 
       const cap = item.capacidadGb || 0;
@@ -1377,10 +1401,11 @@ export default function ArmarPcPresupuestadorPage() {
       if (slotPlatformFilter !== "TODOS") {
         const fullTxt = `${item.descripcion} ${item.nombreWeb || ""} ${item.marca || ""}`.toUpperCase();
         if (activeTabSlot === "PROCESADOR") {
-          const isAmd = item.marca === "AMD" || /RYZEN|ATHLON|AM4|AM5/i.test(fullTxt);
-          const isIntel = item.marca === "INTEL" || /CORE|LGA1700|LGA1851|INTEL/i.test(fullTxt);
-          if (slotPlatformFilter === "AMD" && !isAmd) return false;
-          if (slotPlatformFilter === "INTEL" && !isIntel) return false;
+          if (slotPlatformFilter === "AM4" && item.socket !== "AM4") return false;
+          if (slotPlatformFilter === "AM5" && item.socket !== "AM5") return false;
+          if (slotPlatformFilter === "LGA1700" && item.socket !== "LGA1700") return false;
+          if (slotPlatformFilter === "AMD" && item.socket !== "AM4" && item.socket !== "AM5") return false;
+          if (slotPlatformFilter === "INTEL" && item.socket !== "LGA1700") return false;
         } else if (activeTabSlot === "PLACA_MADRE") {
           if (slotPlatformFilter === "AM5" && item.socket !== "AM5") return false;
           if (slotPlatformFilter === "AM4" && item.socket !== "AM4") return false;
@@ -1397,9 +1422,10 @@ export default function ArmarPcPresupuestadorPage() {
           if (slotPlatformFilter === "DDR4" && item.ramType !== "DDR4") return false;
         } else if (activeTabSlot === "ALMACENAMIENTO") {
           const cap = item.capacidadGb || 0;
-          if (slotPlatformFilter === "500GB" && cap > 600) return false;
-          if (slotPlatformFilter === "1TB" && (cap < 900 || cap > 1500)) return false;
-          if (slotPlatformFilter === "2TB" && cap < 1900) return false;
+          if (slotPlatformFilter === "500GB" && (cap < 400 || cap > 600 || !item.esM2Nvme)) return false;
+          if (slotPlatformFilter === "1TB" && (cap < 900 || cap > 1500 || !item.esM2Nvme)) return false;
+          if (slotPlatformFilter === "2TB" && (cap < 1900 || !item.esM2Nvme)) return false;
+          if (slotPlatformFilter === "SATA" && item.esM2Nvme) return false;
         } else if (activeTabSlot === "FUENTE") {
           const w = item.potenciaWatts || 0;
           if (slotPlatformFilter === "550W" && w > 590) return false;
@@ -1443,37 +1469,37 @@ export default function ArmarPcPresupuestadorPage() {
       }
 
       if (onlyCompatible) {
-        if (
-          item.categoria === "PLACA_MADRE" &&
-          currentCpu &&
-          currentCpu.socket &&
-          currentCpu.socket !== "UNIVERSAL"
-        ) {
-          if (item.socket && item.socket !== "UNIVERSAL" && item.socket !== currentCpu.socket) {
-            return false;
+        // 1. Compatibilidad estricta de Socket / Plataforma según effectiveSocket
+        if (effectiveSocket !== "TODOS") {
+          if (item.categoria === "PLACA_MADRE") {
+            if (item.socket && item.socket !== "UNIVERSAL" && item.socket !== effectiveSocket) {
+              return false;
+            }
+          }
+          if (item.categoria === "PROCESADOR") {
+            if (item.socket && item.socket !== "UNIVERSAL" && item.socket !== effectiveSocket) {
+              return false;
+            }
           }
         }
-        if (
-          item.categoria === "PROCESADOR" &&
-          currentMb &&
-          currentMb.socket &&
-          currentMb.socket !== "UNIVERSAL"
-        ) {
-          if (item.socket && item.socket !== "UNIVERSAL" && item.socket !== currentMb.socket) {
-            return false;
-          }
-        }
+
+        // 2. Compatibilidad estricta de Memoria RAM (DDR4 vs DDR5)
         if (item.categoria === "RAM") {
-          const reqRam =
-            currentMb?.ramType && currentMb.ramType !== "UNIVERSAL"
-              ? currentMb.ramType
-              : currentCpu?.ramType && currentCpu.ramType !== "UNIVERSAL"
-              ? currentCpu.ramType
-              : undefined;
-          if (reqRam && item.ramType && item.ramType !== "UNIVERSAL" && item.ramType !== reqRam) {
+          if (effectiveRamType !== "TODAS") {
+            if (item.ramType && item.ramType !== "UNIVERSAL" && item.ramType !== effectiveRamType) {
+              return false;
+            }
+          }
+        }
+
+        // 3. Compatibilidad de Almacenamiento (PC de escritorio)
+        if (item.categoria === "ALMACENAMIENTO") {
+          const desc = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
+          if (desc.includes("EXTERNO") || desc.includes("PORTABLE") || desc.includes("ENCLOSURE")) {
             return false;
           }
         }
+
         if (item.categoria === "GABINETE") {
           const isLiquid = currentCooler && (currentCooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`));
           const is360 = currentCooler && (currentCooler.radiatorSizeMm === 360 || /360/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`));
@@ -1549,6 +1575,8 @@ export default function ArmarPcPresupuestadorPage() {
     selectedComponents,
     slotPlatformFilter,
     slotWorkProfileFilter,
+    effectiveSocket,
+    effectiveRamType,
   ]);
 
   // Generación de resumen de texto para cotización estricta de https://nissei.com/py/
@@ -2255,16 +2283,17 @@ export default function ArmarPcPresupuestadorPage() {
                   </h3>
                 </div>
                 <div className="flex items-center gap-3">
-                  {(slotPlatformFilter !== "TODOS" || slotWorkProfileFilter !== "TODOS") && (
+                  {(slotPlatformFilter !== "TODOS" || slotWorkProfileFilter !== "TODOS" || selectedSocketFilter !== "TODOS") && (
                     <button
                       type="button"
                       onClick={() => {
+                        setSelectedSocketFilter("TODOS");
                         setSlotPlatformFilter("TODOS");
                         setSlotWorkProfileFilter("TODOS");
                       }}
                       className="text-xs text-zinc-600 hover:text-zinc-900 font-semibold underline cursor-pointer"
                     >
-                      Limpiar filtros de perfil
+                      Limpiar filtros
                     </button>
                   )}
                   <button
@@ -2278,6 +2307,66 @@ export default function ArmarPcPresupuestadorPage() {
                 </div>
               </div>
 
+              {/* Banner Dinámico de Compatibilidad y Plataforma Activa */}
+              {effectiveSocket !== "TODOS" && (
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex items-center justify-between flex-wrap gap-2.5 shadow-2xs animate-in fade-in duration-150">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
+                      ✓
+                    </div>
+                    <div>
+                      <p className="font-bold text-emerald-950 text-xs sm:text-sm flex items-center gap-2">
+                        <span>
+                          {effectiveSocket === "AM4"
+                            ? "Plataforma Activa: 🔴 AMD Socket AM4 (DDR4)"
+                            : effectiveSocket === "AM5"
+                            ? "Plataforma Activa: 🔴 AMD Socket AM5 (DDR5)"
+                            : "Plataforma Activa: 🔵 Intel Socket LGA 1700"}
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 font-bold">
+                          100% Filtrado
+                        </span>
+                      </p>
+                      <p className="text-[11px] text-emerald-800 leading-tight mt-0.5">
+                        {effectiveSocket === "AM4" &&
+                          "Mostrando exclusivamente Procesadores AM4, Placas Madre AM4 y Memorias RAM DDR4. No se mezclará con AM5 ni DDR5."}
+                        {effectiveSocket === "AM5" &&
+                          "Mostrando exclusivamente Procesadores AM5, Placas Madre AM5 y Memorias RAM DDR5 de última generación."}
+                        {effectiveSocket === "LGA1700" &&
+                          "Mostrando exclusivamente componentes compatibles con Intel Socket LGA 1700 (12ª, 13ª y 14ª Gen)."}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {currentCpu && (
+                      <span className="text-[10px] font-mono font-bold px-2 py-1 rounded-md bg-white text-emerald-900 border border-emerald-200 shadow-2xs">
+                        CPU: {cleanDisplayTitle(currentCpu.nombreWeb || currentCpu.descripcion).slice(0, 22)}...
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedSocketFilter("TODOS");
+                        setSlotPlatformFilter("TODOS");
+                        if (currentCpu || currentMb) {
+                          setSelectedComponents((prev) =>
+                            prev.filter(
+                              (c) =>
+                                c.categoria !== "PROCESADOR" &&
+                                c.categoria !== "PLACA_MADRE" &&
+                                c.categoria !== "RAM"
+                            )
+                          );
+                        }
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-emerald-300 text-[11px] font-bold text-emerald-900 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+                    >
+                      {currentCpu || currentMb ? "✕ Quitar CPU/Placa" : "✕ Ver Todo"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* 1. Selector de Plataforma / Arquitectura */}
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -2285,9 +2374,9 @@ export default function ArmarPcPresupuestadorPage() {
                     <span className="w-4 h-4 rounded-full bg-zinc-900 text-white text-[10px] flex items-center justify-center font-bold">1</span>
                     Seleccionar Plataforma / Arquitectura:
                   </span>
-                  {slotPlatformFilter !== "TODOS" && (
+                  {(effectiveSocket !== "TODOS" || slotPlatformFilter !== "TODOS") && (
                     <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
-                      Filtro: {slotPlatformFilter}
+                      Filtro Activo: {effectiveSocket !== "TODOS" ? effectiveSocket : slotPlatformFilter}
                     </span>
                   )}
                 </div>
@@ -2298,11 +2387,12 @@ export default function ArmarPcPresupuestadorPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          setSelectedSocketFilter("TODOS");
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          slotPlatformFilter === "TODOS"
+                          effectiveSocket === "TODOS" && slotPlatformFilter === "TODOS"
                             ? "bg-zinc-900 text-white shadow-xs"
                             : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                         }`}
@@ -2312,34 +2402,53 @@ export default function ArmarPcPresupuestadorPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setSlotPlatformFilter("AMD");
+                          setSelectedSocketFilter("AM4");
+                          setSlotPlatformFilter("AM4");
                           setDisplayLimit(60);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "AMD"
-                            ? "bg-rose-700 text-white shadow-xs"
+                          effectiveSocket === "AM4"
+                            ? "bg-rose-700 text-white shadow-xs font-bold"
                             : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
                         }`}
                       >
                         <span className="w-2 h-2 rounded-full bg-rose-500" />
-                        <span>🔴 AMD Ryzen (AM4 / AM5)</span>
-                        <span className="text-[10px] opacity-80 font-normal">· Gaming &amp; Longevidad</span>
+                        <span>🔴 AMD Socket AM4 (DDR4)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Ryzen Serie 3000/4000/5000</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => {
-                          setSlotPlatformFilter("INTEL");
+                          setSelectedSocketFilter("AM5");
+                          setSlotPlatformFilter("AM5");
                           setDisplayLimit(60);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "INTEL"
-                            ? "bg-sky-700 text-white shadow-xs"
+                          effectiveSocket === "AM5"
+                            ? "bg-rose-700 text-white shadow-xs font-bold"
+                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span>🔴 AMD Socket AM5 (DDR5)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Ryzen Serie 7000/8000/9000</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSocketFilter("LGA1700");
+                          setSlotPlatformFilter("LGA1700");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          effectiveSocket === "LGA1700"
+                            ? "bg-sky-700 text-white shadow-xs font-bold"
                             : "bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100"
                         }`}
                       >
                         <span className="w-2 h-2 rounded-full bg-sky-500" />
-                        <span>🔵 Intel Core (LGA 1700)</span>
-                        <span className="text-[10px] opacity-80 font-normal">· QuickSync &amp; Híbrido P+E</span>
+                        <span>🔵 Intel Core LGA 1700</span>
+                        <span className="text-[10px] opacity-80 font-normal">· 12ª, 13ª y 14ª Gen</span>
                       </button>
                     </>
                   )}
@@ -2349,11 +2458,12 @@ export default function ArmarPcPresupuestadorPage() {
                       <button
                         type="button"
                         onClick={() => {
+                          setSelectedSocketFilter("TODOS");
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          slotPlatformFilter === "TODOS"
+                          effectiveSocket === "TODOS" && slotPlatformFilter === "TODOS"
                             ? "bg-zinc-900 text-white shadow-xs"
                             : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                         }`}
@@ -2363,47 +2473,50 @@ export default function ArmarPcPresupuestadorPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setSlotPlatformFilter("AM5");
-                          setDisplayLimit(60);
-                        }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "AM5"
-                            ? "bg-rose-700 text-white shadow-xs"
-                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
-                        }`}
-                      >
-                        <span>🔴 AMD Socket AM5 (DDR5)</span>
-                        <span className="text-[10px] opacity-80 font-normal">· Ryzen 7000/8000/9000</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
+                          setSelectedSocketFilter("AM4");
                           setSlotPlatformFilter("AM4");
                           setDisplayLimit(60);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "AM4"
-                            ? "bg-amber-700 text-white shadow-xs"
-                            : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                          effectiveSocket === "AM4"
+                            ? "bg-rose-700 text-white shadow-xs font-bold"
+                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
                         }`}
                       >
                         <span>🔴 AMD Socket AM4 (DDR4)</span>
-                        <span className="text-[10px] opacity-80 font-normal">· Máxima Economía</span>
+                        <span className="text-[10px] opacity-80 font-normal">· A520 / B450 / B550</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => {
+                          setSelectedSocketFilter("AM5");
+                          setSlotPlatformFilter("AM5");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          effectiveSocket === "AM5"
+                            ? "bg-rose-700 text-white shadow-xs font-bold"
+                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        }`}
+                      >
+                        <span>🔴 AMD Socket AM5 (DDR5)</span>
+                        <span className="text-[10px] opacity-80 font-normal">· A620 / B650 / X670</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedSocketFilter("LGA1700");
                           setSlotPlatformFilter("LGA1700");
                           setDisplayLimit(60);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "LGA1700"
-                            ? "bg-sky-700 text-white shadow-xs"
+                          effectiveSocket === "LGA1700"
+                            ? "bg-sky-700 text-white shadow-xs font-bold"
                             : "bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100"
                         }`}
                       >
-                        <span>🔵 Intel Socket LGA1700</span>
-                        <span className="text-[10px] opacity-80 font-normal">· 12ª, 13ª y 14ª Gen</span>
+                        <span>🔵 Intel Socket LGA 1700</span>
+                        <span className="text-[10px] opacity-80 font-normal">· H610 / B760 / Z790</span>
                       </button>
                     </>
                   )}
@@ -2432,7 +2545,7 @@ export default function ArmarPcPresupuestadorPage() {
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                           slotPlatformFilter === "NVIDIA"
-                            ? "bg-emerald-700 text-white shadow-xs"
+                            ? "bg-emerald-700 text-white shadow-xs font-bold"
                             : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
                         }`}
                       >
@@ -2448,7 +2561,7 @@ export default function ArmarPcPresupuestadorPage() {
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                           slotPlatformFilter === "AMD"
-                            ? "bg-rose-700 text-white shadow-xs"
+                            ? "bg-rose-700 text-white shadow-xs font-bold"
                             : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
                         }`}
                       >
@@ -2468,7 +2581,7 @@ export default function ArmarPcPresupuestadorPage() {
                           setDisplayLimit(60);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          slotPlatformFilter === "TODOS"
+                          effectiveRamType === "TODAS" && slotPlatformFilter === "TODOS"
                             ? "bg-zinc-900 text-white shadow-xs"
                             : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                         }`}
@@ -2478,32 +2591,36 @@ export default function ArmarPcPresupuestadorPage() {
                       <button
                         type="button"
                         onClick={() => {
-                          setSlotPlatformFilter("DDR5");
-                          setDisplayLimit(60);
-                        }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "DDR5"
-                            ? "bg-purple-700 text-white shadow-xs"
-                            : "bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100"
-                        }`}
-                      >
-                        <span>⚡ DDR5 (5200 - 6000 MHz)</span>
-                        <span className="text-[10px] opacity-80 font-normal">· Nueva Generación</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
                           setSlotPlatformFilter("DDR4");
                           setDisplayLimit(60);
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "DDR4"
-                            ? "bg-blue-700 text-white shadow-xs"
+                          effectiveRamType === "DDR4"
+                            ? "bg-blue-700 text-white shadow-xs font-bold"
                             : "bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100"
                         }`}
                       >
                         <span>💎 DDR4 (3200 MHz)</span>
-                        <span className="text-[10px] opacity-80 font-normal">· Económica &amp; Probada</span>
+                        <span className="text-[10px] opacity-80 font-normal">
+                          {effectiveSocket === "AM4" ? "⭐ Requerido para Socket AM4" : "Económica & Confiable"}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("DDR5");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          effectiveRamType === "DDR5"
+                            ? "bg-purple-700 text-white shadow-xs font-bold"
+                            : "bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100"
+                        }`}
+                      >
+                        <span>⚡ DDR5 (5200 - 6000 MHz)</span>
+                        <span className="text-[10px] opacity-80 font-normal">
+                          {effectiveSocket === "AM5" ? "⭐ Requerido para Socket AM5" : "Nueva Generación"}
+                        </span>
                       </button>
                     </>
                   )}
@@ -2522,7 +2639,7 @@ export default function ArmarPcPresupuestadorPage() {
                             : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
                         }`}
                       >
-                        Todas las Capacidades
+                        Todos los Almacenamientos
                       </button>
                       <button
                         type="button"
@@ -2532,12 +2649,12 @@ export default function ArmarPcPresupuestadorPage() {
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                           slotPlatformFilter === "1TB"
-                            ? "bg-emerald-700 text-white shadow-xs"
+                            ? "bg-emerald-700 text-white shadow-xs font-bold"
                             : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
                         }`}
                       >
-                        <span>⚡ 1 TB NVMe</span>
-                        <span className="text-[10px] font-bold text-emerald-800">⭐ Recomendado</span>
+                        <span>⚡ 1 TB M.2 NVMe PCIe</span>
+                        <span className="text-[10px] font-bold text-emerald-800">⭐ Recomendado Tienda</span>
                       </button>
                       <button
                         type="button"
@@ -2547,12 +2664,12 @@ export default function ArmarPcPresupuestadorPage() {
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                           slotPlatformFilter === "2TB"
-                            ? "bg-indigo-700 text-white shadow-xs"
+                            ? "bg-indigo-700 text-white shadow-xs font-bold"
                             : "bg-indigo-50 text-indigo-900 border border-indigo-200 hover:bg-indigo-100"
                         }`}
                       >
-                        <span>🚀 2 TB+ NVMe</span>
-                        <span className="text-[10px] opacity-80 font-normal">· Creación 3D &amp; Juegos AAA</span>
+                        <span>🚀 2 TB+ M.2 NVMe</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Proyectos 3D &amp; Juegos Pesados</span>
                       </button>
                       <button
                         type="button"
@@ -2562,12 +2679,27 @@ export default function ArmarPcPresupuestadorPage() {
                         }}
                         className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
                           slotPlatformFilter === "500GB"
-                            ? "bg-zinc-800 text-white shadow-xs"
+                            ? "bg-zinc-800 text-white shadow-xs font-bold"
                             : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
                         }`}
                       >
-                        <span>📦 500 GB NVMe</span>
-                        <span className="text-[10px] opacity-80 font-normal">· Oficina / Entrada</span>
+                        <span>📦 500 GB M.2 NVMe</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Oficina / Sistema base</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSlotPlatformFilter("SATA");
+                          setDisplayLimit(60);
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          slotPlatformFilter === "SATA"
+                            ? "bg-zinc-800 text-white shadow-xs font-bold"
+                            : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
+                        }`}
+                      >
+                        <span>💾 SSD 2.5" SATA</span>
+                        <span className="text-[10px] opacity-80 font-normal">· Secundario</span>
                       </button>
                     </>
                   )}
@@ -3108,17 +3240,19 @@ export default function ArmarPcPresupuestadorPage() {
                 <Sparkles className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                 <span>
                   {activeTabSlot === "PROCESADOR" &&
-                    (currentMb?.socket
-                      ? `Filtrando procesadores recomendados y compatibles con Socket ${currentMb.socket}`
+                    (effectiveSocket !== "TODOS"
+                      ? `Filtrando exclusivamente procesadores recomendados y 100% compatibles con Socket ${effectiveSocket}`
                       : "Mostrando procesadores recomendados en stock de https://nissei.com/py/")}
                   {activeTabSlot === "PLACA_MADRE" &&
-                    (currentCpu?.socket
-                      ? `Filtrando placas recomendadas y 100% compatibles con tu CPU (Socket ${currentCpu.socket})`
+                    (effectiveSocket !== "TODOS"
+                      ? `Filtrando exclusivamente placas madre recomendadas y 100% compatibles con Socket ${effectiveSocket}`
                       : "Mostrando placas madre equilibradas y compatibles")}
                   {activeTabSlot === "RAM" &&
-                    `Mostrando memorias RAM recomendadas (${currentMb?.ramType || currentCpu?.ramType || "DDR4 / DDR5"}) compatibles`}
+                    (effectiveRamType !== "TODAS"
+                      ? `Filtrando exclusivamente memorias RAM ${effectiveRamType} compatibles con la plataforma ${effectiveSocket !== "TODOS" ? effectiveSocket : ""}`
+                      : "Mostrando memorias RAM recomendadas (DDR4 / DDR5) compatibles")}
                   {activeTabSlot === "ALMACENAMIENTO" &&
-                    "Mostrando unidades SSD M.2 NVMe PCIe recomendadas de alta velocidad"}
+                    "Mostrando unidades SSD M.2 NVMe PCIe y SATA internas recomendadas de alta velocidad"}
                   {activeTabSlot === "GPU" &&
                     "Mostrando tarjetas gráficas recomendadas para gaming, arquitectura y creación"}
                   {activeTabSlot === "FUENTE" &&
