@@ -290,9 +290,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "CAMBIO_NUEVO",
     label: "Cambio por nuevo",
-    whatsappHeader: "✨ *APROBADO CAMBIO POR EQUIPO NUEVO (GARANTÍA)*",
+    whatsappHeader: "✨ *CAMBIO POR EQUIPO NUEVO*",
     whatsappBody:
-      "• Resolución: El proveedor/fabricante oficial aprobó la garantía y autorizó el reemplazo por una unidad nueva de fábrica.\n• Estado de la Unidad: Equipo nuevo en caja/empaque original con garantía de fábrica renovada.\n• Disponibilidad de Retiro: Inmediata en el sector de Post-Venta.",
+      "El proveedor autorizó la garantía oficial y se realizó el cambio por un equipo nuevo. La nueva unidad se encuentra lista para su entrega o retiro.",
     readyForPickup: true,
     chipInactive: "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100",
     chipActive: "bg-emerald-700 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-200",
@@ -300,9 +300,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "REPARADO",
     label: "Reparado con éxito",
-    whatsappHeader: "✅ *REPARADO CON ÉXITO (CONTROL DE CALIDAD APROBADO)*",
+    whatsappHeader: "✅ *REPARADO CON ÉXITO*",
     whatsappBody:
-      "• Resolución: Intervención técnica completada satisfactoriamente en laboratorio.\n• Pruebas de Calidad (QC): Superó pruebas de diagnóstico, estabilidad y rendimiento operativo conforme a parámetros de fábrica.\n• Disponibilidad de Retiro: Listo para entrega y retiro del cliente en el sector de Post-Venta.",
+      "El equipo fue reparado satisfactoriamente, superó las pruebas técnicas y está listo para ser retirado.",
     readyForPickup: true,
     chipInactive: "bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100",
     chipActive: "bg-sky-700 text-white border-sky-700 shadow-xs ring-2 ring-sky-200",
@@ -310,9 +310,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "QC_PRUEBAS",
     label: "Control de Calidad (QC)",
-    whatsappHeader: "🔬 *EN CONTROL DE CALIDAD Y PRUEBAS FINALES (QC)*",
+    whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
     whatsappBody:
-      "• Resolución: Proceso técnico finalizado. El equipo se encuentra en fase de monitoreo, calibración y control de calidad (QC).\n• Próximo paso: Una vez certificada su correcta operatividad se notificará la habilitación de retiro.",
+      "El equipo se encuentra en fase final de pruebas de verificación y control de calidad.",
     readyForPickup: true,
     chipInactive: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
     chipActive: "bg-purple-700 text-white border-purple-700 shadow-xs ring-2 ring-purple-200",
@@ -320,9 +320,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "SIN_DEFECTO",
     label: "Sin defectos / Normal",
-    whatsappHeader: "ℹ️ *SIN DEFECTO COMPROBADO (FUNCIONAMIENTO NORMAL)*",
+    whatsappHeader: "ℹ️ *SIN DEFECTO COMPROBADO*",
     whatsappBody:
-      "• Diagnóstico: El equipo fue testeado exhaustivamente bajo pruebas de esfuerzo y benchmarking, operando dentro de los estándares de fábrica sin reproducir la falla reportada.\n• Cobertura: Conserva su garantía oficial vigente.\n• Disponibilidad de Retiro: Listo para entrega con asesoramiento técnico sobre uso y configuración.",
+      "El equipo funciona dentro de los parámetros normales de fábrica y no reprodujo la falla reportada. Conserva su garantía vigente.",
     readyForPickup: true,
     chipInactive: "bg-cyan-50 text-cyan-800 border-cyan-200 hover:bg-cyan-100",
     chipActive: "bg-cyan-700 text-white border-cyan-700 shadow-xs ring-2 ring-cyan-200",
@@ -330,9 +330,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "SIN_REPARO_REPUESTO",
     label: "Sin reparo · Falta de repuesto",
-    whatsappHeader: "⏳ *SIN REPARO POR FALTA DE REPUESTO EN PLAZO*",
+    whatsappHeader: "⏳ *SIN REPARO POR FALTA DE REPUESTO*",
     whatsappBody:
-      "• Diagnóstico: Falla técnica confirmada; sin embargo, el repuesto original no se encuentra disponible en stock ni en plaza dentro de los tiempos estipulados de servicio.\n• Gestión: Derivado a gestión comercial para nota de crédito, cambio de modelo o retiro según condiciones de garantía.",
+      "No fue posible completar la reparación por falta de disponibilidad del repuesto requerido. Corresponde gestión de cambio / nota de crédito o retiro.",
     readyForPickup: true,
     chipInactive: "bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100",
     chipActive: "bg-orange-600 text-white border-orange-600 shadow-xs ring-2 ring-orange-200",
@@ -340,9 +340,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "SIN_REPARO_IRREPARABLE",
     label: "Sin reparo · No reparable",
-    whatsappHeader: "❌ *SIN REPARO · DAÑO IRREPARABLE*",
+    whatsappHeader: "❌ *SIN REPARO · NO REPARABLE*",
     whatsappBody:
-      "• Diagnóstico: La inspección técnica profunda determinó que el daño electrónico o estructural es irreversible y no resulta viable técnica ni económicamente su reparación.\n• Gestión: Derivado a resolución comercial o retiro de la unidad en el sector de Post-Venta.",
+      "El diagnóstico técnico determinó que el daño no es reparable. Se deriva a gestión de garantía, cambio comercial o retiro.",
     readyForPickup: true,
     chipInactive: "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100",
     chipActive: "bg-rose-700 text-white border-rose-700 shadow-xs ring-2 ring-rose-200",
@@ -350,9 +350,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "MALA_MANIPULACION",
     label: "Mala manipulación (Cliente)",
-    whatsappHeader: "🚫 *EXCLUIDO DE GARANTÍA POR DAÑO FÍSICO / MANIPULACIÓN*",
+    whatsappHeader: "🚫 *MALA MANIPULACIÓN / FUERA DE GARANTÍA*",
     whatsappBody:
-      "• Diagnóstico: Se constataron indicios de golpe, caída, ingreso de líquidos/humedad, sulfatación o alteración indebida ajena a fallas de fabricación.\n• Cobertura: Fuera de cobertura de garantía de fábrica; disponible para retiro o presupuesto particular.",
+      "Se constató daño físico, golpe, humedad o manipulación indebida por parte del cliente, por lo que no aplica cobertura de garantía de fábrica.",
     readyForPickup: true,
     chipInactive: "bg-red-50 text-red-800 border-red-200 hover:bg-red-100",
     chipActive: "bg-red-700 text-white border-red-700 shadow-xs ring-2 ring-red-200",
@@ -360,9 +360,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "RMA_NC",
     label: "Derivado a RMA / Nota de crédito",
-    whatsappHeader: "⚠️ *DERIVADO A GESTIÓN DE RMA / NOTA DE CRÉDITO*",
+    whatsappHeader: "⚠️ *DERIVADO A RMA / NOTA DE CRÉDITO*",
     whatsappBody:
-      "• Gestión: El producto fue derivado al representante/fabricante para peritaje de garantía mayor o emisión de Nota de Crédito comercial.\n• Seguimiento: Se comunicará al cliente la resolución final emitida por la marca.",
+      "El equipo fue derivado a gestión de garantía con fabricante/importador para cambio o emisión de nota de crédito comercial.",
     readyForPickup: true,
     chipInactive: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
     chipActive: "bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200",
@@ -370,9 +370,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "PRESUPUESTO_PENDIENTE",
     label: "Presupuesto · Aguarda aprobación",
-    whatsappHeader: "💰 *PRESUPUESTO TÉCNICO EMITIDO · AGUARDA APROBACIÓN*",
+    whatsappHeader: "💰 *PRESUPUESTO EMITIDO · AGUARDA APROBACIÓN*",
     whatsappBody:
-      "• Estado: Servicio técnico fuera de garantía. Se emitió la cotización detallada de componentes y mano de obra.\n• Acción requerida: Se aguarda autorización expresa del cliente para dar inicio a los trabajos.",
+      "La reparación se encuentra fuera de garantía y se emitió presupuesto técnico aguardando aprobación del cliente.",
     readyForPickup: false,
     chipInactive: "bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100",
     chipActive: "bg-teal-700 text-white border-teal-700 shadow-xs ring-2 ring-teal-200",
@@ -380,9 +380,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "PRESUPUESTO_RECHAZADO",
     label: "Presupuesto rechazado",
-    whatsappHeader: "↩️ *PRESUPUESTO RECHAZADO POR EL CLIENTE*",
+    whatsappHeader: "↩️ *PRESUPUESTO RECHAZADO*",
     whatsappBody:
-      "• Estado: La cotización informada no fue aprobada por el cliente. Trabajos cancelados.\n• Retiro: Equipo rearmado en su condición original, listo para retiro sin costo en Post-Venta.",
+      "El presupuesto informado no fue aprobado; el equipo se encuentra disponible para retiro sin reparar.",
     readyForPickup: true,
     chipInactive: "bg-stone-100 text-stone-800 border-stone-300 hover:bg-stone-200",
     chipActive: "bg-stone-700 text-white border-stone-700 shadow-xs ring-2 ring-stone-300",
@@ -390,9 +390,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "DESGASTE_NATURAL",
     label: "Desgaste natural / Consumible",
-    whatsappHeader: "🔋 *DESGASTE NATURAL DE USO / PIEZA CONSUMIBLE*",
+    whatsappHeader: "🔋 *DESGASTE NATURAL / CONSUMIBLE*",
     whatsappBody:
-      "• Diagnóstico: La incidencia responde al agotamiento de vida útil por ciclo normal de uso en componentes consumibles (batería, rodillos, cables, etc.).\n• Cobertura: Componente no alcanzado por la garantía de fábrica; disponible opción de reemplazo particular.",
+      "La incidencia corresponde a desgaste normal de uso o componente consumible fuera de cobertura de garantía.",
     readyForPickup: true,
     chipInactive: "bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100",
     chipActive: "bg-yellow-600 text-white border-yellow-600 shadow-xs ring-2 ring-yellow-200",
@@ -400,9 +400,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "GARANTIA_VENCIDA",
     label: "Garantía vencida",
-    whatsappHeader: "📅 *GARANTÍA OFICIAL VENCIDA*",
+    whatsappHeader: "📅 *GARANTÍA VENCIDA*",
     whatsappBody:
-      "• Diagnóstico: El producto superó el período de garantía oficial establecido en la factura de venta.\n• Servicio: Se ofrece asistencia técnica bajo presupuesto particular o retiro de la unidad sin cargo.",
+      "El equipo superó el período de garantía oficial vigente; disponible servicio particular bajo presupuesto o retiro.",
     readyForPickup: true,
     chipInactive: "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200",
     chipActive: "bg-slate-700 text-white border-slate-700 shadow-xs ring-2 ring-slate-300",
@@ -1200,57 +1200,37 @@ export default function RecepcionDashboardPage() {
     );
     const estLower = dictamen.estadoActual.toLowerCase();
 
-    // Extraer ubicación física si existe en el detalle (ej: "Estante B2", "Mueble 4", "Caja 12")
-    const ubicacionMatch = (dictamen.detalleTexto || "").match(
-      /(?:estante|mueble|caja|repisa|sector|rack)\s*[:|]?\s*([A-Za-z0-9\-]+(?:\s*[A-Za-z0-9\-]+)?)/i
-    );
-    const ubicacionEstante = ubicacionMatch
-      ? ubicacionMatch[0].replace(/[|]+/g, " ").trim()
-      : "";
-
     let statusText = `${dictamen.header}\n${dictamen.body}`;
     if (dictamen.detalleTexto) {
-      statusText += `\n\n📝 *Detalle / Informe Técnico:* ${dictamen.detalleTexto}`;
-    }
-    if (ubicacionEstante) {
-      statusText += `\n📍 *Ubicación en Depósito:* ${ubicacionEstante}`;
+      statusText += `\n📝 *Detalle:* ${dictamen.detalleTexto}`;
     }
 
     const introLine =
       estLower === "entregada"
-        ? `✅ *CONFIRMACIÓN DE ENTREGA EN POST-VENTA*\nConfirmamos que el equipo de *${ticket.cliente || "Cliente"}* fue entregado conforme en el sector de Post-Venta NISSEI.`
+        ? `Confirmación de entrega del equipo de *${ticket.cliente || "Cliente"}* en el sector de Post-Venta`
         : dictamen.readyForPickup
-        ? `🟢 *EQUIPO LISTO PARA RETIRO EN POST-VENTA*\nNotificamos que el equipo de *${ticket.cliente || "Cliente"}* concluyó su proceso técnico y se encuentra disponible para su retiro en el sector de Post-Venta NISSEI.`
-        : `📋 *ACTUALIZACIÓN DE SERVICIO TÉCNICO EN POST-VENTA*\nInformamos el estado de servicio técnico correspondiente al equipo de *${ticket.cliente || "Cliente"}* en Post-Venta NISSEI.`;
+        ? `El equipo de *${ticket.cliente || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro`
+        : `Actualización del servicio técnico para el equipo de *${ticket.cliente || "Cliente"}* en el sector de Post-Venta`;
 
     const fechaIngresoVal = ticket.fechaIngreso && ticket.fechaIngreso.trim() ? ticket.fechaIngreso.trim() : "N/A";
     const fechaVentaVal = ticket.fechaVenta && ticket.fechaVenta.trim() ? ticket.fechaVenta.trim() : "N/A";
 
-    const condicionRetiro = dictamen.readyForPickup
-      ? `\n\n🕒 *Horario de Atención Post-Venta:*\nLunes a Viernes de 07:30 a 16:30 hs · Sábados de 07:30 a 12:00 hs.\n📌 *Requisito para retiro:* Presentar documento de identidad del titular o comprobante/orden de servicio SATI.`
-      : ``;
-
     return `${introLine}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-📋 *DATOS DE LA ORDEN DE SERVICIO:*
-• *Orden SATI:* #${ticket.idOrden}
-• *Código Producto:* ${ticket.codigoProducto || "N/A"}
-• *Cliente:* ${ticket.cliente || "Particular"}
-• *Equipo:* ${ticket.marca} ${ticket.modelo || "Equipo"}
-• *Categoría:* ${ticket.tipoComponente || "GENERAL"}
-• *Número de Serie:* ${ticket.serial && ticket.serial !== "S/N" && !ticket.serial.toUpperCase().includes("SIN SERIAL") ? ticket.serial : "SIN SERIAL"}
-• *Fecha de Ingreso:* ${fechaIngresoVal}
-• *Fecha de Venta:* ${fechaVentaVal}
-• *Estado Operativo:* ${dictamen.estadoActual}
+📋 *Orden SATI:* #${ticket.idOrden}
+🏷️ *Cód. Producto:* ${ticket.codigoProducto || "N/A"}
+💻 *Equipo:* ${ticket.marca} ${ticket.modelo || "Equipo"}
+📦 *Categoría:* ${ticket.tipoComponente || "GENERAL"}
+🔢 *Serie:* ${ticket.serial && ticket.serial !== "S/N" && !ticket.serial.toUpperCase().includes("SIN SERIAL") ? ticket.serial : "SIN SERIAL"}
+📅 *Fecha de Ingreso:* ${fechaIngresoVal}
+🛒 *Fecha de Venta:* ${fechaVentaVal}
+📌 *Estado:* ${dictamen.estadoActual}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 *DICTAMEN TÉCNICO & RESOLUCIÓN QC:*
+📊 *Dictamen Técnico:*
 ${statusText}
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━
-📦 *Accesorios incluidos / devueltos:*
-${dictamen.accText}${condicionRetiro}`;
+📦 *Accesorios incluidos:*
+${dictamen.accText}`;
   };
 
   const handleAbrirParaNotificar = (ticket: RecepcionTicket) => {
@@ -3093,16 +3073,16 @@ ${dictamen.accText}${condicionRetiro}`;
                 </div>
 
                 {/* Acciones de cambio de estado en el modal (sincronizado con el filtro de estados) */}
-                <div className="p-3 bg-[#fdfdfd] border border-[#e5e5e5] rounded-xl space-y-2">
+                <div className="p-3.5 sm:p-4 bg-[#fdfdfd] border border-zinc-200 rounded-xl space-y-2.5">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs font-semibold text-[#555555]">
+                    <span className="text-xs sm:text-sm font-bold text-zinc-700">
                       Cambiar estado:
                     </span>
-                    <span className="text-[11px] text-zinc-400">
+                    <span className="text-xs text-zinc-400">
                       Se incluirá al notificar al cliente
                     </span>
                   </div>
-                  <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {modalStatusOptions.map((st) => {
                       const isActive =
                         (selectedTicket.estado || "").trim().toLowerCase() ===
@@ -3113,11 +3093,11 @@ ${dictamen.accText}${condicionRetiro}`;
                           key={st}
                           type="button"
                           onClick={() => handleCambiarEstado(selectedTicket.idOrden, st)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg border transition-all cursor-pointer ${
                             isActive ? visual.activeBtnClass : visual.inactiveBtnClass
                           }`}
                         >
-                          {isActive && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
+                          {isActive && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
                           <span>{st}</span>
                         </button>
                       );
@@ -3138,20 +3118,20 @@ ${dictamen.accText}${condicionRetiro}`;
                     modalDictamenTipo
                   );
                   return (
-                    <div className="p-3 bg-emerald-50/50 border border-emerald-200 rounded-xl space-y-2.5">
+                    <div className="p-4 sm:p-5 bg-emerald-50/70 border-2 border-emerald-300 rounded-2xl space-y-3.5 shadow-sm">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-[11px] font-bold text-emerald-900 uppercase tracking-wider">
+                        <span className="text-xs sm:text-sm font-extrabold text-emerald-950 uppercase tracking-wider font-mono">
                           {isTicketDanesa(selectedTicket.cliente)
                             ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
                             : "Dictamen Técnico · Resolución QC (WhatsApp)"}
                         </span>
-                        <span className="text-[10px] font-mono text-emerald-800 bg-white px-2 py-0.5 rounded border border-emerald-200">
+                        <span className="text-xs font-mono font-bold text-emerald-900 bg-white px-3 py-1 rounded-lg border border-emerald-300 shadow-2xs">
                           {preview.sourceLabel}
                         </span>
                       </div>
 
-                      {/* Selector rápido de resoluciones QC */}
-                      <div className="flex flex-wrap items-center gap-1.5">
+                      {/* Selector rápido de resoluciones QC (Expandido) */}
+                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
                         {DICTAMEN_QC_OPTIONS.map((opt) => {
                           const selected = modalDictamenTipo === opt.id;
                           return (
@@ -3159,11 +3139,11 @@ ${dictamen.accText}${condicionRetiro}`;
                               key={opt.id}
                               type="button"
                               onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                              className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-xl border-2 transition-all cursor-pointer shadow-xs hover:scale-[1.02] active:scale-[0.98] ${
                                 selected ? opt.chipActive : opt.chipInactive
                               }`}
                             >
-                              {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                              {selected && <Check className="w-4 h-4 stroke-[3] shrink-0" />}
                               <span>{opt.label}</span>
                             </button>
                           );
@@ -3171,8 +3151,8 @@ ${dictamen.accText}${condicionRetiro}`;
                       </div>
 
                       {isTicketDanesa(selectedTicket.cliente) ? (
-                        <div className="text-xs sm:text-sm text-amber-900 bg-amber-50/90 p-3.5 rounded-xl border border-amber-200 flex items-start gap-2.5">
-                          <Building2 className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                        <div className="text-xs sm:text-sm text-amber-900 bg-amber-50/90 p-3 rounded-lg border border-amber-200 flex items-start gap-2.5">
+                          <Building2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                           <div>
                             <div className="font-bold text-amber-950">Mercadería de Stock Propio (Danesa S.A.)</div>
                             <p className="text-amber-800 text-xs leading-relaxed mt-0.5">
@@ -3181,47 +3161,21 @@ ${dictamen.accText}${condicionRetiro}`;
                           </div>
                         </div>
                       ) : (
-                        <div className="text-xs sm:text-sm text-zinc-800 space-y-2.5 bg-white/95 p-3.5 sm:p-4 rounded-xl border border-emerald-200 shadow-xs">
-                          <div className="flex items-center justify-between gap-2 border-b border-emerald-100 pb-2 flex-wrap">
-                            <span className="font-bold text-zinc-900 text-sm flex items-center gap-1.5">
-                              <span>{preview.headerPlain}</span>
-                            </span>
-                            {preview.readyForPickup ? (
-                              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                Listo para Retiro
-                              </span>
-                            ) : (
-                              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
-                                <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                En Proceso Técnico
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="text-zinc-700 leading-relaxed whitespace-pre-line text-xs sm:text-sm">
-                            {preview.body}
-                          </div>
-
+                        <div className="text-xs sm:text-sm text-zinc-800 space-y-1.5 bg-white/90 p-3 rounded-lg border border-emerald-100">
+                          <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
+                          <p className="text-zinc-600 leading-relaxed">{preview.body}</p>
                           {preview.detalleTexto ? (
-                            <div className="pt-2 border-t border-dashed border-zinc-200">
-                              <span className="font-bold text-zinc-800 block mb-0.5 text-xs uppercase tracking-wide">
-                                Detalle / Informe Técnico:
-                              </span>
-                              <p className="text-zinc-800 font-mono text-xs bg-zinc-50 p-2.5 rounded-lg border border-zinc-200 leading-relaxed">
-                                {preview.detalleTexto}
-                              </p>
-                            </div>
+                            <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200">
+                              <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
+                            </p>
                           ) : (
-                            <p className="text-zinc-400 italic text-xs pt-1 border-t border-dashed border-zinc-200">
+                            <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200">
                               Complete &quot;Informe Técnico / Mensaje de Servicio&quot; arriba para incluir el detalle.
                             </p>
                           )}
-
-                          <div className="text-xs text-zinc-600 pt-2 border-t border-emerald-100/70 flex items-center justify-between flex-wrap gap-2 font-mono">
-                            <span>📅 Ingreso: <strong className="text-zinc-800 font-semibold">{selectedTicket.fechaIngreso || "N/A"}</strong></span>
-                            <span>🛒 Venta: <strong className="text-zinc-800 font-semibold">{selectedTicket.fechaVenta || "N/A"}</strong></span>
-                            <span>📦 Accesorios: <strong className="text-zinc-800 font-semibold">{preview.accText}</strong></span>
+                          <div className="text-xs text-zinc-500 pt-1.5 border-t border-emerald-100/60 flex items-center justify-between flex-wrap gap-1 font-mono">
+                            <span>📅 Ingreso: <strong className="text-zinc-700 font-semibold">{selectedTicket.fechaIngreso || "N/A"}</strong></span>
+                            <span>🛒 Venta: <strong className="text-zinc-700 font-semibold">{selectedTicket.fechaVenta || "N/A"}</strong></span>
                           </div>
                         </div>
                       )}
