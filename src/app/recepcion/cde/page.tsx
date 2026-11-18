@@ -2029,23 +2029,23 @@ export default function RecepcionCdeDashboardPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 text-zinc-600 font-mono uppercase text-[11px] border-b border-zinc-200">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-zinc-50 text-zinc-600 font-mono uppercase text-xs border-b border-zinc-200">
                 <tr>
-                  <th className="py-3 px-3.5 font-bold">Nº Orden</th>
-                  <th className="py-3 px-3">Cliente</th>
-                  <th className="py-3 px-3">Equipo / Hardware</th>
-                  <th className="py-3 px-3">Serial</th>
-                  <th className="py-3 px-3">Ingreso ASU</th>
-                  <th className="py-3 px-3">Ingreso CDE</th>
-                  <th className="py-3 px-3">Despacho CDE</th>
-                  <th className="py-3 px-3 text-center">Días Taller</th>
-                  <th className="py-3 px-3">Estado</th>
-                  <th className="py-3 px-3">Dictamen / Informe Técnico</th>
+                  <th className="py-3.5 px-4 font-bold">Nº Orden</th>
+                  <th className="py-3.5 px-3.5 font-bold">Cliente</th>
+                  <th className="py-3.5 px-3.5 font-bold">Equipo / Hardware</th>
+                  <th className="py-3.5 px-3.5 font-bold">Serial</th>
+                  <th className="py-3.5 px-3.5 font-bold">Ingreso ASU</th>
+                  <th className="py-3.5 px-3.5 font-bold">Ingreso CDE</th>
+                  <th className="py-3.5 px-3.5 font-bold">Despacho CDE</th>
+                  <th className="py-3.5 px-3.5 text-center font-bold">Días Taller</th>
+                  <th className="py-3.5 px-3.5 font-bold">Estado</th>
+                  <th className="py-3.5 px-3.5 font-bold">Dictamen / Informe Técnico</th>
                   {viewScope !== "CLIENTES_CDE" && (
-                    <th className="py-3 px-3 text-center">Llegada Depósito</th>
+                    <th className="py-3.5 px-3.5 text-center font-bold">Llegada Depósito</th>
                   )}
-                  <th className="py-3 px-3 text-right">Acción</th>
+                  <th className="py-3.5 px-4 text-right font-bold">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
@@ -2096,90 +2096,90 @@ export default function RecepcionCdeDashboardPage() {
                         className="hover:bg-zinc-50/80 transition-colors"
                       >
                         {/* Nº Orden según el ámbito */}
-                        <td className="py-3 px-3.5 font-mono font-bold text-zinc-900 whitespace-nowrap">
+                        <td className="py-3.5 px-4 font-mono font-bold text-zinc-900 whitespace-nowrap">
                           {isDanesa ? (
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded bg-zinc-900 text-white font-extrabold text-xs">
+                                <span className="px-2 py-0.5 rounded-lg bg-zinc-900 text-white font-extrabold text-sm">
                                   #{idAsuPrincipal || ticket.idOrden}
                                 </span>
-                                <span className="text-[9px] font-sans font-bold text-zinc-500">ASU</span>
+                                <span className="text-xs font-sans font-bold text-zinc-500">ASU</span>
                               </div>
                               {idCdeVinculado ? (
                                 <div
                                   onClick={() => openLinkModal(ticket)}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
                                   title={`Vinculado a Orden CDE #${idCdeVinculado}. Click para modificar o desvincular`}
                                 >
-                                  <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
+                                  <Link2 className="w-3 h-3 text-indigo-600 shrink-0" />
                                   <span>CDE: #{idCdeVinculado}</span>
                                 </div>
                               ) : (
                                 <button
                                   type="button"
                                   onClick={() => openLinkModal(ticket)}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold cursor-pointer transition-colors shadow-2xs"
                                   title="Sin orden CDE vinculada. Haga click para vincular"
                                 >
-                                  <Plus className="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                                  <Plus className="w-3 h-3 text-amber-700 shrink-0" />
                                   <span>Vincular CDE</span>
                                 </button>
                               )}
                             </div>
                           ) : viewScope === "CLIENTES_CDE" || esOrdenCdeNativa ? (
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
+                                <span className="px-2 py-0.5 rounded-lg bg-zinc-100 border border-zinc-200 text-sm font-bold">
                                   #{ticket.idOrdenCde || ticket.idOrden}
                                 </span>
-                                <span className="text-[9px] font-sans font-bold text-zinc-400">CDE</span>
+                                <span className="text-xs font-sans font-bold text-zinc-400">CDE</span>
                               </div>
                               {ticket.idOrdenAsu && ticket.idOrdenAsu !== (ticket.idOrdenCde || ticket.idOrden) ? (
                                 <div
                                   onClick={() => openLinkModal(ticket)}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
                                   title={`Vinculado a Orden ASU #${ticket.idOrdenAsu}. Click para modificar o desvincular`}
                                 >
-                                  <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
+                                  <Link2 className="w-3 h-3 text-indigo-600 shrink-0" />
                                   <span>ASU: #{ticket.idOrdenAsu}</span>
                                 </div>
                               ) : (
                                 <button
                                   type="button"
                                   onClick={() => openLinkModal(ticket)}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold cursor-pointer transition-colors shadow-2xs"
                                   title="Sin orden ASU vinculada. Haga click para vincular"
                                 >
-                                  <Plus className="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                                  <Plus className="w-3 h-3 text-amber-700 shrink-0" />
                                   <span>Vincular ASU</span>
                                 </button>
                               )}
                             </div>
                           ) : (
-                            <div className="space-y-1">
+                            <div className="space-y-1.5">
                               <div className="flex items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200">
+                                <span className="px-2 py-0.5 rounded-lg bg-zinc-100 border border-zinc-200 text-sm font-bold">
                                   #{ticket.idOrdenAsu || ticket.idOrden}
                                 </span>
-                                <span className="text-[9px] font-sans font-bold text-zinc-400">ASU</span>
+                                <span className="text-xs font-sans font-bold text-zinc-400">ASU</span>
                               </div>
                               {esCdeValido(ticket.idOrdenCde) && ticket.idOrdenCde !== (ticket.idOrdenAsu || ticket.idOrden) ? (
                                 <div
                                   onClick={() => openLinkModal(ticket)}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-[10px] font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold cursor-pointer hover:bg-indigo-100 transition-colors"
                                   title={`Vinculado a Orden CDE #${ticket.idOrdenCde}. Click para modificar o desvincular`}
                                 >
-                                  <Link2 className="w-2.5 h-2.5 text-indigo-600 shrink-0" />
+                                  <Link2 className="w-3 h-3 text-indigo-600 shrink-0" />
                                   <span>CDE: #{ticket.idOrdenCde}</span>
                                 </div>
                               ) : (
                                 <button
                                   type="button"
                                   onClick={() => openLinkModal(ticket)}
-                                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-bold cursor-pointer transition-colors shadow-2xs"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold cursor-pointer transition-colors shadow-2xs"
                                   title="Sin orden CDE vinculada. Haga click para vincular"
                                 >
-                                  <Plus className="w-2.5 h-2.5 text-amber-700 shrink-0" />
+                                  <Plus className="w-3 h-3 text-amber-700 shrink-0" />
                                   <span>Vincular CDE</span>
                                 </button>
                               )}
@@ -2188,16 +2188,16 @@ export default function RecepcionCdeDashboardPage() {
                         </td>
 
                         {/* Cliente */}
-                        <td className="py-3 px-3 max-w-[190px]">
+                        <td className="py-3.5 px-3.5 max-w-[200px]">
                           {isDanesa ? (
-                            <div className="space-y-0.5">
+                            <div className="space-y-1">
                               <span className="inline-flex items-center gap-1 font-bold text-zinc-900 bg-amber-50 text-amber-900 px-2 py-0.5 rounded border border-amber-200 text-xs">
-                                <Building2 className="w-3 h-3 text-amber-700 shrink-0" />
+                                <Building2 className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                                 <span>{ticket.cliente}</span>
                               </span>
                               {ticket.clienteAsu && ticket.clienteAsu.toLowerCase() !== "danesa sa" && (
                                 <span
-                                  className="text-[11px] text-zinc-600 block truncate font-sans font-medium"
+                                  className="text-xs text-zinc-600 block truncate font-sans font-medium"
                                   title={`Cliente final registrado en ASU: ${ticket.clienteAsu}`}
                                 >
                                   👤 {ticket.clienteAsu}
@@ -2205,27 +2205,27 @@ export default function RecepcionCdeDashboardPage() {
                               )}
                             </div>
                           ) : (
-                            <span className="font-medium text-zinc-800">{ticket.cliente}</span>
+                            <span className="font-bold text-zinc-900 text-sm">{ticket.cliente}</span>
                           )}
                         </td>
 
                         {/* Equipo / Hardware */}
-                        <td className="py-3 px-3 max-w-[240px]">
-                          <strong className="block font-bold text-zinc-900 truncate">
+                        <td className="py-3.5 px-3.5 max-w-[250px]">
+                          <strong className="block font-bold text-zinc-900 truncate text-sm">
                             {ticket.marca} {ticket.modelo}
                           </strong>
-                          <span className="text-[11px] text-zinc-500 font-mono block">
+                          <span className="text-xs text-zinc-500 font-mono block mt-0.5">
                             {ticket.tipoComponente} · Cód: {ticket.codigoProducto || "N/A"}
                           </span>
                         </td>
 
                         {/* Serial */}
-                        <td className="py-3 px-3 font-mono text-zinc-600 whitespace-nowrap max-w-[130px] truncate">
+                        <td className="py-3.5 px-3.5 font-mono text-zinc-700 whitespace-nowrap max-w-[140px] truncate text-xs font-medium">
                           {ticket.serial || "SIN SERIAL"}
                         </td>
 
                         {/* Fecha de Ingreso ASU */}
-                        <td className="py-3 px-3 whitespace-nowrap text-zinc-600 font-mono text-[11px]">
+                        <td className="py-3.5 px-3.5 whitespace-nowrap text-zinc-700 font-mono text-xs">
                           {isFechaValida(ticket.fechaIngresoAsu || (ticket.origen === "ASU" ? ticket.fechaIngreso : "")) ? (
                             ticket.fechaIngresoAsu || ticket.fechaIngreso
                           ) : (
@@ -2233,10 +2233,10 @@ export default function RecepcionCdeDashboardPage() {
                           )}
                         </td>
 
-                        {/* Fecha de Ingreso CDE (Columna en medio de Ingreso ASU y Despacho CDE) */}
-                        <td className="py-3 px-3 whitespace-nowrap text-zinc-600 font-mono text-[11px]">
+                        {/* Fecha de Ingreso CDE */}
+                        <td className="py-3.5 px-3.5 whitespace-nowrap text-zinc-700 font-mono text-xs">
                           {isFechaValida(ticket.fechaIngresoCde || (ticket.origen === "CDE" ? ticket.fechaIngreso : "")) ? (
-                            <span className="font-semibold text-zinc-900">
+                            <span className="font-bold text-zinc-900">
                               {ticket.fechaIngresoCde || ticket.fechaIngreso}
                             </span>
                           ) : (
@@ -2244,13 +2244,13 @@ export default function RecepcionCdeDashboardPage() {
                           )}
                         </td>
 
-                        {/* Despacho CDE: fecha de despacho con camioncito de transportadora */}
-                        <td className="py-3 px-3 whitespace-nowrap font-mono text-[11px]">
+                        {/* Despacho CDE */}
+                        <td className="py-3.5 px-3.5 whitespace-nowrap font-mono text-xs">
                           {isFechaValida(ticket.fechaEntregada) && isDespachoCoherente(ticket.fechaIngreso, ticket.fechaEntregada) ? (
                             <div className="flex flex-col">
                               <span className="font-bold text-zinc-900">{ticket.fechaEntregada}</span>
-                              <span className="text-[10px] text-amber-700 font-sans flex items-center gap-1 font-semibold">
-                                <SpeedTruck className="w-2.5 h-2.5 text-amber-700" smokeColor="bg-amber-400" />
+                              <span className="text-xs text-amber-700 font-sans flex items-center gap-1 font-semibold mt-0.5">
+                                <SpeedTruck className="w-3 h-3 text-amber-700" smokeColor="bg-amber-400" />
                                 <span>Despacho transportadora</span>
                               </span>
                             </div>
@@ -2260,10 +2260,10 @@ export default function RecepcionCdeDashboardPage() {
                         </td>
 
                         {/* Días en Taller CDE */}
-                        <td className="py-3 px-3 text-center whitespace-nowrap">
+                        <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
                           {isDespachoCoherente(ticket.fechaIngreso, ticket.fechaEntregada) && days !== null && days !== undefined && days >= 0 ? (
                             <span
-                              className={`inline-block px-2 py-0.5 rounded-full text-[11px] font-mono font-bold ${
+                              className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-mono font-bold ${
                                 days <= 7
                                   ? "bg-emerald-100 text-emerald-800"
                                   : days <= 20
@@ -2279,26 +2279,26 @@ export default function RecepcionCdeDashboardPage() {
                           )}
                         </td>
 
-                        {/* Estado: Entregada si ya cerró en ASU o Confirmada, En Tránsito solo si despachó y está en camino */}
-                        <td className="py-3 px-3 whitespace-nowrap">
+                        {/* Estado */}
+                        <td className="py-3.5 px-3.5 whitespace-nowrap">
                           {getStatusBadge(ticket)}
                         </td>
 
                         {/* Dictamen / Informe Técnico */}
-                        <td className="py-3 px-3 max-w-[280px]">
+                        <td className="py-3.5 px-3.5 max-w-[280px]">
                           {(() => {
                             const formattedMensaje = formatSatiSentenceCase(ticket.mensaje);
                             return (
-                              <p className="truncate text-zinc-700 text-[11px] font-sans" title={formattedMensaje}>
+                              <p className="truncate text-zinc-700 text-xs sm:text-sm font-sans" title={formattedMensaje}>
                                 {formattedMensaje || <span className="text-zinc-400 italic">Sin observaciones</span>}
                               </p>
                             );
                           })()}
                         </td>
 
-                        {/* Llegada a Depósito / Confirmación en Sucursal (solo Clientes ASU y Danesa SA) */}
+                        {/* Llegada a Depósito / Confirmación en Sucursal */}
                         {viewScope !== "CLIENTES_CDE" && (
-                          <td className="py-3 px-3 text-center whitespace-nowrap">
+                          <td className="py-3.5 px-3.5 text-center whitespace-nowrap">
                             {isTicketClienteCde(ticket) ? (
                               <span
                                 className="text-zinc-300 font-mono"
@@ -2310,11 +2310,11 @@ export default function RecepcionCdeDashboardPage() {
                               const isRecibido = isTicketRecibido(ticket);
                               const fechaMostrar = ticket.fechaRecibidoDeposito || ticket.fechaEntregada || "";
                               return (
-                                <div className="flex flex-col items-center gap-0.5">
+                                <div className="flex flex-col items-center gap-1">
                                   <button
                                     type="button"
                                     onClick={() => handleToggleCheckin(ticket)}
-                                    className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all shadow-2xs cursor-pointer ${
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer ${
                                       isRecibido
                                         ? "bg-emerald-600 text-white hover:bg-emerald-700"
                                         : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
@@ -2327,19 +2327,19 @@ export default function RecepcionCdeDashboardPage() {
                                   >
                                     {isRecibido ? (
                                       <>
-                                        <Check className="w-3 h-3 stroke-[3]" />
+                                        <Check className="w-3.5 h-3.5 stroke-[3]" />
                                         <span>Listo retiro</span>
                                       </>
                                     ) : (
                                       <>
-                                        <Box className="w-3 h-3" />
+                                        <Box className="w-3.5 h-3.5" />
                                         <span>Confirmar</span>
                                       </>
                                     )}
                                   </button>
                                   {isRecibido && fechaMostrar && (
                                     <span
-                                      className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
+                                      className="text-xs font-mono font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 block"
                                       title={`Fecha de entrega / despacho para seguimiento: ${fechaMostrar}`}
                                     >
                                       {fechaMostrar}
@@ -2352,12 +2352,12 @@ export default function RecepcionCdeDashboardPage() {
                         )}
 
                         {/* Acción / Ver Detalle e Imprimir Comprobante */}
-                        <td className="py-3 px-3 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1">
+                        <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => handleOpenTicketModal(ticket)}
-                              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer"
+                              className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer border border-transparent hover:border-zinc-300"
                               title="Ver detalles completos de la orden SATI"
                             >
                               <Eye className="w-4 h-4" />
@@ -2365,7 +2365,7 @@ export default function RecepcionCdeDashboardPage() {
                             <button
                               type="button"
                               onClick={() => setShowPrintModal(ticket)}
-                              className="p-1.5 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer"
+                              className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer border border-transparent hover:border-zinc-300"
                               title="Imprimir Comprobante SATI (Térmica calibrable)"
                             >
                               <Printer className="w-4 h-4" />

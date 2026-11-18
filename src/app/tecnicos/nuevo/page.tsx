@@ -983,7 +983,7 @@ export default function NuevoIngresoMontajePage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {/* Vendedor Comercial Categorizado */}
                 <div>
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
                     Vendedor Comercial *
                   </label>
                   <VendedorSelect
@@ -1001,7 +1001,7 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Canal de Venta: Tienda, Ecommerce - Web, Empresas / Coorporativo */}
                 <div>
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
                     Canal de Venta
                   </label>
                   <CleanSelect
@@ -1016,7 +1016,7 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Nro. Registro / Interno */}
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
                     Nro. Registro / Interno *
                   </label>
                   <div className="flex items-center gap-2">
@@ -1027,7 +1027,7 @@ export default function NuevoIngresoMontajePage() {
                       value={nroRegistroInterno}
                       onChange={(e) => setNroRegistroInterno(e.target.value)}
                       placeholder="Ej: 966.565 ó 001-002-0045892"
-                      className="w-full min-w-0 text-xs sm:text-sm font-mono border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none font-bold text-zinc-900"
+                      className="w-full min-w-0 text-sm sm:text-base font-mono border border-zinc-200 rounded-xl px-3.5 py-2.5 focus:border-zinc-900 outline-none font-bold text-zinc-900"
                     />
                     <ScanButton
                       onClick={() => setScannerTarget({ mode: "nro_reg" })}
@@ -1039,7 +1039,7 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Fecha de Facturación */}
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
                     Fecha de Facturación
                   </label>
                   <CleanDatePicker
@@ -1055,7 +1055,7 @@ export default function NuevoIngresoMontajePage() {
             <section className="bg-white p-5 sm:p-6 rounded-xl border border-zinc-200 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-lg bg-zinc-900 text-white text-xs flex items-center justify-center font-bold">
+                  <span className="w-8 h-8 rounded-lg bg-zinc-900 text-white text-xs sm:text-sm flex items-center justify-center font-bold">
                     2
                   </span>
                   <div>
@@ -1072,7 +1072,7 @@ export default function NuevoIngresoMontajePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="sm:col-span-2">
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
                     Cliente / Razón Social *
                   </label>
                   <input
@@ -1082,19 +1082,19 @@ export default function NuevoIngresoMontajePage() {
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ej: Prychen Wei / J.W.F. SA / Mariano Cano"
-                    className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none font-semibold text-zinc-900"
+                    className="w-full text-sm sm:text-base border border-zinc-200 rounded-xl px-3.5 py-2.5 focus:border-zinc-900 outline-none font-bold text-zinc-900"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
                     Cantidad de Equipos (PCs / Laptops) *
                   </label>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setCantidadEquipos((prev) => Math.max(1, prev - 1))}
-                      className="px-3 py-2 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-xs font-bold text-zinc-700 cursor-pointer"
+                      className="px-3.5 py-2.5 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-sm font-bold text-zinc-700 cursor-pointer"
                       aria-label="Restar equipo"
                     >
                       −
@@ -1109,12 +1109,12 @@ export default function NuevoIngresoMontajePage() {
                       onChange={(e) =>
                         setCantidadEquipos(Math.max(1, parseInt(e.target.value, 10) || 1))
                       }
-                      className="w-full text-center text-xs sm:text-sm font-mono font-bold border border-zinc-200 rounded-lg px-2 py-2 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full text-center text-sm sm:text-base font-mono font-bold border border-zinc-200 rounded-lg px-2 py-2.5 focus:border-zinc-900 outline-none text-zinc-900"
                     />
                     <button
                       type="button"
                       onClick={() => setCantidadEquipos((prev) => Math.min(99, prev + 1))}
-                      className="px-3 py-2 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-xs font-bold text-zinc-700 cursor-pointer"
+                      className="px-3.5 py-2.5 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-sm font-bold text-zinc-700 cursor-pointer"
                       aria-label="Sumar equipo"
                     >
                       +
@@ -1125,25 +1125,25 @@ export default function NuevoIngresoMontajePage() {
 
               {/* Selector de Modalidad */}
               <div>
-                <label className="text-xs text-zinc-600 font-semibold block mb-1.5">
+                <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
                   Tipo de Servicio Técnico *
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => handleChangeTipoServicio("Montaje")}
-                    className={`p-3.5 rounded-lg border text-left transition-colors flex items-start gap-3 ${
+                    className={`p-4 sm:p-5 rounded-xl border text-left transition-colors flex items-start gap-3.5 ${
                       tipoServicio === "Montaje"
                         ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
                         : "border-zinc-200 bg-zinc-50/50 hover:bg-zinc-100 text-zinc-900"
                     }`}
                   >
-                    <Cpu className={`w-5 h-5 mt-0.5 flex-shrink-0 ${tipoServicio === "Montaje" ? "text-white" : "text-zinc-700"}`} />
+                    <Cpu className={`w-6 h-6 mt-0.5 flex-shrink-0 ${tipoServicio === "Montaje" ? "text-white" : "text-zinc-700"}`} />
                     <div>
-                      <strong className="block text-xs sm:text-sm font-bold">
+                      <strong className="block text-sm sm:text-base font-bold">
                         Montaje de PC Completa
                       </strong>
-                      <span className={`text-[11px] block mt-0.5 leading-relaxed ${tipoServicio === "Montaje" ? "text-zinc-300" : "text-zinc-500"}`}>
+                      <span className={`text-xs block mt-1 leading-relaxed ${tipoServicio === "Montaje" ? "text-zinc-300" : "text-zinc-500"}`}>
                         Ensamble desde cero: CPU, Placa Madre, RAM Desktop, GPU, Fuente, Gabinete, Cooler y SSD.
                       </span>
                     </div>
@@ -1152,18 +1152,18 @@ export default function NuevoIngresoMontajePage() {
                   <button
                     type="button"
                     onClick={() => handleChangeTipoServicio("Expansion")}
-                    className={`p-3.5 rounded-lg border text-left transition-colors flex items-start gap-3 ${
+                    className={`p-4 sm:p-5 rounded-xl border text-left transition-colors flex items-start gap-3.5 ${
                       tipoServicio === "Expansion"
                         ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
                         : "border-zinc-200 bg-zinc-50/50 hover:bg-zinc-100 text-zinc-900"
                     }`}
                   >
-                    <Laptop className={`w-5 h-5 mt-0.5 flex-shrink-0 ${tipoServicio === "Expansion" ? "text-white" : "text-zinc-700"}`} />
+                    <Laptop className={`w-6 h-6 mt-0.5 flex-shrink-0 ${tipoServicio === "Expansion" ? "text-white" : "text-zinc-700"}`} />
                     <div>
-                      <strong className="block text-xs sm:text-sm font-bold">
+                      <strong className="block text-sm sm:text-base font-bold">
                         Expansión / Upgrade de Notebook
                       </strong>
-                      <span className={`text-[11px] block mt-0.5 leading-relaxed ${tipoServicio === "Expansion" ? "text-zinc-300" : "text-zinc-500"}`}>
+                      <span className={`text-xs block mt-1 leading-relaxed ${tipoServicio === "Expansion" ? "text-zinc-300" : "text-zinc-500"}`}>
                         Ampliación de hardware en laptops: Expansión de Memoria RAM SODIMM (DDR4/DDR5) o Almacenamiento SSD M.2/SATA.
                       </span>
                     </div>
@@ -1273,10 +1273,10 @@ export default function NuevoIngresoMontajePage() {
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
                   {/* UPC / EAN arriba del SKU (autocompleta SKU/Descripción y se vincula en MySQL) */}
                   <div className="sm:col-span-12">
-                    <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
                       UPC / Código de Barras del Producto *
                     </label>
                     <div className="flex items-center gap-2">
@@ -1287,7 +1287,7 @@ export default function NuevoIngresoMontajePage() {
                         value={customUpc}
                         onChange={(e) => handleUpcChange(e.target.value)}
                         placeholder="Escanear o escribir UPC / EAN para autocompletar o vincular al SKU..."
-                        className="w-full min-w-0 text-xs font-mono font-bold bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                        className="w-full min-w-0 text-sm font-mono font-bold bg-white border border-zinc-300 rounded-xl px-3.5 py-2.5 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
                       />
                       <ScanButton
                         onClick={() => setScannerTarget({ mode: "upc" })}
@@ -1308,7 +1308,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* SKU con datalist de autocompletado */}
                   <div className="sm:col-span-3">
-                    <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
                       SKU (Código) *
                     </label>
                     <input
@@ -1318,7 +1318,7 @@ export default function NuevoIngresoMontajePage() {
                       value={customSku}
                       onChange={(e) => handleSkuChange(e.target.value)}
                       placeholder="Ej: 774198"
-                      className="w-full text-xs font-mono font-bold bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                      className="w-full text-sm font-mono font-bold bg-white border border-zinc-300 rounded-xl px-3.5 py-2.5 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
                     />
                     <datalist id="skus-list">
                       {currentCatalog.map((c) => (
@@ -1331,7 +1331,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* Categoría (se autoselecciona al coincidir SKU o se elige manual) */}
                   <div className="sm:col-span-3">
-                    <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
                       Categoría *
                     </label>
                     <CleanSelect
@@ -1346,7 +1346,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* Descripción del Hardware */}
                   <div className="sm:col-span-6">
-                    <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
                       Descripción del Hardware *
                     </label>
                     <input
@@ -1356,7 +1356,7 @@ export default function NuevoIngresoMontajePage() {
                       value={customDesc}
                       onChange={(e) => handleDescChange(e.target.value)}
                       placeholder="Ej: CPU INTEL I5-12400 2.5GHZ... o escribir nombre"
-                      className="w-full text-xs bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                      className="w-full text-sm bg-white border border-zinc-300 rounded-xl px-3.5 py-2.5 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
                     />
                     <datalist id="desc-list">
                       {currentCatalog.map((c) => (
@@ -1369,7 +1369,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* Serial / IMEI */}
                   <div className="sm:col-span-8">
-                    <label className="text-[11px] text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
                       Serial Físico / IMEI (Opcional · vacío = N/A)
                     </label>
                     <div className="flex items-center gap-2">
@@ -1379,7 +1379,7 @@ export default function NuevoIngresoMontajePage() {
                         value={customSerial}
                         onChange={(e) => setCustomSerial(e.target.value)}
                         placeholder="Escanear serial físico o dejar vacío (se asignará N/A)..."
-                        className="w-full min-w-0 text-xs font-mono bg-white border border-zinc-300 rounded-lg px-3 py-2 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                        className="w-full min-w-0 text-sm font-mono bg-white border border-zinc-300 rounded-xl px-3.5 py-2.5 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
                       />
                       <ScanButton
                         onClick={() => setScannerTarget({ mode: "new" })}
@@ -1394,9 +1394,9 @@ export default function NuevoIngresoMontajePage() {
                     <button
                       type="button"
                       onClick={() => handleAddComponent()}
-                      className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-4 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg shadow-sm transition-colors cursor-pointer"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-zinc-900 hover:bg-black text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
                     >
-                      <Plus className="w-3.5 h-3.5" />
+                      <Plus className="w-4 h-4" />
                       <span>+ Agregar a la Orden</span>
                     </button>
                   </div>
@@ -1405,16 +1405,16 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Error de campos obligatorios del componente */}
                 {componentError && (
-                  <div className="text-[11px] font-mono text-rose-800 bg-rose-50 border border-rose-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                  <div className="text-xs font-mono text-rose-800 bg-rose-50 border border-rose-200 px-3.5 py-2 rounded-lg flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
                     <span>{componentError}</span>
                   </div>
                 )}
 
                 {/* Aviso visual de coincidencia automática */}
                 {skuMatchNotice && (
-                  <div className="text-[11px] font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  <div className="text-xs font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-lg flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
                     <span>{skuMatchNotice}</span>
                   </div>
                 )}
@@ -1422,50 +1422,50 @@ export default function NuevoIngresoMontajePage() {
 
               {/* Tabla de Componentes Agregados */}
               {components.length === 0 ? (
-                <div className="p-8 text-center border-2 border-dashed border-zinc-200 rounded-lg space-y-2">
-                  <Cpu className="w-8 h-8 text-zinc-400 mx-auto" />
-                  <p className="text-xs font-medium text-zinc-600">
+                <div className="p-8 text-center border-2 border-dashed border-zinc-200 rounded-xl space-y-2">
+                  <Cpu className="w-9 h-9 text-zinc-400 mx-auto" />
+                  <p className="text-sm font-medium text-zinc-600">
                     Aún no se han registrado componentes en esta orden.
                   </p>
-                  <p className="text-[11px] text-zinc-400">
+                  <p className="text-xs text-zinc-400">
                     {tipoServicio === "Montaje"
                       ? "Ingrese el SKU (ej: 774198 para i5-12400 o 879268 para placa Asus) para autocompletar y presione '+ Agregar a la Orden'."
                       : "Ingrese el SKU o descripción de la Notebook y el módulo de memoria SODIMM o disco SSD a instalar."}
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto border border-zinc-200 rounded-lg">
-                  <table className="w-full text-left text-xs">
-                    <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-mono uppercase text-[11px]">
+                <div className="overflow-x-auto border border-zinc-200 rounded-xl">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-mono uppercase text-xs">
                       <tr>
-                        <th className="py-2.5 px-3">SKU</th>
-                        <th className="py-2.5 px-3">Categoría</th>
-                        <th className="py-2.5 px-3">Descripción Hardware</th>
-                        <th className="py-2.5 px-3">Serial / IMEI Físico</th>
-                        <th className="py-2.5 px-2 text-right">Quitar</th>
+                        <th className="py-3 px-3.5 font-bold">SKU</th>
+                        <th className="py-3 px-3.5 font-bold">Categoría</th>
+                        <th className="py-3 px-3.5 font-bold">Descripción Hardware</th>
+                        <th className="py-3 px-3.5 font-bold">Serial / IMEI Físico</th>
+                        <th className="py-3 px-3 text-right font-bold">Quitar</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-zinc-200">
                       {components.map((item, index) => (
                         <tr key={index} className="hover:bg-zinc-50/50 transition-colors">
-                          <td className="py-2.5 px-3 font-mono font-bold text-zinc-900 whitespace-nowrap">
+                          <td className="py-3 px-3.5 font-mono font-bold text-zinc-900 whitespace-nowrap text-sm">
                             <span>{item.sku}</span>
                             {item.upc && (
-                              <span className="block text-[10px] font-normal text-zinc-500">
+                              <span className="block text-xs font-normal text-zinc-500">
                                 UPC: {item.upc}
                               </span>
                             )}
                           </td>
-                          <td className="py-2.5 px-3 whitespace-nowrap">
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-zinc-100 text-zinc-700 border border-zinc-200">
+                          <td className="py-3 px-3.5 whitespace-nowrap">
+                            <span className="px-2 py-0.5 rounded text-xs font-mono font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
                               {item.categoria}
                             </span>
                           </td>
-                          <td className="py-2.5 px-3 font-medium text-zinc-900 min-w-[220px]">
+                          <td className="py-3 px-3.5 font-semibold text-zinc-900 min-w-[240px] text-sm">
                             {item.descripcion}
                           </td>
-                          <td className="py-2.5 px-3 min-w-[180px]">
-                            <div className="flex items-center gap-1.5">
+                          <td className="py-3 px-3.5 min-w-[200px]">
+                            <div className="flex items-center gap-2">
                               <input
                                 type="text"
                                 value={item.seriales}
@@ -1476,7 +1476,7 @@ export default function NuevoIngresoMontajePage() {
                                   }
                                 }}
                                 placeholder="N/A o escanee serial..."
-                                className="w-full min-w-0 text-xs font-mono border border-zinc-200 rounded px-2 py-1 focus:border-zinc-900 outline-none"
+                                className="w-full min-w-0 text-sm font-mono border border-zinc-200 rounded-lg px-2.5 py-1.5 focus:border-zinc-900 outline-none"
                               />
                               <ScanButton
                                 onClick={() => setScannerTarget({ mode: "row", index })}
@@ -1486,14 +1486,14 @@ export default function NuevoIngresoMontajePage() {
                               />
                             </div>
                           </td>
-                          <td className="py-2.5 px-2 text-right">
+                          <td className="py-3 px-3 text-right">
                             <button
                               type="button"
                               onClick={() => handleRemoveComponent(index)}
-                              className="p-1 text-zinc-400 hover:text-rose-600 rounded transition-colors"
+                              className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
                               title="Eliminar de la orden"
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </td>
                         </tr>
@@ -1629,12 +1629,12 @@ export default function NuevoIngresoMontajePage() {
           <div className="lg:col-span-4 space-y-6">
 
             {/* Tarjeta Resumen de la Orden */}
-            <div className="bg-white p-5 rounded-xl border border-zinc-200 shadow-sm space-y-4 sticky top-6">
-              <h3 className="text-xs font-semibold text-zinc-500 uppercase tracking-wide font-mono">
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-sm space-y-4 sticky top-6">
+              <h3 className="text-xs sm:text-sm font-bold text-zinc-600 uppercase tracking-wide font-mono">
                 Resumen de Ingreso al Taller
               </h3>
 
-              <div className="space-y-3 text-xs divide-y divide-zinc-100">
+              <div className="space-y-3.5 text-xs sm:text-sm divide-y divide-zinc-100">
                 <div className="pt-2 flex justify-between">
                   <span className="text-zinc-500">Vendedor:</span>
                   <strong className="text-zinc-900 text-right">
@@ -1661,7 +1661,7 @@ export default function NuevoIngresoMontajePage() {
 
                 <div className="pt-2 flex justify-between">
                   <span className="text-zinc-500">Modalidad:</span>
-                  <span className="px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-800 font-mono text-[11px] font-semibold">
+                  <span className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 font-mono text-xs font-semibold">
                     {tipoServicio === "Montaje" ? "Montaje PC" : "Expansión Notebook"}
                   </span>
                 </div>
@@ -1691,15 +1691,15 @@ export default function NuevoIngresoMontajePage() {
               {/* Previsualización Notificación WhatsApp al Grupo Montajes */}
               <div className="pt-3 border-t border-zinc-200 space-y-1.5">
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-[11px] font-mono text-zinc-500 uppercase block font-semibold">
+                  <span className="text-xs font-mono text-zinc-600 uppercase block font-bold">
                     Aviso al Grupo WhatsApp (Montajes):
                   </span>
-                  <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded inline-flex items-center gap-1">
-                    <Send className="w-2.5 h-2.5" />
+                  <span className="text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded inline-flex items-center gap-1">
+                    <Send className="w-3 h-3" />
                     Grupo CDE
                   </span>
                 </div>
-                <pre className="p-2.5 rounded bg-zinc-50 border border-zinc-200 text-[11px] font-mono text-zinc-700 whitespace-pre-wrap max-h-40 overflow-y-auto leading-relaxed">
+                <pre className="p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs font-mono text-zinc-700 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
                   {generateWhatsAppMessage()}
                 </pre>
               </div>
@@ -1708,19 +1708,19 @@ export default function NuevoIngresoMontajePage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 bg-zinc-900 hover:bg-black text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isSubmitting ? (
                   <span>Guardando y enviando al grupo...</span>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                     <span>Registrar Ingreso de Montaje</span>
                   </>
                 )}
               </button>
 
-              <p className="text-[11px] text-zinc-400 text-center">
+              <p className="text-xs text-zinc-500 text-center">
                 La orden ingresará a la cola activa del taller bajo la responsabilidad de{" "}
                 {assignedTech === "OTRO" ? customTech || "nuevo técnico" : assignedTech}.
               </p>

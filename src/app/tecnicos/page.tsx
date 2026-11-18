@@ -528,71 +528,71 @@ export default function TecnicosDashboardPage() {
         />
 
         {/* 5 KPIs Principales Basados en los Datos Reales de montaje.csv */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 2xl:gap-6">
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 2xl:gap-6">
           
           {/* KPI 1: Total Órdenes */}
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block font-medium">Órdenes en Taller</span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-zinc-900 tabular-nums">
+          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm">
+            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Órdenes en Taller</span>
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
                 {metrics.totalOrdenes}
               </span>
-              <span className="text-xs text-zinc-600 font-medium">Registros</span>
+              <span className="text-xs sm:text-sm text-zinc-600 font-medium">Registros</span>
             </div>
-            <span className="text-[11px] text-zinc-500 block mt-1">Base oficial NISSEI CDE</span>
+            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">Base oficial NISSEI CDE</span>
           </div>
 
           {/* KPI 2: Montajes de PC (con desglose de equipos) */}
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block font-medium">Montajes de PC</span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-zinc-900 tabular-nums">
+          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm">
+            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Montajes de PC</span>
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
                 {metrics.totalEquiposMontados}
               </span>
-              <span className="text-xs text-sky-700 font-semibold font-mono">
+              <span className="text-xs sm:text-sm text-sky-700 font-bold font-mono">
                 {metrics.totalMontajesOrdenes} órdenes
               </span>
             </div>
-            <span className="text-[11px] text-zinc-500 block mt-1">
+            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">
               {metrics.clientesConLote} clientes con 2 equipos
             </span>
           </div>
 
           {/* KPI 3: Expansiones de Notebook */}
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block font-medium">Expansiones Notebook</span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-zinc-900 tabular-nums">
+          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm">
+            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Expansiones Notebook</span>
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
                 {metrics.totalExpansiones}
               </span>
-              <span className="text-xs text-purple-700 font-semibold font-mono">RAM &amp; SSD</span>
+              <span className="text-xs sm:text-sm text-purple-700 font-bold font-mono">RAM &amp; SSD</span>
             </div>
-            <span className="text-[11px] text-zinc-500 block mt-1">SODIMM y discos M.2</span>
+            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">SODIMM y discos M.2</span>
           </div>
 
           {/* KPI 4: Asesores Comerciales Reales */}
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block font-medium">Asesores Comerciales</span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-zinc-900 tabular-nums">
+          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm">
+            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Asesores Comerciales</span>
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
                 {metrics.totalVendedores}
               </span>
-              <span className="text-xs text-zinc-600 font-medium">Salón &amp; Web</span>
+              <span className="text-xs sm:text-sm text-zinc-600 font-medium">Salón &amp; Web</span>
             </div>
-            <span className="text-[11px] text-zinc-500 block mt-1">Ventas canalizadas a taller</span>
+            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">Ventas canalizadas a taller</span>
           </div>
 
           {/* KPI 5: Canales de Venta */}
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm col-span-2 sm:col-span-1">
-            <span className="text-xs text-zinc-500 block font-medium">Canal Predominante</span>
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-zinc-900 tabular-nums">
+          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm col-span-2 sm:col-span-1">
+            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Canal Predominante</span>
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
                 {metrics.canales.canalTienda}
               </span>
-              <span className="text-xs text-emerald-700 font-semibold">Tienda CDE</span>
+              <span className="text-xs sm:text-sm text-emerald-700 font-bold">Tienda CDE</span>
             </div>
-            <span className="text-[11px] text-zinc-500 block mt-1">
-              {metrics.canales.canalEmpresas} Empresas · {metrics.canales.canalEcommerce} Web
+            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">
+              {metrics.canales.canalEmpresas} Emp · {metrics.canales.canalEcommerce} Web
             </span>
           </div>
 
@@ -817,13 +817,13 @@ export default function TecnicosDashboardPage() {
             
             {/* Buscador */}
             <div className="lg:col-span-5 relative">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por cliente, Nº registro interno, hardware..."
-                className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg pl-9 pr-3 py-2 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
+                className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-lg pl-10 pr-3.5 py-2.5 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
               />
             </div>
 
@@ -867,22 +867,22 @@ export default function TecnicosDashboardPage() {
 
           {/* Tabla de Resultados */}
           <div className="overflow-x-auto border border-zinc-200 rounded-lg">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 text-zinc-500 uppercase tracking-wide border-b border-zinc-200 font-mono text-[11px]">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-zinc-50 text-zinc-600 uppercase tracking-wide border-b border-zinc-200 font-mono text-xs">
                 <tr>
-                  <th className="py-3 px-4 font-semibold">Reg. Interno</th>
-                  <th className="py-3 px-4 font-semibold">Cliente &amp; Canal</th>
-                  <th className="py-3 px-4 font-semibold">Modalidad &amp; Cantidad</th>
-                  <th className="py-3 px-4 font-semibold">Hardware Verificado</th>
-                  <th className="py-3 px-4 font-semibold">Técnico Responsable</th>
-                  <th className="py-3 px-4 font-semibold">Progreso</th>
-                  <th className="py-3 px-4 font-semibold text-right">ACCIONES</th>
+                  <th className="py-3.5 px-4 font-bold">Reg. Interno</th>
+                  <th className="py-3.5 px-4 font-bold">Cliente &amp; Canal</th>
+                  <th className="py-3.5 px-4 font-bold">Modalidad &amp; Cantidad</th>
+                  <th className="py-3.5 px-4 font-bold">Hardware Verificado</th>
+                  <th className="py-3.5 px-4 font-bold">Técnico Responsable</th>
+                  <th className="py-3.5 px-4 font-bold">Progreso</th>
+                  <th className="py-3.5 px-4 font-bold text-right">ACCIONES</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 text-zinc-900">
                 {filteredMontajes.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-8 text-zinc-500">
+                    <td colSpan={7} className="text-center py-10 text-zinc-500 text-sm">
                       No se encontraron órdenes con los filtros aplicados.
                     </td>
                   </tr>
@@ -891,78 +891,78 @@ export default function TecnicosDashboardPage() {
                     <tr key={order.id} className="hover:bg-zinc-50/75 transition-colors">
                       
                       {/* Nro. Registro / Interno */}
-                      <td className="py-3.5 px-4 font-mono whitespace-nowrap">
-                        <div className="font-bold text-zinc-900 text-xs">
+                      <td className="py-4 px-4 font-mono whitespace-nowrap">
+                        <div className="font-extrabold text-zinc-900 text-sm">
                           Reg: {order.nro_reg}
                         </div>
                         {order.prioridad === "URGENTE" && (
-                          <span className="inline-block mt-1 text-[10px] text-rose-700 bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded font-semibold uppercase">
+                          <span className="inline-block mt-1 text-xs text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded font-bold uppercase">
                             Urgente
                           </span>
                         )}
                         {order.prioridad === "EXPRESS" && (
-                          <span className="inline-block mt-1 text-[10px] text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded font-semibold uppercase">
+                          <span className="inline-block mt-1 text-xs text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded font-bold uppercase">
                             Express
                           </span>
                         )}
                       </td>
 
                       {/* Cliente, Vendedor y Canal */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-semibold text-zinc-900">{order.cliente}</div>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded bg-zinc-100 border border-zinc-200 text-[10px] font-mono text-zinc-700">
-                            <ShoppingBag className="w-2.5 h-2.5" />
+                      <td className="py-4 px-4">
+                        <div className="font-bold text-zinc-900 text-sm">{order.cliente}</div>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs font-mono text-zinc-700">
+                            <ShoppingBag className="w-3 h-3" />
                             {order.vendedor}
                           </span>
-                          <span className="text-[10px] text-zinc-500 font-mono">
+                          <span className="text-xs text-zinc-500 font-mono">
                             {order.canal}
                           </span>
                         </div>
                       </td>
 
                       {/* Modalidad y Equipos */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-4 px-4 whitespace-nowrap">
                         {order.tipo_servicio === "Montaje" ? (
-                          <div className="space-y-0.5">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 text-sky-800 border border-sky-200 rounded font-mono text-[11px] font-semibold">
-                              <Cpu className="w-3 h-3" />
+                          <div className="space-y-1">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-sky-50 text-sky-800 border border-sky-200 rounded-lg font-mono text-xs font-bold">
+                              <Cpu className="w-3.5 h-3.5" />
                               Montaje PC
                             </span>
                             {order.cantidadEquipos > 1 && (
-                              <span className="block text-[11px] text-sky-900 font-bold font-mono">
+                              <span className="block text-xs text-sky-900 font-extrabold font-mono">
                                 2 Equipos en lote
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-800 border border-purple-200 rounded font-mono text-[11px] font-semibold">
-                            <Laptop className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 text-purple-800 border border-purple-200 rounded-lg font-mono text-xs font-bold">
+                            <Laptop className="w-3.5 h-3.5" />
                             Expansión Notebook
                           </span>
                         )}
                       </td>
 
                       {/* Hardware Verificado */}
-                      <td className="py-3.5 px-4 text-zinc-600 max-w-sm">
-                        <div className="line-clamp-2 text-xs leading-relaxed" title={getHardwareSummary(order)}>
+                      <td className="py-4 px-4 text-zinc-700 max-w-sm">
+                        <div className="line-clamp-2 text-xs sm:text-sm leading-relaxed" title={getHardwareSummary(order)}>
                           {getHardwareSummary(order)}
                         </div>
-                        <span className="text-[10px] text-zinc-500 font-mono mt-0.5 inline-block">
+                        <span className="text-xs text-zinc-500 font-mono mt-1 inline-block">
                           {order.componentes.length} piezas verificadas
                         </span>
                       </td>
 
                       {/* Técnico Responsable */}
-                      <td className="py-3.5 px-4 whitespace-nowrap">
+                      <td className="py-4 px-4 whitespace-nowrap">
                         {order.tecnico && order.tecnico !== "Sin Asignar" ? (
                           <div className="flex items-center gap-2">
                             <div>
-                              <div className="font-semibold text-zinc-900 flex items-center gap-1.5">
-                                <UserCheck className="w-3.5 h-3.5 text-emerald-700" />
+                              <div className="font-bold text-zinc-900 flex items-center gap-1.5 text-sm">
+                                <UserCheck className="w-4 h-4 text-emerald-700" />
                                 <span>{order.tecnico}</span>
                               </div>
-                              <span className="text-[10px] text-zinc-500 font-mono">Técnico Asignado</span>
+                              <span className="text-xs text-zinc-500 font-mono">Técnico Asignado</span>
                             </div>
                             <CleanSelect
                               value={order.tecnico}
@@ -976,12 +976,12 @@ export default function TecnicosDashboardPage() {
                               size="sm"
                               dropdownWidth="w-48"
                               align="right"
-                              className="text-[11px] py-1 px-2 border-zinc-200 hover:border-zinc-400"
+                              className="text-xs py-1 px-2.5 border-zinc-200 hover:border-zinc-400"
                             />
                           </div>
                         ) : (
                           <div className="space-y-1">
-                            <span className="inline-block text-[11px] font-mono text-zinc-500 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded">
+                            <span className="inline-block text-xs font-mono text-zinc-500 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded">
                               Sin Asignar (Histórico)
                             </span>
                             <div>
@@ -997,7 +997,7 @@ export default function TecnicosDashboardPage() {
                                 }))}
                                 size="sm"
                                 dropdownWidth="w-48"
-                                className="bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400 text-[11px] py-1 px-2"
+                                className="bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400 text-xs py-1 px-2.5"
                               />
                             </div>
                           </div>
@@ -1005,13 +1005,13 @@ export default function TecnicosDashboardPage() {
                       </td>
 
                       {/* Progreso */}
-                      <td className="py-3.5 px-4 w-28">
-                        <div className="flex items-center justify-between text-[11px] font-mono mb-1 tabular-nums">
+                      <td className="py-4 px-4 w-32">
+                        <div className="flex items-center justify-between text-xs font-mono font-bold mb-1.5 tabular-nums">
                           <span>{order.progreso}%</span>
                         </div>
-                        <div className="w-full bg-zinc-200 rounded h-1.5 overflow-hidden">
+                        <div className="w-full bg-zinc-200 rounded-full h-2 overflow-hidden">
                           <div
-                            className={`h-full rounded ${
+                            className={`h-full rounded-full transition-all ${
                               order.progreso === 100 ? "bg-emerald-600" : "bg-zinc-900"
                             }`}
                             style={{ width: `${order.progreso}%` }}
@@ -1020,11 +1020,11 @@ export default function TecnicosDashboardPage() {
                       </td>
 
                       {/* Acciones */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1.5">
+                      <td className="py-4 px-4 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-2">
                           <button
                             onClick={() => setSelectedOrderForDetail(order)}
-                            className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors flex items-center justify-center cursor-pointer"
+                            className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200"
                             title="Ver Detalle Completo"
                           >
                             <Eye className="w-4 h-4" />
@@ -1032,20 +1032,20 @@ export default function TecnicosDashboardPage() {
                           
                           <button
                             onClick={() => setSelectedOrderForCert(order)}
-                            className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors flex items-center justify-center cursor-pointer"
+                            className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200"
                             title="Imprimir Sticker 80mm"
                           >
                             <Printer className="w-4 h-4" />
                           </button>
 
                           {order.estado.toLowerCase() === "entregado" || order.estado.toLowerCase() === "entregada" ? (
-                            <span className="px-2 py-0.5 bg-zinc-100 text-zinc-500 rounded font-mono text-xs">
+                            <span className="px-3 py-1 bg-zinc-100 text-zinc-600 rounded-lg font-mono text-xs font-bold">
                               Entregado
                             </span>
                           ) : (
                             <button
                               onClick={() => handleEntregar(order.id)}
-                              className="px-2.5 py-1 bg-zinc-900 hover:bg-black text-white rounded font-medium text-xs transition-colors shadow-sm cursor-pointer"
+                              className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white rounded-lg font-bold text-xs transition-colors shadow-sm cursor-pointer"
                             >
                               Entregar
                             </button>

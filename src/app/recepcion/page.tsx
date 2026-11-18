@@ -2435,23 +2435,23 @@ ${dictamen.accText}`;
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-zinc-50 text-zinc-500 uppercase tracking-wide border-b border-zinc-200 font-mono">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-zinc-50 text-zinc-600 uppercase tracking-wide border-b border-zinc-200 font-mono text-xs">
                 <tr>
-                  <th className="py-3 px-4 font-semibold">Nº Orden</th>
-                  <th className="py-3 px-4 font-semibold">Cliente</th>
-                  <th className="py-3 px-4 font-semibold">Equipo &amp; Categoría</th>
-                  <th className="py-3 px-4 font-semibold">Nº Serie / IMEI</th>
-                  <th className="py-3 px-4 font-semibold">Mensaje / Detalle Técnico</th>
-                  <th className="py-3 px-4 font-semibold">Ingreso / Salida</th>
-                  <th className="py-3 px-4 font-semibold">Estado</th>
-                  <th className="py-3 px-4 font-semibold min-w-[150px] text-right">Acciones</th>
+                  <th className="py-3.5 px-4 font-bold">Nº Orden</th>
+                  <th className="py-3.5 px-4 font-bold">Cliente</th>
+                  <th className="py-3.5 px-4 font-bold">Equipo &amp; Categoría</th>
+                  <th className="py-3.5 px-4 font-bold">Nº Serie / IMEI</th>
+                  <th className="py-3.5 px-4 font-bold">Mensaje / Detalle Técnico</th>
+                  <th className="py-3.5 px-4 font-bold">Ingreso / Salida</th>
+                  <th className="py-3.5 px-4 font-bold">Estado</th>
+                  <th className="py-3.5 px-4 font-bold min-w-[160px] text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-200 text-zinc-900">
                 {paginatedTickets.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-zinc-500">
+                    <td colSpan={8} className="py-12 text-center text-zinc-500 text-sm">
                       No se encontraron órdenes que coincidan con los criterios de búsqueda.
                     </td>
                   </tr>
@@ -2459,71 +2459,71 @@ ${dictamen.accText}`;
                   paginatedTickets.map((ticket) => (
                     <tr key={ticket.idOrden} className="hover:bg-zinc-50/75 transition-colors">
                       {/* Nº Orden */}
-                      <td className="py-3 px-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-bold text-zinc-900 font-mono tabular-nums">#{ticket.idOrden}</span>
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-extrabold text-zinc-900 font-mono text-sm tabular-nums">#{ticket.idOrden}</span>
                           {isTicketRecibido(ticket) ? (
                             <span
-                              className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
                               title={`Recibido en depósito: ${ticket.fechaRecibidoDeposito || ''}`}
                             >
                               ✓ RECIBIDO · LISTO RETIRO
                             </span>
                           ) : isTicketEnCamino(ticket) ? (
                             <span
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200"
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200"
                               title={`En camino por transportadora desde CDE (Despachado: ${ticket.fechaDespachoCde || 'En tránsito'}${ticket.idOrdenCde ? ` · CDE #${ticket.idOrdenCde}` : ''})`}
                             >
-                              <SpeedTruck className="w-3 h-3 text-amber-600" smokeColor="bg-amber-400" />
+                              <SpeedTruck className="w-3.5 h-3.5 text-amber-600" smokeColor="bg-amber-400" />
                               <span>EN CAMINO</span>
                             </span>
                           ) : isTicketIngresadoEnCde(ticket) ? (
                             <span
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
                               title={`Ingresada en laboratorio técnico CDE: ${ticket.fechaIngresoCde || 'En taller CDE'}${ticket.idOrdenCde ? ` · CDE #${ticket.idOrdenCde}` : ''}`}
                             >
-                              <Building2 className="w-3 h-3 text-indigo-600" />
+                              <Building2 className="w-3.5 h-3.5 text-indigo-600" />
                               <span>INGRESADA EN CDE</span>
                             </span>
                           ) : isTicketFaltaIngresar(ticket) ? (
                             <span
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-50 text-purple-700 border border-purple-200"
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-bold bg-purple-50 text-purple-700 border border-purple-200"
                               title="Equipo con informe técnico listo pero pendiente de ingreso físico en recepción"
                             >
-                              <Inbox className="w-3 h-3 text-purple-600" />
+                              <Inbox className="w-3.5 h-3.5 text-purple-600" />
                               <span>FALTA INGRESAR</span>
                             </span>
                           ) : null}
                           {isTicketNuevoIngreso(ticket) && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
                               NUEVO INGRESO
                             </span>
                           )}
                           {isTicketEntregadoReciente(ticket) ? (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                               RECIÉN ENTREGADO
                             </span>
                           ) : (
                             isTicketEstadoCambiadoReciente(ticket) && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-50 text-amber-700 border border-amber-200">
                                 ESTADO CAMBIADO
                               </span>
                             )
                           )}
                           {isTicketVencidoDeposito(ticket) && (
                             <span
-                              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-50 text-rose-700 border border-rose-300"
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-bold bg-rose-50 text-rose-700 border border-rose-300"
                               title="Plazo de guarda de 90 días cumplido en sucursal. Remitir al depósito central para liberar espacio."
                             >
-                              <Package className="w-3 h-3 text-rose-600" />
+                              <Package className="w-3.5 h-3.5 text-rose-600" />
                               <span>LLEVAR A DEPÓSITO (+90D)</span>
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                          <span className="text-[11px] text-zinc-500 font-mono tabular-nums">Cód: {ticket.codigoProducto || "N/A"}</span>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <span className="text-xs text-zinc-500 font-mono tabular-nums">Cód: {ticket.codigoProducto || "N/A"}</span>
                           {ticket.idOrdenCde && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-indigo-800 bg-indigo-50 px-1.5 py-0.5 rounded border border-indigo-200">
+                            <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
                               <span>CDE #{ticket.idOrdenCde}</span>
                               {ticket.fechaDespachoCde ? (
                                 <span className="text-amber-800 font-semibold">· Despacho: {ticket.fechaDespachoCde}</span>
@@ -2536,28 +2536,28 @@ ${dictamen.accText}`;
                       </td>
 
                       {/* Cliente */}
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-zinc-900">{ticket.cliente || "Cliente Particular"}</div>
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-zinc-900 text-sm">{ticket.cliente || "Cliente Particular"}</div>
                         {isTicketDanesa(ticket.cliente) && (
-                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200 mt-0.5">
-                            <Package className="w-3 h-3 text-amber-700" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200 mt-1">
+                            <Package className="w-3.5 h-3.5 text-amber-700" />
                             <span>Danesa SA</span>
                           </span>
                         )}
                       </td>
 
                       {/* Equipo & Categoría */}
-                      <td className="py-3 px-4">
-                        <div className="font-semibold text-zinc-900 truncate max-w-[200px]" title={`${ticket.marca} ${ticket.modelo}`}>
-                          <span className="font-bold">{ticket.marca}</span> {ticket.modelo}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-zinc-900 truncate max-w-[220px] text-sm" title={`${ticket.marca} ${ticket.modelo}`}>
+                          <span className="font-extrabold">{ticket.marca}</span> {ticket.modelo}
                         </div>
-                        <span className="inline-block px-1.5 py-0.5 mt-0.5 rounded text-[11px] bg-zinc-100 text-zinc-700 font-mono">
+                        <span className="inline-block px-2 py-0.5 mt-1 rounded text-xs bg-zinc-100 text-zinc-700 font-mono font-medium">
                           {ticket.tipoComponente || "GENERAL"}
                         </span>
                       </td>
 
                       {/* Nº Serie */}
-                      <td className="py-3 px-4 font-mono text-[11px] text-zinc-600 whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono text-xs text-zinc-700 font-medium whitespace-nowrap">
                         {ticket.serial || "S/N"}
                       </td>
 
@@ -2565,43 +2565,43 @@ ${dictamen.accText}`;
                       {(() => {
                         const formattedMensaje = formatSatiSentenceCase(ticket.mensaje);
                         return (
-                          <td className="py-3 px-4 text-zinc-600 max-w-xs truncate" title={formattedMensaje}>
+                          <td className="py-3.5 px-4 text-zinc-700 max-w-xs truncate text-xs sm:text-sm" title={formattedMensaje}>
                             {formattedMensaje || "Sin observaciones técnicas registradas."}
                           </td>
                         );
                       })()}
 
                       {/* Fechas */}
-                      <td className="py-3 px-4 font-mono text-[11px] whitespace-nowrap tabular-nums">
-                        <div className="text-zinc-900">Ingreso: {ticket.fechaIngreso || "N/A"}</div>
+                      <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap tabular-nums">
+                        <div className="text-zinc-900 font-semibold">Ingreso: {ticket.fechaIngreso || "N/A"}</div>
                         {ticket.fechaEntregada && (
-                          <div className="text-[10px] text-zinc-500">Entrega: {ticket.fechaEntregada}</div>
+                          <div className="text-xs text-zinc-500 mt-0.5">Entrega: {ticket.fechaEntregada}</div>
                         )}
                       </td>
 
                       {/* Estado */}
-                      <td className="py-3 px-4 whitespace-nowrap">
+                      <td className="py-3.5 px-4 whitespace-nowrap">
                         {getStatusBadge(ticket.estado, ticket.fechaEntregada || ticket.fechaRecibidoDeposito)}
                       </td>
 
                       {/* Acciones */}
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-1.5">
+                      <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                        <div className="inline-flex items-center gap-2">
                           {isTicketRecibido(ticket) ? (
                             <button
                               type="button"
                               onClick={() => handleAbrirParaNotificar(ticket)}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-2xs whitespace-nowrap cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-2xs whitespace-nowrap cursor-pointer"
                               title={`Recibido · Listo para que retire el cliente (${ticket.fechaRecibidoDeposito || ''}). Click para ver detalle o re-notificar.`}
                             >
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 stroke-[2.5]" />
+                              <CheckCircle2 className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
                               <span>Listo retiro</span>
                             </button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => handleAbrirParaNotificar(ticket)}
-                              className="p-1.5 text-zinc-500 hover:text-emerald-700 hover:bg-emerald-50 rounded transition-colors flex items-center justify-center cursor-pointer"
+                              className="p-2 text-zinc-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-emerald-200"
                               title="Completar informe técnico para recibir y notificar al grupo"
                             >
                               <MessageSquare className="w-4 h-4" />
@@ -2610,7 +2610,7 @@ ${dictamen.accText}`;
 
                           <button
                             onClick={() => setSelectedTicket(ticket)}
-                            className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors flex items-center justify-center"
+                            className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center border border-transparent hover:border-zinc-200"
                             title="Ver Detalle Completo"
                           >
                             <Eye className="w-4 h-4" />
@@ -2618,20 +2618,20 @@ ${dictamen.accText}`;
                           
                           <button
                             onClick={() => setShowPrintModal(ticket)}
-                            className="p-1.5 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded transition-colors flex items-center justify-center"
+                            className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center border border-transparent hover:border-zinc-200"
                             title="Imprimir Boleta SATI"
                           >
                             <Printer className="w-4 h-4" />
                           </button>
 
                           {ticket.estado.toLowerCase() === "entregada" ? (
-                            <span className="px-2 py-0.5 bg-zinc-100 text-zinc-500 rounded font-mono text-xs">
+                            <span className="px-2.5 py-1 bg-zinc-100 text-zinc-600 rounded-lg font-mono text-xs font-semibold">
                               Entregado
                             </span>
                           ) : (
                             <button
                               onClick={() => handleCambiarEstado(ticket.idOrden, "Entregada")}
-                              className="px-2.5 py-1 bg-zinc-900 hover:bg-black text-white rounded font-medium text-xs transition-colors shadow-sm"
+                              className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white rounded-lg font-semibold text-xs transition-colors shadow-sm cursor-pointer"
                             >
                               Entregar
                             </button>
@@ -2858,67 +2858,67 @@ ${dictamen.accText}`;
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-3 bg-[#f9f9f9] p-3.5 rounded-xl border border-[#f0f0f0]">
+                <div className="grid grid-cols-2 gap-3.5 bg-[#f9f9f9] p-4 rounded-xl border border-[#f0f0f0]">
                   <div>
-                    <span className="text-[#888888] block text-[11px]">Cliente</span>
-                    <strong className="text-[#121212] text-sm">{selectedTicket.cliente}</strong>
+                    <span className="text-zinc-500 block text-xs font-semibold">Cliente</span>
+                    <strong className="text-zinc-900 text-sm sm:text-base">{selectedTicket.cliente}</strong>
                   </div>
                   <div>
-                    <span className="text-[#888888] block text-[11px]">Código de Producto</span>
-                    <strong className="text-[#121212] font-mono">{selectedTicket.codigoProducto || "N/A"}</strong>
+                    <span className="text-zinc-500 block text-xs font-semibold">Código de Producto</span>
+                    <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.codigoProducto || "N/A"}</strong>
                   </div>
                   <div>
-                    <span className="text-[#888888] block text-[11px]">Fecha de Ingreso</span>
-                    <strong className="text-[#121212] font-mono">{selectedTicket.fechaIngreso || "N/A"}</strong>
+                    <span className="text-zinc-500 block text-xs font-semibold">Fecha de Ingreso</span>
+                    <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaIngreso || "N/A"}</strong>
                   </div>
                   <div>
-                    <span className="text-[#888888] block text-[11px]">Fecha de Entrega</span>
+                    <span className="text-zinc-500 block text-xs font-semibold">Fecha de Entrega</span>
                     {selectedTicket.recibidoEnDeposito ? (
-                      <strong className="text-emerald-700 font-bold flex items-center gap-1 font-sans text-xs">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <strong className="text-emerald-700 font-bold flex items-center gap-1.5 font-sans text-xs sm:text-sm">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                         <span>Recibido · Listo para que retire el cliente</span>
                       </strong>
                     ) : (
-                      <strong className="text-[#121212] font-mono">{selectedTicket.fechaEntregada || "Pendiente de retiro"}</strong>
+                      <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaEntregada || "Pendiente de retiro"}</strong>
                     )}
                   </div>
                   {selectedTicket.fechaVenta && (
                     <div>
-                      <span className="text-[#888888] block text-[11px]">Fecha de Venta</span>
-                      <strong className="text-[#121212] font-mono">{selectedTicket.fechaVenta}</strong>
+                      <span className="text-zinc-500 block text-xs font-semibold">Fecha de Venta</span>
+                      <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaVenta}</strong>
                     </div>
                   )}
                   <div>
-                    <span className="text-[#888888] block text-[11px]">Estado Actual</span>
-                    <div className="mt-0.5">{getStatusBadge(selectedTicket.estado)}</div>
+                    <span className="text-zinc-500 block text-xs font-semibold">Estado Actual</span>
+                    <div className="mt-1">{getStatusBadge(selectedTicket.estado)}</div>
                   </div>
                 </div>
 
                 <div>
-                  <span className="text-[#888888] block mb-1 text-[11px]">Identificación del Hardware</span>
-                  <div className="p-3 bg-white border border-[#e5e5e5] rounded-xl space-y-1">
-                    <div className="font-bold text-sm text-[#121212]">
+                  <span className="text-zinc-500 block mb-1.5 text-xs font-bold uppercase tracking-wide">Identificación del Hardware</span>
+                  <div className="p-3.5 bg-white border border-[#e5e5e5] rounded-xl space-y-1.5 shadow-2xs">
+                    <div className="font-extrabold text-sm sm:text-base text-zinc-900">
                       {selectedTicket.marca} {selectedTicket.modelo}
                     </div>
-                    <div className="text-[11px] text-[#555555] font-mono flex items-center justify-between">
-                      <span>Categoría: {selectedTicket.tipoComponente}</span>
-                      <span>S/N: <strong>{selectedTicket.serial || "N/A"}</strong></span>
+                    <div className="text-xs text-zinc-600 font-mono flex items-center justify-between">
+                      <span>Categoría: <strong className="text-zinc-800">{selectedTicket.tipoComponente}</strong></span>
+                      <span>S/N: <strong className="text-zinc-800">{selectedTicket.serial || "N/A"}</strong></span>
                     </div>
                   </div>
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[#888888] font-bold text-[11px] uppercase tracking-wider">
+                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
                       Informe Técnico / Mensaje de Servicio
                     </span>
                     <button
                       type="button"
                       onClick={handleGuardarMensaje}
-                      className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
                       title="Guardar observaciones y accesorios"
                     >
-                      <Save className="w-3 h-3" />
+                      <Save className="w-3.5 h-3.5" />
                       <span>Guardar cambios</span>
                     </button>
                   </div>
@@ -2928,29 +2928,29 @@ ${dictamen.accText}`;
                     onChange={(e) => setModalMensaje(e.target.value)}
                     placeholder="Añada o modifique aquí el informe técnico, observaciones del laboratorio, pruebas ejecutadas..."
                     rows={3}
-                    className="w-full p-3 bg-white border border-slate-300 focus:border-zinc-900 rounded-xl text-xs text-[#222222] leading-relaxed outline-none transition-all placeholder:text-zinc-400 font-sans shadow-sm"
+                    className="w-full p-3.5 bg-white border border-slate-300 focus:border-zinc-900 rounded-xl text-sm text-zinc-900 leading-relaxed outline-none transition-all placeholder:text-zinc-400 font-sans shadow-sm"
                   />
                 </div>
 
                 {/* Sección de Accesorios Incluidos / Devueltos con el Equipo */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[#888888] font-bold text-[11px] uppercase tracking-wider flex items-center gap-1.5">
-                      <Package className="w-3.5 h-3.5 text-[#555555]" />
+                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                      <Package className="w-4 h-4 text-zinc-600" />
                       Accesorios Incluidos / Devueltos con el Equipo
                     </span>
                     {modalAccessoriesList.length > 0 && (
                       <button
                         type="button"
                         onClick={handleClearModalAccessories}
-                        className="text-[11px] font-semibold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
                       >
                         Limpiar todos
                       </button>
                     )}
                   </div>
 
-                  <div className="p-3 bg-white border border-slate-300 rounded-xl space-y-2.5 shadow-sm">
+                  <div className="p-3.5 bg-white border border-slate-300 rounded-xl space-y-2.5 shadow-sm">
                     {/* Chips de accesorios actuales */}
                     <div className="flex flex-wrap items-center gap-1.5 min-h-[26px]">
                       {modalAccessoriesList.length > 0 ? (
@@ -3099,11 +3099,11 @@ ${dictamen.accText}`;
                               key={opt.id}
                               type="button"
                               onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
-                              className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] font-semibold rounded-lg border transition-all cursor-pointer ${
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
                                 selected ? opt.chipActive : opt.chipInactive
                               }`}
                             >
-                              {selected && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
+                              {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
                               <span>{opt.label}</span>
                             </button>
                           );
@@ -3111,17 +3111,17 @@ ${dictamen.accText}`;
                       </div>
 
                       {isTicketDanesa(selectedTicket.cliente) ? (
-                        <div className="text-xs text-amber-900 bg-amber-50/90 p-2.5 rounded-lg border border-amber-200 flex items-start gap-2">
+                        <div className="text-xs sm:text-sm text-amber-900 bg-amber-50/90 p-3 rounded-lg border border-amber-200 flex items-start gap-2.5">
                           <Building2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
                           <div>
                             <div className="font-bold text-amber-950">Mercadería de Stock Propio (Danesa S.A.)</div>
-                            <p className="text-amber-800 text-[11px] leading-relaxed mt-0.5">
+                            <p className="text-amber-800 text-xs leading-relaxed mt-0.5">
                               Este equipo pertenece a la sucursal. Al tocar <strong>Marcar como Recibido</strong> se registrará la recepción interna en el sistema sin enviar notificaciones al grupo de WhatsApp.
                             </p>
                           </div>
                         </div>
                       ) : (
-                        <div className="text-xs text-zinc-800 space-y-1.5 bg-white/90 p-2.5 rounded-lg border border-emerald-100">
+                        <div className="text-xs sm:text-sm text-zinc-800 space-y-1.5 bg-white/90 p-3 rounded-lg border border-emerald-100">
                           <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
                           <p className="text-zinc-600 leading-relaxed">{preview.body}</p>
                           {preview.detalleTexto ? (
@@ -3133,7 +3133,7 @@ ${dictamen.accText}`;
                               Complete &quot;Informe Técnico / Mensaje de Servicio&quot; arriba para incluir el detalle.
                             </p>
                           )}
-                          <div className="text-[10px] text-zinc-500 pt-1.5 border-t border-emerald-100/60 flex items-center justify-between flex-wrap gap-1 font-mono">
+                          <div className="text-xs text-zinc-500 pt-1.5 border-t border-emerald-100/60 flex items-center justify-between flex-wrap gap-1 font-mono">
                             <span>📅 Ingreso: <strong className="text-zinc-700 font-semibold">{selectedTicket.fechaIngreso || "N/A"}</strong></span>
                             <span>🛒 Venta: <strong className="text-zinc-700 font-semibold">{selectedTicket.fechaVenta || "N/A"}</strong></span>
                           </div>
@@ -3144,12 +3144,12 @@ ${dictamen.accText}`;
                 })()}
               </div>
 
-              <div className="pt-3 border-t border-[#e5e5e5] flex justify-between items-center">
+              <div className="pt-3.5 border-t border-[#e5e5e5] flex justify-between items-center">
                 {isTicketDanesa(selectedTicket.cliente) ? (
                   <button
                     type="button"
                     onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors ${
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-colors ${
                       selectedTicket.recibidoEnDeposito
                         ? "bg-zinc-800 hover:bg-zinc-900"
                         : "bg-emerald-600 hover:bg-emerald-700"
@@ -3166,7 +3166,7 @@ ${dictamen.accText}`;
                   <button
                     type="button"
                     onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                    className={`inline-flex items-center gap-1.5 px-3.5 py-2 text-white rounded-xl text-xs font-semibold shadow-sm cursor-pointer transition-colors ${
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-colors ${
                       selectedTicket.recibidoEnDeposito
                         ? "bg-emerald-700 hover:bg-emerald-800"
                         : "bg-emerald-600 hover:bg-emerald-700"
@@ -3188,7 +3188,7 @@ ${dictamen.accText}`;
 
                 <button
                   onClick={() => setSelectedTicket(null)}
-                  className="px-4 py-2 bg-[#1c1c1e] text-white rounded-xl text-xs font-semibold"
+                  className="px-5 py-2.5 bg-[#1c1c1e] hover:bg-black text-white rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
                 >
                   Cerrar
                 </button>
