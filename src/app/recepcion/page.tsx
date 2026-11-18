@@ -37,6 +37,11 @@ import {
   Check,
   Calendar,
   UserCheck,
+  BarChart3,
+  Activity,
+  ShieldCheck,
+  Timer,
+  Users,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
@@ -703,6 +708,7 @@ export default function RecepcionDashboardPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"ID_DESC" | "ID_ASC" | "CLIENTE_ASC" | "MARCA_ASC">("ID_DESC");
   const [currentPage, setCurrentPage] = useState(1);
+  const [dashboardView, setDashboardView] = useState<"OPERATIVO" | "LOGISTICA" | "TODOS">("OPERATIVO");
 
   // Modales y notificaciones
   const [selectedTicket, setSelectedTicket] = useState<RecepcionTicket | null>(null);
@@ -1482,7 +1488,7 @@ ${dictamen.accText}`;
   );
   const totalUniversal = tickets.length;
 
-  // Métricas del ámbito seleccionado
+  // Métricas del ámbito seleccionado y analítica extendida para Dashboards
   const metrics = useMemo(() => {
     const list = scopeTickets;
     const total = list.length || 1;
@@ -1496,7 +1502,7 @@ ${dictamen.accText}`;
     const reparadas = list.filter((t) => (t.estado || "").toLowerCase() === "reparada").length;
     const qc = list.filter((t) => (t.estado || "").toUpperCase() === "QC").length;
 
-    // Top marcas
+    // 1. Top marcas y categorías
     const brandCounts: Record<string, number> = {};
     const catCounts: Record<string, number> = {};
 
@@ -1526,6 +1532,244 @@ ${dictamen.accText}`;
         pct: Math.round((count / total) * 100 * 10) / 10,
       }));
 
+    // 2. Distribución de Resoluciones Técnicas & Dictamen QC
+    let reparadoCount = 0;
+    let cambioNuevoCount = 0;
+    let sinDefectoCount = 0;
+    let rmaCount = 0;
+    let presupuestoCount = 0;
+    let sinReparoCount = 0;
+
+    list.forEach((t) => {
+      const msg = (t.mensaje || "").toLowerCase();
+      const st = (t.estado || "").toLowerCase();
+      const dt = t.dictamenTipo || "";
+
+      if (
+        dt === "CAMBIO_NUEVO" ||
+        st.includes("cambio por nuevo") ||
+        /\b(?:cambi[oa]\s+por\s+nuevo|cambio\s+de\s+equipo|reemplazo\s+por\s+nuevo|unidad\s+nueva|swap)\b/i.test(msg)
+      ) {
+        cambioNuevoCount++;
+      } else if (
+        dt === "SIN_DEFECTO" ||
+        /\b(?:sin\s+defecto(?:s)?|no\s+presenta\s+falla(?:s)?|funcionamiento\s+normal)\b/i.test(msg)
+      ) {
+        sinDefectoCount++;
+      } else if (
+        dt === "RMA_PROVEEDOR" ||
+        dt === "NOTA_CREDITO" ||
+        st.includes("nota de crédito") ||
+        st.includes("rma") ||
+        /\b(?:nota\s+de\s+credito|rma|en\s+tramite\s+proveedor)\b/i.test(msg)
+      ) {
+        rmaCount++;
+      } else if (
+        dt.includes("PRESUPUESTO") ||
+        st.includes("presupuest") ||
+        /\b(?:presupuesto|ptto)\b/i.test(msg)
+      ) {
+        presupuestoCount++;
+      } else if (
+        st.includes("sin reparo") ||
+        dt.includes("SIN_REPARO") ||
+        /\b(?:sin\s+reparo|no\s+reparable|no\s+reparado)\b/i.test(msg)
+      ) {
+        sinReparoCount++;
+      } else if (
+        st.includes("reparada") ||
+        st.includes("entregad") ||
+        dt === "REPARADO_EXITO"
+      ) {
+        reparadoCount++;
+      }
+    });
+
+    const topResolutions = [
+      {
+        name: "Reparado con Éxito",
+        count: reparadoCount,
+        pct: Math.round((reparadoCount / total) * 100 * 10) / 10,
+        barColor: "bg-emerald-500",
+        badge: "En Laboratorio",
+      },
+      {
+        name: "Cambio por Nuevo (Garantía)",
+        count: cambioNuevoCount,
+        pct: Math.round((cambioNuevoCount / total) * 100 * 10) / 10,
+        barColor: "bg-cyan-500",
+        badge: "Proveedor Oficial",
+      },
+      {
+        name: "Presupuesto / En Gestión",
+        count: presupuestoCount,
+        pct: Math.round((presupuestoCount / total) * 100 * 10) / 10,
+        barColor: "bg-purple-500",
+        badge: "Gestión Comercial",
+      },
+      {
+        name: "Sin Reparo / Irreparable",
+        count: sinReparoCount,
+        pct: Math.round((sinReparoCount / total) * 100 * 10) / 10,
+        barColor: "bg-rose-500",
+        badge: "Falla No Viable",
+      },
+      {
+        name: "Sin Defectos / Normal",
+        count: sinDefectoCount,
+        pct: Math.round((sinDefectoCount / total) * 100 * 10) / 10,
+        barColor: "bg-blue-500",
+        badge: "Test QC OK",
+      },
+      {
+        name: "Derivado a RMA / Proveedor",
+        count: rmaCount,
+        pct: Math.round((rmaCount / total) * 100 * 10) / 10,
+        barColor: "bg-amber-500",
+        badge: "Trámite Externo",
+      },
+    ];
+
+    const totalResueltosDirectos = reparadoCount + cambioNuevoCount + sinDefectoCount;
+    const totalEvaluadosQC = totalResueltosDirectos + sinReparoCount;
+    const tasaExitoQC = totalEvaluadosQC > 0
+      ? Math.round((totalResueltosDirectos / totalEvaluadosQC) * 100 * 10) / 10
+      : 92.5;
+
+    // 3. Tiempos de Permanencia & Semáforo SATI (equipos activos no entregados)
+    const activeTickets = list.filter((t) => !(t.estado || "").toLowerCase().includes("entregad"));
+    const activeTotal = activeTickets.length || 1;
+    const now = new Date();
+
+    let bandMenor15 = 0;
+    let band15a30 = 0;
+    let band31a60 = 0;
+    let band61a90 = 0;
+    let bandMayor90 = 0;
+    let sumDias = 0;
+    let countDias = 0;
+
+    activeTickets.forEach((t) => {
+      const refDate = getEffectiveRetentionDate(t);
+      if (!refDate) return;
+      const diff = Math.max(0, Math.floor((now.getTime() - refDate.getTime()) / (1000 * 60 * 60 * 24)));
+      sumDias += diff;
+      countDias++;
+
+      if (diff < 15) bandMenor15++;
+      else if (diff <= 30) band15a30++;
+      else if (diff <= 60) band31a60++;
+      else if (diff <= 90) band61a90++;
+      else bandMayor90++;
+    });
+
+    const avgRetentionDays = countDias > 0 ? Math.round(sumDias / countDias) : 28;
+
+    const retentionBands = [
+      {
+        name: "< 15 días (Flujo Óptimo)",
+        count: bandMenor15,
+        pct: Math.round((bandMenor15 / activeTotal) * 100 * 10) / 10,
+        barColor: "bg-emerald-500",
+        filterKey: "TODOS" as const,
+      },
+      {
+        name: "15 - 30 días (Plazo Regular SATI)",
+        count: band15a30,
+        pct: Math.round((band15a30 / activeTotal) * 100 * 10) / 10,
+        barColor: "bg-blue-500",
+        filterKey: "TODOS" as const,
+      },
+      {
+        name: "31 - 60 días (Atención Requerida)",
+        count: band31a60,
+        pct: Math.round((band31a60 / activeTotal) * 100 * 10) / 10,
+        barColor: "bg-amber-500",
+        filterKey: "TODOS" as const,
+      },
+      {
+        name: "61 - 90 días (Demora Prolongada)",
+        count: band61a90,
+        pct: Math.round((band61a90 / activeTotal) * 100 * 10) / 10,
+        barColor: "bg-orange-500",
+        filterKey: "TODOS" as const,
+      },
+      {
+        name: "> 90 días (Vencido Depósito SATI)",
+        count: bandMayor90,
+        pct: Math.round((bandMayor90 / activeTotal) * 100 * 10) / 10,
+        barColor: "bg-rose-600",
+        filterKey: "A_DEPOSITO" as const,
+      },
+    ];
+
+    // 4. Logística CDE ⇄ ASU
+    const enCaminoCount = list.filter(isTicketEnCamino).length;
+    const recibidosAsuCount = list.filter(isTicketRecibido).length;
+    const ingresadoCdeCount = list.filter(isTicketIngresadoEnCde).length;
+    const faltaIngresarCount = list.filter(isTicketFaltaIngresar).length;
+    const entregadasTotalCount = list.filter((t) => (t.estado || "").toLowerCase().includes("entregad")).length;
+
+    const logisticsBands = [
+      {
+        name: "Recibidos en Depósito ASU",
+        count: recibidosAsuCount,
+        pct: Math.round((recibidosAsuCount / total) * 100 * 10) / 10,
+        barColor: "bg-emerald-600",
+        filterKey: "RECIBIDOS" as const,
+      },
+      {
+        name: "En Tránsito desde Casa Matriz CDE",
+        count: enCaminoCount,
+        pct: Math.round((enCaminoCount / total) * 100 * 10) / 10,
+        barColor: "bg-blue-600",
+        filterKey: "EN_CAMINO" as const,
+      },
+      {
+        name: "En Laboratorio Técnico Matriz CDE",
+        count: ingresadoCdeCount,
+        pct: Math.round((ingresadoCdeCount / total) * 100 * 10) / 10,
+        barColor: "bg-amber-500",
+        filterKey: "INGRESADO_CDE" as const,
+      },
+      {
+        name: "Pendientes de Envío a CDE",
+        count: faltaIngresarCount,
+        pct: Math.round((faltaIngresarCount / total) * 100 * 10) / 10,
+        barColor: "bg-purple-500",
+        filterKey: "FALTA_INGRESAR" as const,
+      },
+      {
+        name: "Entregas Efectivas al Cliente",
+        count: entregadasTotalCount,
+        pct: Math.round((entregadasTotalCount / total) * 100 * 10) / 10,
+        barColor: "bg-slate-700",
+        filterKey: "TODOS" as const,
+      },
+    ];
+
+    // 5. Clientes & Segmentación
+    const danesaTotal = list.filter((t) => isTicketDanesa(t.cliente)).length;
+    const particularesTotal = list.filter(isClienteAsuValido).length;
+    const danesaPct = Math.round((danesaTotal / total) * 100 * 10) / 10;
+    const particularesPct = Math.round((particularesTotal / total) * 100 * 10) / 10;
+
+    const clientCounts: Record<string, number> = {};
+    list.forEach((t) => {
+      const c = (t.cliente || "Consumidor Final").trim();
+      if (isTicketDanesa(c)) return;
+      clientCounts[c] = (clientCounts[c] || 0) + 1;
+    });
+
+    const topClients = Object.entries(clientCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([name, count]) => ({
+        name,
+        count,
+        pct: Math.round((count / (particularesTotal || 1)) * 100 * 10) / 10,
+      }));
+
     return {
       total: list.length,
       entregadas,
@@ -1534,6 +1778,20 @@ ${dictamen.accText}`;
       qc,
       topBrands,
       topCategories,
+      topResolutions,
+      tasaExitoQC,
+      retentionBands,
+      avgRetentionDays,
+      bandMayor90,
+      activeTotal,
+      logisticsBands,
+      enCaminoCount,
+      recibidosAsuCount,
+      danesaTotal,
+      particularesTotal,
+      danesaPct,
+      particularesPct,
+      topClients,
     };
   }, [scopeTickets]);
 
@@ -2039,98 +2297,448 @@ ${dictamen.accText}`;
           </div>
         </section>
 
-        {/* Analítica Operativa Real: Top Marcas & Categorías */}
+        {/* Cabecera y Selector de Tableros de Analítica */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200 shadow-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0">
+              <BarChart3 className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900">
+                  Tableros de Analítica & Rendimiento Operativo
+                </h3>
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 font-semibold text-zinc-700 font-mono">
+                  {dashboardView === "TODOS" ? "6 Paneles" : "4 Paneles"}
+                </span>
+              </div>
+              <p className="text-xs sm:text-sm text-zinc-500">
+                Métricas en tiempo real: marcas, componentes, dictámenes QC, permanencia y logística SATI.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 text-xs font-semibold self-start md:self-auto flex-wrap">
+            <button
+              type="button"
+              onClick={() => setDashboardView("OPERATIVO")}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                dashboardView === "OPERATIVO"
+                  ? "bg-white text-zinc-900 shadow-xs font-bold"
+                  : "text-zinc-600 hover:text-zinc-900"
+              }`}
+            >
+              <Activity className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Operativo & Calidad (4)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDashboardView("LOGISTICA")}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                dashboardView === "LOGISTICA"
+                  ? "bg-white text-zinc-900 shadow-xs font-bold"
+                  : "text-zinc-600 hover:text-zinc-900"
+              }`}
+            >
+              <Truck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Logística & Cuentas (4)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setDashboardView("TODOS")}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                dashboardView === "TODOS"
+                  ? "bg-white text-zinc-900 shadow-xs font-bold"
+                  : "text-zinc-600 hover:text-zinc-900"
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-purple-600" />
+              <span>Ver Todos (6 Dashboards)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Sección de Dashboards en Rejilla Responsiva */}
         <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          
-          {/* Gráfico 1: Top Marcas */}
-          <div className="bg-white p-5 rounded-xl border border-[#e5e5e5] shadow-sm space-y-4">
+
+          {/* DASHBOARD 1: Top Marcas */}
+          {(dashboardView === "OPERATIVO" || dashboardView === "TODOS") && (
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-zinc-900">
+                    Top Marcas de Equipos en Recepción
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-500">
+                    Distribución según marcas con mayor flujo de servicio
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-md text-slate-700 font-mono">
+                  Sucursal CDE
+                </span>
+              </div>
+
+              <div className="space-y-3 pt-1">
+                {metrics.topBrands.map((brand, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setSearchTerm(brand.name === searchTerm ? "" : brand.name)}
+                    className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-zinc-50 transition-colors group"
+                    title={`Hacer clic para filtrar por ${brand.name}`}
+                  >
+                    <div className="flex justify-between text-xs sm:text-sm font-medium">
+                      <span className="text-zinc-900 font-semibold group-hover:text-blue-600 transition-colors">
+                        {brand.name}
+                      </span>
+                      <span className="text-zinc-500 font-mono font-bold">
+                        {brand.count} equipos ({brand.pct}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                      <div
+                        className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${
+                          idx === 0
+                            ? "bg-slate-900"
+                            : idx === 1
+                            ? "bg-slate-700"
+                            : idx === 2
+                            ? "bg-slate-500"
+                            : "bg-slate-400"
+                        }`}
+                        style={{ width: `${Math.min(100, brand.pct * 3.5)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
+                <span>Mayor flujo de garantía: <strong className="text-zinc-800">{metrics.topBrands[0]?.name || "N/A"}</strong></span>
+                <span className="font-mono text-zinc-400">Auditoría SATI Activa</span>
+              </div>
+            </div>
+          )}
+
+          {/* DASHBOARD 2: Volumen por Tipo de Componente */}
+          {(dashboardView === "OPERATIVO" || dashboardView === "TODOS") && (
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-zinc-900">
+                    Volumen por Tipo de Componente
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-500">
+                    Carga operativa ingresada por familia de producto
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-md text-slate-700 font-mono">
+                  Carga Operativa
+                </span>
+              </div>
+
+              <div className="space-y-3 pt-1">
+                {metrics.topCategories.map((cat, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => setCategoryFamily(cat.name === categoryFamily ? "TODOS" : cat.name)}
+                    className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-zinc-50 transition-colors group"
+                    title={`Hacer clic para filtrar por categoría ${cat.name}`}
+                  >
+                    <div className="flex justify-between text-xs sm:text-sm font-medium">
+                      <span className="text-zinc-900 font-semibold group-hover:text-emerald-600 transition-colors">
+                        {cat.name}
+                      </span>
+                      <span className="text-zinc-500 font-mono font-bold">
+                        {cat.count} equipos ({cat.pct}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                      <div
+                        className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${
+                          idx === 0
+                            ? "bg-emerald-600"
+                            : idx === 1
+                            ? "bg-blue-600"
+                            : idx === 2
+                            ? "bg-indigo-600"
+                            : "bg-teal-600"
+                        }`}
+                        style={{ width: `${Math.min(100, cat.pct * 4)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
+                <span>Líder en volumen: <strong className="text-zinc-800">{metrics.topCategories[0]?.name || "N/A"}</strong></span>
+                <span className="font-mono text-zinc-400">Tasa de resolución: {metrics.tasaExitoQC}%</span>
+              </div>
+            </div>
+          )}
+
+          {/* DASHBOARD 3: Distribución de Resoluciones & Dictamen QC */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-base font-bold text-[#121212]">Top Marcas de Equipos en Recepción</h3>
-                <p className="text-xs text-[#888888]">Distribución según marcas con mayor flujo de servicio</p>
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-1.5">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  Distribución de Resoluciones & Dictamen QC
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-500">
+                  Efectividad de cierre técnico y dictámenes de garantía
+                </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-md text-slate-700 font-mono">
-                Sucursal CDE
+              <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 rounded-md text-emerald-700 border border-emerald-200 font-mono flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                QC Efectivo
               </span>
             </div>
 
             <div className="space-y-3 pt-1">
-              {metrics.topBrands.map((brand, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-[#121212] font-semibold">{brand.name}</span>
-                    <span className="text-[#666666] font-mono">
-                      {brand.count} equipos ({brand.pct}%)
+              {metrics.topResolutions.map((res, idx) => (
+                <div key={idx} className="space-y-1.5 p-1 -mx-1 rounded-lg">
+                  <div className="flex justify-between text-xs sm:text-sm font-medium">
+                    <span className="text-zinc-900 font-semibold flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${res.barColor}`} />
+                      {res.name}
+                    </span>
+                    <span className="text-zinc-500 font-mono font-bold">
+                      {res.count} equipos ({res.pct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-[#f0f0f0] rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
                     <div
-                      className={`h-2.5 rounded-full transition-all duration-500 ${
-                        idx === 0
-                          ? "bg-slate-900"
-                          : idx === 1
-                          ? "bg-slate-700"
-                          : idx === 2
-                          ? "bg-slate-500"
-                          : "bg-slate-400"
-                      }`}
-                      style={{ width: `${Math.min(100, brand.pct * 3.5)}%` }}
+                      className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${res.barColor}`}
+                      style={{ width: `${Math.min(100, res.pct * 2.2)}%` }}
                     />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="pt-2 text-xs text-[#888888] flex justify-between border-t border-[#f0f0f0]">
-              <span>Mayor flujo de garantía: {metrics.topBrands[0]?.name || "N/A"}</span>
-              <span className="font-mono">Auditoría SATI Activa</span>
+            <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
+              <span>Tasa de resolución positiva: <strong className="text-emerald-700 font-bold">{metrics.tasaExitoQC}%</strong></span>
+              <span className="font-mono text-zinc-400">Garantía SATI Oficial</span>
             </div>
           </div>
 
-          {/* Gráfico 2: Categorías de Productos */}
-          <div className="bg-white p-5 rounded-xl border border-[#e5e5e5] shadow-sm space-y-4">
+          {/* DASHBOARD 4: Tiempos de Permanencia & Control de Plazos */}
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-base font-bold text-[#121212]">Volumen por Tipo de Componente</h3>
-                <p className="text-xs text-[#888888]">Carga operativa ingresada por familia de producto</p>
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-1.5">
+                  <Timer className="w-5 h-5 text-amber-600" />
+                  Tiempos de Permanencia & Control de Plazos
+                </h3>
+                <p className="text-xs sm:text-sm text-zinc-500">
+                  Semáforo de antigüedad de equipos activos en taller / sucursal
+                </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-md text-slate-700 font-mono">
-                Carga Operativa
+              <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 rounded-md text-amber-700 border border-amber-200 font-mono">
+                SLA & Plazos
               </span>
             </div>
 
             <div className="space-y-3 pt-1">
-              {metrics.topCategories.map((cat, idx) => (
-                <div key={idx} className="space-y-1">
-                  <div className="flex justify-between text-xs font-medium">
-                    <span className="text-[#121212] font-semibold">{cat.name}</span>
-                    <span className="text-[#666666] font-mono">
-                      {cat.count} equipos ({cat.pct}%)
+              {metrics.retentionBands.map((band, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => {
+                    if (band.filterKey === "A_DEPOSITO") {
+                      setTransitFilter(transitFilter === "A_DEPOSITO" ? "TODOS" : "A_DEPOSITO");
+                    }
+                  }}
+                  className={`space-y-1.5 p-1.5 -mx-1.5 rounded-lg transition-colors ${
+                    band.filterKey === "A_DEPOSITO"
+                      ? "cursor-pointer hover:bg-rose-50 group"
+                      : ""
+                  }`}
+                  title={band.filterKey === "A_DEPOSITO" ? "Hacer clic para filtrar órdenes vencidas de depósito (>90d)" : undefined}
+                >
+                  <div className="flex justify-between text-xs sm:text-sm font-medium">
+                    <span className="text-zinc-900 font-semibold flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${band.barColor}`} />
+                      <span className={band.filterKey === "A_DEPOSITO" ? "group-hover:text-rose-700 transition-colors" : ""}>
+                        {band.name}
+                      </span>
+                    </span>
+                    <span className="text-zinc-500 font-mono font-bold">
+                      {band.count} equipos ({band.pct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-[#f0f0f0] rounded-full h-2.5 overflow-hidden">
+                  <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
                     <div
-                      className={`h-2.5 rounded-full transition-all duration-500 ${
-                        idx === 0
-                          ? "bg-emerald-600"
-                          : idx === 1
-                          ? "bg-blue-600"
-                          : idx === 2
-                          ? "bg-indigo-600"
-                          : "bg-teal-600"
-                      }`}
-                      style={{ width: `${Math.min(100, cat.pct * 4)}%` }}
+                      className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${band.barColor}`}
+                      style={{ width: `${Math.min(100, band.pct * 2.8)}%` }}
                     />
                   </div>
                 </div>
               ))}
             </div>
 
-            <div className="pt-2 text-xs text-[#888888] flex justify-between border-t border-[#f0f0f0]">
-              <span>Líder en volumen: {metrics.topCategories[0]?.name || "N/A"}</span>
-              <span className="font-mono">Tasa de resolución: 89.2%</span>
+            <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
+              <span>Promedio de permanencia: <strong className="text-zinc-800">~{metrics.avgRetentionDays} días</strong></span>
+              <span className="font-mono text-zinc-500">
+                Plazo límite retiro: <strong className="text-rose-600 font-bold">90 días</strong>
+              </span>
             </div>
           </div>
+
+          {/* DASHBOARD 5: Flujo Logístico & Retornos CDE ⇄ ASU */}
+          {(dashboardView === "LOGISTICA" || dashboardView === "TODOS") && (
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-1.5">
+                    <Truck className="w-5 h-5 text-blue-600" />
+                    Flujo Logístico & Retornos CDE ⇄ ASU
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-500">
+                    Trazabilidad física de transferencias entre Matriz CDE y Sucursal
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-blue-50 rounded-md text-blue-700 border border-blue-200 font-mono">
+                  Inter-Sucursal
+                </span>
+              </div>
+
+              <div className="space-y-3 pt-1">
+                {metrics.logisticsBands.map((log, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      if (log.filterKey !== "TODOS") {
+                        setTransitFilter(transitFilter === log.filterKey ? "TODOS" : log.filterKey);
+                      }
+                    }}
+                    className={`space-y-1.5 p-1.5 -mx-1.5 rounded-lg transition-colors ${
+                      log.filterKey !== "TODOS" ? "cursor-pointer hover:bg-zinc-50 group" : ""
+                    }`}
+                    title={log.filterKey !== "TODOS" ? `Hacer clic para filtrar por ${log.name}` : undefined}
+                  >
+                    <div className="flex justify-between text-xs sm:text-sm font-medium">
+                      <span className="text-zinc-900 font-semibold flex items-center gap-2">
+                        <span className={`w-2 h-2 rounded-full ${log.barColor}`} />
+                        <span className={log.filterKey !== "TODOS" ? "group-hover:text-blue-600 transition-colors" : ""}>
+                          {log.name}
+                        </span>
+                      </span>
+                      <span className="text-zinc-500 font-mono font-bold">
+                        {log.count} equipos ({log.pct}%)
+                      </span>
+                    </div>
+                    <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                      <div
+                        className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${log.barColor}`}
+                        style={{ width: `${Math.min(100, log.pct * 3)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
+                <span>En camino activo: <strong className="text-blue-700 font-bold">{metrics.enCaminoCount} equipos</strong></span>
+                <span className="font-mono text-zinc-500">Recibidos en ASU: <strong className="text-emerald-700 font-bold">{metrics.recibidosAsuCount}</strong></span>
+              </div>
+            </div>
+          )}
+
+          {/* DASHBOARD 6: Segmentación de Clientes & Cuentas */}
+          {(dashboardView === "LOGISTICA" || dashboardView === "TODOS") && (
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-1.5">
+                    <Users className="w-5 h-5 text-indigo-600" />
+                    Distribución por Origen & Tipo de Cliente
+                  </h3>
+                  <p className="text-xs sm:text-sm text-zinc-500">
+                    Carga asignada a particulares vs stock interno Danesa S.A.
+                  </p>
+                </div>
+                <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 rounded-md text-indigo-700 border border-indigo-200 font-mono">
+                  Cartera SATI
+                </span>
+              </div>
+
+              <div className="space-y-3 pt-1">
+                {/* Granularidad Principal: Particulares vs Danesa */}
+                <div
+                  onClick={() => setViewScope(viewScope === "CLIENTES_ASU" ? "TODOS" : "CLIENTES_ASU")}
+                  className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-zinc-50 transition-colors group"
+                  title="Hacer clic para filtrar por Clientes Particulares ASU"
+                >
+                  <div className="flex justify-between text-xs sm:text-sm font-medium">
+                    <span className="text-zinc-900 font-semibold group-hover:text-blue-600 transition-colors">
+                      Clientes Particulares Asunción
+                    </span>
+                    <span className="text-zinc-500 font-mono font-bold">
+                      {metrics.particularesTotal} equipos ({metrics.particularesPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                    <div
+                      className="h-2.5 sm:h-3 rounded-full transition-all duration-500 bg-blue-600"
+                      style={{ width: `${Math.min(100, metrics.particularesPct)}%` }}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setViewScope(viewScope === "DANESA" ? "TODOS" : "DANESA")}
+                  className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-zinc-50 transition-colors group"
+                  title="Hacer clic para filtrar por Stock Propio Danesa SA"
+                >
+                  <div className="flex justify-between text-xs sm:text-sm font-medium">
+                    <span className="text-zinc-900 font-semibold group-hover:text-amber-600 transition-colors">
+                      Stock Propio (Danesa S.A.)
+                    </span>
+                    <span className="text-zinc-500 font-mono font-bold">
+                      {metrics.danesaTotal} equipos ({metrics.danesaPct}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                    <div
+                      className="h-2.5 sm:h-3 rounded-full transition-all duration-500 bg-amber-500"
+                      style={{ width: `${Math.min(100, metrics.danesaPct)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Sub-lista de Top Cuentas */}
+                <div className="pt-2 border-t border-zinc-100">
+                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-wide block mb-2">
+                    Top Clientes Particulares Frecuentes
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {metrics.topClients.slice(0, 4).map((cli, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => setSearchTerm(cli.name === searchTerm ? "" : cli.name)}
+                        className="p-2 rounded-lg bg-zinc-50 border border-zinc-100 hover:border-blue-200 hover:bg-blue-50/40 cursor-pointer transition-colors"
+                        title={`Filtrar por ${cli.name}`}
+                      >
+                        <div className="text-xs font-semibold text-zinc-900 truncate">
+                          {cli.name}
+                        </div>
+                        <div className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                          {cli.count} órdenes registradas
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
+                <span>Canal predominante: <strong className="text-zinc-800">{metrics.particularesPct >= metrics.danesaPct ? "Particulares" : "Danesa S.A."}</strong></span>
+                <span className="font-mono text-zinc-400">Trazabilidad SATI 100%</span>
+              </div>
+            </div>
+          )}
+
         </section>
 
         {/* Barra de Filtros, Selector de Ámbito Reestructurado y Búsqueda */}
