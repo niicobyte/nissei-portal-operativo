@@ -52,7 +52,7 @@ export interface OrdenReparacion {
   estado: "SIN_ASIGNAR" | "EN_REPARACION" | "FINALIZADA";
   tecnicoAsignado?: string; // "Carlos" | "Enrique" | "Michael" | "Marcelo"
   asignadoPor?: string; // "Admin"
-  dictamenFinal?: "REPARADO" | "SIN_DEFECTO" | "NO_REPARADO";
+  dictamenFinal?: "REPARADO" | "SIN_DEFECTO" | "NO_REPARADO" | "CAMBIO_NUEVO";
   repuestosUtilizados?: string;
 }
 
@@ -325,7 +325,7 @@ export function resetReparaciones(): OrdenReparacion[] {
 export function finalizarReparacionTecnico(
   idOrden: string,
   nombreTecnico: string,
-  dictamen: "REPARADO" | "SIN_DEFECTO" | "NO_REPARADO",
+  dictamen: "REPARADO" | "SIN_DEFECTO" | "NO_REPARADO" | "CAMBIO_NUEVO",
   detalle: string,
   repuestos?: string
 ): { updatedList: OrdenReparacion[]; ordenFinalizada?: OrdenReparacion } {
@@ -364,6 +364,8 @@ export function finalizarReparacionTecnico(
   const nuevoEstadoSATI =
     dictamen === "REPARADO"
       ? "Reparada"
+      : dictamen === "CAMBIO_NUEVO"
+      ? "Cambio por nuevo"
       : dictamen === "SIN_DEFECTO"
       ? "Entregada"
       : "Liquidacion";
@@ -393,7 +395,10 @@ export function generarMensajeGrupoWhatsApp(orden: OrdenReparacion): string {
   let dictamenIcon = "✅";
   let dictamenText = "REPARADO CON ÉXITO";
 
-  if (orden.dictamenFinal === "SIN_DEFECTO") {
+  if (orden.dictamenFinal === "CAMBIO_NUEVO") {
+    dictamenIcon = "✨";
+    dictamenText = "APROBADO CAMBIO POR NUEVO (GARANTÍA PROVEEDOR)";
+  } else if (orden.dictamenFinal === "SIN_DEFECTO") {
     dictamenIcon = "ℹ️";
     dictamenText = "SIN DEFECTO COMPROBADO";
   } else if (orden.dictamenFinal === "NO_REPARADO") {

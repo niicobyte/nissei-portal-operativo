@@ -69,7 +69,7 @@ export default function TallerReparacionesPage() {
 
   // Modal de Finalización de Reparación (para el técnico)
   const [repairModalOrden, setRepairModalOrden] = useState<OrdenReparacion | null>(null);
-  const [modalDictamen, setModalDictamen] = useState<"REPARADO" | "SIN_DEFECTO" | "NO_REPARADO">("REPARADO");
+  const [modalDictamen, setModalDictamen] = useState<"REPARADO" | "SIN_DEFECTO" | "NO_REPARADO" | "CAMBIO_NUEVO">("REPARADO");
   const [modalDetalle, setModalDetalle] = useState("");
   const [modalRepuestos, setModalRepuestos] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -127,7 +127,7 @@ export default function TallerReparacionesPage() {
       adminPage?: number;
       tecnicoPage?: number;
       repairOrdenId?: string | null;
-      modalDictamen?: "REPARADO" | "SIN_DEFECTO" | "NO_REPARADO";
+      modalDictamen?: "REPARADO" | "SIN_DEFECTO" | "NO_REPARADO" | "CAMBIO_NUEVO";
       modalDetalle?: string;
       modalRepuestos?: string;
       assignOrdenId?: string | null;
@@ -1563,11 +1563,11 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
                   <label className="font-bold text-zinc-900 block mb-1.5 uppercase font-mono text-[11px]">
                     1. Dictamen Resolutivo Final *
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <button
                       type="button"
                       onClick={() => setModalDictamen("REPARADO")}
-                      className={`p-2.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      className={`p-2.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         modalDictamen === "REPARADO"
                           ? "border-emerald-600 bg-emerald-50 text-emerald-800 font-semibold ring-2 ring-emerald-500/20"
                           : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
@@ -1579,8 +1579,21 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
 
                     <button
                       type="button"
+                      onClick={() => setModalDictamen("CAMBIO_NUEVO")}
+                      className={`p-2.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
+                        modalDictamen === "CAMBIO_NUEVO"
+                          ? "border-teal-600 bg-teal-50 text-teal-800 font-semibold ring-2 ring-teal-500/20"
+                          : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
+                      }`}
+                    >
+                      <Sparkles className="w-4 h-4 text-teal-600" />
+                      <span className="text-xs">Cambio x Nuevo</span>
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => setModalDictamen("SIN_DEFECTO")}
-                      className={`p-2.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      className={`p-2.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         modalDictamen === "SIN_DEFECTO"
                           ? "border-zinc-700 bg-zinc-100 text-zinc-900 font-semibold ring-2 ring-zinc-500/20"
                           : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"
@@ -1593,7 +1606,7 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
                     <button
                       type="button"
                       onClick={() => setModalDictamen("NO_REPARADO")}
-                      className={`p-2.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-1 ${
+                      className={`p-2.5 rounded-lg border text-center transition-all flex flex-col items-center justify-center gap-1 cursor-pointer ${
                         modalDictamen === "NO_REPARADO"
                           ? "border-rose-600 bg-rose-50 text-rose-800 font-semibold ring-2 ring-rose-500/20"
                           : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50"

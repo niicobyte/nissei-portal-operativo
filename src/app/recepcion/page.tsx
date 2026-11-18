@@ -108,6 +108,8 @@ const ESTADOS_RECEPCION_CORE = [
   "Pendiente por repuesto",
   "QC",
   "Reparada",
+  "Cambio por nuevo",
+  "Nota de Crédito",
 ] as const;
 
 interface EstadoVisualConfig {
@@ -146,6 +148,26 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       readyForPickup: true,
       whatsappHeader: "✅ *ENTREGADA*",
       whatsappBody: "Confirmamos que el equipo figura como entregado conforme en el sector de Post-Venta.",
+    };
+  }
+  if (norm.includes("cambio") && norm.includes("nuevo")) {
+    return {
+      badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-300 font-bold",
+      inactiveBtnClass: "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100",
+      activeBtnClass: "bg-emerald-700 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-200",
+      readyForPickup: true,
+      whatsappHeader: "✨ *APROBADO CAMBIO POR NUEVO (GARANTÍA)*",
+      whatsappBody: "El proveedor autorizó la garantía oficial y se realizó el cambio por un equipo nuevo. La nueva unidad se encuentra lista para su entrega o retiro.",
+    };
+  }
+  if (norm.includes("nota de credito") || norm.includes("nota de credito")) {
+    return {
+      badgeClass: "bg-indigo-50 text-indigo-800 border-indigo-300 font-bold",
+      inactiveBtnClass: "bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100",
+      activeBtnClass: "bg-indigo-700 text-white border-indigo-700 shadow-xs ring-2 ring-indigo-200",
+      readyForPickup: true,
+      whatsappHeader: "💳 *NOTA DE CRÉDITO COMERCIAL (PROVEEDOR)*",
+      whatsappBody: "El proveedor aprobó la emisión de Nota de Crédito comercial por el valor del producto para su aplicación en el salón comercial.",
     };
   }
   if (norm === "reparada") {
@@ -249,6 +271,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
 interface DictamenQcOption {
   id: string;
   label: string;
+  category: "AUTO" | "PROVEEDOR" | "TALLER" | "SIN_REPARO" | "COMERCIAL";
   whatsappHeader: string;
   whatsappBody: string;
   readyForPickup: boolean;
@@ -259,16 +282,86 @@ interface DictamenQcOption {
 const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "AUTO",
-    label: "Automático (según estado)",
+    label: "Automático (según estado / informe)",
+    category: "AUTO",
     whatsappHeader: "",
     whatsappBody: "",
     readyForPickup: false,
     chipInactive: "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100",
     chipActive: "bg-zinc-900 text-white border-zinc-900 shadow-xs ring-2 ring-zinc-300",
   },
+  // --- RESOLUCIONES CON PROVEEDOR / GARANTÍA / RMA ---
+  {
+    id: "CAMBIO_NUEVO_PROVEEDOR",
+    label: "Cambio por nuevo (Garantía Proveedor)",
+    category: "PROVEEDOR",
+    whatsappHeader: "✨ *APROBADO CAMBIO POR NUEVO (GARANTÍA)*",
+    whatsappBody:
+      "El proveedor/fabricante aprobó la garantía oficial y autorizó el reemplazo por una unidad nueva. El nuevo equipo se encuentra listo para su entrega o retiro.",
+    readyForPickup: true,
+    chipInactive: "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100",
+    chipActive: "bg-emerald-700 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-200",
+  },
+  {
+    id: "CAMBIO_NUEVO_TRANSITO",
+    label: "Cambio por nuevo · En tránsito",
+    category: "PROVEEDOR",
+    whatsappHeader: "📦 *CAMBIO POR NUEVO APROBADO · EN TRÁNSITO*",
+    whatsappBody:
+      "El proveedor confirmó la aprobación de cambio por una unidad nueva. La nueva unidad se encuentra en tránsito aguardando arribo físico a sucursal.",
+    readyForPickup: false,
+    chipInactive: "bg-teal-50 text-teal-800 border-teal-300 hover:bg-teal-100",
+    chipActive: "bg-teal-700 text-white border-teal-700 shadow-xs ring-2 ring-teal-200",
+  },
+  {
+    id: "NOTA_CREDITO_PROVEEDOR",
+    label: "Nota de Crédito comercial (Proveedor)",
+    category: "PROVEEDOR",
+    whatsappHeader: "💳 *NOTA DE CRÉDITO COMERCIAL (PROVEEDOR)*",
+    whatsappBody:
+      "El proveedor autorizó la emisión de Nota de Crédito por el valor comercial del producto para la elección de un nuevo producto o saldo a favor del cliente.",
+    readyForPickup: true,
+    chipInactive: "bg-indigo-50 text-indigo-800 border-indigo-300 hover:bg-indigo-100",
+    chipActive: "bg-indigo-700 text-white border-indigo-700 shadow-xs ring-2 ring-indigo-200",
+  },
+  {
+    id: "REEMPLAZO_PARTE_PROVEEDOR",
+    label: "Cambio de placa / pieza por Proveedor",
+    category: "PROVEEDOR",
+    whatsappHeader: "🔧 *REEMPLAZO DE PARTE / PLACA NUEVA (PROVEEDOR)*",
+    whatsappBody:
+      "El servicio técnico oficial del proveedor realizó el cambio del módulo/placa defectuosa por un repuesto nuevo y original de fábrica. Equipo probado y operativo.",
+    readyForPickup: true,
+    chipInactive: "bg-blue-50 text-blue-800 border-blue-300 hover:bg-blue-100",
+    chipActive: "bg-blue-700 text-white border-blue-700 shadow-xs ring-2 ring-blue-200",
+  },
+  {
+    id: "CAMBIO_DIRECTO_SALON",
+    label: "Cambio directo comercial (Salón)",
+    category: "PROVEEDOR",
+    whatsappHeader: "🔄 *CAMBIO DIRECTO COMERCIAL (SALÓN)*",
+    whatsappBody:
+      "Se autorizó el cambio directo del producto por una unidad nueva directamente en nuestro salón comercial conforme a política de atención al cliente.",
+    readyForPickup: true,
+    chipInactive: "bg-violet-50 text-violet-800 border-violet-300 hover:bg-violet-100",
+    chipActive: "bg-violet-700 text-white border-violet-700 shadow-xs ring-2 ring-violet-200",
+  },
+  {
+    id: "RECHAZO_GARANTIA_PROVEEDOR",
+    label: "Rechazado por proveedor (Sin garantía)",
+    category: "PROVEEDOR",
+    whatsappHeader: "❌ *GARANTÍA RECHAZADA POR PROVEEDOR*",
+    whatsappBody:
+      "El servicio oficial del proveedor dictaminó rechazo de garantía de fábrica. El producto retorna en las mismas condiciones para su retiro o evaluación particular.",
+    readyForPickup: true,
+    chipInactive: "bg-rose-50 text-rose-800 border-rose-300 hover:bg-rose-100",
+    chipActive: "bg-rose-700 text-white border-rose-700 shadow-xs ring-2 ring-rose-200",
+  },
+  // --- REPARACIONES EN TALLER / QC ---
   {
     id: "REPARADO",
     label: "Reparado con éxito",
+    category: "TALLER",
     whatsappHeader: "✅ *REPARADO CON ÉXITO*",
     whatsappBody:
       "El equipo fue reparado satisfactoriamente, superó las pruebas técnicas y está listo para ser retirado.",
@@ -279,6 +372,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "QC_PRUEBAS",
     label: "Control de Calidad (QC)",
+    category: "TALLER",
     whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
     whatsappBody:
       "El equipo se encuentra en fase final de pruebas de verificación y control de calidad.",
@@ -289,6 +383,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "SIN_DEFECTO",
     label: "Sin defectos / Normal",
+    category: "TALLER",
     whatsappHeader: "ℹ️ *SIN DEFECTO COMPROBADO*",
     whatsappBody:
       "El equipo funciona dentro de los parámetros normales de fábrica y no reprodujo la falla reportada. Conserva su garantía vigente.",
@@ -296,9 +391,11 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     chipInactive: "bg-cyan-50 text-cyan-800 border-cyan-200 hover:bg-cyan-100",
     chipActive: "bg-cyan-700 text-white border-cyan-700 shadow-xs ring-2 ring-cyan-200",
   },
+  // --- SIN REPARACIÓN / FALLAS ---
   {
     id: "SIN_REPARO_REPUESTO",
     label: "Sin reparo · Falta de repuesto",
+    category: "SIN_REPARO",
     whatsappHeader: "⏳ *SIN REPARO POR FALTA DE REPUESTO*",
     whatsappBody:
       "No fue posible completar la reparación por falta de disponibilidad del repuesto requerido. Corresponde gestión de cambio / nota de crédito o retiro.",
@@ -309,6 +406,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "SIN_REPARO_IRREPARABLE",
     label: "Sin reparo · No reparable",
+    category: "SIN_REPARO",
     whatsappHeader: "❌ *SIN REPARO · NO REPARABLE*",
     whatsappBody:
       "El diagnóstico técnico determinó que el daño no es reparable. Se deriva a gestión de garantía, cambio comercial o retiro.",
@@ -319,6 +417,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "MALA_MANIPULACION",
     label: "Mala manipulación (Cliente)",
+    category: "SIN_REPARO",
     whatsappHeader: "🚫 *MALA MANIPULACIÓN / FUERA DE GARANTÍA*",
     whatsappBody:
       "Se constató daño físico, golpe, humedad o manipulación indebida por parte del cliente, por lo que no aplica cobertura de garantía de fábrica.",
@@ -328,17 +427,20 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   },
   {
     id: "RMA_NC",
-    label: "Derivado a RMA / Nota de crédito",
-    whatsappHeader: "⚠️ *DERIVADO A RMA / NOTA DE CRÉDITO*",
+    label: "Derivado a RMA / En trámite proveedor",
+    category: "SIN_REPARO",
+    whatsappHeader: "⚠️ *DERIVADO A RMA / TRÁMITE CON PROVEEDOR*",
     whatsappBody:
-      "El equipo fue derivado a gestión de garantía con fabricante/importador para cambio o emisión de nota de crédito comercial.",
+      "El equipo fue derivado a gestión de garantía con fabricante/importador para peritaje técnico o resolución comercial.",
     readyForPickup: true,
     chipInactive: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
     chipActive: "bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200",
   },
+  // --- COMERCIALES / PRESUPUESTOS ---
   {
     id: "PRESUPUESTO_PENDIENTE",
     label: "Presupuesto · Aguarda aprobación",
+    category: "COMERCIAL",
     whatsappHeader: "💰 *PRESUPUESTO EMITIDO · AGUARDA APROBACIÓN*",
     whatsappBody:
       "La reparación se encuentra fuera de garantía y se emitió presupuesto técnico aguardando aprobación del cliente.",
@@ -349,6 +451,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "PRESUPUESTO_RECHAZADO",
     label: "Presupuesto rechazado",
+    category: "COMERCIAL",
     whatsappHeader: "↩️ *PRESUPUESTO RECHAZADO*",
     whatsappBody:
       "El presupuesto informado no fue aprobado; el equipo se encuentra disponible para retiro sin reparar.",
@@ -359,6 +462,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "DESGASTE_NATURAL",
     label: "Desgaste natural / Consumible",
+    category: "COMERCIAL",
     whatsappHeader: "🔋 *DESGASTE NATURAL / CONSUMIBLE*",
     whatsappBody:
       "La incidencia corresponde a desgaste normal de uso o componente consumible fuera de cobertura de garantía.",
@@ -369,6 +473,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   {
     id: "GARANTIA_VENCIDA",
     label: "Garantía vencida",
+    category: "COMERCIAL",
     whatsappHeader: "📅 *GARANTÍA VENCIDA*",
     whatsappBody:
       "El equipo superó el período de garantía oficial vigente; disponible servicio particular bajo presupuesto o retiro.",
@@ -453,6 +558,32 @@ function resolveDictamenRecepcion(
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
 
+  const tieneCambioPorNuevoTexto =
+    /\b(?:cambi[oa]\s+por\s+nuevo|cambio\s+de\s+equipo|reemplazo\s+por\s+nuevo|unidad\s+nueva|entrega\s+nuevo|cambio\s+en\s+garantia|swap)\b/i.test(
+      msgNorm
+    );
+  const tieneCambioPorNuevoTransitoTexto =
+    tieneCambioPorNuevoTexto &&
+    /\b(?:en\s+transito|en\s+camino|aguarda\s+arribo|aguardando\s+llegada|aguarda\s+entrega)\b/i.test(
+      msgNorm
+    );
+  const tieneNotaCreditoTexto =
+    /\b(?:nota\s+de\s+credito|\bn\/?c\b|credito\s+comercial|reembolso)\b/i.test(
+      msgNorm
+    );
+  const tieneRechazoProveedorTexto =
+    /\b(?:rechazad[oa]\s+por\s+proveedor|proveedor\s+rechaz|fabrica\s+rechaz|rechazo\s+de\s+garantia\s+oficial)\b/i.test(
+      msgNorm
+    );
+  const tieneCambioPiezaProveedorTexto =
+    /\b(?:proveedor\s+cambi[oa]|cambio\s+de\s+(?:placa|pantalla|modulo|pieza)\s+por\s+proveedor)\b/i.test(
+      msgNorm
+    );
+  const tieneCambioDirectoSalonTexto =
+    /\b(?:cambio\s+directo|cambio\s+en\s+salon|cambio\s+comercial)\b/i.test(
+      msgNorm
+    );
+
   const tieneSinDefectoTexto =
     /\b(?:sin\s+defecto(?:s)?|no\s+presenta\s+falla(?:s)?|funcionamiento\s+normal)\b/i.test(
       msgNorm
@@ -468,7 +599,7 @@ function resolveDictamenRecepcion(
   const tieneSinReparoEstado = estNorm.includes("sin reparo");
   const tieneSinReparoTextoExacto =
     !esEstadoCerradoReparado &&
-    /\b(?:sin\s+reparo|no\s+reparable|no\s+reparado|cambio\s+por\s+nuevo|nota\s+de\s+credito|n\/?c|rma)\b/i.test(
+    /\b(?:sin\s+reparo|no\s+reparable|no\s+reparado)\b/i.test(
       msgNorm
     );
 
@@ -486,7 +617,23 @@ function resolveDictamenRecepcion(
     sourceLabel = reason;
   };
 
-  if (tieneSinReparoRepuestoEstado) {
+  if (estNorm.includes("cambio") && estNorm.includes("nuevo")) {
+    pickOption("CAMBIO_NUEVO_PROVEEDOR", `Automático · Estado "${estadoActual}"`);
+  } else if (estNorm.includes("nota de credito")) {
+    pickOption("NOTA_CREDITO_PROVEEDOR", `Automático · Estado "${estadoActual}"`);
+  } else if (tieneCambioPorNuevoTransitoTexto) {
+    pickOption("CAMBIO_NUEVO_TRANSITO", 'Detectado en Informe Técnico ("Cambio por nuevo en tránsito")');
+  } else if (tieneCambioPorNuevoTexto) {
+    pickOption("CAMBIO_NUEVO_PROVEEDOR", 'Detectado en Informe Técnico ("Cambio por nuevo por proveedor")');
+  } else if (tieneNotaCreditoTexto) {
+    pickOption("NOTA_CREDITO_PROVEEDOR", 'Detectado en Informe Técnico ("Nota de crédito comercial")');
+  } else if (tieneRechazoProveedorTexto) {
+    pickOption("RECHAZO_GARANTIA_PROVEEDOR", 'Detectado en Informe Técnico ("Rechazado por proveedor")');
+  } else if (tieneCambioPiezaProveedorTexto) {
+    pickOption("REEMPLAZO_PARTE_PROVEEDOR", 'Detectado en Informe Técnico ("Cambio de pieza por proveedor")');
+  } else if (tieneCambioDirectoSalonTexto) {
+    pickOption("CAMBIO_DIRECTO_SALON", 'Detectado en Informe Técnico ("Cambio directo salón")');
+  } else if (tieneSinReparoRepuestoEstado) {
     pickOption("SIN_REPARO_REPUESTO", `Automático · Estado "${estadoActual}"`);
   } else if (tieneSinReparoIrreparableEstado) {
     pickOption("SIN_REPARO_IRREPARABLE", `Automático · Estado "${estadoActual}"`);
@@ -3090,24 +3237,127 @@ ${dictamen.accText}`;
                         </span>
                       </div>
 
-                      {/* Selector rápido de resoluciones QC */}
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        {DICTAMEN_QC_OPTIONS.map((opt) => {
-                          const selected = modalDictamenTipo === opt.id;
-                          return (
-                            <button
-                              key={opt.id}
-                              type="button"
-                              onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
-                                selected ? opt.chipActive : opt.chipInactive
-                              }`}
-                            >
-                              {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
-                              <span>{opt.label}</span>
-                            </button>
-                          );
-                        })}
+                      {/* Selector rápido de resoluciones QC organizado por áreas */}
+                      <div className="space-y-2">
+                        {/* 1. Automático */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {DICTAMEN_QC_OPTIONS.filter((o) => o.category === "AUTO").map((opt) => {
+                            const selected = modalDictamenTipo === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
+                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                                  selected ? opt.chipActive : opt.chipInactive
+                                }`}
+                              >
+                                {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                                <span>{opt.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* 2. Resoluciones con Proveedor / Garantía / Reemplazo Nuevo */}
+                        <div className="pt-2 border-t border-emerald-200/60">
+                          <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-emerald-950 flex items-center gap-1 mb-1.5">
+                            <span>✨ Resoluciones con Proveedor / Garantía Oficial (Cambio por Nuevo &amp; RMA):</span>
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {DICTAMEN_QC_OPTIONS.filter((o) => o.category === "PROVEEDOR").map((opt) => {
+                              const selected = modalDictamenTipo === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                                    selected ? opt.chipActive : opt.chipInactive
+                                  }`}
+                                >
+                                  {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                                  <span>{opt.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 3. Taller Técnico NISSEI / QC */}
+                        <div className="pt-1.5 border-t border-emerald-200/60">
+                          <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-sky-950 flex items-center gap-1 mb-1.5">
+                            <span>🛠️ Taller Técnico NISSEI / Control de Calidad:</span>
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {DICTAMEN_QC_OPTIONS.filter((o) => o.category === "TALLER").map((opt) => {
+                              const selected = modalDictamenTipo === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                                    selected ? opt.chipActive : opt.chipInactive
+                                  }`}
+                                >
+                                  {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                                  <span>{opt.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 4. Sin Reparo / Daño */}
+                        <div className="pt-1.5 border-t border-emerald-200/60">
+                          <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-rose-950 flex items-center gap-1 mb-1.5">
+                            <span>⚠️ Sin Reparo / Fallas &amp; Exclusiones:</span>
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {DICTAMEN_QC_OPTIONS.filter((o) => o.category === "SIN_REPARO").map((opt) => {
+                              const selected = modalDictamenTipo === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                                    selected ? opt.chipActive : opt.chipInactive
+                                  }`}
+                                >
+                                  {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                                  <span>{opt.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* 5. Comercial & Presupuestos */}
+                        <div className="pt-1.5 border-t border-emerald-200/60">
+                          <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-zinc-600 flex items-center gap-1 mb-1.5">
+                            <span>💼 Gestión Comercial &amp; Presupuestos:</span>
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {DICTAMEN_QC_OPTIONS.filter((o) => o.category === "COMERCIAL").map((opt) => {
+                              const selected = modalDictamenTipo === opt.id;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
+                                  className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-lg border transition-all cursor-pointer ${
+                                    selected ? opt.chipActive : opt.chipInactive
+                                  }`}
+                                >
+                                  {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                                  <span>{opt.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
                       </div>
 
                       {isTicketDanesa(selectedTicket.cliente) ? (
