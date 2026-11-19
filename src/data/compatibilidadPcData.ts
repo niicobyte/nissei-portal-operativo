@@ -1351,5 +1351,5 @@ export function verificarCompatibilidadPC(
   };
 }
 
-// Tipo de cambio referencial (USD a Guaraníes)
-export const TIPO_CAMBIO_PYG_DEFECTO = 7850;
+// Tipo de cambio referencial bancario / casas de cambio en Paraguay (USD a Guaraníes)
+export const TIPO_CAMBIO_PYG_DEFECTO = 6800;

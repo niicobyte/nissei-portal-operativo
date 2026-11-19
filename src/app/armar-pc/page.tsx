@@ -579,9 +579,9 @@ export default function ArmarPcPresupuestadorPage() {
 
   const handleConfirmTipoCambio = () => {
     const num = parsePygNumber(modalTipoCambioInput);
-    if (!num || num < 4000 || num > 30000) {
+    if (!num || num < 3000 || num > 15000) {
       setModalTipoCambioError(
-        "Por favor ingresá una cotización válida en Guaraníes (ej: 7.950 Gs/USD)."
+        "Por favor ingresá una cotización válida en Guaraníes (ej: 6.800 Gs/USD)."
       );
       return;
     }
@@ -3693,7 +3693,7 @@ export default function ArmarPcPresupuestadorPage() {
                         handleConfirmTipoCambio();
                       }
                     }}
-                    placeholder="Ej: 7.950"
+                    placeholder="Ej: 6.800"
                     className="w-full pl-9 pr-24 py-3 bg-zinc-50 border-2 border-zinc-300 focus:border-zinc-900 focus:bg-white rounded-xl text-xl font-mono font-black text-zinc-900 outline-none transition-all shadow-inner"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-zinc-600 bg-zinc-200/80 px-2 py-1 rounded-md select-none">
@@ -3707,13 +3707,13 @@ export default function ArmarPcPresupuestadorPage() {
                 )}
               </div>
 
-              {/* Botones de Selección Rápida */}
+              {/* Botones de Selección Rápida en Rango Bancario (6mil a 7mil) */}
               <div>
                 <span className="text-[10px] font-mono font-semibold text-zinc-500 uppercase block mb-1.5">
-                  Cotizaciones Frecuentes (selección con un toque):
+                  Cotizaciones Bancarias y Casas de Cambio (un toque):
                 </span>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {[7800, 7850, 7900, 7950, 8000, 8050].map((val) => {
+                  {[6000, 6200, 6300, 6500, 6700, 6800, 7000].map((val) => {
                     const str = val.toLocaleString("es-PY");
                     const isSelected = modalTipoCambioInput === str;
                     return (
