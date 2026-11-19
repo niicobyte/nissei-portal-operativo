@@ -658,10 +658,10 @@ export default function ArmarPcPresupuestadorPage() {
           })
         );
       } else {
-        setWebSyncError(data?.error || "No se pudo sincronizar con https://nissei.com/py/.");
+        setWebSyncError(data?.error || "No se pudo sincronizar el catálogo de stock.");
       }
     } catch {
-      setWebSyncError("Error de red conectando con https://nissei.com/py/.");
+      setWebSyncError("Error de red conectando con el catálogo de stock.");
     } finally {
       setIsLoadingWeb(false);
     }
@@ -1131,7 +1131,7 @@ export default function ArmarPcPresupuestadorPage() {
     if (inStockPool.length === 0) {
       return {
         ok: false,
-        faltantes: ["Catálogo en sincronización con nissei.com/py"],
+        faltantes: ["Catálogo en sincronización de stock"],
         build: [],
         fallbackBuild: [],
         hardwarePyg: 0,
@@ -2103,7 +2103,7 @@ export default function ArmarPcPresupuestadorPage() {
           titulo: `No disponemos actualmente de componentes en stock para armar el perfil "${
             presetObj?.nombre || tier
           }" con ${brandLabel}`,
-          detalle: `Verificamos el stock en vivo de https://nissei.com/py/ y actualmente faltan componentes esenciales para garantizar un ensamble ${
+          detalle: `Verificamos el stock en vivo y actualmente faltan componentes esenciales para garantizar un ensamble ${
             presetObj?.nombre || tier
           } 100% compatible en plataforma ${brandLabel}:`,
           faltantes: evalRes.faltantes,
@@ -2210,7 +2210,7 @@ export default function ArmarPcPresupuestadorPage() {
       return {
         ok: false,
         withinBudget: false,
-        faltantes: ["Sincronizando stock web de nissei.com/py..."],
+        faltantes: ["Sincronizando stock..."],
         build: [],
         hardwarePyg: 0,
         totalPyg: 0,
@@ -3357,16 +3357,16 @@ export default function ArmarPcPresupuestadorPage() {
     effectiveRamType,
   ]);
 
-  // Generación de resumen de texto para cotización estricta de https://nissei.com/py/
+  // Generación de resumen de texto para cotización
   const generarTextoPresupuesto = () => {
     const fechaHoy = new Date().toLocaleDateString("es-PY");
-    let text = `PRESUPUESTO OFICIAL DE PC — NISSEI PARAGUAY (nissei.com/py)\n`;
+    let text = `PRESUPUESTO OFICIAL DE PC — NISSEI PARAGUAY\n`;
     text += `Fecha: ${fechaHoy} | Vendedor: ${selectedVendedor || "No especificado"}\n`;
     if (clienteNombre.trim()) {
       text += `Cliente: ${clienteNombre.trim()}\n`;
     }
     text += `--------------------------------------------------\n`;
-    text += `DETALLE DE COMPONENTES (PRECIOS Y STOCK VERIFICADOS EN NISSEI.COM/PY):\n`;
+    text += `DETALLE DE COMPONENTES (PRECIOS Y STOCK VERIFICADOS):\n`;
     selectedComponents.forEach((c) => {
       const cant = (c.cantidad || 1) > 1 ? ` (x${c.cantidad})` : "";
       const subPyg = (c.precioPyg || 0) * (c.cantidad || 1);
@@ -3390,7 +3390,7 @@ export default function ArmarPcPresupuestadorPage() {
         ? "¡Bonificado / GRATIS! (Ventas Corp)"
         : `58,77$ (Gs. ${costoMontajePyg.toLocaleString("es-PY")})`
     }\n`;
-    text += `TOTAL COTIZACIÓN OFICIAL (NISSEI.COM/PY):\n`;
+    text += `TOTAL COTIZACIÓN OFICIAL:\n`;
     text += `Gs. ${totalPresupuestoPyg.toLocaleString("es-PY")} Guaraníes (IVA 10% Incluido)\n`;
     text += `Ref. Dólares: US$ ${totalPresupuestoUsd.toLocaleString("es-PY", {
       minimumFractionDigits: 2,
@@ -3398,7 +3398,7 @@ export default function ArmarPcPresupuestadorPage() {
     })} (TC: ${tipoCambio.toLocaleString("es-PY")} Gs/USD)\n`;
     text += `--------------------------------------------------\n`;
     text += `Garantía de Componentes: 3 meses · Compatibilidad 100% Verificada\n`;
-    text += `Cotización estricta sincronizada en vivo con https://nissei.com/py/\n`;
+    text += `Cotización oficial con stock y garantía verificados\n`;
 
     return text;
   };
@@ -3437,7 +3437,7 @@ export default function ArmarPcPresupuestadorPage() {
       consumoEstimado: `${resultadoCompatibilidad.consumoTotalWatts}W`,
       observaciones:
         observacionesPresupuesto ||
-        `Presupuesto oficial nissei.com/py (Total: Gs. ${totalPresupuestoPyg.toLocaleString("es-PY")} · Garantía 3 meses). Consumo estimado: ${resultadoCompatibilidad.consumoTotalWatts}W.`,
+        `Presupuesto oficial (Total: Gs. ${totalPresupuestoPyg.toLocaleString("es-PY")} · Garantía 3 meses). Consumo estimado: ${resultadoCompatibilidad.consumoTotalWatts}W.`,
       componentes: selectedComponents.map((c) => ({
         sku: c.sku,
         descripcion: cleanDisplayTitle(c.nombreWeb || c.descripcion),
@@ -3876,7 +3876,7 @@ export default function ArmarPcPresupuestadorPage() {
               onClick={() => syncWithNisseiWeb(true)}
               disabled={isLoadingWeb}
               className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 min-h-[38px] sm:min-h-[42px]"
-              title="Refrescar precios y disponibilidad ahora mismo desde https://nissei.com/py/"
+              title="Refrescar precios y disponibilidad ahora mismo"
             >
               <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${isLoadingWeb ? "animate-spin text-emerald-600" : ""}`} />
               <span className="hidden md:inline">
@@ -3944,44 +3944,10 @@ export default function ArmarPcPresupuestadorPage() {
       <div className="flex-1 w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto p-2.5 xs:p-3.5 sm:p-5 lg:p-7 2xl:p-8 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 lg:gap-6 2xl:gap-8 min-w-0">
         {/* Columna Izquierda: Configurador y Catálogo de Componentes (7 cols) */}
         <section className="lg:col-span-7 3xl:col-span-8 space-y-4 min-w-0">
-          {/* Banner de Estado de Conexión Estricta con https://nissei.com/py/ */}
-          <div
-            className={`px-3 sm:px-4 py-2.5 rounded-xl border text-xs flex flex-col xs:flex-row xs:items-center justify-between gap-2 ${
-              isLoadingWeb
-                ? "bg-amber-50/80 border-amber-200 text-amber-900"
-                : webSyncError
-                ? "bg-rose-50 border-rose-200 text-rose-800"
-                : "bg-emerald-50/80 border-emerald-200 text-emerald-900"
-            }`}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <span
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  isLoadingWeb
-                    ? "bg-amber-500 animate-ping"
-                    : webSyncError
-                    ? "bg-rose-500"
-                    : "bg-emerald-500 animate-pulse"
-                }`}
-              />
-              {isLoadingWeb ? (
-                <span className="font-semibold">
-                  Conectando en tiempo real con https://nissei.com/py/ para obtener precios y disponibilidad...
-                </span>
-              ) : webSyncError ? (
-                <span className="font-semibold">{webSyncError}</span>
-              ) : (
-                <span className="leading-snug">
-                  <strong>Conectado en vivo a https://nissei.com/py/</strong> ·{" "}
-                  <span className="font-mono font-bold">{totalInStockCount}</span> componentes de
-                  escritorio con stock y cotización web activa
-                  {lastUpdatedWeb ? ` (Sincronizado ${lastUpdatedWeb})` : ""}
-                </span>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1.5 text-[11px] font-mono shrink-0">
-              <span className="text-zinc-600">TC Dólar:</span>
+          {/* Barra de Cotización del Dólar */}
+          <div className="flex items-center justify-end">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-zinc-200 text-xs font-mono shadow-2xs">
+              <span className="text-zinc-600 font-semibold">TC Dólar:</span>
               <button
                 type="button"
                 onClick={() => {
@@ -3989,12 +3955,12 @@ export default function ArmarPcPresupuestadorPage() {
                   setModalTipoCambioError(null);
                   setIsTipoCambioModalOpen(true);
                 }}
-                className="px-2.5 py-1 bg-white hover:bg-emerald-50 border border-zinc-300 hover:border-emerald-400 rounded-lg text-xs font-bold text-zinc-900 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs group"
+                className="px-2.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg text-xs font-black text-emerald-950 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs group"
                 title="Hacé clic para cambiar la cotización del dólar"
               >
-                <DollarSign className="w-3 h-3 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <DollarSign className="w-3.5 h-3.5 text-emerald-700 group-hover:scale-110 transition-transform" />
                 <span>₲ {tipoCambioInput}</span>
-                <span className="text-[10px] text-zinc-400 group-hover:text-emerald-700">✎</span>
+                <span className="text-[10px] text-emerald-600 font-normal">✎</span>
               </button>
             </div>
           </div>
@@ -4004,7 +3970,7 @@ export default function ArmarPcPresupuestadorPage() {
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5 min-w-0 truncate">
                 <FileText className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                <span className="truncate">Datos de la Cotización (Estricta Web nissei.com/py)</span>
+                <span className="truncate">Datos de la Cotización</span>
               </span>
               <button
                 type="button"
@@ -5021,7 +4987,7 @@ export default function ArmarPcPresupuestadorPage() {
                     }}
                     className="accent-emerald-700 rounded"
                   />
-                  <span className="font-bold">Solo disponibles en nissei.com/py</span>
+                  <span className="font-bold">Solo disponibles en stock</span>
                 </label>
 
                 <label className="text-xs text-zinc-600 flex items-center gap-1.5 cursor-pointer">
@@ -5982,7 +5948,7 @@ export default function ArmarPcPresupuestadorPage() {
                   setCatalogSearchTerm(e.target.value);
                   setDisplayLimit(60);
                 }}
-                placeholder="Buscar por SKU numérico (ej: 67488, 131437), modelo o descripción en nissei.com/py..."
+                placeholder="Buscar por SKU numérico (ej: 67488, 131437), modelo o descripción..."
                 className="w-full bg-white border border-zinc-200 rounded-xl pl-10 pr-9 py-2.5 sm:py-3 text-xs sm:text-sm text-zinc-900 outline-none focus:border-zinc-900 transition-colors shadow-2xs min-h-[46px]"
               />
               {catalogSearchTerm && (
@@ -6030,7 +5996,7 @@ export default function ArmarPcPresupuestadorPage() {
             <span>
               Mostrando {Math.min(catalogoFiltrado.length, displayLimit)} de{" "}
               <strong>{catalogoFiltrado.length}</strong> componentes{" "}
-              {onlyWebStock ? "en stock en https://nissei.com/py/" : "del catálogo"}
+              {onlyWebStock ? "en stock" : "del catálogo"}
             </span>
             <div className="flex items-center gap-3">
               {selectedBrand !== "TODAS" && (
@@ -6054,7 +6020,7 @@ export default function ArmarPcPresupuestadorPage() {
                   {activeTabSlot === "PROCESADOR" &&
                     (effectiveSocket !== "TODOS"
                       ? `Filtrando exclusivamente procesadores recomendados y 100% compatibles con Socket ${effectiveSocket}`
-                      : "Mostrando procesadores recomendados en stock de https://nissei.com/py/")}
+                      : "Mostrando procesadores recomendados en stock")}
                   {activeTabSlot === "PLACA_MADRE" &&
                     (effectiveSocket !== "TODOS"
                       ? `Filtrando exclusivamente placas madre recomendadas y 100% compatibles con Socket ${effectiveSocket}`
@@ -6089,7 +6055,7 @@ export default function ArmarPcPresupuestadorPage() {
               <div className="p-6 sm:p-10 text-center text-zinc-500 space-y-2">
                 <RefreshCw className="w-6 h-6 mx-auto animate-spin text-emerald-600" />
                 <p className="text-xs font-semibold text-zinc-800">
-                  Consultando precios en Guaraníes y disponibilidad en tiempo real en https://nissei.com/py/...
+                  Consultando precios en Guaraníes y disponibilidad en tiempo real...
                 </p>
                 <p className="text-[11px] text-zinc-400">
                   Filtrando únicamente hardware real de escritorio (Fuentes ATX certificadas, Memorias Desktop DDR4/DDR5, SSDs NVMe y Coolers de CPU).
@@ -6099,7 +6065,7 @@ export default function ArmarPcPresupuestadorPage() {
               <div className="p-6 sm:p-8 text-center text-zinc-500 space-y-2.5">
                 <Info className="w-6 h-6 mx-auto opacity-40 text-zinc-400" />
                 <p className="text-xs">
-                  No se encontraron componentes en stock en <strong>nissei.com/py</strong> con los filtros actuales.
+                  No se encontraron componentes en stock con los filtros actuales.
                 </p>
                 <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
                   {onlyCompatible && (
@@ -6117,7 +6083,7 @@ export default function ArmarPcPresupuestadorPage() {
                       onClick={() => setOnlyWebStock(false)}
                       className="text-xs text-amber-800 font-semibold hover:underline cursor-pointer"
                     >
-                      Ver también SKUs agotados en nissei.com/py
+                      Ver también SKUs agotados
                     </button>
                   )}
                 </div>
@@ -6164,11 +6130,11 @@ export default function ArmarPcPresupuestadorPage() {
                           {isInStock ? (
                             <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
                               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                              EN STOCK · NISSEI.COM/PY
+                              EN STOCK
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
-                              ✕ SIN STOCK EN WEB
+                              ✕ SIN STOCK
                             </span>
                           )}
                           {recommended && (
@@ -6216,7 +6182,7 @@ export default function ArmarPcPresupuestadorPage() {
                               rel="noopener noreferrer"
                               className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-bold hover:underline"
                             >
-                              <span>Ver en nissei.com/py</span>
+                              <span>Ver producto</span>
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
@@ -6632,8 +6598,7 @@ export default function ArmarPcPresupuestadorPage() {
               {selectedComponents.length === 0 ? (
                 <div className="p-6 text-center text-zinc-400 border border-dashed border-zinc-200 rounded-lg">
                   <p className="text-xs">
-                    Ningún componente seleccionado aún. Seleccione componentes con stock activo en{" "}
-                    <strong>nissei.com/py</strong> o elija una recomendación rápida.
+                    Ningún componente seleccionado aún. Seleccione componentes con stock activo o elija una recomendación rápida.
                   </p>
                 </div>
               ) : (
@@ -6688,9 +6653,9 @@ export default function ArmarPcPresupuestadorPage() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-bold hover:underline print:hidden"
-                                title="Ver este producto en nissei.com/py"
+                                title="Ver detalle del producto"
                               >
-                                <span>Ver en nissei.com/py</span>
+                                <span>Ver producto</span>
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                             </>
@@ -6799,7 +6764,7 @@ export default function ArmarPcPresupuestadorPage() {
                   </span>
                 </div>
                 <span className="text-xs text-emerald-400 block pt-1 font-mono font-medium">
-                  ✓ Precios exactos de https://nissei.com/py/ · Garantía 3 meses · IVA 10% Incluido
+                  ✓ Garantía 3 meses · IVA 10% Incluido
                 </span>
               </div>
 
@@ -6848,7 +6813,7 @@ export default function ArmarPcPresupuestadorPage() {
 
       {/* Pie de Página */}
       <footer className="border-t border-zinc-200 bg-white py-3 text-center text-xs text-zinc-500 font-mono">
-        NISSEI Tech Service Ops · Cotizador conectado en tiempo real a https://nissei.com/py/
+        NISSEI Tech Service Ops · Cotizador de Ensamble de PC
       </footer>
     </main>
 
