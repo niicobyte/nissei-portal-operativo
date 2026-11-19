@@ -3350,7 +3350,7 @@ export default function ArmarPcPresupuestadorPage() {
               {/* Modo 1: Por Entorno de Trabajo */}
               {presetTabMode === "ENTORNO" && (
                 <div className="space-y-3 animate-in fade-in duration-150">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
+                  <div className="grid grid-cols-[repeat(auto-fit,minmax(175px,1fr))] gap-2.5">
                     {PRESETS.map((p) => {
                       const isMenuOpen = selectedPresetForCpuMenu === p.id;
                       const isBuilt = activePresetBuilt?.tier === p.id;
@@ -3375,10 +3375,10 @@ export default function ArmarPcPresupuestadorPage() {
                           }`}
                         >
                           <div>
-                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                              <span className="text-lg">{p.icono}</span>
+                            <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                              <span className="text-lg shrink-0">{p.icono}</span>
                               <span
-                                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded transition-colors ${
+                                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded transition-colors whitespace-nowrap shrink-0 ${
                                   isMenuOpen
                                     ? "bg-zinc-900 text-white"
                                     : isBuilt
@@ -3400,7 +3400,7 @@ export default function ArmarPcPresupuestadorPage() {
                               {p.entorno}
                             </span>
                           </div>
-                          <span className="text-[10px] sm:text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
+                          <span className="text-[10px] sm:text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block line-clamp-2 leading-tight mt-2.5 font-semibold">
                             {p.tag}
                           </span>
                         </button>
@@ -3700,7 +3700,7 @@ export default function ArmarPcPresupuestadorPage() {
               {presetTabMode === "PRESUPUESTO" && (
                 <div className="space-y-3 animate-in fade-in duration-150">
                   {/* Barra de Preferencia de Plataforma CPU para Presupuesto en Guaraníes */}
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-zinc-50 border border-zinc-200">
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 sm:p-3 rounded-xl bg-zinc-50 border border-zinc-200">
                     <span className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
                       <Cpu className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
                       <span>Preferencia de Procesador (CPU) al armar por Guaraníes:</span>
@@ -3760,7 +3760,7 @@ export default function ArmarPcPresupuestadorPage() {
                   </div>
 
                   {/* Tarjetas de Presupuestos Típicos en Guaraníes */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
+                  <div className="grid grid-cols-[repeat(auto-fit,minmax(175px,1fr))] gap-2.5">
                     {PRESETS_PRESUPUESTO.map((item) => {
                       const isSelectedMonto = customTargetBudget === item.monto && budgetAnalysis?.targetPyg === item.monto;
                       return (
@@ -3781,9 +3781,9 @@ export default function ArmarPcPresupuestadorPage() {
                           }`}
                         >
                           <div>
-                            <div className="flex items-center justify-between gap-1 mb-1.5">
-                              <span className="text-lg">{item.icono}</span>
-                              <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded bg-emerald-600 text-white shadow-2xs">
+                            <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                              <span className="text-lg shrink-0">{item.icono}</span>
+                              <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded bg-emerald-600 text-white shadow-2xs whitespace-nowrap shrink-0">
                                 {item.labelMonto}
                               </span>
                             </div>
@@ -3794,7 +3794,7 @@ export default function ArmarPcPresupuestadorPage() {
                               {item.gama}
                             </span>
                           </div>
-                          <span className="text-[10px] sm:text-[11px] font-mono text-zinc-800 bg-white/90 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
+                          <span className="text-[10px] sm:text-[11px] font-mono text-zinc-800 bg-white/90 px-2 py-1 rounded-lg border border-emerald-200 block line-clamp-2 leading-tight mt-2.5 font-semibold">
                             {item.tag}
                           </span>
                         </button>
@@ -3802,24 +3802,24 @@ export default function ArmarPcPresupuestadorPage() {
                     })}
                   </div>
 
-                  {/* Input Asistido para Monto Personalizado en Guaraníes + Botones de Ajuste Rápido */}
-                  <div className="p-3 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
+                  {/* Input Asistido para Monto Personalizado en Guaraníes + Botones de Ajuste Rápido (100% Adaptable) */}
+                  <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col gap-3">
+                    <div className="flex items-start sm:items-center gap-3 w-full">
                       <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold shrink-0">
                         ₲
                       </div>
-                      <div className="min-w-0">
-                        <span className="text-xs font-bold text-zinc-800 block">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs sm:text-sm font-bold text-zinc-900 block leading-snug">
                           ¿El cliente tiene un presupuesto específico en Guaraníes?
                         </span>
-                        <span className="text-[11px] text-zinc-500 block">
+                        <span className="text-xs text-zinc-600 block leading-relaxed mt-0.5">
                           Ingresá cualquier monto (ej: 5.500.000, 8.000.000, 12.500.000) y el optimizador calcula la mejor PC compatible sin pasarse.
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
-                      <div className="flex items-center gap-1.5">
+                    <div className="flex flex-wrap items-center gap-2 w-full">
+                      <div className="flex items-center gap-1.5 flex-1 min-w-[230px]">
                         <button
                           type="button"
                           onClick={() => {
@@ -3829,13 +3829,13 @@ export default function ArmarPcPresupuestadorPage() {
                             setSelectedBudgetForCpuMenu(nextVal);
                             buildPcByTargetBudget(nextVal, budgetCpuPreference);
                           }}
-                          className="px-2.5 py-2 rounded-xl bg-white hover:bg-zinc-100 border border-zinc-300 text-xs font-mono font-bold text-zinc-700 cursor-pointer shrink-0"
+                          className="px-3 py-2.5 rounded-xl bg-white hover:bg-zinc-100 border border-zinc-300 text-xs font-mono font-bold text-zinc-700 cursor-pointer shrink-0 transition-colors"
                           title="Restar 500.000 Gs al presupuesto"
                         >
                           -500k
                         </button>
-                        <div className="relative flex-1 sm:flex-initial">
-                          <span className="absolute left-3 top-2.5 text-xs font-bold font-mono text-zinc-500">
+                        <div className="relative flex-1 min-w-[120px]">
+                          <span className="absolute left-3 top-2.5 text-xs sm:text-sm font-bold font-mono text-zinc-500">
                             ₲
                           </span>
                           <input
@@ -3850,7 +3850,7 @@ export default function ArmarPcPresupuestadorPage() {
                               }
                             }}
                             placeholder="10.000.000"
-                            className="w-full sm:w-44 bg-white border border-zinc-300 rounded-xl pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold text-zinc-900 outline-none focus:border-emerald-600"
+                            className="w-full bg-white border border-zinc-300 rounded-xl pl-7 pr-3 py-2.5 text-xs sm:text-sm font-mono font-bold text-zinc-900 outline-none focus:border-emerald-600"
                           />
                         </div>
                         <button
@@ -3862,7 +3862,7 @@ export default function ArmarPcPresupuestadorPage() {
                             setSelectedBudgetForCpuMenu(nextVal);
                             buildPcByTargetBudget(nextVal, budgetCpuPreference);
                           }}
-                          className="px-2.5 py-2 rounded-xl bg-white hover:bg-zinc-100 border border-zinc-300 text-xs font-mono font-bold text-zinc-700 cursor-pointer shrink-0"
+                          className="px-3 py-2.5 rounded-xl bg-white hover:bg-zinc-100 border border-zinc-300 text-xs font-mono font-bold text-zinc-700 cursor-pointer shrink-0 transition-colors"
                           title="Sumar 500.000 Gs al presupuesto"
                         >
                           +500k
@@ -3878,7 +3878,7 @@ export default function ArmarPcPresupuestadorPage() {
                           }
                         }}
                         disabled={isLoadingWeb || customTargetBudget <= 0}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-40"
+                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-40 flex-1 sm:flex-initial whitespace-nowrap"
                       >
                         <Zap className="w-4 h-4 shrink-0" />
                         <span>
