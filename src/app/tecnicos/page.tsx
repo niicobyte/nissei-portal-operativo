@@ -38,6 +38,7 @@ import {
   getStoredTecnicos,
   MONTAJES_WHATSAPP_GROUP_ID,
   formatMontajeWhatsAppMessage,
+  formatearNombreComponenteBasico,
   OrdenMontajeReal
 } from "@/data/montajesData";
 import { getActiveUser } from "@/data/authData";
@@ -1153,7 +1154,9 @@ export default function TecnicosDashboardPage() {
                         <span className="inline-block text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-zinc-200 text-zinc-700 mr-1.5">
                           {c.categoria}
                         </span>
-                        <span className="font-semibold text-zinc-900">{c.descripcion}</span>
+                        <span className="font-semibold text-zinc-900" title={c.descripcion}>
+                          {formatearNombreComponenteBasico(c.descripcion, c.categoria)}
+                        </span>
                       </div>
                       <div className="font-mono text-[11px] text-zinc-500 shrink-0">
                         SKU: {c.sku} {c.seriales ? `· S/N: ${c.seriales}` : ""}
@@ -1681,7 +1684,7 @@ export default function TecnicosDashboardPage() {
                           [{c.sku ? `SKU: ${c.sku}` : formatCategoriaSticker(c.categoria)}]
                         </span>{" "}
                         <span className="font-black thermal-value">
-                          {c.descripcion}
+                          {formatearNombreComponenteBasico(c.descripcion, c.categoria)}
                         </span>
                       </li>
                     ))}
