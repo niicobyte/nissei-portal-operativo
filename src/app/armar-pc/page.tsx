@@ -425,9 +425,40 @@ export default function ArmarPcPresupuestadorPage() {
 
   // Modos de Presupuesto Rápido (Por Entorno vs Por Cantidad de Guaraníes)
   const [presetTabMode, setPresetTabMode] = useState<"ENTORNO" | "PRESUPUESTO">("ENTORNO");
+  const [selectedPresetForCpuMenu, setSelectedPresetForCpuMenu] = useState<PresetTier | null>(null);
+  const [activePresetBuilt, setActivePresetBuilt] = useState<{
+    tier: PresetTier;
+    brand: "AMD" | "INTEL";
+  } | null>(null);
+  const [presetCpuAlert, setPresetCpuAlert] = useState<{
+    titulo: string;
+    detalle: string;
+    faltantes: string[];
+    tier?: PresetTier;
+    budgetPyg?: number;
+    failedBrand: "AMD" | "INTEL";
+    alternativeBrand?: "AMD" | "INTEL";
+    alternativeAvailable?: boolean;
+    fallbackBuild?: HardwarePresupuestoItem[];
+  } | null>(null);
+  const [presetSuccessBanner, setPresetSuccessBanner] = useState<string | null>(null);
+
   const [customTargetBudget, setCustomTargetBudget] = useState<number>(10000000);
   const [customTargetBudgetInput, setCustomTargetBudgetInput] = useState<string>("10.000.000");
+  const [budgetCpuPreference, setBudgetCpuPreference] = useState<"AUTO" | "AMD" | "INTEL">("AUTO");
+  const [selectedBudgetForCpuMenu, setSelectedBudgetForCpuMenu] = useState<number | null>(null);
   const [budgetFeedback, setBudgetFeedback] = useState<string | null>(null);
+  const [budgetAnalysis, setBudgetAnalysis] = useState<{
+    targetPyg: number;
+    achievedTotalPyg: number;
+    hardwarePyg: number;
+    montajePyg: number;
+    diffPyg: number;
+    pctUsed: number;
+    brandUsed: "AMD" | "INTEL";
+    socketUsed: string;
+    summaryText: string;
+  } | null>(null);
 
   const handleTipoCambioChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cursor = e.target.selectionStart || 0;
@@ -806,163 +837,419 @@ export default function ArmarPcPresupuestadorPage() {
     );
   };
 
+  // Cálculo estricto de totales usando el precio oficial en Guaraníes de https://nissei.com/py/
+  // - Ventas Corp: Servicio de Montaje & QA es 100% Bonificado / GRATIS (US$ 0 / ₲ 0)
+  // - Ventas Tienda: Servicio de Montaje & QA tiene tarifa fija única de US$ 58,77
+  const COSTO_MONTAJE_TIENDA_USD = 58.77;
+  const isCorpVendedor = useMemo(() => {
+    if (selectedArea === "Ventas Corp") return true;
+    if (selectedArea === "Ventas Tienda") return false;
+    const clean = selectedVendedor.trim().toLowerCase();
+    return Boolean(clean && VENDEDORES_CORP_BASE.some((v) => v.toLowerCase() === clean));
+  }, [selectedArea, selectedVendedor]);
+
+  const costoMontajeTiendaPyg = Math.round(
+    COSTO_MONTAJE_TIENDA_USD * (tipoCambio > 0 ? tipoCambio : TIPO_CAMBIO_PYG_DEFECTO)
+  );
+  const costoMontajePyg = isCorpVendedor ? 0 : costoMontajeTiendaPyg;
+  const costoMontajeUsd = isCorpVendedor ? 0 : COSTO_MONTAJE_TIENDA_USD;
+
+  const totalHardwarePyg = useMemo(() => {
+    return selectedComponents.reduce(
+      (acc, c) => acc + (c.precioPyg || 0) * (c.cantidad || 1),
+      0
+    );
+  }, [selectedComponents]);
+
+  const totalPresupuestoPyg =
+    selectedComponents.length > 0 ? totalHardwarePyg + costoMontajePyg : 0;
+  const totalPresupuestoUsd =
+    selectedComponents.length > 0 && tipoCambio > 0
+      ? Math.round((totalHardwarePyg / tipoCambio + costoMontajeUsd) * 100) / 100
+      : 0;
+
+  // Helpers de validación física, eléctrica y de arquitectura para Presets Inteligentes
+  const isCpuOfBrand = (item: HardwarePresupuestoItem, brand: "AMD" | "INTEL"): boolean => {
+    const txt = `${item.marca || ""} ${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
+    if (brand === "AMD") {
+      return (
+        item.marca?.toUpperCase() === "AMD" ||
+        item.socket === "AM4" ||
+        item.socket === "AM5" ||
+        /\b(AMD|RYZEN|ATHLON|THREADRIPPER)\b/.test(txt)
+      );
+    }
+    return (
+      item.marca?.toUpperCase() === "INTEL" ||
+      item.socket === "LGA1700" ||
+      item.socket === "LGA1851" ||
+      item.socket === "LGA1200" ||
+      item.socket === "LGA1151" ||
+      /\b(INTEL|CORE\s*I[3579]|CORE\s*ULTRA|PENTIUM|CELERON)\b/.test(txt)
+    );
+  };
+
+  const isRealDedicatedGamingGpu = (item: HardwarePresupuestoItem): boolean => {
+    if (item.categoria !== "GPU") return false;
+    const txt = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase();
+    // Excluir adaptadores pasivos de video básicos de oficina para perfiles Gamer / 3D / IA / Edición
+    if (
+      /\b(GT\s*210|GT\s*610|GT\s*710|GT\s*730|GT\s*1030|HD\s*5450|HD\s*6450|R5\s*220|R5\s*230)\b/.test(
+        txt
+      )
+    ) {
+      return false;
+    }
+    return true;
+  };
+
+  const isGabinetePhysicallyCompatible = (
+    gab: HardwarePresupuestoItem,
+    mb?: HardwarePresupuestoItem,
+    cooler?: HardwarePresupuestoItem,
+    hasDedicatedGpu?: boolean
+  ): boolean => {
+    // 1. Si hay GPU dedicada, nunca elegir un gabinete Kit de Oficina con fuente genérica de 180W/200W
+    if (hasDedicatedGpu && gab.isKitOficina) return false;
+
+    // 2. Factor de forma de la Placa Madre vs Gabinete (evitar error crítico ATX en Micro-ATX/ITX)
+    if (
+      mb?.formFactor === "ATX" &&
+      (gab.maxMbFormFactor === "MATX" || gab.maxMbFormFactor === "ITX")
+    ) {
+      return false;
+    }
+    if (mb?.formFactor === "EATX" && gab.maxMbFormFactor !== "EATX") {
+      return false;
+    }
+
+    // 3. Compatibilidad física con Cooler / Radiador Líquido AIO
+    if (cooler && cooler.sku !== "STOCK-COOLER") {
+      const coolerDesc = `${cooler.descripcion} ${cooler.nombreWeb || ""}`;
+      const isLiquid = Boolean(
+        cooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(coolerDesc)
+      );
+      const is360 = Boolean(
+        cooler.radiatorSizeMm === 360 || /360\s*MM|\b360\b/i.test(coolerDesc)
+      );
+      const is240 = Boolean(
+        cooler.radiatorSizeMm === 240 || /240\s*MM|\b240\b/i.test(coolerDesc)
+      );
+
+      if (isLiquid && gab.isKitOficina) return false;
+      if (is360 && gab.maxRadiatorMm !== undefined && gab.maxRadiatorMm < 360) return false;
+      if (is240 && gab.maxRadiatorMm === 0) return false;
+    }
+
+    return true;
+  };
+
+  const isCpuMatchingTier = (cpu: HardwarePresupuestoItem, tier: PresetTier): boolean => {
+    const txt = `${cpu.descripcion} ${cpu.nombreWeb || ""}`.toUpperCase();
+    const isBasicEntryDualCore = /\b(CELERON|PENTIUM|ATHLON|3000G|G5905|G6900)\b/.test(txt);
+
+    if (tier === "OFICINA_PRO") {
+      return cpu.hasIGpu !== false;
+    }
+    if (tier === "GAMING_PRO") {
+      if (isBasicEntryDualCore) return false;
+      return /\b(RYZEN\s*[579]|CORE\s*I[3579]|CORE\s*ULTRA|12100|13100|14100|12400|13400|14400|14600|5500|5600|5700|7500|7600|7700|7800|8400|8500|8600|8700|9600|9700|9800)\b/.test(
+        txt
+      );
+    }
+    if (tier === "ARQUITECTURA_3D" || tier === "EDICION_CREATOR") {
+      if (isBasicEntryDualCore) return false;
+      if (/\b(CORE\s*I3|RYZEN\s*3|3200G|12100|13100|14100|4100|4500)\b/.test(txt)) return false;
+      return /\b(RYZEN\s*[579]|CORE\s*I[579]|CORE\s*ULTRA|5600|5700|5800|5900|7600|7700|7800|7900|7950|8600|8700|9600|9700|9800|9900|9950|12400|12600|12700|13400|13600|13700|14400|14600|14700|14900)\b/.test(
+        txt
+      );
+    }
+    if (tier === "IA_DEEP_LEARNING") {
+      if (isBasicEntryDualCore) return false;
+      if (
+        /\b(CORE\s*I3|RYZEN\s*3|3200G|5500|5600G|5600GE|5600GT|4500|4600G|12100|13100|14100)\b/.test(
+          txt
+        )
+      ) {
+        return false;
+      }
+      return /\b(RYZEN\s*[79]|9600X|7600X|7700|7800X3D|9800X3D|7900|7950|9700|9900|9950|5700X|5800X|5900X|5950X|CORE\s*I[579]|CORE\s*ULTRA|13600|14600|12700|13700|14700|12900|13900|14900|13400|14400)\b/.test(
+        txt
+      );
+    }
+    return true;
+  };
+
   /**
-   * MOTOR DE RECOMENDACIÓN EXPERTO ("SUPER INTELIGENTE")
-   * Selecciona componentes equilibrados, reales y 100% compatibles en stock de https://nissei.com/py/
+   * Evaluador Inteligente de Perfil por Marca de CPU (AMD Ryzen vs Intel Core)
+   * Verifica disponibilidad estricta de cada componente requerido para el perfil y garantiza 0 errores de compatibilidad.
    */
-  const buildSmartPcConfiguration = (
+  const evaluatePresetForBrand = (
     tier: PresetTier,
+    cpuBrand: "AMD" | "INTEL",
     preserveExisting = false
-  ) => {
+  ): {
+    ok: boolean;
+    faltantes: string[];
+    build: HardwarePresupuestoItem[];
+    fallbackBuild: HardwarePresupuestoItem[];
+    hardwarePyg: number;
+    totalPyg: number;
+    cpuName: string;
+    gpuName: string;
+    ramName: string;
+    socketUsed: string;
+  } => {
     const inStockPool = catalogoCompleto.filter(
       (c) => c.stockStatus === "IN_STOCK" && (c.precioPyg || 0) > 0
     );
-    if (inStockPool.length === 0) return;
+    const brandLabel = cpuBrand === "AMD" ? "AMD Ryzen" : "Intel Core";
+    const presetObj = PRESETS.find((p) => p.id === tier);
+    const faltantes: string[] = [];
+
+    if (inStockPool.length === 0) {
+      return {
+        ok: false,
+        faltantes: ["Catálogo en sincronización con nissei.com/py"],
+        build: [],
+        fallbackBuild: [],
+        hardwarePyg: 0,
+        totalPyg: 0,
+        cpuName: "",
+        gpuName: "",
+        ramName: "",
+        socketUsed: "",
+      };
+    }
+
+    const brandCpus = inStockPool.filter(
+      (i) => i.categoria === "PROCESADOR" && isCpuOfBrand(i, cpuBrand)
+    );
+    if (brandCpus.length === 0) {
+      faltantes.push(`Procesador ${brandLabel} en stock web`);
+    }
+
+    const tierCpus = brandCpus.filter((c) => isCpuMatchingTier(c, tier));
+    if (brandCpus.length > 0 && tierCpus.length === 0) {
+      if (tier === "OFICINA_PRO") {
+        faltantes.push(
+          `Procesador ${brandLabel} con gráficos integrados (iGPU) para Oficina en stock`
+        );
+      } else {
+        faltantes.push(
+          `Procesador ${brandLabel} de gama ${presetObj?.nombre || tier} en stock`
+        );
+      }
+    }
+
+    // Verificar cuáles CPUs tienen Placa Madre compatible con su Socket en stock
+    const candidateCpusForMb = tierCpus.length > 0 ? tierCpus : brandCpus;
+    const cpusWithCompatibleMb = candidateCpusForMb.filter((c) =>
+      inStockPool.some((m) => m.categoria === "PLACA_MADRE" && m.socket === c.socket)
+    );
+
+    if (candidateCpusForMb.length > 0 && cpusWithCompatibleMb.length === 0) {
+      const missingSockets = Array.from(
+        new Set(candidateCpusForMb.map((c) => c.socket).filter(Boolean))
+      ).join(" / ");
+      faltantes.push(
+        `Placa Madre compatible con Socket ${missingSockets || brandLabel} en stock`
+      );
+    }
+
+    // Verificar Tarjeta Gráfica dedicada para perfiles que la exigen
+    const allGpus = inStockPool.filter((i) => i.categoria === "GPU");
+    const gamingGpus = allGpus.filter(isRealDedicatedGamingGpu);
+    const rtxGpus = gamingGpus.filter((g) =>
+      /RTX/i.test(`${g.descripcion} ${g.nombreWeb || ""}`)
+    );
+
+    if (tier === "IA_DEEP_LEARNING") {
+      if (rtxGpus.length === 0) {
+        faltantes.push(
+          "Tarjeta Gráfica dedicada NVIDIA GeForce RTX (núcleos CUDA/Tensor para IA) en stock"
+        );
+      }
+    } else if (
+      tier === "GAMING_PRO" ||
+      tier === "ARQUITECTURA_3D" ||
+      tier === "EDICION_CREATOR"
+    ) {
+      if (gamingGpus.length === 0) {
+        faltantes.push(
+          `Tarjeta Gráfica dedicada para ${presetObj?.nombre || "Gaming / Render"} en stock`
+        );
+      }
+    }
+
+    // Seleccionar el mejor CPU dentro de los viables de esa marca
+    const usableCpus =
+      tierCpus.filter((c) =>
+        inStockPool.some((m) => m.categoria === "PLACA_MADRE" && m.socket === c.socket)
+      ).length > 0
+        ? tierCpus.filter((c) =>
+            inStockPool.some((m) => m.categoria === "PLACA_MADRE" && m.socket === c.socket)
+          )
+        : cpusWithCompatibleMb.length > 0
+        ? cpusWithCompatibleMb
+        : candidateCpusForMb;
 
     const existingCpu = preserveExisting
-      ? selectedComponents.find((c) => c.categoria === "PROCESADOR")
-      : undefined;
-    const existingMb = preserveExisting
-      ? selectedComponents.find((c) => c.categoria === "PLACA_MADRE")
-      : undefined;
-    const existingGpu = preserveExisting
-      ? selectedComponents.find((c) => c.categoria === "GPU")
+      ? selectedComponents.find(
+          (c) => c.categoria === "PROCESADOR" && isCpuOfBrand(c, cpuBrand)
+        )
       : undefined;
 
-    // 1. PROCESADOR (CPU)
     let cpu = existingCpu;
-    if (!cpu) {
-      const preset = PRESETS.find((p) => p.id === tier);
-      if (existingMb?.socket && existingMb.socket !== "UNIVERSAL") {
-        // Si ya eligió Placa Madre, buscar CPU compatible con ese socket
-        const compatibleCpus = inStockPool.filter(
-          (i) => i.categoria === "PROCESADOR" && i.socket === existingMb.socket
-        );
+    if (!cpu && usableCpus.length > 0) {
+      if (tier === "OFICINA_PRO") {
         cpu =
-          compatibleCpus[Math.min(compatibleCpus.length - 1, Math.floor(compatibleCpus.length * 0.4))] ||
-          compatibleCpus[0];
-      } else if (tier === "OFICINA_PRO") {
-        // Oficina: Obligatorio CPU con gráficos integrados (hasIGpu === true) y cooler incluido
-        cpu =
-          preset?.preferredCpuSkus
-            .map((sku) => inStockPool.find((i) => i.sku === sku && i.hasIGpu !== false))
+          presetObj?.preferredCpuSkus
+            .map((sku) => usableCpus.find((i) => i.sku === sku && i.hasIGpu !== false))
             .find(Boolean) ||
-          inStockPool.find(
+          usableCpus.find(
             (i) =>
-              i.categoria === "PROCESADOR" &&
               i.hasIGpu !== false &&
               i.includesCooler !== false &&
-              (i.precioPyg || 0) >= 600000 &&
-              (i.precioPyg || 0) <= 2000000
+              (i.precioPyg || 0) >= 550000 &&
+              (i.precioPyg || 0) <= 2100000
           ) ||
-          inStockPool.find((i) => i.categoria === "PROCESADOR" && i.hasIGpu !== false);
+          usableCpus.find((i) => i.hasIGpu !== false) ||
+          usableCpus[0];
       } else if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR") {
-        // Alta demanda de cómputo / renderizado
         cpu =
-          preset?.preferredCpuSkus
-            .map((sku) => inStockPool.find((i) => i.sku === sku))
+          presetObj?.preferredCpuSkus
+            .map((sku) => usableCpus.find((i) => i.sku === sku))
             .find(Boolean) ||
-          inStockPool.find(
-            (i) =>
-              i.categoria === "PROCESADOR" &&
-              /\b(7800X3D|9800X3D|14700|13700|7900X|14900|14600|9600X)\b/i.test(
-                `${i.descripcion} ${i.nombreWeb || ""}`
-              )
+          usableCpus.find((i) =>
+            /\b(7800X3D|9800X3D|14700|13700|7900X|9700X|9900X|14900|14600|9600X)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
           ) ||
-          inStockPool.find((i) => i.categoria === "PROCESADOR");
+          usableCpus[usableCpus.length - 1];
       } else if (tier === "ARQUITECTURA_3D") {
-        // Modelado 3D BIM, AutoCAD, Revit, Lumion
         cpu =
-          preset?.preferredCpuSkus
-            .map((sku) => inStockPool.find((i) => i.sku === sku))
+          presetObj?.preferredCpuSkus
+            .map((sku) => usableCpus.find((i) => i.sku === sku))
             .find(Boolean) ||
-          inStockPool.find(
-            (i) =>
-              i.categoria === "PROCESADOR" &&
-              /\b(9600X|7600X|7700|7800X3D|14600|14400|13400|5700X)\b/i.test(
-                `${i.descripcion} ${i.nombreWeb || ""}`
-              )
+          usableCpus.find((i) =>
+            /\b(9600X|7600X|7700|7800X3D|14600|14400|13400|5700X)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
           ) ||
-          inStockPool.find((i) => i.categoria === "PROCESADOR");
+          usableCpus[Math.min(usableCpus.length - 1, Math.floor(usableCpus.length * 0.65))];
       } else {
-        // Gaming & Streaming
+        // GAMING_PRO
         cpu =
-          preset?.preferredCpuSkus
-            .map((sku) => inStockPool.find((i) => i.sku === sku))
+          presetObj?.preferredCpuSkus
+            .map((sku) => usableCpus.find((i) => i.sku === sku))
             .find(Boolean) ||
-          inStockPool.find(
-            (i) =>
-              i.categoria === "PROCESADOR" &&
-              /\b(14400|12400|5600|5700|7600|7500)\b/i.test(
-                `${i.descripcion} ${i.nombreWeb || ""}`
-              )
+          usableCpus.find((i) =>
+            /\b(14400|13400|12400|5600|5700|7600|7500|9600X)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
           ) ||
-          inStockPool.find((i) => i.categoria === "PROCESADOR");
+          usableCpus[Math.min(usableCpus.length - 1, Math.floor(usableCpus.length * 0.45))];
       }
     }
-    if (!cpu) return;
 
-    // 2. PLACA MADRE (Armonizada por Socket y Chipset según la gama del CPU)
-    let mb = existingMb;
-    if (!mb || (cpu.socket && mb.socket && mb.socket !== cpu.socket)) {
-      const mbCandidates = inStockPool.filter(
-        (i) => i.categoria === "PLACA_MADRE" && i.socket === cpu?.socket
-      );
+    // 2. PLACA MADRE (Compatible con Socket y previniendo VRM Throttling y choque ATX/MATX)
+    let mb: HardwarePresupuestoItem | undefined = preserveExisting
+      ? selectedComponents.find(
+          (c) => c.categoria === "PLACA_MADRE" && c.socket === cpu?.socket
+        )
+      : undefined;
+
+    const mbCandidatesAll = cpu
+      ? inStockPool.filter((i) => i.categoria === "PLACA_MADRE" && i.socket === cpu.socket)
+      : [];
+
+    if (!mb && mbCandidatesAll.length > 0 && cpu) {
+      const descCpu = `${cpu.descripcion} ${cpu.nombreWeb || ""}`.toUpperCase();
+      const esCpuGamaAlta =
+        descCpu.includes("I7") ||
+        descCpu.includes("I9") ||
+        descCpu.includes("RYZEN 9") ||
+        descCpu.includes("7800X3D") ||
+        descCpu.includes("9800X3D") ||
+        descCpu.includes("ULTRA 7") ||
+        descCpu.includes("ULTRA 9");
+
+      const nonEntryMbs = mbCandidatesAll.filter((m) => {
+        const d = `${m.descripcion} ${m.nombreWeb || ""}`.toUpperCase();
+        return !(
+          d.includes("H610") ||
+          d.includes("H510") ||
+          d.includes("H410") ||
+          d.includes("H810") ||
+          d.includes("A520") ||
+          d.includes("A320") ||
+          d.includes("A620M-HDV") ||
+          d.includes("A620M-E")
+        );
+      });
+
+      const mbPool =
+        esCpuGamaAlta && nonEntryMbs.length > 0 ? nonEntryMbs : mbCandidatesAll;
+
       if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR") {
-        // Priorizar chipsets X870 / X670 / B850 / B650 / Z790 / Z890
         mb =
-          mbCandidates.find((i) =>
+          mbPool.find((i) =>
             /\b(X870|X670|B850|Z890|Z790)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
           ) ||
-          mbCandidates.find((i) =>
+          mbPool.find((i) =>
             /\b(B650|B760|B860)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
           ) ||
-          mbCandidates[Math.min(mbCandidates.length - 1, Math.floor(mbCandidates.length * 0.65))];
+          mbPool[Math.min(mbPool.length - 1, Math.floor(mbPool.length * 0.65))];
       } else if (tier === "ARQUITECTURA_3D") {
         mb =
-          mbCandidates.find((i) =>
-            /\b(B650|B760|B850|Z790|X670)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
-          ) ||
-          mbCandidates.find((i) =>
-            /\b(B550)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
-          ) ||
-          mbCandidates[0];
+          mbPool.find((i) =>
+            /\b(B650|B760|B850|Z790|X670|B550)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
+          ) || mbPool[0];
       } else if (tier === "GAMING_PRO") {
         mb =
-          mbCandidates.find((i) =>
+          mbPool.find((i) =>
             /\b(B550|B760|B650|A520|H610)\b/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)
-          ) || mbCandidates[0];
+          ) || mbPool[0];
       } else {
-        mb = mbCandidates[0];
+        mb = mbPool[0];
       }
     }
 
+    // 3. MEMORIA RAM
     const requiredRamType =
       mb?.ramType && mb.ramType !== "UNIVERSAL"
         ? mb.ramType
-        : cpu.ramType && cpu.ramType !== "UNIVERSAL"
+        : cpu?.ramType && cpu.ramType !== "UNIVERSAL"
         ? cpu.ramType
         : "DDR4";
 
-    // 3. MEMORIA RAM DESKTOP (Estrictamente DDR4 o DDR5 según la plataforma)
-    const existingRams = preserveExisting
-      ? selectedComponents.filter(
+    const ramCandidates = inStockPool.filter(
+      (i) => i.categoria === "RAM" && i.ramType === requiredRamType
+    );
+    if (mb && ramCandidates.length === 0) {
+      faltantes.push(`Memoria RAM ${requiredRamType} compatible en stock`);
+    }
+
+    let ram = preserveExisting
+      ? selectedComponents.find(
           (c) => c.categoria === "RAM" && c.ramType === requiredRamType
         )
-      : [];
-    let ram = existingRams[0];
-    if (!ram) {
-      const ramCandidates = inStockPool.filter(
-        (i) => i.categoria === "RAM" && i.ramType === requiredRamType
-      );
-      if (tier === "IA_DEEP_LEARNING" || tier === "ARQUITECTURA_3D" || tier === "EDICION_CREATOR") {
-        // Buscar 32GB (o kit de alta velocidad)
+      : undefined;
+
+    if (!ram && ramCandidates.length > 0) {
+      if (
+        tier === "IA_DEEP_LEARNING" ||
+        tier === "ARQUITECTURA_3D" ||
+        tier === "EDICION_CREATOR"
+      ) {
         ram =
           ramCandidates.find((i) => (i.capacidadGb || 0) >= 32) ||
           ramCandidates.find((i) => (i.capacidadGb || 0) >= 16) ||
           ramCandidates[Math.min(ramCandidates.length - 1, Math.floor(ramCandidates.length * 0.5))];
       } else if (tier === "GAMING_PRO") {
-        // 16GB o 32GB de marca de renombre
         ram =
           ramCandidates.find(
             (i) =>
@@ -974,7 +1261,6 @@ export default function ArmarPcPresupuestadorPage() {
           ramCandidates.find((i) => (i.capacidadGb || 0) >= 16) ||
           ramCandidates[0];
       } else {
-        // Oficina: 8GB o 16GB
         ram =
           ramCandidates.find(
             (i) =>
@@ -986,103 +1272,255 @@ export default function ArmarPcPresupuestadorPage() {
       }
     }
 
-    // 4. ALMACENAMIENTO SSD (Priorizar M.2 NVMe PCIe de alta velocidad)
-    const existingSsds = preserveExisting
-      ? selectedComponents.filter((c) => c.categoria === "ALMACENAMIENTO")
-      : [];
-    let ssd = existingSsds[0];
-    if (!ssd) {
-      const ssdCandidates = inStockPool.filter((i) => i.categoria === "ALMACENAMIENTO");
-      const nvmePool = ssdCandidates.filter((i) => i.esM2Nvme);
-      const poolToUse = nvmePool.length > 0 ? nvmePool : ssdCandidates;
+    // 4. ALMACENAMIENTO SSD
+    const ssdCandidates = inStockPool.filter((i) => i.categoria === "ALMACENAMIENTO");
+    if (ssdCandidates.length === 0) {
+      faltantes.push("Unidad de Almacenamiento SSD en stock");
+    }
+    const nvmePool = ssdCandidates.filter((i) => i.esM2Nvme);
+    const ssdPoolToUse = nvmePool.length > 0 ? nvmePool : ssdCandidates;
 
-      if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR" || tier === "ARQUITECTURA_3D") {
-        // 1TB o 2TB NVMe PCIe Gen4/Gen5
+    let ssd = preserveExisting
+      ? selectedComponents.find((c) => c.categoria === "ALMACENAMIENTO")
+      : undefined;
+    if (!ssd && ssdPoolToUse.length > 0) {
+      if (
+        tier === "IA_DEEP_LEARNING" ||
+        tier === "EDICION_CREATOR" ||
+        tier === "ARQUITECTURA_3D"
+      ) {
         ssd =
-          poolToUse.find((i) => (i.capacidadGb || 0) >= 1900) ||
-          poolToUse.find((i) => (i.capacidadGb || 0) >= 960) ||
-          poolToUse[Math.min(poolToUse.length - 1, Math.floor(poolToUse.length * 0.6))];
+          ssdPoolToUse.find((i) => (i.capacidadGb || 0) >= 1900) ||
+          ssdPoolToUse.find((i) => (i.capacidadGb || 0) >= 960) ||
+          ssdPoolToUse[Math.min(ssdPoolToUse.length - 1, Math.floor(ssdPoolToUse.length * 0.6))];
       } else if (tier === "GAMING_PRO") {
-        // 1TB NVMe M.2 (o 500GB/512GB NVMe M.2)
         ssd =
-          poolToUse.find((i) => (i.capacidadGb || 0) >= 960 && (i.capacidadGb || 0) <= 1050) ||
-          poolToUse.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
-          poolToUse[0];
+          ssdPoolToUse.find(
+            (i) => (i.capacidadGb || 0) >= 960 && (i.capacidadGb || 0) <= 1050
+          ) ||
+          ssdPoolToUse.find(
+            (i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550
+          ) ||
+          ssdPoolToUse[0];
       } else {
-        // Oficina: 500GB / 512GB NVMe M.2
         ssd =
-          poolToUse.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
-          ssdCandidates.find((i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550) ||
-          poolToUse[0];
+          ssdPoolToUse.find(
+            (i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550
+          ) ||
+          ssdCandidates.find(
+            (i) => (i.capacidadGb || 0) >= 480 && (i.capacidadGb || 0) <= 550
+          ) ||
+          ssdPoolToUse[0];
       }
     }
 
     // 5. PLACA DE VIDEO (GPU)
-    let gpu = existingGpu;
+    let gpu = preserveExisting
+      ? selectedComponents.find((c) => c.categoria === "GPU")
+      : undefined;
     if (!gpu) {
-      const gpuCandidates = inStockPool.filter((i) => i.categoria === "GPU");
       if (tier === "IA_DEEP_LEARNING") {
-        // NVIDIA con máxima VRAM y núcleos Tensor (CUDA)
         gpu =
-          gpuCandidates.find((i) =>
-            /\b(5080|4080|5070\s*TI|4070\s*TI|RTX\s*5070|RTX\s*4070|3060\s*12GB|4060\s*TI)\b/i.test(
+          rtxGpus.find((i) =>
+            /\b(5080|4080|5070\s*TI|4070\s*TI|RTX\s*5070|RTX\s*4070|3060\s*12GB|4060\s*TI|5060\s*TI)\b/i.test(
+              `${i.descripcion} ${i.nombreWeb || ""}`
+            )
+          ) || rtxGpus[rtxGpus.length - 1];
+      } else if (tier === "ARQUITECTURA_3D" || tier === "EDICION_CREATOR") {
+        gpu =
+          rtxGpus.find((i) =>
+            /\b(4070|5070|4060\s*TI|5060\s*TI|4060|5060|3060)\b/i.test(
               `${i.descripcion} ${i.nombreWeb || ""}`
             )
           ) ||
-          gpuCandidates.find((i) => /RTX/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)) ||
-          gpuCandidates[0];
-      } else if (tier === "ARQUITECTURA_3D") {
-        // NVIDIA RTX para aceleración de renders Lumion, Revit, V-Ray, AutoCAD
-        gpu =
-          gpuCandidates.find((i) =>
-            /\b(4070|5070|4060\s*TI|4060|3060|3050)\b/i.test(
-              `${i.descripcion} ${i.nombreWeb || ""}`
-            )
-          ) ||
-          gpuCandidates.find((i) => /RTX/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)) ||
-          gpuCandidates[0];
-      } else if (tier === "EDICION_CREATOR") {
-        // GPU con soporte NVENC para exportación 4K
-        gpu =
-          gpuCandidates.find((i) =>
-            /\b(4070|5070|4060\s*TI|4060|3060)\b/i.test(
-              `${i.descripcion} ${i.nombreWeb || ""}`
-            )
-          ) ||
-          gpuCandidates.find((i) => /RTX/i.test(`${i.descripcion} ${i.nombreWeb || ""}`)) ||
-          gpuCandidates[0];
+          rtxGpus[0] ||
+          gamingGpus[Math.min(gamingGpus.length - 1, Math.floor(gamingGpus.length * 0.5))];
       } else if (tier === "GAMING_PRO") {
         gpu =
-          gpuCandidates.find((i) =>
+          gamingGpus.find((i) =>
             /\b(RTX\s*4060|RTX\s*3060|RTX\s*5060|RX\s*7600|RX\s*6600|RTX\s*3050|RTX\s*4070)\b/i.test(
               `${i.descripcion} ${i.nombreWeb || ""}`
             )
           ) ||
-          gpuCandidates[Math.min(gpuCandidates.length - 1, Math.floor(gpuCandidates.length * 0.35))];
-      } else if (cpu.hasIGpu === false) {
-        gpu = gpuCandidates[0];
+          gamingGpus[Math.min(gamingGpus.length - 1, Math.floor(gamingGpus.length * 0.35))];
+      } else if (cpu && cpu.hasIGpu === false) {
+        gpu = allGpus[0];
+        if (!gpu) {
+          faltantes.push(
+            "Tarjeta de Video dedicada en stock (el procesador disponible no tiene video integrado)"
+          );
+        }
       }
     }
 
-    // 6. FUENTE DE PODER (Acorde a los Watts reales de consumo)
-    const minPsuWatts =
-      tier === "IA_DEEP_LEARNING"
-        ? Math.max(750, gpu?.recomendadoPsuWatts || 750)
-        : tier === "ARQUITECTURA_3D" || tier === "EDICION_CREATOR"
-        ? Math.max(650, gpu?.recomendadoPsuWatts || 650)
-        : tier === "GAMING_PRO"
-        ? Math.max(600, gpu?.recomendadoPsuWatts || 550)
-        : 500;
+    // 6. REFRIGERACIÓN Y GABINETE (100% sincronizados en factor de forma ATX/MATX y tamaño de radiador)
+    const stockCooler = catalogoCompleto.find((i) => i.sku === "STOCK-COOLER");
+    const realCpuCoolers = inStockPool.filter(
+      (i) => i.categoria === "REFRIGERACION" && i.isCpuCooler && i.sku !== "STOCK-COOLER"
+    );
+    const liquid240Coolers = realCpuCoolers.filter((i) => {
+      const d = `${i.descripcion} ${i.nombreWeb || ""}`;
+      return (
+        /240|LIQUID|L[IÍ]QUIDO|WATER|AIO/i.test(d) &&
+        !(i.radiatorSizeMm === 360 || /360/i.test(d))
+      );
+    });
+    const liquid360Coolers = realCpuCoolers.filter((i) => {
+      const d = `${i.descripcion} ${i.nombreWeb || ""}`;
+      return i.radiatorSizeMm === 360 || /360/i.test(d);
+    });
+    const airCoolers = realCpuCoolers.filter((i) => {
+      const d = `${i.descripcion} ${i.nombreWeb || ""}`;
+      return !i.isAioLiquid && !/240|360|LIQUID|L[IÍ]QUIDO|WATER|AIO/i.test(d);
+    });
 
-    const existingPsu = preserveExisting
+    const allCases = inStockPool.filter((i) => i.categoria === "GABINETE");
+
+    // Si la placa madre elegida es ATX pero no hay ningún gabinete ATX en stock, cambiar a placa Micro-ATX del mismo socket
+    if (
+      mb &&
+      (mb.formFactor === "ATX" || mb.formFactor === "EATX") &&
+      !allCases.some((g) => isGabinetePhysicallyCompatible(g, mb, undefined, Boolean(gpu)))
+    ) {
+      const matxAlt = mbCandidatesAll.find(
+        (m) =>
+          m.formFactor !== "ATX" &&
+          m.formFactor !== "EATX" &&
+          allCases.some((g) => isGabinetePhysicallyCompatible(g, m, undefined, Boolean(gpu)))
+      );
+      if (matxAlt) {
+        mb = matxAlt;
+      }
+    }
+
+    let cooler = preserveExisting
+      ? selectedComponents.find((c) => c.categoria === "REFRIGERACION")
+      : undefined;
+
+    if (!cooler || (cpu?.includesCooler === false && cooler.sku === "STOCK-COOLER")) {
+      const descCpu = cpu ? `${cpu.descripcion} ${cpu.nombreWeb || ""}`.toUpperCase() : "";
+      const esCpuCaliente =
+        (cpu?.tdpWatts || 0) >= 120 ||
+        /14700|13700|14900|13900|7800X3D|9800X3D|7900X|7950X/.test(descCpu);
+
+      if (
+        tier === "IA_DEEP_LEARNING" ||
+        tier === "EDICION_CREATOR" ||
+        tier === "ARQUITECTURA_3D" ||
+        esCpuCaliente
+      ) {
+        // Preferir 240mm AIO compatible con gabinetes en stock, luego 360mm si hay gabinete 360mm, luego Air Cooler
+        const valid240 = liquid240Coolers.find((c) =>
+          allCases.some((g) => isGabinetePhysicallyCompatible(g, mb, c, Boolean(gpu)))
+        );
+        const valid360 = liquid360Coolers.find((c) =>
+          allCases.some((g) => isGabinetePhysicallyCompatible(g, mb, c, Boolean(gpu)))
+        );
+        const validAir = airCoolers.find((c) =>
+          allCases.some((g) => isGabinetePhysicallyCompatible(g, mb, c, Boolean(gpu)))
+        );
+        cooler =
+          valid240 ||
+          valid360 ||
+          validAir ||
+          realCpuCoolers[0] ||
+          (cpu?.includesCooler !== false ? stockCooler : undefined);
+      } else if (cpu?.includesCooler === false) {
+        const validAir = airCoolers.find((c) =>
+          allCases.some((g) => isGabinetePhysicallyCompatible(g, mb, c, Boolean(gpu)))
+        );
+        const valid240 = liquid240Coolers.find((c) =>
+          allCases.some((g) => isGabinetePhysicallyCompatible(g, mb, c, Boolean(gpu)))
+        );
+        cooler = validAir || valid240 || realCpuCoolers[0];
+        if (!cooler) {
+          faltantes.push(
+            "Cooler Disipador para CPU en stock (el procesador no incluye cooler de fábrica)"
+          );
+        }
+      } else {
+        cooler = stockCooler;
+      }
+    }
+
+    // Selección de Gabinete estrictamente compatible con Placa Madre (ATX/MATX) y Cooler (Aire/240/360)
+    const compatibleCases = allCases.filter((g) =>
+      isGabinetePhysicallyCompatible(g, mb, cooler, Boolean(gpu))
+    );
+    const gamerCompatibleCases = compatibleCases.filter(
+      (i) =>
+        !i.isKitOficina &&
+        !i.descripcion.includes("1102K") &&
+        !i.descripcion.includes("1103K") &&
+        (i.precioPyg || 0) >= 270000
+    );
+
+    let gabinete = preserveExisting
       ? selectedComponents.find(
-          (c) => c.categoria === "FUENTE" && (c.potenciaWatts || 0) >= minPsuWatts
+          (c) =>
+            c.categoria === "GABINETE" &&
+            isGabinetePhysicallyCompatible(c, mb, cooler, Boolean(gpu))
         )
       : undefined;
-    let psu = existingPsu;
+
+    if (!gabinete) {
+      if (
+        tier === "IA_DEEP_LEARNING" ||
+        tier === "EDICION_CREATOR" ||
+        tier === "ARQUITECTURA_3D"
+      ) {
+        gabinete =
+          gamerCompatibleCases.find(
+            (i) =>
+              /\b(COUGAR|CORSAIR|BE QUIET|ASUS|LIAN LI|NZXT)\b/i.test(
+                `${i.marca || ""} ${i.nombreWeb || i.descripcion}`
+              ) && (i.precioPyg || 0) >= 450000
+          ) ||
+          gamerCompatibleCases[
+            Math.min(
+              gamerCompatibleCases.length - 1,
+              Math.floor(gamerCompatibleCases.length * 0.5)
+            )
+          ] ||
+          compatibleCases[0];
+      } else if (tier === "GAMING_PRO") {
+        gabinete = gamerCompatibleCases[0] || compatibleCases[0];
+      } else {
+        gabinete = compatibleCases[0];
+      }
+    }
+
+    if (!gabinete) {
+      faltantes.push(
+        `Gabinete compatible con placa madre ${mb?.formFactor || "ATX/Micro-ATX"} en stock`
+      );
+    }
+
+    // 7. FUENTE DE PODER (Acorde al consumo real calculado por verificarCompatibilidadPC)
+    const cpuWatts = cpu?.tdpWatts || 65;
+    const gpuWatts = gpu ? gpu.tdpWatts || 150 : 0;
+    const consumoTotalWatts = cpuWatts + gpuWatts + 60;
+    const fuenteRecomendadaWatts = Math.max(
+      Math.ceil((consumoTotalWatts * 1.3) / 50) * 50,
+      gpu?.recomendadoPsuWatts || 500,
+      tier === "IA_DEEP_LEARNING"
+        ? 750
+        : tier === "ARQUITECTURA_3D" || tier === "EDICION_CREATOR"
+        ? 650
+        : tier === "GAMING_PRO"
+        ? 600
+        : 500
+    );
+
+    let psu = preserveExisting
+      ? selectedComponents.find(
+          (c) => c.categoria === "FUENTE" && (c.potenciaWatts || 0) >= fuenteRecomendadaWatts
+        )
+      : undefined;
+
     if (!psu) {
       const psuCandidates = inStockPool.filter(
-        (i) => i.categoria === "FUENTE" && (i.potenciaWatts || 0) >= minPsuWatts
+        (i) => i.categoria === "FUENTE" && (i.potenciaWatts || 0) >= fuenteRecomendadaWatts
       );
       psu =
         psuCandidates.find((i) =>
@@ -1091,93 +1529,156 @@ export default function ArmarPcPresupuestadorPage() {
           )
         ) ||
         psuCandidates[0] ||
-        inStockPool.find((i) => i.categoria === "FUENTE" && (i.potenciaWatts || 0) >= 500);
+        inStockPool.find(
+          (i) => i.categoria === "FUENTE" && (i.potenciaWatts || 0) >= consumoTotalWatts
+        );
     }
 
-    // 7. GABINETE
-    const existingCase = preserveExisting
-      ? selectedComponents.find((c) => c.categoria === "GABINETE")
-      : undefined;
-    let gabinete = existingCase;
-    if (!gabinete) {
-      const caseCandidates = inStockPool.filter((i) => i.categoria === "GABINETE");
-      const gamerCases = caseCandidates.filter(
-        (i) =>
-          !i.descripcion.includes("1102K") &&
-          !i.descripcion.includes("1103K") &&
-          (i.precioPyg || 0) >= 290000
-      );
-      if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR" || tier === "ARQUITECTURA_3D") {
-        gabinete =
-          gamerCases.find((i) =>
-            /\b(COUGAR|CORSAIR|BE QUIET|ASUS|LIAN LI|NZXT)\b/i.test(
-              `${i.marca || ""} ${i.nombreWeb || i.descripcion}`
-            ) && (i.precioPyg || 0) >= 500000
-          ) ||
-          gamerCases[Math.min(gamerCases.length - 1, Math.floor(gamerCases.length * 0.6))] ||
-          caseCandidates[0];
-      } else if (tier === "GAMING_PRO") {
-        gabinete = gamerCases[0] || caseCandidates[0];
-      } else {
-        gabinete = caseCandidates[0];
-      }
+    if (!psu && !(gabinete?.isKitOficina && !gpu && (gabinete.fuenteIncluidaWatts || 200) >= consumoTotalWatts)) {
+      faltantes.push(`Fuente de Poder certificada de ${fuenteRecomendadaWatts}W+ en stock`);
     }
 
-    // 8. REFRIGERACIÓN
-    const existingCooler = preserveExisting
-      ? selectedComponents.find((c) => c.categoria === "REFRIGERACION")
-      : undefined;
-    let cooler = existingCooler;
-    if (
-      !cooler ||
-      (cpu.includesCooler === false && cooler.sku === "STOCK-COOLER")
-    ) {
-      const stockCooler = catalogoCompleto.find((i) => i.sku === "STOCK-COOLER");
-      const realCpuCoolers = inStockPool.filter(
-        (i) => i.categoria === "REFRIGERACION" && i.isCpuCooler
-      );
-      const liquidAioCoolers = realCpuCoolers.filter((i) =>
-        /\b(240|360|LIQUID|LÍQUIDO|LIQUIDO|WATER|AIO|AURA GL|PURE LOOP|LIGHT LOOP)\b/i.test(
-          `${i.descripcion} ${i.nombreWeb || ""}`
-        )
-      );
-
-      if (tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR" || tier === "ARQUITECTURA_3D") {
-        cooler = liquidAioCoolers[0] || realCpuCoolers[0] || stockCooler;
-      } else if (cpu.includesCooler === false) {
-        cooler = realCpuCoolers[0] || liquidAioCoolers[0];
-      } else {
-        cooler = stockCooler;
-      }
-    }
-
-    const build = [cpu, mb, ram, gpu, ssd, psu, gabinete, cooler].filter(
+    const rawBuild = [cpu, mb, ram, gpu, ssd, psu, gabinete, cooler].filter(
       Boolean
     ) as HardwarePresupuestoItem[];
 
-    setSelectedComponents(
-      build.map((item) => {
-        let cant = 1;
-        if (item.categoria === "RAM") {
-          const isDualKit = `${item.descripcion} ${item.nombreWeb || ""}`.toUpperCase().includes("2X");
-          if (!isDualKit) {
-            if (tier === "ARQUITECTURA_3D" || tier === "IA_DEEP_LEARNING" || tier === "EDICION_CREATOR") {
-              if ((item.capacidadGb || 16) <= 16) cant = 2; // 32GB en Dual Channel
-            } else if (tier === "GAMING_PRO") {
-              if ((item.capacidadGb || 8) <= 8) cant = 2; // 16GB en Dual Channel
-            }
+    const finalBuild = rawBuild.map((item) => {
+      let cant = 1;
+      if (item.categoria === "RAM") {
+        const isDualKit = `${item.descripcion} ${item.nombreWeb || ""}`
+          .toUpperCase()
+          .includes("2X");
+        if (!isDualKit) {
+          if (
+            tier === "ARQUITECTURA_3D" ||
+            tier === "IA_DEEP_LEARNING" ||
+            tier === "EDICION_CREATOR"
+          ) {
+            if ((item.capacidadGb || 16) <= 16) cant = 2; // 32GB en Dual Channel
+          } else if (tier === "GAMING_PRO") {
+            if ((item.capacidadGb || 8) <= 8) cant = 2; // 16GB en Dual Channel
           }
         }
-        return {
-          ...item,
-          cantidad: cant,
-        };
-      })
+      }
+      return {
+        ...item,
+        cantidad: cant,
+      };
+    });
+
+    const hardwarePyg = finalBuild.reduce(
+      (acc, c) => acc + (c.precioPyg || 0) * (c.cantidad || 1),
+      0
     );
+    const totalPyg = finalBuild.length > 0 ? hardwarePyg + costoMontajePyg : 0;
+
+    const ramItem = finalBuild.find((i) => i.categoria === "RAM");
+    const ramTotalGb = ramItem ? (ramItem.capacidadGb || 8) * (ramItem.cantidad || 1) : 0;
+
+    return {
+      ok: faltantes.length === 0 && Boolean(cpu && mb && ram && ssd && gabinete),
+      faltantes,
+      build: faltantes.length === 0 ? finalBuild : [],
+      fallbackBuild: finalBuild,
+      hardwarePyg,
+      totalPyg,
+      cpuName: cpu ? cleanDisplayTitle(cpu.nombreWeb || cpu.descripcion) : "",
+      gpuName: gpu
+        ? cleanDisplayTitle(gpu.nombreWeb || gpu.descripcion)
+        : "Gráficos Integrados en CPU",
+      ramName: ramItem ? `${ramTotalGb}GB ${ramItem.ramType || ""}` : "",
+      socketUsed: cpu?.socket || "",
+    };
+  };
+
+  /**
+   * Pre-evaluación reactiva en tiempo real de ambos fabricantes (AMD vs Intel)
+   * para el perfil seleccionado en el menú de CPU.
+   */
+  const presetBrandPreviews = useMemo(() => {
+    if (!selectedPresetForCpuMenu) return null;
+    return {
+      AMD: evaluatePresetForBrand(selectedPresetForCpuMenu, "AMD", false),
+      INTEL: evaluatePresetForBrand(selectedPresetForCpuMenu, "INTEL", false),
+    };
+  }, [selectedPresetForCpuMenu, catalogoCompleto, costoMontajePyg]);
+
+  /**
+   * MOTOR DE RECOMENDACIÓN EXPERTO ("SUPER INTELIGENTE")
+   * Ejecuta el armado del perfil para la marca de CPU elegida (AMD o Intel) o alerta si faltan componentes.
+   */
+  const buildSmartPcConfiguration = (
+    tier: PresetTier,
+    preserveExisting = false,
+    explicitCpuBrand?: "AMD" | "INTEL"
+  ): boolean => {
+    const presetObj = PRESETS.find((p) => p.id === tier);
+
+    if (explicitCpuBrand) {
+      const evalRes = evaluatePresetForBrand(tier, explicitCpuBrand, preserveExisting);
+      const otherBrand: "AMD" | "INTEL" = explicitCpuBrand === "AMD" ? "INTEL" : "AMD";
+      const otherEval = evaluatePresetForBrand(tier, otherBrand, false);
+      const brandLabel = explicitCpuBrand === "AMD" ? "AMD Ryzen" : "Intel Core";
+
+      if (!evalRes.ok) {
+        setPresetSuccessBanner(null);
+        setPresetCpuAlert({
+          titulo: `No disponemos actualmente de componentes en stock para armar el perfil "${
+            presetObj?.nombre || tier
+          }" con ${brandLabel}`,
+          detalle: `Verificamos el stock en vivo de https://nissei.com/py/ y actualmente faltan componentes esenciales para garantizar un ensamble ${
+            presetObj?.nombre || tier
+          } 100% compatible en plataforma ${brandLabel}:`,
+          faltantes: evalRes.faltantes,
+          tier,
+          failedBrand: explicitCpuBrand,
+          alternativeBrand: otherBrand,
+          alternativeAvailable: otherEval.ok,
+          fallbackBuild: evalRes.fallbackBuild,
+        });
+        return false;
+      }
+
+      setSelectedComponents(evalRes.build);
+      setActivePresetBuilt({ tier, brand: explicitCpuBrand });
+      setPresetCpuAlert(null);
+      setPresetSuccessBanner(
+        `✅ Perfil "${presetObj?.nombre || tier}" armado con ${brandLabel} (${
+          evalRes.socketUsed
+        }) · Total: ₲ ${evalRes.totalPyg.toLocaleString("es-PY")} (100% Compatible)`
+      );
+      return true;
+    }
+
+    // Modo autocompletar o automático: respetar marca de CPU existente o probar AMD -> INTEL
+    const preferredBrand: "AMD" | "INTEL" =
+      currentCpu && isCpuOfBrand(currentCpu, "INTEL")
+        ? "INTEL"
+        : currentCpu && isCpuOfBrand(currentCpu, "AMD")
+        ? "AMD"
+        : "AMD";
+    const firstTry = evaluatePresetForBrand(tier, preferredBrand, preserveExisting);
+    if (firstTry.ok) {
+      setSelectedComponents(firstTry.build);
+      setActivePresetBuilt({ tier, brand: preferredBrand });
+      setPresetCpuAlert(null);
+      return true;
+    }
+    const secondBrand = preferredBrand === "AMD" ? "INTEL" : "AMD";
+    const secondTry = evaluatePresetForBrand(tier, secondBrand, preserveExisting);
+    if (secondTry.ok) {
+      setSelectedComponents(secondTry.build);
+      setActivePresetBuilt({ tier, brand: secondBrand });
+      setPresetCpuAlert(null);
+      return true;
+    }
+    if (firstTry.fallbackBuild.length > 0) {
+      setSelectedComponents(firstTry.fallbackBuild);
+    }
+    return false;
   };
 
   const handleAutoCompletarInteligente = () => {
-    // Determinar gama automáticamente según el CPU o GPU ya elegido
     const cpuPrice = currentCpu?.precioPyg || 0;
     const gpuPrice = currentGpu?.precioPyg || 0;
     let detectedTier: PresetTier = "GAMING_PRO";
@@ -1198,71 +1699,856 @@ export default function ArmarPcPresupuestadorPage() {
     buildSmartPcConfiguration(detectedTier, true);
   };
 
-  // Armado Inteligente Asistido por Presupuesto en Guaraníes (Ej: 10 Millones, 5 Millones, etc.)
-  const buildPcByTargetBudget = (targetAmountPyg: number) => {
-    if (!targetAmountPyg || targetAmountPyg <= 0) return;
+  /**
+   * OPTIMIZADOR MATEMÁTICO INTELIGENTE POR PRESUPUESTO EN GUARANÍES
+   * Evalúa múltiples sockets y realiza mejoras escalonadas (Knapsack / Hill-Climbing)
+   * en GPU, CPU, RAM Dual Channel, NVMe SSD, Placa Madre, Cooler, Fuente y Gabinete
+   * para aprovechar al máximo el presupuesto en Guaraníes con 0 errores de compatibilidad.
+   */
+  const optimizeBuildForBudgetPyg = (
+    targetTotalPyg: number,
+    cpuBrand: "AMD" | "INTEL"
+  ): {
+    ok: boolean;
+    withinBudget: boolean;
+    faltantes: string[];
+    build: HardwarePresupuestoItem[];
+    hardwarePyg: number;
+    totalPyg: number;
+    diffPyg: number;
+    pctUsed: number;
+    cpuName: string;
+    gpuName: string;
+    ramSummary: string;
+    ssdSummary: string;
+    socketUsed: string;
+    minPossiblePyg: number;
+  } => {
     const inStockPool = catalogoCompleto.filter(
       (c) => c.stockStatus === "IN_STOCK" && (c.precioPyg || 0) > 0
     );
-    if (inStockPool.length === 0) return;
+    const brandLabel = cpuBrand === "AMD" ? "AMD Ryzen" : "Intel Core";
 
-    let targetTier: PresetTier = "GAMING_PRO";
-    if (targetAmountPyg < 4800000) {
-      targetTier = "OFICINA_PRO";
-    } else if (targetAmountPyg >= 4800000 && targetAmountPyg < 8000000) {
-      targetTier = "GAMING_PRO";
-    } else if (targetAmountPyg >= 8000000 && targetAmountPyg < 13000000) {
-      // 10 Millones -> Rango equilibrado Gaming 1440p / Render 3D / Arquitectura
-      targetTier = "ARQUITECTURA_3D";
-    } else if (targetAmountPyg >= 13000000 && targetAmountPyg < 18500000) {
-      targetTier = "EDICION_CREATOR";
-    } else {
-      targetTier = "IA_DEEP_LEARNING";
+    if (inStockPool.length === 0) {
+      return {
+        ok: false,
+        withinBudget: false,
+        faltantes: ["Sincronizando stock web de nissei.com/py..."],
+        build: [],
+        hardwarePyg: 0,
+        totalPyg: 0,
+        diffPyg: 0,
+        pctUsed: 0,
+        cpuName: "",
+        gpuName: "",
+        ramSummary: "",
+        ssdSummary: "",
+        socketUsed: "",
+        minPossiblePyg: 0,
+      };
     }
 
-    buildSmartPcConfiguration(targetTier, false);
-
-    setBudgetFeedback(
-      `Presupuesto objetivo: ₲ ${targetAmountPyg.toLocaleString("es-PY")} · Configuración óptima generada con éxito.`
+    const brandCpus = inStockPool.filter(
+      (i) => i.categoria === "PROCESADOR" && isCpuOfBrand(i, cpuBrand)
     );
-    setTimeout(() => setBudgetFeedback(null), 6000);
+    if (brandCpus.length === 0) {
+      return {
+        ok: false,
+        withinBudget: false,
+        faltantes: [`Procesadores ${brandLabel} en stock web`],
+        build: [],
+        hardwarePyg: 0,
+        totalPyg: 0,
+        diffPyg: 0,
+        pctUsed: 0,
+        cpuName: "",
+        gpuName: "",
+        ramSummary: "",
+        ssdSummary: "",
+        socketUsed: "",
+        minPossiblePyg: 0,
+      };
+    }
+
+    const allMbs = inStockPool.filter((i) => i.categoria === "PLACA_MADRE");
+    const allRams = inStockPool.filter((i) => i.categoria === "RAM");
+    const allSsds = inStockPool.filter((i) => i.categoria === "ALMACENAMIENTO");
+    const nvmeSsds = allSsds.filter((i) => i.esM2Nvme);
+    const ssdPool = nvmeSsds.length > 0 ? nvmeSsds : allSsds;
+    const allGpus = inStockPool.filter(
+      (i) => i.categoria === "GPU" && isRealDedicatedGamingGpu(i)
+    );
+    const allPsus = inStockPool.filter((i) => i.categoria === "FUENTE");
+    const allCases = inStockPool.filter((i) => i.categoria === "GABINETE");
+    const realCoolers = inStockPool.filter(
+      (i) => i.categoria === "REFRIGERACION" && i.isCpuCooler && i.sku !== "STOCK-COOLER"
+    );
+    const stockCooler = catalogoCompleto.find((i) => i.sku === "STOCK-COOLER");
+
+    // Sockets viables para esta marca que tengan CPU + Placa Madre + RAM en stock
+    const viableSockets = Array.from(
+      new Set(brandCpus.map((c) => c.socket).filter(Boolean))
+    ).filter((sock) => {
+      const mbs = allMbs.filter((m) => m.socket === sock);
+      if (mbs.length === 0) return false;
+      return mbs.some((m) => {
+        const rType =
+          m.ramType && m.ramType !== "UNIVERSAL"
+            ? m.ramType
+            : brandCpus.find((c) => c.socket === sock)?.ramType || "DDR4";
+        return allRams.some((r) => r.ramType === rType);
+      });
+    });
+
+    if (viableSockets.length === 0) {
+      const socketsList = Array.from(
+        new Set(brandCpus.map((c) => c.socket).filter(Boolean))
+      ).join(" / ");
+      return {
+        ok: false,
+        withinBudget: false,
+        faltantes: [
+          `Placa Madre o Memoria RAM compatible con Socket ${socketsList || brandLabel} en stock`,
+        ],
+        build: [],
+        hardwarePyg: 0,
+        totalPyg: 0,
+        diffPyg: 0,
+        pctUsed: 0,
+        cpuName: "",
+        gpuName: "",
+        ramSummary: "",
+        ssdSummary: "",
+        socketUsed: "",
+        minPossiblePyg: 0,
+      };
+    }
+
+    interface CandidateResult {
+      build: HardwarePresupuestoItem[];
+      hardwarePyg: number;
+      totalPyg: number;
+      withGpu: boolean;
+      socket: string;
+      score: number;
+      cpu: HardwarePresupuestoItem;
+      gpu?: HardwarePresupuestoItem;
+      ram: HardwarePresupuestoItem;
+      ramQty: number;
+      ssd: HardwarePresupuestoItem;
+    }
+
+    const candidates: CandidateResult[] = [];
+    const maxAllowedPyg = Math.round(targetTotalPyg * 1.03); // Hasta +3% de tolerancia comercial
+
+    for (const sock of viableSockets) {
+      const sockCpusAll = brandCpus.filter((c) => c.socket === sock);
+      const sockMbsAll = allMbs.filter((m) => m.socket === sock);
+
+      // Probar modo Con GPU Dedicada y modo Con Gráficos Integrados (iGPU)
+      const modesToTest: boolean[] = [];
+      if (allGpus.length > 0) modesToTest.push(true);
+      if (sockCpusAll.some((c) => c.hasIGpu !== false)) modesToTest.push(false);
+
+      for (const useDedicatedGpu of modesToTest) {
+        let cpuPool = useDedicatedGpu
+          ? sockCpusAll
+          : sockCpusAll.filter((c) => c.hasIGpu !== false);
+
+        if (cpuPool.length === 0) continue;
+
+        // Si el presupuesto es para Gaming/Workstation (>= 5.200.000), descartar procesadores dual-core de entrada si hay Ryzen 5 / Core i3 / i5
+        if (targetTotalPyg >= 5200000) {
+          const betterCpus = cpuPool.filter(
+            (c) =>
+              !/\b(CELERON|PENTIUM|ATHLON|3000G)\b/i.test(
+                `${c.descripcion} ${c.nombreWeb || ""}`
+              )
+          );
+          if (betterCpus.length > 0) cpuPool = betterCpus;
+        }
+
+        let cpu = cpuPool[0];
+        let mb = sockMbsAll[0];
+        const getRamType = (m: HardwarePresupuestoItem, c: HardwarePresupuestoItem) =>
+          m.ramType && m.ramType !== "UNIVERSAL"
+            ? m.ramType
+            : c.ramType && c.ramType !== "UNIVERSAL"
+            ? c.ramType
+            : "DDR4";
+
+        let ramPool = allRams.filter((r) => r.ramType === getRamType(mb, cpu));
+        if (ramPool.length === 0) continue;
+
+        let ram = ramPool[0];
+        let ramQty = 1;
+        let ssd = ssdPool[0];
+        if (!ssd) continue;
+
+        let gpu: HardwarePresupuestoItem | undefined = useDedicatedGpu ? allGpus[0] : undefined;
+
+        // Resolver Cooler, Gabinete y Fuente 100% compatibles con (cpu, mb, gpu)
+        const syncSupportParts = (
+          cCpu: HardwarePresupuestoItem,
+          cMb: HardwarePresupuestoItem,
+          cGpu: HardwarePresupuestoItem | undefined,
+          preferCooler?: HardwarePresupuestoItem,
+          preferCase?: HardwarePresupuestoItem,
+          preferPsu?: HardwarePresupuestoItem
+        ) => {
+          let activeMb = cMb;
+          // Si activeMb es ATX pero ningún gabinete disponible lo soporta, cambiar a Micro-ATX
+          if (
+            (activeMb.formFactor === "ATX" || activeMb.formFactor === "EATX") &&
+            !allCases.some((g) =>
+              isGabinetePhysicallyCompatible(g, activeMb, undefined, Boolean(cGpu))
+            )
+          ) {
+            const matxMb = sockMbsAll.find(
+              (m) =>
+                m.formFactor !== "ATX" &&
+                m.formFactor !== "EATX" &&
+                allCases.some((g) =>
+                  isGabinetePhysicallyCompatible(g, m, undefined, Boolean(cGpu))
+                )
+            );
+            if (matxMb) activeMb = matxMb;
+          }
+
+          const descCpu = `${cCpu.descripcion} ${cCpu.nombreWeb || ""}`.toUpperCase();
+          const needRealCooler =
+            cCpu.includesCooler === false ||
+            (cCpu.tdpWatts || 0) >= 120 ||
+            /14700|13700|14900|13900|7800X3D|9800X3D|7900X|7950X/.test(descCpu);
+
+          let activeCooler = preferCooler;
+          if (
+            !activeCooler ||
+            (needRealCooler && activeCooler.sku === "STOCK-COOLER") ||
+            !allCases.some((g) =>
+              isGabinetePhysicallyCompatible(g, activeMb, activeCooler, Boolean(cGpu))
+            )
+          ) {
+            if (needRealCooler) {
+              activeCooler =
+                realCoolers.find((cl) =>
+                  allCases.some((g) =>
+                    isGabinetePhysicallyCompatible(g, activeMb, cl, Boolean(cGpu))
+                  )
+                ) || realCoolers[0];
+            } else {
+              activeCooler = stockCooler || realCoolers[0];
+            }
+          }
+
+          let activeCase =
+            preferCase &&
+            isGabinetePhysicallyCompatible(
+              preferCase,
+              activeMb,
+              activeCooler,
+              Boolean(cGpu)
+            )
+              ? preferCase
+              : allCases.find((g) =>
+                  isGabinetePhysicallyCompatible(g, activeMb, activeCooler, Boolean(cGpu))
+                );
+
+          const cWatts = (cCpu.tdpWatts || 65) + (cGpu ? cGpu.tdpWatts || 150 : 0) + 60;
+          const reqWatts = Math.max(
+            Math.ceil((cWatts * 1.3) / 50) * 50,
+            cGpu?.recomendadoPsuWatts || 500
+          );
+
+          let activePsu =
+            preferPsu && (preferPsu.potenciaWatts || 0) >= reqWatts
+              ? preferPsu
+              : allPsus.find((p) => (p.potenciaWatts || 0) >= reqWatts) ||
+                allPsus.find((p) => (p.potenciaWatts || 0) >= cWatts) ||
+                allPsus[0];
+
+          return {
+            mb: activeMb,
+            cooler: activeCooler,
+            gabinete: activeCase,
+            psu: activePsu,
+            reqWatts,
+          };
+        };
+
+        let support = syncSupportParts(cpu, mb, gpu);
+        mb = support.mb;
+        let cooler = support.cooler;
+        let gabinete = support.gabinete;
+        let psu = support.psu;
+
+        if (!gabinete || !psu || !cooler) continue;
+
+        const getBuildCost = (
+          cCpu = cpu,
+          cMb = mb,
+          cRam = ram,
+          cRamQty = ramQty,
+          cSsd = ssd,
+          cGpu = gpu,
+          cPsu = psu,
+          cCase = gabinete,
+          cCooler = cooler
+        ) => {
+          const hw =
+            (cCpu?.precioPyg || 0) +
+            (cMb?.precioPyg || 0) +
+            (cRam?.precioPyg || 0) * cRamQty +
+            (cSsd?.precioPyg || 0) +
+            (cGpu?.precioPyg || 0) +
+            (cPsu?.precioPyg || 0) +
+            (cCase?.precioPyg || 0) +
+            (cCooler?.precioPyg || 0);
+          return hw + costoMontajePyg;
+        };
+
+        // Si hay GPU o el presupuesto es >= 4.5M, evitar gabinetes Kit de Oficina básicos
+        if (useDedicatedGpu || targetTotalPyg >= 4500000) {
+          const nonKitCase = allCases.find(
+            (g) =>
+              !g.isKitOficina &&
+              !g.descripcion.includes("1102K") &&
+              !g.descripcion.includes("1103K") &&
+              isGabinetePhysicallyCompatible(g, mb, cooler, Boolean(gpu))
+          );
+          if (nonKitCase && getBuildCost(cpu, mb, ram, ramQty, ssd, gpu, psu, nonKitCase, cooler) <= maxAllowedPyg) {
+            gabinete = nonKitCase;
+          }
+        }
+
+        // BUCLE DE OPTIMIZACIÓN ESCALONADA (HILL-CLIMBING HASTA ALCANZAR EL PRESUPUESTO EN GUARANÍES)
+        for (let step = 0; step < 32; step++) {
+          const currentCost = getBuildCost();
+          const headroom = maxAllowedPyg - currentCost;
+          if (headroom < 45000) break;
+
+          let upgraded = false;
+
+          // Prioridad 1: Asegurar al menos 16GB de RAM (preferentemente en Dual Channel 2x8GB o 1x16GB)
+          const currentRamGb = (ram.capacidadGb || 8) * ramQty;
+          const isDualKit = `${ram.descripcion} ${ram.nombreWeb || ""}`
+            .toUpperCase()
+            .includes("2X");
+          if (currentRamGb < 16) {
+            if (!isDualKit && ramQty === 1 && (ram.precioPyg || 0) <= headroom) {
+              ramQty = 2;
+              upgraded = true;
+              continue;
+            }
+            const ram16 = ramPool.find(
+              (r) => (r.capacidadGb || 0) >= 16 && (r.precioPyg || 0) - (ram.precioPyg || 0) * ramQty <= headroom
+            );
+            if (ram16) {
+              ram = ram16;
+              ramQty = 1;
+              upgraded = true;
+              continue;
+            }
+          }
+
+          // Prioridad 2: Asegurar al menos 500GB de SSD NVMe
+          if ((ssd.capacidadGb || 0) < 480) {
+            const ssd500 = ssdPool.find(
+              (s) =>
+                (s.capacidadGb || 0) >= 480 &&
+                (s.precioPyg || 0) - (ssd.precioPyg || 0) <= headroom
+            );
+            if (ssd500) {
+              ssd = ssd500;
+              upgraded = true;
+              continue;
+            }
+          }
+
+          // Prioridad 3: Mejoras balanceadas de GPU y CPU (el núcleo de potencia del equipo)
+          if (useDedicatedGpu && gpu) {
+            const gpuPrice = gpu.precioPyg || 0;
+            const cpuPrice = cpu.precioPyg || 0;
+
+            // Buscar siguiente GPU superior que quepa en el presupuesto (incluyendo eventual suba de fuente)
+            const nextGpu = allGpus.find((g) => {
+              if ((g.precioPyg || 0) <= gpuPrice) return false;
+              const sup = syncSupportParts(cpu, mb, g, cooler, gabinete, psu);
+              if (!sup.psu || !sup.gabinete || !sup.cooler) return false;
+              const newCost = getBuildCost(
+                cpu,
+                sup.mb,
+                ram,
+                ramQty,
+                ssd,
+                g,
+                sup.psu,
+                sup.gabinete,
+                sup.cooler
+              );
+              return newCost <= maxAllowedPyg;
+            });
+
+            // Buscar siguiente CPU superior en este socket que quepa en el presupuesto
+            const nextCpu = cpuPool.find((c) => {
+              if ((c.precioPyg || 0) <= cpuPrice) return false;
+              const sup = syncSupportParts(c, mb, gpu, cooler, gabinete, psu);
+              if (!sup.psu || !sup.gabinete || !sup.cooler) return false;
+              const newCost = getBuildCost(
+                c,
+                sup.mb,
+                ram,
+                ramQty,
+                ssd,
+                gpu,
+                sup.psu,
+                sup.gabinete,
+                sup.cooler
+              );
+              return newCost <= maxAllowedPyg;
+            });
+
+            // Balancear GPU (~1.35x a 1.8x del valor del CPU)
+            if (nextGpu && (!nextCpu || gpuPrice < cpuPrice * 1.45)) {
+              const sup = syncSupportParts(cpu, mb, nextGpu, cooler, gabinete, psu);
+              gpu = nextGpu;
+              mb = sup.mb;
+              psu = sup.psu!;
+              gabinete = sup.gabinete!;
+              cooler = sup.cooler!;
+              upgraded = true;
+              continue;
+            } else if (nextCpu) {
+              const sup = syncSupportParts(nextCpu, mb, gpu, cooler, gabinete, psu);
+              cpu = nextCpu;
+              mb = sup.mb;
+              psu = sup.psu!;
+              gabinete = sup.gabinete!;
+              cooler = sup.cooler!;
+              // Si el nuevo CPU es gama alta (i7/i9/Ryzen 7/9), mejorar placa básica H610/A520 si entra en presupuesto
+              const dCpu = `${cpu.descripcion} ${cpu.nombreWeb || ""}`.toUpperCase();
+              const dMb = `${mb.descripcion} ${mb.nombreWeb || ""}`.toUpperCase();
+              if (
+                /\b(I7|I9|RYZEN\s*[79]|7800X3D|9800X3D|ULTRA\s*[79])\b/.test(dCpu) &&
+                /\b(H610|A520|A320|A620M-HDV|A620M-E)\b/.test(dMb)
+              ) {
+                const betterMb = sockMbsAll.find((m) => {
+                  const dm = `${m.descripcion} ${m.nombreWeb || ""}`.toUpperCase();
+                  if (/\b(H610|A520|A320|A620M-HDV|A620M-E)\b/.test(dm)) return false;
+                  if (getRamType(m, cpu) !== getRamType(mb, cpu)) return false;
+                  if (!isGabinetePhysicallyCompatible(gabinete!, m, cooler, Boolean(gpu)))
+                    return false;
+                  return (
+                    getBuildCost(cpu, m, ram, ramQty, ssd, gpu, psu, gabinete, cooler) <=
+                    maxAllowedPyg
+                  );
+                });
+                if (betterMb) mb = betterMb;
+              }
+              upgraded = true;
+              continue;
+            } else if (nextGpu) {
+              const sup = syncSupportParts(cpu, mb, nextGpu, cooler, gabinete, psu);
+              gpu = nextGpu;
+              mb = sup.mb;
+              psu = sup.psu!;
+              gabinete = sup.gabinete!;
+              cooler = sup.cooler!;
+              upgraded = true;
+              continue;
+            }
+          } else {
+            // Modo gráficos integrados: mejorar CPU con iGPU hasta un tope razonable (~45% del presupuesto)
+            const nextApu = cpuPool.find((c) => {
+              if ((c.precioPyg || 0) <= (cpu.precioPyg || 0)) return false;
+              if ((c.precioPyg || 0) > targetTotalPyg * 0.48) return false;
+              const sup = syncSupportParts(c, mb, undefined, cooler, gabinete, psu);
+              if (!sup.psu || !sup.gabinete || !sup.cooler) return false;
+              return (
+                getBuildCost(c, sup.mb, ram, ramQty, ssd, undefined, sup.psu, sup.gabinete, sup.cooler) <=
+                maxAllowedPyg
+              );
+            });
+            if (nextApu) {
+              const sup = syncSupportParts(nextApu, mb, undefined, cooler, gabinete, psu);
+              cpu = nextApu;
+              mb = sup.mb;
+              psu = sup.psu!;
+              gabinete = sup.gabinete!;
+              cooler = sup.cooler!;
+              upgraded = true;
+              continue;
+            }
+          }
+
+          // Prioridad 4: Subir RAM a 32GB Dual Channel (2x16GB o kit 32GB) cuando el presupuesto >= 6.5M o sobre margen
+          const totalRamNow = (ram.capacidadGb || 8) * ramQty;
+          if (totalRamNow < 32 && targetTotalPyg >= 5500000) {
+            if (ram.capacidadGb === 16 && !isDualKit && ramQty === 1 && (ram.precioPyg || 0) <= headroom) {
+              ramQty = 2;
+              upgraded = true;
+              continue;
+            }
+            const ram16Stick = ramPool.find(
+              (r) =>
+                r.capacidadGb === 16 &&
+                !` ${r.descripcion} ${r.nombreWeb || ""}`.toUpperCase().includes("2X") &&
+                (r.precioPyg || 0) * 2 - (ram.precioPyg || 0) * ramQty <= headroom
+            );
+            if (ram16Stick) {
+              ram = ram16Stick;
+              ramQty = 2;
+              upgraded = true;
+              continue;
+            }
+            const ram32Kit = ramPool.find(
+              (r) =>
+                (r.capacidadGb || 0) >= 32 &&
+                (r.precioPyg || 0) - (ram.precioPyg || 0) * ramQty <= headroom
+            );
+            if (ram32Kit) {
+              ram = ram32Kit;
+              ramQty = 1;
+              upgraded = true;
+              continue;
+            }
+          }
+
+          // Prioridad 5: Subir Almacenamiento SSD a 1TB NVMe M.2 (y 2TB en presupuestos altos)
+          if ((ssd.capacidadGb || 0) < 960 && targetTotalPyg >= 5000000) {
+            const ssd1Tb = ssdPool.find(
+              (s) =>
+                (s.capacidadGb || 0) >= 960 &&
+                (s.capacidadGb || 0) <= 1050 &&
+                (s.precioPyg || 0) - (ssd.precioPyg || 0) <= headroom
+            );
+            if (ssd1Tb) {
+              ssd = ssd1Tb;
+              upgraded = true;
+              continue;
+            }
+          }
+          if ((ssd.capacidadGb || 0) < 1900 && targetTotalPyg >= 11500000) {
+            const ssd2Tb = ssdPool.find(
+              (s) =>
+                (s.capacidadGb || 0) >= 1900 &&
+                (s.precioPyg || 0) - (ssd.precioPyg || 0) <= headroom
+            );
+            if (ssd2Tb) {
+              ssd = ssd2Tb;
+              upgraded = true;
+              continue;
+            }
+          }
+
+          // Prioridad 6: Mejorar Placa Madre a chipset B / X / Z con mejores disipadores VRM
+          const nextMb = sockMbsAll.find((m) => {
+            if ((m.precioPyg || 0) <= (mb.precioPyg || 0)) return false;
+            if ((m.precioPyg || 0) > targetTotalPyg * 0.2) return false;
+            if (getRamType(m, cpu) !== getRamType(mb, cpu)) return false;
+            if (!isGabinetePhysicallyCompatible(gabinete!, m, cooler, Boolean(gpu))) return false;
+            return (m.precioPyg || 0) - (mb.precioPyg || 0) <= headroom;
+          });
+          if (nextMb) {
+            mb = nextMb;
+            upgraded = true;
+            continue;
+          }
+
+          // Prioridad 7: Mejorar Refrigeración (Cooler de Aire Dedicado o Líquida AIO 240/360)
+          if (targetTotalPyg >= 6500000) {
+            const nextCooler = realCoolers.find((cl) => {
+              if ((cl.precioPyg || 0) <= (cooler?.precioPyg || 0)) return false;
+              if ((cl.precioPyg || 0) > targetTotalPyg * 0.11) return false;
+              if (!isGabinetePhysicallyCompatible(gabinete!, mb, cl, Boolean(gpu))) return false;
+              return (cl.precioPyg || 0) - (cooler?.precioPyg || 0) <= headroom;
+            });
+            if (nextCooler) {
+              cooler = nextCooler;
+              upgraded = true;
+              continue;
+            }
+          }
+
+          // Prioridad 8: Mejorar Gabinete Gamer y Fuente Certificada 80 Plus
+          const nextCase = allCases.find((g) => {
+            if (g.isKitOficina) return false;
+            if ((g.precioPyg || 0) <= (gabinete?.precioPyg || 0)) return false;
+            if ((g.precioPyg || 0) > targetTotalPyg * 0.1) return false;
+            if (!isGabinetePhysicallyCompatible(g, mb, cooler, Boolean(gpu))) return false;
+            return (g.precioPyg || 0) - (gabinete?.precioPyg || 0) <= headroom;
+          });
+          if (nextCase) {
+            gabinete = nextCase;
+            upgraded = true;
+            continue;
+          }
+
+          const cWatts = (cpu.tdpWatts || 65) + (gpu ? gpu.tdpWatts || 150 : 0) + 60;
+          const reqWatts = Math.max(
+            Math.ceil((cWatts * 1.3) / 50) * 50,
+            gpu?.recomendadoPsuWatts || 500
+          );
+          const nextPsu = allPsus.find((p) => {
+            if ((p.potenciaWatts || 0) < reqWatts) return false;
+            if ((p.precioPyg || 0) <= (psu?.precioPyg || 0)) return false;
+            if ((p.precioPyg || 0) > targetTotalPyg * 0.1) return false;
+            return (p.precioPyg || 0) - (psu?.precioPyg || 0) <= headroom;
+          });
+          if (nextPsu) {
+            psu = nextPsu;
+            upgraded = true;
+            continue;
+          }
+
+          // Prioridad 9: Absorción fina de presupuesto remanente (64GB RAM en Workstations >= 15M, o siguiente nivel de GPU/CPU/SSD sin tope porcentual)
+          if (totalRamNow === 32 && targetTotalPyg >= 14500000) {
+            if (ram.capacidadGb === 32 && !isDualKit && ramQty === 1 && (ram.precioPyg || 0) <= headroom) {
+              ramQty = 2;
+              upgraded = true;
+              continue;
+            }
+            const ram32Stick = ramPool.find(
+              (r) =>
+                r.capacidadGb === 32 &&
+                (r.precioPyg || 0) * 2 - (ram.precioPyg || 0) * ramQty <= headroom
+            );
+            if (ram32Stick) {
+              ram = ram32Stick;
+              ramQty = 2;
+              upgraded = true;
+              continue;
+            }
+          }
+
+          if (!upgraded) break;
+        }
+
+        const finalItems = [
+          { ...cpu, cantidad: 1 },
+          { ...mb, cantidad: 1 },
+          { ...ram, cantidad: ramQty },
+          ...(gpu ? [{ ...gpu, cantidad: 1 }] : []),
+          { ...ssd, cantidad: 1 },
+          { ...psu!, cantidad: 1 },
+          { ...gabinete!, cantidad: 1 },
+          { ...cooler!, cantidad: 1 },
+        ];
+
+        const hwPyg = finalItems.reduce(
+          (acc, i) => acc + (i.precioPyg || 0) * (i.cantidad || 1),
+          0
+        );
+        const totPyg = hwPyg + costoMontajePyg;
+        const compat = verificarCompatibilidadPC(finalItems);
+
+        // Puntaje de calidad y cercanía al presupuesto objetivo
+        const isWithin = totPyg <= maxAllowedPyg;
+        const closeness = isWithin
+          ? 1 - Math.abs(targetTotalPyg - totPyg) / Math.max(targetTotalPyg, 1)
+          : -Math.abs(totPyg - targetTotalPyg) / Math.max(targetTotalPyg, 1);
+
+        let score = closeness * 1000;
+        if (isWithin) score += 2000;
+        if (compat.totalErrores === 0) score += 1500;
+        if (compat.totalWarnings === 0) score += 300;
+        if (useDedicatedGpu && targetTotalPyg >= 4900000) score += 600;
+        if (!useDedicatedGpu && targetTotalPyg < 4900000) score += 400;
+        if ((sock === "AM5" || sock === "LGA1851") && targetTotalPyg >= 8200000) score += 220;
+        if (ramQty >= 2) score += 120;
+
+        candidates.push({
+          build: finalItems,
+          hardwarePyg: hwPyg,
+          totalPyg: totPyg,
+          withGpu: useDedicatedGpu,
+          socket: sock || "",
+          score,
+          cpu,
+          gpu,
+          ram,
+          ramQty,
+          ssd,
+        });
+      }
+    }
+
+    if (candidates.length === 0) {
+      return {
+        ok: false,
+        withinBudget: false,
+        faltantes: [`Componentes compatibles completos para plataforma ${brandLabel}`],
+        build: [],
+        hardwarePyg: 0,
+        totalPyg: 0,
+        diffPyg: 0,
+        pctUsed: 0,
+        cpuName: "",
+        gpuName: "",
+        ramSummary: "",
+        ssdSummary: "",
+        socketUsed: "",
+        minPossiblePyg: 0,
+      };
+    }
+
+    candidates.sort((a, b) => b.score - a.score);
+    const best = candidates[0];
+    const cheapestPossible = Math.min(...candidates.map((c) => c.totalPyg));
+    const withinBudget = best.totalPyg <= maxAllowedPyg;
+    const totalRamGb = (best.ram.capacidadGb || 8) * best.ramQty;
+
+    return {
+      ok: true,
+      withinBudget,
+      faltantes: withinBudget
+        ? []
+        : [
+            `El ensamble completo más económico en stock para ${brandLabel} cuesta ₲ ${cheapestPossible.toLocaleString(
+              "es-PY"
+            )} (supera el presupuesto de ₲ ${targetTotalPyg.toLocaleString("es-PY")})`,
+          ],
+      build: best.build,
+      hardwarePyg: best.hardwarePyg,
+      totalPyg: best.totalPyg,
+      diffPyg: targetTotalPyg - best.totalPyg,
+      pctUsed: Math.round((best.totalPyg / Math.max(targetTotalPyg, 1)) * 1000) / 10,
+      cpuName: cleanDisplayTitle(best.cpu.nombreWeb || best.cpu.descripcion),
+      gpuName: best.gpu
+        ? cleanDisplayTitle(best.gpu.nombreWeb || best.gpu.descripcion)
+        : "Gráficos Integrados en CPU",
+      ramSummary: `${totalRamGb}GB ${best.ram.ramType || ""} ${
+        best.ramQty >= 2 ? "(Dual Channel)" : ""
+      }`.trim(),
+      ssdSummary: `${best.ssd.capacidadGb || 500}GB ${
+        best.ssd.esM2Nvme ? "NVMe M.2" : "SSD"
+      }`,
+      socketUsed: best.socket,
+      minPossiblePyg: cheapestPossible,
+    };
+  };
+
+  /**
+   * Vista previa reactiva en vivo de las opciones AMD vs Intel para el presupuesto en Guaraníes activo
+   */
+  const budgetBrandPreviews = useMemo(() => {
+    const amount = selectedBudgetForCpuMenu || customTargetBudget;
+    if (!amount || amount <= 0) return null;
+    return {
+      amount,
+      AMD: optimizeBuildForBudgetPyg(amount, "AMD"),
+      INTEL: optimizeBuildForBudgetPyg(amount, "INTEL"),
+    };
+  }, [selectedBudgetForCpuMenu, customTargetBudget, catalogoCompleto, costoMontajePyg]);
+
+  // Armado Inteligente Asistido por Presupuesto en Guaraníes (Ej: 10 Millones, 5 Millones, etc.)
+  const buildPcByTargetBudget = (
+    targetAmountPyg: number,
+    explicitBrand?: "AMD" | "INTEL" | "AUTO"
+  ) => {
+    if (!targetAmountPyg || targetAmountPyg <= 0) return;
+    const pref = explicitBrand || budgetCpuPreference;
+    const amdRes = optimizeBuildForBudgetPyg(targetAmountPyg, "AMD");
+    const intelRes = optimizeBuildForBudgetPyg(targetAmountPyg, "INTEL");
+
+    let chosenBrand: "AMD" | "INTEL" = "AMD";
+    let chosenRes = amdRes;
+
+    if (pref === "AMD") {
+      chosenBrand = "AMD";
+      chosenRes = amdRes;
+    } else if (pref === "INTEL") {
+      chosenBrand = "INTEL";
+      chosenRes = intelRes;
+    } else {
+      // AUTO: elegir la que esté dentro de presupuesto y aproveche mejor el monto (o la más cercana)
+      if (amdRes.ok && intelRes.ok) {
+        if (amdRes.withinBudget && !intelRes.withinBudget) {
+          chosenBrand = "AMD";
+          chosenRes = amdRes;
+        } else if (intelRes.withinBudget && !amdRes.withinBudget) {
+          chosenBrand = "INTEL";
+          chosenRes = intelRes;
+        } else {
+          // Ambas dentro de presupuesto: elegir la que quede más cerca del presupuesto objetivo
+          const amdDiff = Math.abs(targetAmountPyg - amdRes.totalPyg);
+          const intelDiff = Math.abs(targetAmountPyg - intelRes.totalPyg);
+          if (intelDiff < amdDiff) {
+            chosenBrand = "INTEL";
+            chosenRes = intelRes;
+          } else {
+            chosenBrand = "AMD";
+            chosenRes = amdRes;
+          }
+        }
+      } else if (intelRes.ok) {
+        chosenBrand = "INTEL";
+        chosenRes = intelRes;
+      }
+    }
+
+    const brandLabel = chosenBrand === "AMD" ? "AMD Ryzen" : "Intel Core";
+    const otherBrand: "AMD" | "INTEL" = chosenBrand === "AMD" ? "INTEL" : "AMD";
+    const otherRes = chosenBrand === "AMD" ? intelRes : amdRes;
+
+    if (!chosenRes.ok) {
+      setPresetCpuAlert({
+        titulo: `No disponemos de componentes en stock para armar un presupuesto de ₲ ${targetAmountPyg.toLocaleString(
+          "es-PY"
+        )} con ${brandLabel}`,
+        detalle: `Actualmente faltan componentes compatibles en stock web para la plataforma ${brandLabel}.`,
+        faltantes: chosenRes.faltantes,
+        budgetPyg: targetAmountPyg,
+        failedBrand: chosenBrand,
+        alternativeBrand: otherBrand,
+        alternativeAvailable: otherRes.ok,
+      });
+      return;
+    }
+
+    setSelectedComponents(chosenRes.build);
+    setPresetCpuAlert(null);
+    setBudgetAnalysis({
+      targetPyg: targetAmountPyg,
+      achievedTotalPyg: chosenRes.totalPyg,
+      hardwarePyg: chosenRes.hardwarePyg,
+      montajePyg: costoMontajePyg,
+      diffPyg: chosenRes.diffPyg,
+      pctUsed: chosenRes.pctUsed,
+      brandUsed: chosenBrand,
+      socketUsed: chosenRes.socketUsed,
+      summaryText: `${chosenRes.cpuName} + ${chosenRes.gpuName} + ${chosenRes.ramSummary} + ${chosenRes.ssdSummary}`,
+    });
+
+    if (!chosenRes.withinBudget) {
+      setBudgetFeedback(
+        `⚠️ El presupuesto objetivo (₲ ${targetAmountPyg.toLocaleString(
+          "es-PY"
+        )}) es inferior al costo mínimo de una PC completa ${brandLabel} en stock (₲ ${chosenRes.minPossiblePyg.toLocaleString(
+          "es-PY"
+        )}). Se cargó la configuración funcional más económica disponible.`
+      );
+    } else {
+      setBudgetFeedback(
+        `✅ Presupuesto optimizado para ₲ ${targetAmountPyg.toLocaleString(
+          "es-PY"
+        )} con ${brandLabel} (${chosenRes.socketUsed}) → Total: ₲ ${chosenRes.totalPyg.toLocaleString(
+          "es-PY"
+        )} (${chosenRes.pctUsed}% del objetivo · 100% Compatible).`
+      );
+    }
   };
 
   // Limpiar configuración
   const handleReset = () => {
     if (confirm("¿Desea limpiar todos los componentes seleccionados?")) {
       setSelectedComponents([]);
+      setPresetCpuAlert(null);
+      setPresetSuccessBanner(null);
+      setBudgetAnalysis(null);
+      setBudgetFeedback(null);
     }
   };
-
-  // Cálculo estricto de totales usando el precio oficial en Guaraníes de https://nissei.com/py/
-  // - Ventas Corp: Servicio de Montaje & QA es 100% Bonificado / GRATIS (US$ 0 / ₲ 0)
-  // - Ventas Tienda: Servicio de Montaje & QA tiene tarifa fija única de US$ 58,77
-  const COSTO_MONTAJE_TIENDA_USD = 58.77;
-  const isCorpVendedor = useMemo(() => {
-    if (selectedArea === "Ventas Corp") return true;
-    if (selectedArea === "Ventas Tienda") return false;
-    const clean = selectedVendedor.trim().toLowerCase();
-    return Boolean(clean && VENDEDORES_CORP_BASE.some((v) => v.toLowerCase() === clean));
-  }, [selectedArea, selectedVendedor]);
-
-  const costoMontajeTiendaPyg = Math.round(COSTO_MONTAJE_TIENDA_USD * (tipoCambio > 0 ? tipoCambio : TIPO_CAMBIO_PYG_DEFECTO));
-  const costoMontajePyg = isCorpVendedor ? 0 : costoMontajeTiendaPyg;
-  const costoMontajeUsd = isCorpVendedor ? 0 : COSTO_MONTAJE_TIENDA_USD;
-
-  const totalHardwarePyg = useMemo(() => {
-    return selectedComponents.reduce(
-      (acc, c) => acc + (c.precioPyg || 0) * (c.cantidad || 1),
-      0
-    );
-  }, [selectedComponents]);
-
-  const totalPresupuestoPyg =
-    selectedComponents.length > 0 ? totalHardwarePyg + costoMontajePyg : 0;
-  const totalPresupuestoUsd =
-    selectedComponents.length > 0 && tipoCambio > 0
-      ? Math.round((totalHardwarePyg / tipoCambio + costoMontajeUsd) * 100) / 100
-      : 0;
 
   // Marcas disponibles en la categoría activa
   const marcasDisponibles = useMemo(() => {
@@ -2057,132 +3343,706 @@ export default function ArmarPcPresupuestadorPage() {
 
               {/* Modo 1: Por Entorno de Trabajo */}
               {presetTabMode === "ENTORNO" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5 animate-in fade-in duration-150">
-                  {PRESETS.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      disabled={isLoadingWeb}
-                      onClick={() => buildSmartPcConfiguration(p.id, false)}
-                      className="p-3 sm:p-3.5 rounded-xl bg-zinc-50 hover:bg-zinc-100/90 border border-zinc-200 hover:border-zinc-300 text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between gap-1 mb-1.5">
-                          <span className="text-lg">{p.icono}</span>
-                          <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-zinc-200/80 text-zinc-700 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
-                            Cargar Preset
+                <div className="space-y-3 animate-in fade-in duration-150">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
+                    {PRESETS.map((p) => {
+                      const isMenuOpen = selectedPresetForCpuMenu === p.id;
+                      const isBuilt = activePresetBuilt?.tier === p.id;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          disabled={isLoadingWeb}
+                          onClick={() => {
+                            setSelectedPresetForCpuMenu((prev) =>
+                              prev === p.id ? null : p.id
+                            );
+                            setPresetCpuAlert(null);
+                            setPresetSuccessBanner(null);
+                          }}
+                          className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between ${
+                            isMenuOpen
+                              ? "bg-zinc-900/5 border-zinc-900 ring-2 ring-zinc-900/15"
+                              : isBuilt
+                              ? "bg-emerald-50/50 border-emerald-400"
+                              : "bg-zinc-50 hover:bg-zinc-100/90 border-zinc-200 hover:border-zinc-300"
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-1 mb-1.5">
+                              <span className="text-lg">{p.icono}</span>
+                              <span
+                                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded transition-colors ${
+                                  isMenuOpen
+                                    ? "bg-zinc-900 text-white"
+                                    : isBuilt
+                                    ? "bg-emerald-600 text-white"
+                                    : "bg-zinc-200/80 text-zinc-700 group-hover:bg-zinc-900 group-hover:text-white"
+                                }`}
+                              >
+                                {isMenuOpen
+                                  ? "Elegir CPU ▼"
+                                  : isBuilt
+                                  ? `Armado (${activePresetBuilt?.brand})`
+                                  : "Elegir Perfil"}
+                              </span>
+                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
+                              {p.nombre}
+                            </span>
+                            <span className="text-[11px] text-zinc-500 block leading-snug mt-1">
+                              {p.entorno}
+                            </span>
+                          </div>
+                          <span className="text-[10px] sm:text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
+                            {p.tag}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Menú Desplegable de Selección de Procesador (CPU): ¿AMD Ryzen o Intel Core? */}
+                  {selectedPresetForCpuMenu && presetBrandPreviews && (
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border-2 border-zinc-900/80 shadow-xs space-y-3 animate-in fade-in duration-150">
+                      <div className="flex items-start sm:items-center justify-between gap-2 border-b border-zinc-200 pb-2.5">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="px-2 py-0.5 rounded-md bg-zinc-900 text-white font-mono text-[10px] sm:text-xs font-bold uppercase">
+                            Paso 2 · Elegir CPU
+                          </span>
+                          <span className="text-xs sm:text-sm font-extrabold text-zinc-900">
+                            {PRESETS.find((x) => x.id === selectedPresetForCpuMenu)?.icono}{" "}
+                            {PRESETS.find((x) => x.id === selectedPresetForCpuMenu)?.nombre}:{" "}
+                            <span className="font-semibold text-zinc-600">
+                              ¿Con qué procesador querés armar el equipo?
+                            </span>
                           </span>
                         </div>
-                        <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
-                          {p.nombre}
-                        </span>
-                        <span className="text-[11px] text-zinc-500 block leading-snug mt-1">
-                          {p.entorno}
-                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedPresetForCpuMenu(null);
+                            setPresetCpuAlert(null);
+                          }}
+                          className="p-1 rounded-lg text-zinc-400 hover:text-zinc-800 hover:bg-zinc-200/60 transition-colors cursor-pointer shrink-0"
+                          title="Cerrar menú de CPU"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
-                      <span className="text-[10px] sm:text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
-                        {p.tag}
-                      </span>
-                    </button>
-                  ))}
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* Opción 1: AMD Ryzen */}
+                        {(() => {
+                          const amd = presetBrandPreviews.AMD;
+                          const isSelectedAmd =
+                            activePresetBuilt?.tier === selectedPresetForCpuMenu &&
+                            activePresetBuilt?.brand === "AMD";
+                          return (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                buildSmartPcConfiguration(
+                                  selectedPresetForCpuMenu,
+                                  false,
+                                  "AMD"
+                                )
+                              }
+                              className={`p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                                isSelectedAmd
+                                  ? "bg-rose-50/70 border-rose-600 ring-2 ring-rose-500/20"
+                                  : amd.ok
+                                  ? "bg-white hover:bg-rose-50/30 border-rose-200 hover:border-rose-500 shadow-2xs"
+                                  : "bg-zinc-100/80 hover:bg-amber-50/40 border-zinc-300 border-dashed"
+                              }`}
+                            >
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-black text-rose-900">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 shrink-0" />
+                                    AMD Ryzen™ (AM4 / AM5)
+                                  </span>
+                                  {amd.ok ? (
+                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                      ✓ Stock Completo ({amd.socketUsed})
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                                      ⚠️ Sin componente clave
+                                    </span>
+                                  )}
+                                </div>
+
+                                {amd.ok ? (
+                                  <div className="text-[11px] sm:text-xs text-zinc-700 space-y-0.5 pt-0.5">
+                                    <p className="font-bold text-zinc-900 truncate">
+                                      • CPU: {amd.cpuName}
+                                    </p>
+                                    <p className="text-zinc-600 truncate">
+                                      • Video: {amd.gpuName} · RAM: {amd.ramName}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <p className="text-[11px] text-amber-900 font-medium leading-snug pt-0.5">
+                                    No tenemos actualmente en stock:{" "}
+                                    <strong>{amd.faltantes.join(", ")}</strong>. (Tocar para ver opciones)
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="pt-2 border-t border-zinc-100 flex items-center justify-between gap-2">
+                                {amd.ok ? (
+                                  <>
+                                    <span className="font-mono text-xs sm:text-sm font-black text-zinc-900">
+                                      ₲ {amd.totalPyg.toLocaleString("es-PY")}
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[11px] sm:text-xs font-bold">
+                                      {isSelectedAmd ? "Cargado ✓" : "Armar con AMD →"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="text-[11px] font-mono text-zinc-500">
+                                      Perfil no disponible en AMD
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-zinc-200 text-zinc-700 text-[11px] font-bold">
+                                      Ver detalle
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })()}
+
+                        {/* Opción 2: Intel Core */}
+                        {(() => {
+                          const intel = presetBrandPreviews.INTEL;
+                          const isSelectedIntel =
+                            activePresetBuilt?.tier === selectedPresetForCpuMenu &&
+                            activePresetBuilt?.brand === "INTEL";
+                          return (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                buildSmartPcConfiguration(
+                                  selectedPresetForCpuMenu,
+                                  false,
+                                  "INTEL"
+                                )
+                              }
+                              className={`p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                                isSelectedIntel
+                                  ? "bg-sky-50/70 border-sky-600 ring-2 ring-sky-500/20"
+                                  : intel.ok
+                                  ? "bg-white hover:bg-sky-50/30 border-sky-200 hover:border-sky-500 shadow-2xs"
+                                  : "bg-zinc-100/80 hover:bg-amber-50/40 border-zinc-300 border-dashed"
+                              }`}
+                            >
+                              <div className="space-y-1.5">
+                                <div className="flex items-center justify-between gap-2 flex-wrap">
+                                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-black text-sky-900">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-sky-600 shrink-0" />
+                                    Intel® Core™ (LGA 1700 / Ultra)
+                                  </span>
+                                  {intel.ok ? (
+                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                      ✓ Stock Completo ({intel.socketUsed})
+                                    </span>
+                                  ) : (
+                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                                      ⚠️ Sin componente clave
+                                    </span>
+                                  )}
+                                </div>
+
+                                {intel.ok ? (
+                                  <div className="text-[11px] sm:text-xs text-zinc-700 space-y-0.5 pt-0.5">
+                                    <p className="font-bold text-zinc-900 truncate">
+                                      • CPU: {intel.cpuName}
+                                    </p>
+                                    <p className="text-zinc-600 truncate">
+                                      • Video: {intel.gpuName} · RAM: {intel.ramName}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <p className="text-[11px] text-amber-900 font-medium leading-snug pt-0.5">
+                                    No tenemos actualmente en stock:{" "}
+                                    <strong>{intel.faltantes.join(", ")}</strong>. (Tocar para ver opciones)
+                                  </p>
+                                )}
+                              </div>
+
+                              <div className="pt-2 border-t border-zinc-100 flex items-center justify-between gap-2">
+                                {intel.ok ? (
+                                  <>
+                                    <span className="font-mono text-xs sm:text-sm font-black text-zinc-900">
+                                      ₲ {intel.totalPyg.toLocaleString("es-PY")}
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-sky-600 text-white text-[11px] sm:text-xs font-bold">
+                                      {isSelectedIntel ? "Cargado ✓" : "Armar con Intel →"}
+                                    </span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="text-[11px] font-mono text-zinc-500">
+                                      Perfil no disponible en Intel
+                                    </span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-zinc-200 text-zinc-700 text-[11px] font-bold">
+                                      Ver detalle
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Banner de Éxito al Armar un Perfil con AMD o Intel */}
+                  {presetSuccessBanner && (
+                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-900 flex items-center justify-between gap-2 animate-in fade-in">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{presetSuccessBanner}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPresetSuccessBanner(null)}
+                        className="text-emerald-700 hover:text-emerald-950 p-1 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Alerta Explícita cuando NO hay componentes en stock para el Perfil + Marca de CPU elegida */}
+                  {presetCpuAlert && (
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-amber-50/95 border-2 border-amber-300 text-amber-950 space-y-2.5 animate-in fade-in">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 font-extrabold text-xs sm:text-sm">
+                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>{presetCpuAlert.titulo}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setPresetCpuAlert(null)}
+                          className="text-amber-700 hover:text-amber-950 p-1 cursor-pointer"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <p className="text-xs text-amber-900 leading-relaxed">
+                        {presetCpuAlert.detalle}
+                      </p>
+
+                      <ul className="list-disc list-inside text-xs font-bold text-rose-800 bg-white/80 p-2.5 rounded-lg border border-amber-200 space-y-1">
+                        {presetCpuAlert.faltantes.map((f, idx) => (
+                          <li key={idx}>Falta en stock: {f}</li>
+                        ))}
+                      </ul>
+
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        {presetCpuAlert.alternativeAvailable &&
+                          presetCpuAlert.alternativeBrand &&
+                          presetCpuAlert.tier && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                buildSmartPcConfiguration(
+                                  presetCpuAlert.tier!,
+                                  false,
+                                  presetCpuAlert.alternativeBrand
+                                )
+                              }
+                              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                              <span>
+                                Armar este perfil con{" "}
+                                {presetCpuAlert.alternativeBrand === "AMD"
+                                  ? "AMD Ryzen"
+                                  : "Intel Core"}{" "}
+                                (100% en Stock)
+                              </span>
+                            </button>
+                          )}
+
+                        {presetCpuAlert.fallbackBuild &&
+                          presetCpuAlert.fallbackBuild.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedComponents(presetCpuAlert.fallbackBuild!);
+                                setPresetCpuAlert(null);
+                              }}
+                              className="px-3 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-800 border border-amber-300 text-xs font-bold transition-colors cursor-pointer"
+                            >
+                              Cargar componentes base disponibles ({presetCpuAlert.fallbackBuild.length} piezas)
+                            </button>
+                          )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Modo 2: Por Cantidad de Guaraníes (Ej: 10 Millones, 5 Millones, etc.) */}
+              {/* Modo 2: Por Cantidad de Guaraníes (Optimizador Inteligente por Monto y Plataforma CPU) */}
               {presetTabMode === "PRESUPUESTO" && (
                 <div className="space-y-3 animate-in fade-in duration-150">
-                  {/* Tarjetas de Presupuestos Típicos en Guaraníes */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
-                    {PRESETS_PRESUPUESTO.map((item) => (
+                  {/* Barra de Preferencia de Plataforma CPU para Presupuesto en Guaraníes */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-zinc-50 border border-zinc-200">
+                    <span className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
+                      <Cpu className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                      <span>Preferencia de Procesador (CPU) al armar por Guaraníes:</span>
+                    </span>
+                    <div className="inline-flex p-1 bg-white rounded-xl border border-zinc-200 text-xs font-bold flex-wrap gap-1">
                       <button
-                        key={item.monto}
                         type="button"
-                        disabled={isLoadingWeb}
                         onClick={() => {
-                          setCustomTargetBudget(item.monto);
-                          setCustomTargetBudgetInput(item.monto.toLocaleString("es-PY"));
-                          buildPcByTargetBudget(item.monto);
+                          setBudgetCpuPreference("AUTO");
+                          if (customTargetBudget > 0 && selectedComponents.length > 0) {
+                            buildPcByTargetBudget(customTargetBudget, "AUTO");
+                          }
                         }}
-                        className="p-3 sm:p-3.5 rounded-xl bg-emerald-50/50 hover:bg-emerald-100/70 border border-emerald-200/90 hover:border-emerald-400 text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between"
+                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                          budgetCpuPreference === "AUTO"
+                            ? "bg-zinc-900 text-white shadow-2xs"
+                            : "text-zinc-600 hover:text-zinc-900"
+                        }`}
                       >
-                        <div>
-                          <div className="flex items-center justify-between gap-1 mb-1.5">
-                            <span className="text-lg">{item.icono}</span>
-                            <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded bg-emerald-600 text-white shadow-2xs">
-                              {item.labelMonto}
-                            </span>
-                          </div>
-                          <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
-                            {item.nombre}
-                          </span>
-                          <span className="text-[11px] text-zinc-600 block leading-snug mt-1">
-                            {item.gama}
-                          </span>
-                        </div>
-                        <span className="text-[10px] sm:text-[11px] font-mono text-zinc-800 bg-white/90 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
-                          {item.tag}
-                        </span>
+                        ✨ Automático (Mejor Opción)
                       </button>
-                    ))}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBudgetCpuPreference("AMD");
+                          if (customTargetBudget > 0) {
+                            buildPcByTargetBudget(customTargetBudget, "AMD");
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                          budgetCpuPreference === "AMD"
+                            ? "bg-rose-600 text-white shadow-2xs"
+                            : "text-zinc-700 hover:bg-rose-50"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span>AMD Ryzen</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setBudgetCpuPreference("INTEL");
+                          if (customTargetBudget > 0) {
+                            buildPcByTargetBudget(customTargetBudget, "INTEL");
+                          }
+                        }}
+                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                          budgetCpuPreference === "INTEL"
+                            ? "bg-sky-600 text-white shadow-2xs"
+                            : "text-zinc-700 hover:bg-sky-50"
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-full bg-sky-500" />
+                        <span>Intel Core</span>
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Input Asistido para Monto Personalizado en Guaraníes */}
-                  <div className="p-3 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  {/* Tarjetas de Presupuestos Típicos en Guaraníes */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-2.5">
+                    {PRESETS_PRESUPUESTO.map((item) => {
+                      const isSelectedMonto = customTargetBudget === item.monto && budgetAnalysis?.targetPyg === item.monto;
+                      return (
+                        <button
+                          key={item.monto}
+                          type="button"
+                          disabled={isLoadingWeb}
+                          onClick={() => {
+                            setCustomTargetBudget(item.monto);
+                            setCustomTargetBudgetInput(item.monto.toLocaleString("es-PY"));
+                            setSelectedBudgetForCpuMenu(item.monto);
+                            buildPcByTargetBudget(item.monto, budgetCpuPreference);
+                          }}
+                          className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between ${
+                            isSelectedMonto
+                              ? "bg-emerald-100/80 border-emerald-600 ring-2 ring-emerald-500/20"
+                              : "bg-emerald-50/50 hover:bg-emerald-100/70 border-emerald-200/90 hover:border-emerald-400"
+                          }`}
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-1 mb-1.5">
+                              <span className="text-lg">{item.icono}</span>
+                              <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded bg-emerald-600 text-white shadow-2xs">
+                                {item.labelMonto}
+                              </span>
+                            </div>
+                            <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
+                              {item.nombre}
+                            </span>
+                            <span className="text-[11px] text-zinc-600 block leading-snug mt-1">
+                              {item.gama}
+                            </span>
+                          </div>
+                          <span className="text-[10px] sm:text-[11px] font-mono text-zinc-800 bg-white/90 px-2 py-1 rounded-lg border border-emerald-200 block truncate mt-2.5 font-semibold">
+                            {item.tag}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Input Asistido para Monto Personalizado en Guaraníes + Botones de Ajuste Rápido */}
+                  <div className="p-3 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold shrink-0">
                         ₲
                       </div>
                       <div className="min-w-0">
                         <span className="text-xs font-bold text-zinc-800 block">
-                          ¿El cliente tiene un monto exacto en mente?
+                          ¿El cliente tiene un presupuesto específico en Guaraníes?
                         </span>
-                        <span className="text-[11px] text-zinc-500 block truncate">
-                          Escribí el presupuesto (ej: 7.000.000 o 10.000.000) y el sistema arma la configuración óptima para ese dinero.
+                        <span className="text-[11px] text-zinc-500 block">
+                          Ingresá cualquier monto (ej: 5.500.000, 8.000.000, 12.500.000) y el optimizador calcula la mejor PC compatible sin pasarse.
                         </span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-xs font-bold font-mono text-zinc-500">₲</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={customTargetBudgetInput}
-                          onChange={handleCustomBudgetChange}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" && customTargetBudget > 0) {
-                              buildPcByTargetBudget(customTargetBudget);
-                            }
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextVal = Math.max(2500000, customTargetBudget - 500000);
+                            setCustomTargetBudget(nextVal);
+                            setCustomTargetBudgetInput(nextVal.toLocaleString("es-PY"));
+                            setSelectedBudgetForCpuMenu(nextVal);
+                            buildPcByTargetBudget(nextVal, budgetCpuPreference);
                           }}
-                          placeholder="10.000.000"
-                          className="w-44 bg-white border border-zinc-300 rounded-xl pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold text-zinc-900 outline-none focus:border-emerald-600"
-                        />
+                          className="px-2.5 py-2 rounded-xl bg-white hover:bg-zinc-100 border border-zinc-300 text-xs font-mono font-bold text-zinc-700 cursor-pointer shrink-0"
+                          title="Restar 500.000 Gs al presupuesto"
+                        >
+                          -500k
+                        </button>
+                        <div className="relative flex-1 sm:flex-initial">
+                          <span className="absolute left-3 top-2.5 text-xs font-bold font-mono text-zinc-500">
+                            ₲
+                          </span>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={customTargetBudgetInput}
+                            onChange={handleCustomBudgetChange}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && customTargetBudget > 0) {
+                                setSelectedBudgetForCpuMenu(customTargetBudget);
+                                buildPcByTargetBudget(customTargetBudget, budgetCpuPreference);
+                              }
+                            }}
+                            placeholder="10.000.000"
+                            className="w-full sm:w-44 bg-white border border-zinc-300 rounded-xl pl-7 pr-3 py-2 text-xs sm:text-sm font-mono font-bold text-zinc-900 outline-none focus:border-emerald-600"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const nextVal = customTargetBudget + 500000;
+                            setCustomTargetBudget(nextVal);
+                            setCustomTargetBudgetInput(nextVal.toLocaleString("es-PY"));
+                            setSelectedBudgetForCpuMenu(nextVal);
+                            buildPcByTargetBudget(nextVal, budgetCpuPreference);
+                          }}
+                          className="px-2.5 py-2 rounded-xl bg-white hover:bg-zinc-100 border border-zinc-300 text-xs font-mono font-bold text-zinc-700 cursor-pointer shrink-0"
+                          title="Sumar 500.000 Gs al presupuesto"
+                        >
+                          +500k
+                        </button>
                       </div>
+
                       <button
                         type="button"
                         onClick={() => {
                           if (customTargetBudget > 0) {
-                            buildPcByTargetBudget(customTargetBudget);
+                            setSelectedBudgetForCpuMenu(customTargetBudget);
+                            buildPcByTargetBudget(customTargetBudget, budgetCpuPreference);
                           }
                         }}
                         disabled={isLoadingWeb || customTargetBudget <= 0}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-40"
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-40"
                       >
-                        <Zap className="w-4 h-4" />
+                        <Zap className="w-4 h-4 shrink-0" />
                         <span>
                           {customTargetBudget > 0
-                            ? `Armar para ₲ ${customTargetBudget.toLocaleString("es-PY")}`
-                            : "Armar para Presupuesto"}
+                            ? `Optimizar PC por ₲ ${customTargetBudget.toLocaleString("es-PY")}`
+                            : "Optimizar por Presupuesto"}
                         </span>
                       </button>
                     </div>
                   </div>
 
+                  {/* Comparador Interactivo AMD vs Intel para el Presupuesto en Guaraníes */}
+                  {budgetBrandPreviews && (selectedBudgetForCpuMenu || budgetAnalysis) && (
+                    <div className="p-3.5 rounded-xl bg-white border border-emerald-300 shadow-2xs space-y-2.5">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <span className="text-xs font-extrabold text-zinc-900 flex items-center gap-1.5">
+                          <span>🧠</span>
+                          <span>
+                            Comparativa Inteligente para ₲{" "}
+                            {budgetBrandPreviews.amount.toLocaleString("es-PY")} (AMD Ryzen vs Intel Core):
+                          </span>
+                        </span>
+                        {budgetAnalysis && (
+                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            Aprovechamiento: {budgetAnalysis.pctUsed}% del presupuesto
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        {/* Tarjeta Comparativa AMD */}
+                        {(() => {
+                          const amd = budgetBrandPreviews.AMD;
+                          const isCurrent = budgetAnalysis?.brandUsed === "AMD";
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBudgetCpuPreference("AMD");
+                                buildPcByTargetBudget(budgetBrandPreviews.amount, "AMD");
+                              }}
+                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                                isCurrent
+                                  ? "bg-rose-50/60 border-rose-500 ring-2 ring-rose-500/15"
+                                  : "bg-zinc-50/70 hover:bg-rose-50/30 border-zinc-200"
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-xs font-black text-rose-900 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-rose-600" />
+                                    Opción AMD Ryzen ({amd.socketUsed || "AM4/AM5"})
+                                  </span>
+                                  <span className="font-mono text-xs font-black text-zinc-900">
+                                    {amd.ok ? `₲ ${amd.totalPyg.toLocaleString("es-PY")}` : "Sin stock"}
+                                  </span>
+                                </div>
+                                {amd.ok ? (
+                                  <p className="text-[11px] text-zinc-600 mt-1 line-clamp-2 leading-snug">
+                                    <strong>{amd.cpuName}</strong> + {amd.gpuName} · {amd.ramSummary} ·{" "}
+                                    {amd.ssdSummary}
+                                  </p>
+                                ) : (
+                                  <p className="text-[11px] text-amber-800 mt-1">
+                                    {amd.faltantes.join(", ")}
+                                  </p>
+                                )}
+                              </div>
+                              {amd.ok && (
+                                <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-zinc-200/60">
+                                  <span
+                                    className={
+                                      amd.diffPyg >= 0
+                                        ? "text-emerald-700 font-bold"
+                                        : "text-amber-700 font-bold"
+                                    }
+                                  >
+                                    {amd.diffPyg >= 0
+                                      ? `Sobran ₲ ${amd.diffPyg.toLocaleString("es-PY")}`
+                                      : `Excede por ₲ ${Math.abs(amd.diffPyg).toLocaleString("es-PY")}`}
+                                  </span>
+                                  <span className="font-bold text-rose-700">
+                                    {isCurrent ? "✓ Aplicado" : "Aplicar AMD →"}
+                                  </span>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })()}
+
+                        {/* Tarjeta Comparativa Intel */}
+                        {(() => {
+                          const intel = budgetBrandPreviews.INTEL;
+                          const isCurrent = budgetAnalysis?.brandUsed === "INTEL";
+                          return (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setBudgetCpuPreference("INTEL");
+                                buildPcByTargetBudget(budgetBrandPreviews.amount, "INTEL");
+                              }}
+                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                                isCurrent
+                                  ? "bg-sky-50/60 border-sky-500 ring-2 ring-sky-500/15"
+                                  : "bg-zinc-50/70 hover:bg-sky-50/30 border-zinc-200"
+                              }`}
+                            >
+                              <div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-xs font-black text-sky-900 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-sky-600" />
+                                    Opción Intel Core ({intel.socketUsed || "LGA1700"})
+                                  </span>
+                                  <span className="font-mono text-xs font-black text-zinc-900">
+                                    {intel.ok
+                                      ? `₲ ${intel.totalPyg.toLocaleString("es-PY")}`
+                                      : "Sin stock"}
+                                  </span>
+                                </div>
+                                {intel.ok ? (
+                                  <p className="text-[11px] text-zinc-600 mt-1 line-clamp-2 leading-snug">
+                                    <strong>{intel.cpuName}</strong> + {intel.gpuName} ·{" "}
+                                    {intel.ramSummary} · {intel.ssdSummary}
+                                  </p>
+                                ) : (
+                                  <p className="text-[11px] text-amber-800 mt-1">
+                                    {intel.faltantes.join(", ")}
+                                  </p>
+                                )}
+                              </div>
+                              {intel.ok && (
+                                <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-zinc-200/60">
+                                  <span
+                                    className={
+                                      intel.diffPyg >= 0
+                                        ? "text-emerald-700 font-bold"
+                                        : "text-amber-700 font-bold"
+                                    }
+                                  >
+                                    {intel.diffPyg >= 0
+                                      ? `Sobran ₲ ${intel.diffPyg.toLocaleString("es-PY")}`
+                                      : `Excede por ₲ ${Math.abs(intel.diffPyg).toLocaleString(
+                                          "es-PY"
+                                        )}`}
+                                  </span>
+                                  <span className="font-bold text-sky-700">
+                                    {isCurrent ? "✓ Aplicado" : "Aplicar Intel →"}
+                                  </span>
+                                </div>
+                              )}
+                            </button>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
+
                   {budgetFeedback && (
-                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 animate-in fade-in flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                      <span>{budgetFeedback}</span>
+                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 animate-in fade-in flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{budgetFeedback}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setBudgetFeedback(null)}
+                        className="text-emerald-700 hover:text-emerald-950 p-1 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   )}
                 </div>
@@ -3834,9 +5694,9 @@ export default function ArmarPcPresupuestadorPage() {
                   return (
                     <div
                       key={c.sku}
-                      className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex items-start sm:items-center justify-between gap-3 sm:gap-3.5"
+                      className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col gap-2.5"
                     >
-                      <div className="min-w-0 flex-1">
+                      <div className="min-w-0 w-full">
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1.5">
                           <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-200/90 text-zinc-800 border border-zinc-300 uppercase">
                             {c.categoria}
@@ -3857,7 +5717,7 @@ export default function ArmarPcPresupuestadorPage() {
                           {cleanTitle}
                         </h5>
 
-                        <div className="flex items-center gap-3.5 text-xs sm:text-sm text-zinc-600 mt-1.5 flex-wrap">
+                        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-zinc-600 mt-1.5 flex-wrap">
                           <span className="font-medium">
                             ₲ {(c.precioPyg || 0).toLocaleString("es-PY")}{" "}
                             {c.cantidad && c.cantidad > 1 ? `x ${c.cantidad}` : ""}
@@ -3882,8 +5742,8 @@ export default function ArmarPcPresupuestadorPage() {
                         </div>
                       </div>
 
-                      <div className="sm:text-right shrink-0 flex items-center justify-between sm:justify-end gap-3.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-200/60">
-                        <div>
+                      <div className="w-full flex items-center justify-between gap-2 pt-2.5 border-t border-zinc-200/70">
+                        <div className="min-w-0">
                           <span className="font-mono font-extrabold text-sm sm:text-base text-zinc-900 block">
                             {moneda === "PYG"
                               ? `₲ ${subPyg.toLocaleString("es-PY")}`
@@ -3902,7 +5762,7 @@ export default function ArmarPcPresupuestadorPage() {
                           </span>
                         </div>
 
-                        <div className="flex items-center gap-1.5 justify-end">
+                        <div className="flex items-center gap-1.5 justify-end shrink-0">
                           <button
                             type="button"
                             onClick={() => handleChangeCantidad(c.sku, -1)}
@@ -3911,7 +5771,7 @@ export default function ArmarPcPresupuestadorPage() {
                           >
                             -
                           </button>
-                          <span className="font-mono text-sm sm:text-base px-2 text-zinc-900 font-black min-w-[24px] text-center">
+                          <span className="font-mono text-sm sm:text-base px-1.5 sm:px-2 text-zinc-900 font-black min-w-[24px] text-center">
                             {c.cantidad || 1}
                           </span>
                           <button
@@ -3925,7 +5785,7 @@ export default function ArmarPcPresupuestadorPage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveComponent(c.sku)}
-                            className="w-9 h-9 rounded-xl bg-white hover:bg-rose-50 border border-zinc-200 text-zinc-400 hover:text-rose-600 text-sm flex items-center justify-center ml-1 cursor-pointer shadow-2xs transition-colors"
+                            className="w-9 h-9 rounded-xl bg-white hover:bg-rose-50 border border-zinc-200 text-zinc-400 hover:text-rose-600 text-sm flex items-center justify-center ml-0.5 sm:ml-1 cursor-pointer shadow-2xs transition-colors"
                             title="Quitar componente"
                           >
                             <Trash2 className="w-4 h-4" />
