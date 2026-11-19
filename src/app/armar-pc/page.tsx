@@ -50,6 +50,7 @@ import { CleanSelect } from "@/components/common/CleanSelect";
 import {
   PresupuestoThermalPrintModal,
   PresupuestoThermalData,
+  formatearNombreComponenteBasico,
 } from "@/components/common/PresupuestoThermalPrintModal";
 
 interface NisseiLiveItemDto {
@@ -2879,7 +2880,11 @@ export default function ArmarPcPresupuestadorPage() {
       const cant = (c.cantidad || 1) > 1 ? ` (x${c.cantidad})` : "";
       const subPyg = (c.precioPyg || 0) * (c.cantidad || 1);
       const subUsd = tipoCambio > 0 ? (subPyg / tipoCambio).toFixed(2) : "0.00";
-      text += `• [SKU ${c.sku}] ${cleanDisplayTitle(c.nombreWeb || c.descripcion)}${cant}\n`;
+      const nombreBasico = formatearNombreComponenteBasico(
+        cleanDisplayTitle(c.nombreWeb || c.descripcion),
+        c.categoria
+      );
+      text += `• [SKU ${c.sku}] ${nombreBasico}${cant}\n`;
       text += `  Gs. ${subPyg.toLocaleString("es-PY")} (Ref. US$ ${subUsd}) · Garantía: 3 meses\n`;
       if (c.urlWeb) {
         text += `  Link: ${c.urlWeb}\n`;

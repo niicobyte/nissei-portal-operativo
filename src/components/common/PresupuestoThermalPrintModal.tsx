@@ -45,93 +45,12 @@ export interface PresupuestoThermalData {
   fecha?: string;
 }
 
+import {
+  formatearNombreComponenteBasico as formatearNombreBasicoShared,
+} from "@/data/montajesData";
+
 export function formatearNombreComponenteBasico(raw: string, categoria?: string): string {
-  if (!raw) return "";
-  let s = raw.trim();
-
-  // Caso especial cooler de fábrica
-  if (/cooler\s+de\s+f[aá]brica/i.test(s) || /stock-cooler/i.test(s)) {
-    return "Cooler de Fábrica (Stock)";
-  }
-
-  // 1. CPU: AMD Ryzen o Intel Core
-  if (categoria === "PROCESADOR" || /Ryzen|Intel|Core\s+i|Core\s+Ultra/i.test(s)) {
-    const cpuIntel = s.match(/(Intel\s+Core\s+(?:Ultra\s+)?[iI][3579]-\w+|\bIntel\s+Core\s+\w+-\w+)/i);
-    if (cpuIntel) return cpuIntel[1];
-    const cpuRyzen = s.match(/(AMD\s+Ryzen\s+[3579]\s+\w+|Ryzen\s+[3579]\s+\w+)/i);
-    if (cpuRyzen) return cpuRyzen[1];
-  }
-
-  // Quitar prefijos comunes redundantes
-  s = s.replace(
-    /^(Procesador|Placa Madre|Memoria RAM|Placa de Video|Tarjeta Gr[aá]fica|Tarjeta de Video|Fuente de Alimentaci[oó]n|Fuente)\s+/i,
-    ""
-  );
-
-  // 2. RAM: Ej "Adata GAMMIX D35 8GB DDR4 3200MHz" o "Adata 16GB DDR5 5600MHz"
-  if (categoria === "RAM" || (/DDR[45]/i.test(s) && /\b\d+\s*GB\b/i.test(s))) {
-    const ddr = s.match(/DDR[45]/i)?.[0] || "";
-    const cap = s.match(/\b\d+\s*GB\b/i)?.[0]?.replace(/\s+/, "") || "";
-    const mhz = s.match(/\b\d{4}\s*MHz\b/i)?.[0]?.replace(/\s+/, "") || "";
-    const marca = s.match(/\b(Adata|Corsair|Kingston|Fury|Crucial|G\.Skill|Teamgroup|Patriot)\b/i)?.[0] || "";
-    const modelo = s.match(/\b(GAMMIX\s+D\d+|Lancer|Beast|Vengeance|Ripjaws|T-Force)\b/i)?.[0] || "";
-    const res = `${marca} ${modelo} ${cap} ${ddr} ${mhz}`.replace(/\s+/g, " ").trim();
-    if (res.length > 5) return res;
-  }
-
-  // 3. GPU: Ej "Palit GeForce RTX 3050 6GB" o "MSI GeForce RTX 4060 8GB"
-  if (categoria === "GPU" || /GeForce|Radeon|RTX|GTX|RX\s*\d+/i.test(s)) {
-    const gpuMatch = s.match(/(GeForce\s+RTX\s+\d+|GeForce\s+GTX\s+\d+|Radeon\s+RX\s+\d+\w*)/i);
-    if (gpuMatch) {
-      const marca = s.match(/\b(Palit|MSI|ASUS|Gigabyte|Zotac|PowerColor|Sapphire|ASRock|PNY)\b/i)?.[0] || "";
-      const vram = s.match(/\b\d+\s*GB\b/i)?.[0]?.replace(/\s+/, "") || "";
-      return `${marca} ${gpuMatch[1]} ${vram}`.replace(/\s+/g, " ").trim();
-    }
-  }
-
-  // 4. SSD / Almacenamiento: Ej "SSD WD Green SN3000 500GB M.2"
-  if (categoria === "ALMACENAMIENTO" || /SSD|NVMe|M\.2|Disco/i.test(s)) {
-    const cap = s.match(/\b(\d+\s*(?:GB|TB))\b/i)?.[0]?.replace(/\s+/, "") || "";
-    const marca = s.match(/\b(Western Digital|WD|Kingston|Samsung|Crucial|Adata|Lexar|Gigabyte)\b/i)?.[0] || "";
-    const serie = s.match(/\b(Green|Blue|Black|Plus|Evo)\b/i)?.[0] || "";
-    const modelSn = s.match(/\b(SN\d+|NV\d+|KC\d+|NM\d+)\b/i)?.[0] || "";
-    const res = `SSD ${marca} ${serie} ${modelSn} ${cap} M.2`
-      .replace(/Western Digital/i, "WD")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (res.length > 8) return res;
-  }
-
-  // 5. Placa Madre: Ej "ASUS TUF B760-PLUS DDR5 Wi-Fi"
-  if (categoria === "PLACA_MADRE" || /\b[BAZXH]\d{3}[A-Z]*(?:-[A-Z0-9]+)?\b/i.test(s)) {
-    const marca = s.match(/\b(ASUS|ASRock|Gigabyte|MSI|Biostar)\b/i)?.[0] || "";
-    const serie = s.match(/\b(TUF|ROG|ProArt|Gaming|Steel Legend|Phantom|Eagle|AORUS|PRO)\b/i)?.[0] || "";
-    const chipset = s.match(/\b([BAZXH]\d{3}[A-Z]*(?:-[A-Z0-9]+)?)\b/i)?.[0] || "";
-    const wifi = /Wi-?Fi/i.test(s) ? "Wi-Fi" : "";
-    const ddr = s.match(/DDR[45]/i)?.[0] || "";
-    const res = `${marca} ${serie} ${chipset} ${ddr} ${wifi}`.replace(/\s+/g, " ").trim();
-    if (res.length > 5) return res;
-  }
-
-  // 6. Fuentes: Ej "Fuente ASRock PRO-650B 650W 80+ Bronze"
-  if (categoria === "FUENTE" || /\b\d{3,4}\s*W\b/i.test(s)) {
-    const marca = s.match(/\b(ASRock|Gigabyte|Corsair|EVGA|MSI|Redragon|Cooler Master)\b/i)?.[0] || "";
-    const modelo = s.match(/\b(PRO-[A-Z0-9]+|GP-[A-Z0-9]+|CX\d+|CV\d+|MAG|Smart)\b/i)?.[0] || "";
-    const w = s.match(/\b\d{3,4}\s*W\b/i)?.[0]?.replace(/\s+/, "") || "";
-    const cert = s.match(/80\s*PLUS\s*(Bronze|Gold|White|Silver|Platinum)?/i);
-    const certStr = cert ? `80+ ${cert[1] || ""}`.trim() : "";
-    return `Fuente ${marca} ${modelo} ${w} ${certStr}`.replace(/\s+/g, " ").trim();
-  }
-
-  // 7. Limpieza de relleno para otros productos
-  return s
-    .replace(/\s*\([^)]*\)/g, "")
-    .replace(/\s*-\s*(Negro|Blanco|Black|White)$/i, "")
-    .replace(/\s*LGA\s*\d+/gi, "")
-    .replace(/\s*AM[45]/gi, "")
-    .replace(/\s*\d+\s*N[uú]cleos.*/gi, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  return formatearNombreBasicoShared(raw, categoria);
 }
 
 interface PresupuestoThermalPrintModalProps {

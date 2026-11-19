@@ -1811,6 +1811,397 @@ export function parseSkuImportText(rawText: string): SkuCatalogItem[] {
 
 export const MONTAJES_WHATSAPP_GROUP_ID = "GRUPO_MONTAJES_SATI";
 
+/**
+ * Formatea el nombre de un componente al formato Básico / Limpio (idéntico al ticket térmico de presupuesto),
+ * eliminando códigos de parte extensos, puertos y velocidades redundantes.
+ */
+export function formatearNombreComponenteBasico(raw: string, categoria?: string): string {
+  if (!raw) return "";
+  let s = raw.trim();
+
+  // Preservar sufijo de equipo múltiple si existe, ej: (PC 1), (PC 2)
+  const pcTagMatch = s.match(/\(\s*PC\s*\d+\s*\)/i);
+  const pcSuffix = pcTagMatch ? ` ${pcTagMatch[0].toUpperCase()}` : "";
+  if (pcTagMatch) {
+    s = s.replace(/\(\s*PC\s*\d+\s*\)/gi, "").trim();
+  }
+
+  // Caso especial cooler de fábrica
+  if (/cooler\s+de\s+f[aá]brica/i.test(s) || /stock-cooler/i.test(s)) {
+    return `Cooler de Fábrica (Stock)${pcSuffix}`;
+  }
+
+  // 1. CPU: AMD Ryzen o Intel Core (soporta tanto formato Web como ERP 'RYZEN R5-5600GE' / 'CPU INTEL I5-12400')
+  if (
+    categoria === "PROCESADOR" ||
+    /\b(CPU|PROCESADOR|RYZEN|ATHLON|CORE\s+I[3579]|CORE\s+ULTRA|\bI[3579]-\d{4,5})/i.test(s)
+  ) {
+    const ryzenErp = s.match(/RYZEN\s+R([3579])[-\s]+(\d{4}[A-Z0-9]*)/i);
+    if (ryzenErp) return `AMD Ryzen ${ryzenErp[1]} ${ryzenErp[2].toUpperCase()}${pcSuffix}`;
+    const ryzenStd = s.match(/(?:AMD\s+)?Ryzen\s+([3579])\s+(\d{4}[A-Z0-9]*)/i);
+    if (ryzenStd) return `AMD Ryzen ${ryzenStd[1]} ${ryzenStd[2].toUpperCase()}${pcSuffix}`;
+    const intelUltra = s.match(/ULTRA\s+([579])[-\s]+(\d{3}[A-Z0-9]*)/i);
+    if (intelUltra)
+      return `Intel Core Ultra ${intelUltra[1]} ${intelUltra[2].toUpperCase()}${pcSuffix}`;
+    const intelErp = s.match(/\bI([3579])[-\s]+(\d{4,5}[A-Z0-9]*)/i);
+    if (intelErp) return `Intel Core i${intelErp[1]}-${intelErp[2].toUpperCase()}${pcSuffix}`;
+  }
+
+  // 2. Placa Madre (soporta ERP 'MB ASROCK AM4 B550M PHANTOM GAMING 4 HDMI/DP...' y Web)
+  if (categoria === "PLACA_MADRE" || /^MB\s+/i.test(s) || /^Placa\s+Madre/i.test(s)) {
+    const marcaRaw = s.match(/\b(ASUS|ASROCK|GIGABYTE|MSI|BIOSTAR|MAXSUN)\b/i)?.[0] || "";
+    const marcaMap: Record<string, string> = {
+      ASUS: "ASUS",
+      ASROCK: "ASRock",
+      GIGABYTE: "Gigabyte",
+      MSI: "MSI",
+      BIOSTAR: "Biostar",
+      MAXSUN: "Maxsun",
+    };
+    const marca = marcaMap[marcaRaw.toUpperCase()] || marcaRaw;
+    const chipset =
+      s
+        .match(/\b([BAZXH]\d{3}[A-Z]*(?:-[A-Z0-9]+)?(?:\/D4)?)\b/i)?.[1]
+        ?.toUpperCase()
+        .replace("/D4", "") || "";
+    const serieMatch = s.match(
+      /\b(TUF\s+GAMING|TUF|ROG\s+STRIX|ROG|PROART|PHANTOM\s+GAMING\s*\d*|STEEL\s+LEGEND|EAGLE|AORUS\s+ELITE|AORUS|PRIME|GAMING\s+PLUS|GAMING\s+X|DS3H|PRO\s+RS|PRO)\b/i
+    );
+    const serieRaw = serieMatch ? serieMatch[1] : "";
+    const serie = serieRaw
+      ? serieRaw.replace(/\w\S*/g, (w) =>
+          /^(TUF|ROG|PRO|DS3H|RS)$/i.test(w)
+            ? w.toUpperCase()
+            : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+        )
+      : "";
+    const wifi = /WI-?FI/i.test(s) ? "Wi-Fi" : "";
+    const res = [marca, chipset, serie, wifi]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (res.length > 5 && chipset) return `${res}${pcSuffix}`;
+  }
+
+  // 3. Memoria RAM (soporta ERP 'MEM DDR4 16GB/3200MHZ KINGSTON FURY BEAST KF432...' y Web)
+  if (
+    categoria === "RAM" ||
+    /^MEM\s+/i.test(s) ||
+    (/DDR[45]/i.test(s) &&
+      /\b\d+\s*GB\b/i.test(s) &&
+      !/^NB\s+/i.test(s) &&
+      categoria !== "GPU" &&
+      categoria !== "NOTEBOOK")
+  ) {
+    const ddr = (s.match(/DDR[45]/i)?.[0] || "").toUpperCase();
+    const kitMatch = s.match(/(\d+\s*GB)\s*\(\s*2X\s*\d+\s*G(?:B)?\s*\)/i);
+    const cap = kitMatch
+      ? kitMatch[0].toUpperCase().replace(/\s+/g, "")
+      : s.match(/\b\d+\s*GB\b/i)?.[0]?.toUpperCase().replace(/\s+/, "") || "";
+    const mhzMatch = s.match(/\b(\d{4})\s*MHz\b/i) || s.match(/\/(\d{4})(?:MHZ)?\b/i);
+    const mhz = mhzMatch ? `${mhzMatch[1]}MHz` : "";
+    const marcaRaw =
+      s.match(
+        /\b(KINGSTON|CORSAIR|ADATA|XPG|CRUCIAL|KLEVV|G\.SKILL|TEAMGROUP|PATRIOT|LEXAR|HIKSEMI)\b/i
+      )?.[0] || "";
+    const marcaMap: Record<string, string> = {
+      KINGSTON: "Kingston",
+      CORSAIR: "Corsair",
+      ADATA: "Adata",
+      XPG: "XPG",
+      CRUCIAL: "Crucial",
+      KLEVV: "Klevv",
+      "G.SKILL": "G.Skill",
+      TEAMGROUP: "Teamgroup",
+      PATRIOT: "Patriot",
+      LEXAR: "Lexar",
+      HIKSEMI: "Hiksemi",
+    };
+    const marca = marcaMap[marcaRaw.toUpperCase()] || marcaRaw;
+    const modeloRaw =
+      s.match(
+        /\b(FURY\s+BEAST|BEAST|GAMMIX\s+D\d+|LANCER\s+BLADE|LANCER|VENGEANCE\s+LPX|VENGEANCE|RIPJAWS|T-FORCE|FIT\s+V|PREMIER|ARMAX)\b/i
+      )?.[0] || "";
+    const modelo = modeloRaw
+      ? modeloRaw.replace(/\w\S*/g, (w) =>
+          w.toUpperCase() === "LPX" || /^D\d+$/i.test(w) || w.toUpperCase() === "V"
+            ? w.toUpperCase()
+            : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+        )
+      : "";
+    const sodimm = /SODIMM|\bMEM\s+NB\b/i.test(s) ? "SODIMM" : "";
+    const res = [marca, modelo, cap, ddr, mhz, sodimm]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (res.length > 5) return `${res}${pcSuffix}`;
+  }
+
+  // 4. GPU / Tarjeta Gráfica (soporta ERP 'VGA GIGABYTE RTX5070 GAMING OC BLACK 12GB/GDDR7...' y Web)
+  if (
+    categoria === "GPU" ||
+    /^VGA\s+/i.test(s) ||
+    (/GeForce|Radeon|RTX\s*\d{4}|GTX\s*\d{3,4}|RX\s*\d{3,4}/i.test(s) &&
+      !/^NB\s+/i.test(s) &&
+      categoria !== "NOTEBOOK")
+  ) {
+    const rtxMatch = s.match(/RTX\s*(\d{4})(?:\s*(TI|SUPER))?/i);
+    const gtxMatch = s.match(/GTX\s*(\d{3,4})(?:\s*(TI|SUPER))?/i);
+    const rxMatch = s.match(/RX\s*(\d{3,4})(?:\s*(XT|XTX))?/i);
+    const marcaRaw =
+      s.match(
+        /\b(GIGABYTE|MSI|ASUS|ZOTAC|PALIT|PNY|SAPPHIRE|ASROCK|POWERCOLOR|XFX|KEEPDATA)\b/i
+      )?.[0] || "";
+    const marcaMap: Record<string, string> = {
+      GIGABYTE: "Gigabyte",
+      MSI: "MSI",
+      ASUS: "ASUS",
+      ZOTAC: "Zotac",
+      PALIT: "Palit",
+      PNY: "PNY",
+      SAPPHIRE: "Sapphire",
+      ASROCK: "ASRock",
+      POWERCOLOR: "PowerColor",
+      XFX: "XFX",
+      KEEPDATA: "Keepdata",
+    };
+    const marca = marcaMap[marcaRaw.toUpperCase()] || marcaRaw;
+    const vramMatch = s.match(/\b(\d{1,2})\s*GB\b/i) || s.match(/\b(\d{1,2})G\b/i);
+    const vram = vramMatch ? `${vramMatch[1]}GB` : "";
+    if (rtxMatch) {
+      const suffix = rtxMatch[2]
+        ? ` ${rtxMatch[2].toUpperCase() === "TI" ? "Ti" : "Super"}`
+        : "";
+      return `${[marca, `GeForce RTX ${rtxMatch[1]}${suffix}`, vram]
+        .filter(Boolean)
+        .join(" ")}${pcSuffix}`;
+    }
+    if (gtxMatch) {
+      const suffix = gtxMatch[2]
+        ? ` ${gtxMatch[2].toUpperCase() === "TI" ? "Ti" : "Super"}`
+        : "";
+      return `${[marca, `GeForce GTX ${gtxMatch[1]}${suffix}`, vram]
+        .filter(Boolean)
+        .join(" ")}${pcSuffix}`;
+    }
+    if (rxMatch) {
+      const suffix = rxMatch[2] ? ` ${rxMatch[2].toUpperCase()}` : "";
+      return `${[marca, `Radeon RX ${rxMatch[1]}${suffix}`, vram]
+        .filter(Boolean)
+        .join(" ")}${pcSuffix}`;
+    }
+  }
+
+  // 5. Almacenamiento SSD (soporta ERP 'SSD 1TB M.2 NVME KINGSTON NV3 PCIE 4X4...' y Web)
+  if (
+    categoria === "ALMACENAMIENTO" ||
+    /^SSD\s+/i.test(s) ||
+    (/SSD|NVME/i.test(s) && !/^NB\s+/i.test(s) && categoria !== "NOTEBOOK")
+  ) {
+    const cap = (s.match(/\b(\d+\s*(?:GB|TB))\b/i)?.[0] || "")
+      .toUpperCase()
+      .replace(/\s+/, "");
+    const marcaRaw =
+      s.match(
+        /\b(WESTERN\s+DIGITAL|WD|KINGSTON|SANDISK|SAMSUNG|CRUCIAL|ADATA|XPG|LEXAR|GIGABYTE|HIKSEMI|FTX)\b/i
+      )?.[0] || "";
+    const marcaMap: Record<string, string> = {
+      "WESTERN DIGITAL": "WD",
+      WD: "WD",
+      KINGSTON: "Kingston",
+      SANDISK: "SanDisk",
+      SAMSUNG: "Samsung",
+      CRUCIAL: "Crucial",
+      ADATA: "Adata",
+      XPG: "XPG",
+      LEXAR: "Lexar",
+      GIGABYTE: "Gigabyte",
+      HIKSEMI: "Hiksemi",
+      FTX: "FTX",
+    };
+    const marca = marcaMap[marcaRaw.toUpperCase().replace(/\s+/g, " ")] || marcaRaw;
+    const serieRaw =
+      s.match(/\b(GREEN|BLUE|BLACK|PLUS|EVO|OPTIMUS|FURY)\b/i)?.[0] || "";
+    const serie = serieRaw
+      ? serieRaw.charAt(0).toUpperCase() + serieRaw.slice(1).toLowerCase()
+      : "";
+    const modelSn = (
+      s.match(/\b(SN\d{3,4}|NV\d|KC\d{3,4}|NM\d{3}|NQ\d{3})\b/i)?.[0] || ""
+    ).toUpperCase();
+    const tipoSlot = /M\.2|NVME/i.test(s) ? "M.2" : /SATA|2\.5/i.test(s) ? "SATA" : "";
+    const res = ["SSD", marca, serie, modelSn, cap, tipoSlot]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (res.length > 6) return `${res}${pcSuffix}`;
+  }
+
+  // 6. Fuente de Poder (soporta ERP 'FUENTE CORSAIR ATX 550W CX550 80PLUS BRONZE CP-9020277-BR' y Web)
+  if (categoria === "FUENTE" || /^FUENTE\s+/i.test(s)) {
+    const marcaRaw =
+      s.match(
+        /\b(CORSAIR|GIGABYTE|BE\s+QUIET!?|MSI|ASROCK|ADATA|XPG|GAMDIAS|EVGA|COOLER\s+MASTER|THERMALTAKE|REDRAGON|SATELLITE|SEASONIC)\b/i
+      )?.[0] || "";
+    const marcaClean = marcaRaw.toUpperCase().startsWith("BE QUIET")
+      ? "be quiet!"
+      : /^(MSI|XPG|EVGA)$/i.test(marcaRaw)
+      ? marcaRaw.toUpperCase()
+      : /^ASROCK$/i.test(marcaRaw)
+      ? "ASRock"
+      : marcaRaw
+      ? marcaRaw.charAt(0).toUpperCase() + marcaRaw.slice(1).toLowerCase()
+      : "";
+    const wMatch = s.match(/\b(\d{3,4})\s*W\b/i);
+    const w = wMatch ? `${wMatch[1]}W` : "";
+    const modelo = (
+      s.match(
+        /\b(CX\d{3}M?|CV\d{3}|A\d{3}[A-Z]{2}|GP-[A-Z0-9]+|M2-\d{3}[A-Z]|PRO-\d{3}[A-Z]|PURE\s+POWER\s+\d+|SYSTEM\s+POWER\s+\d+|CORE\s+REACTOR(?:\s+II)?|PROBE)\b/i
+      )?.[0] || ""
+    ).toUpperCase();
+    const certMatch =
+      s.match(
+        /(?:80\s*PLUS|80PLUS|CYBENETICS)\s*(BRONZE|BRONCE|GOLD|SILVER|WHITE|PLATINUM|STANDARD)?/i
+      ) || s.match(/\b(BRONZE|BRONCE|GOLD|PLATINUM)\s+80\s*PLUS/i);
+    let certStr = "";
+    if (certMatch) {
+      const tier = (certMatch[1] || "").toUpperCase();
+      const tierFmt =
+        tier === "BRONCE" || tier === "BRONZE"
+          ? "Bronze"
+          : tier === "GOLD"
+          ? "Gold"
+          : tier === "SILVER"
+          ? "Silver"
+          : tier === "PLATINUM"
+          ? "Platinum"
+          : "";
+      certStr = `80+ ${tierFmt}`.trim();
+    }
+    return `${["Fuente", marcaClean, modelo, w, certStr]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim()}${pcSuffix}`;
+  }
+
+  // 7. Gabinete (soporta ERP 'GABINETE COUGAR UNIFACE RGB 4 FAN WHITE (AIRFLOW/MID TOWER)' y Web)
+  if (
+    categoria === "GABINETE" ||
+    /^GABINETE\s+/i.test(s) ||
+    /^KIT\s+GABINETE/i.test(s)
+  ) {
+    let g = s
+      .replace(/^(?:KIT\s+)?GABINETE\s+(?:GAMER\s+)?/i, "")
+      .replace(/\([^)]*\)/g, "")
+      .replace(/\b\d+\s*GTA\.?[A-Z-]*/gi, "")
+      .replace(
+        /\/?(?:AIRFLOW|WINDOW|MID\s*TOWER|FULL\s*TOWER|MICRO\s*ATX|M-ATX|ATX|PWM)\b/gi,
+        " "
+      )
+      .replace(/\b\d+\s*FAN(?:S)?\b/gi, " ")
+      .replace(/\b(?:BLACK|WHITE|NEGRO|BLANCO)\b/gi, " ")
+      .replace(/[\/]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    g = g
+      .split(" ")
+      .map((w) =>
+        /^(RGB|ARGB|FX|LX|MX\d+|K\d+|\d+[A-Z]+|PRO|II|III|NZXT|MSI|XPG|MTEK)$/i.test(w)
+          ? w.toUpperCase()
+          : /^be$/i.test(w)
+          ? "be"
+          : /^quiet!?$/i.test(w)
+          ? "quiet!"
+          : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+      )
+      .join(" ");
+    return `${`Gabinete ${g}`.replace(/\s+/g, " ").trim()}${pcSuffix}`;
+  }
+
+  // 8. Refrigeración / Cooler
+  if (categoria === "REFRIGERACION" || /^COOLER\s+/i.test(s)) {
+    const isLiquido = /L[IÍ]QUIDO|LIQUID|WATER|AIO|\b(?:240|360)\s*MM\b/i.test(s);
+    let c = s
+      .replace(
+        /^COOLER\s+(?:L[IÍ]QUIDO\s+|P\/CPU\s+|PARA\s+CPU\s+|CPU\s+|FAN\s+)?/i,
+        ""
+      )
+      .replace(/\([^)]*\)/g, "")
+      .replace(
+        /\b(?:LGA\s*\d+|AM[45]|BLACK|WHITE|NEGRO|BLANCO|PWM|PARA\s+CPU)\b/gi,
+        " "
+      )
+      .replace(/[\/]+/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    c = c
+      .split(" ")
+      .map((w) =>
+        /^(RGB|ARGB|SE|EVO|RS|PRO|II|III|X|GL|\d+MM|\d+|CR-\d+|M\d-\d+)$/i.test(w)
+          ? w.toUpperCase()
+          : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+      )
+      .join(" ");
+    return `${`${isLiquido ? "Cooler Líquido " : "Cooler "}${c}`
+      .replace(/\s+/g, " ")
+      .trim()}${pcSuffix}`;
+  }
+
+  // 9. Notebook (para Expansión / Upgrade)
+  if (categoria === "NOTEBOOK" || /^NB\s+/i.test(s) || /^NOTEBOOK\s+/i.test(s)) {
+    const marcaRaw =
+      s.match(/\b(ASUS|ACER|GIGABYTE|MSI|LENOVO|HP|DELL|APPLE|SAMSUNG)\b/i)?.[0] || "";
+    const marcaMap: Record<string, string> = {
+      ASUS: "ASUS",
+      ACER: "Acer",
+      GIGABYTE: "Gigabyte",
+      MSI: "MSI",
+      LENOVO: "Lenovo",
+      HP: "HP",
+      DELL: "Dell",
+      APPLE: "Apple",
+      SAMSUNG: "Samsung",
+    };
+    const marca = marcaMap[marcaRaw.toUpperCase()] || marcaRaw;
+    const lineaRaw =
+      s.match(
+        /\b(VIVOBOOK|ZENBOOK|TUF|ROG|NITRO\s*V?|PREDATOR|ASPIRE|A16|G5|G6|AORUS|IDEAPAD|LEGION|THINKPAD|VICTUS|OMEN|PAVILION|INSPIRON|LATITUDE|VOSTRO)\b/i
+      )?.[0] || "";
+    const linea = lineaRaw
+      ? lineaRaw.replace(/\w\S*/g, (w) =>
+          /^(TUF|ROG|A16|G5|G6|V)$/i.test(w)
+            ? w.toUpperCase()
+            : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
+        )
+      : "";
+    const cpuNb =
+      s
+        .match(
+          /\b(I[3579]-\d{3,5}[A-Z]*|RYZEN\s*[3579]\s*\d{4}[A-Z]*|R[3579]-\d{4}[A-Z]*)\b/i
+        )?.[0]
+        ?.toUpperCase() || "";
+    const res = ["Notebook", marca, linea, cpuNb]
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (res.length > 10) return `${res}${pcSuffix}`;
+  }
+
+  // 10. Limpieza general para otros ítems
+  return `${s
+    .replace(/\s*\([^)]*\)/g, "")
+    .replace(/\s*-\s*(Negro|Blanco|Black|White)$/i, "")
+    .replace(/\s*LGA\s*\d+/gi, "")
+    .replace(/\s*AM[45]/gi, "")
+    .replace(/\s*\d+\s*N[uú]cleos.*/gi, "")
+    .replace(/\s+/g, " ")
+    .trim()}${pcSuffix}`;
+}
+
 export function formatMontajeWhatsAppMessage(params: {
   cliente: string;
   nro_reg: string;
@@ -1848,13 +2239,14 @@ export function formatMontajeWhatsAppMessage(params: {
       ? "🟡 EXPRESS (Prioridad 24h)"
       : "🟢 NORMAL (Cola estándar 48h)";
 
-  // Lista de componentes limpia: sin números de serie, agrupada con categoría y SKU
+  // Lista de componentes en formato Básico / Limpio (idéntico al ticket de presupuesto):
   const compCount = params.componentes?.length || 0;
   const compText = (params.componentes || [])
     .map((c) => {
       const catLabel = (c.categoria || "ITEM").replace(/_/g, " ").toUpperCase();
+      const nombreBasico = formatearNombreComponenteBasico(c.descripcion, c.categoria);
       const skuLabel = c.sku ? `(SKU: ${c.sku})` : "";
-      return `  ▫️ [${catLabel}] ${c.descripcion} ${skuLabel}`.trimEnd();
+      return `  ▫️ [${catLabel}] ${nombreBasico} ${skuLabel}`.trimEnd();
     })
     .join("\n");
 
