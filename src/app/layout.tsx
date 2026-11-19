@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import { FloatingFeedbackWidget } from "@/components/common/FloatingFeedbackWidget";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -34,7 +33,6 @@ export default function RootLayout({
       </head>
       <body className="font-sans min-h-dvh bg-[#fbf9f9] text-[#121212] antialiased selection:bg-[#e2e2e2] selection:text-[#121212]">
         {children}
-        <FloatingFeedbackWidget />
       </body>
     </html>
   );

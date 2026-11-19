@@ -52,6 +52,7 @@ import {
   PresupuestoThermalData,
   formatearNombreComponenteBasico,
 } from "@/components/common/PresupuestoThermalPrintModal";
+import { FloatingFeedbackWidget } from "@/components/common/FloatingFeedbackWidget";
 
 interface NisseiLiveItemDto {
   sku: string;
@@ -6009,6 +6010,8 @@ export default function ArmarPcPresupuestadorPage() {
         </div>
       </div>
     )}
+
+    <FloatingFeedbackWidget defaultVendedor={selectedVendedor} />
     </>
   );
 }

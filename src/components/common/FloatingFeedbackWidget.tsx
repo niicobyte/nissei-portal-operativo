@@ -28,7 +28,11 @@ interface FeedbackDraftData {
   isOpen?: boolean;
 }
 
-export function FloatingFeedbackWidget() {
+export function FloatingFeedbackWidget({
+  defaultVendedor,
+}: {
+  defaultVendedor?: string;
+}) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [nombre, setNombre] = useState("");
@@ -37,6 +41,13 @@ export function FloatingFeedbackWidget() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [sentSuccess, setSentSuccess] = useState(false);
+
+  // Sincronizar con el vendedor seleccionado en /armar-pc si el campo nombre aún está vacío
+  useEffect(() => {
+    if (defaultVendedor && !nombre.trim()) {
+      setNombre(defaultVendedor);
+    }
+  }, [defaultVendedor]);
 
   // Hidratar borrador previo o autocompletar nombre del vendedor si ya lo seleccionó en la página
   useEffect(() => {
@@ -149,6 +160,11 @@ export function FloatingFeedbackWidget() {
       setIsSubmitting(false);
     }
   };
+
+  // Mostrar exclusivamente en la página /armar-pc
+  if (!pathname || !pathname.startsWith("/armar-pc")) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 print:hidden">
