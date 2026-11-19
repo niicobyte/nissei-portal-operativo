@@ -802,7 +802,16 @@ export interface AlertaCompatibilidad {
   detalle: string;
   categoriaTarget?: HardwarePresupuestoItem["categoria"];
   accionSugerida?: string;
-  accionTipo?: "CAMBIAR_TAB" | "DUPLICAR_RAM" | "AGREGAR_COOLER";
+  accionTipo?:
+    | "CAMBIAR_TAB"
+    | "DUPLICAR_RAM"
+    | "AGREGAR_COOLER"
+    | "AUTO_UPGRADE_NVME"
+    | "AUTO_UPGRADE_SSD_1TB"
+    | "AUTO_UPGRADE_RAM_32GB"
+    | "AUTO_UPGRADE_PSU"
+    | "AUTO_FIX_GABINETE"
+    | "AUTO_FIX_MB";
 }
 
 export interface ChecklistPC {
@@ -1085,42 +1094,91 @@ export function verificarCompatibilidadPC(
   }
 
   // =========================================================================
-  // 8. SUGERENCIA PRO: DUAL CHANNEL EN MEMORIA RAM
+  // 8. SUGERENCIA PRO: DUAL CHANNEL Y CAPACIDAD ÓPTIMA EN MEMORIA RAM
   // =========================================================================
   if (rams.length > 0) {
     const totalModulos = rams.reduce((acc, r) => acc + (r.cantidad || 1), 0);
-    if (totalModulos === 1) {
-      const ram = rams[0];
+    const totalRamGb = rams.reduce(
+      (acc, r) => acc + (r.capacidadGb || 8) * (r.cantidad || 1),
+      0
+    );
+    const firstRamDesc = `${rams[0].descripcion} ${rams[0].nombreWeb || ""}`;
+    const isAlreadyDualKit = /\b2\s*X\s*\d+\s*G(?:B)?\b|\bKIT\s+2\b/i.test(firstRamDesc);
+
+    if (totalModulos === 1 && !isAlreadyDualKit) {
       alertas.push({
         tipo: "SUGGESTION",
-        titulo: "💡 Oportunidad de Venta: Activar Dual Channel en RAM",
-        detalle: `Cotizar 2 módulos activa la tecnología Dual Channel, incrementando entre un +15% y +25% los FPS en juegos y la fluidez del equipo prácticamente sin diferencia de precio.`,
+        titulo: "💡 Oportunidad de Rendimiento: Activar Dual Channel en RAM",
+        detalle: `Actualmente hay 1 solo módulo (${totalRamGb}GB en Single Channel). Duplicar a 2 módulos activa el bus Dual Channel de 128 bits, incrementando entre +15% y +25% los FPS mínimos y la fluidez general.`,
         categoriaTarget: "RAM",
-        accionSugerida: `Duplicar a 2 módulos (Activar Dual Channel)`,
+        accionSugerida: `Duplicar a 2 módulos (${totalRamGb * 2}GB Dual Channel)`,
         accionTipo: "DUPLICAR_RAM",
       });
+    } else if (gpus.length > 0 && totalRamGb <= 16) {
+      const gpuDesc = `${gpus[0].descripcion} ${gpus[0].nombreWeb || ""}`.toUpperCase();
+      const cpuDesc = cpu ? `${cpu.descripcion} ${cpu.nombreWeb || ""}`.toUpperCase() : "";
+      const esHardwareGamaMediaAlta =
+        /\b(4060\s*TI|5060\s*TI|4070|5070|4080|5080|7700\s*XT|7800\s*XT)\b/.test(gpuDesc) ||
+        /\b(RYZEN\s*[79]|7800X3D|9800X3D|CORE\s*I[79]|ULTRA\s*[79])\b/.test(cpuDesc);
+
+      if (esHardwareGamaMediaAlta) {
+        alertas.push({
+          tipo: "SUGGESTION",
+          titulo: "💡 Salto a 32GB de RAM Recomendado para esta Gama",
+          detalle: `Para acompañar la potencia de este procesador/placa gráfica en juegos AAA modernos, streaming, arquitectura 3D o IA sin saturar memoria, se recomienda subir a 32GB en Dual Channel.`,
+          categoriaTarget: "RAM",
+          accionSugerida: "Subir a 32GB Dual Channel automáticamente",
+          accionTipo: "AUTO_UPGRADE_RAM_32GB",
+        });
+      }
     }
   }
 
   // =========================================================================
-  // 9. SUGERENCIA PRO: CAPACIDAD DE ALMACENAMIENTO SSD
+  // 9. SUGERENCIA PRO: TECNOLOGÍA M.2 NVMe Y CAPACIDAD DE ALMACENAMIENTO SSD
   // =========================================================================
-  if (ssds.length > 0 && gpus.length > 0) {
-    const totalCapacidad = ssds.reduce((acc, s) => acc + (s.capacidadGb || 0), 0);
-    if (totalCapacidad > 0 && totalCapacidad < 480) {
+  if (ssds.length > 0) {
+    const totalCapacidad = ssds.reduce(
+      (acc, s) => acc + (s.capacidadGb || 0) * (s.cantidad || 1),
+      0
+    );
+    const hasNvme = ssds.some((s) => s.esM2Nvme);
+
+    if (!hasNvme) {
+      alertas.push({
+        tipo: "SUGGESTION",
+        titulo: "💡 Salto de Velocidad: Cambiar SSD SATA a M.2 NVMe PCIe",
+        detalle: `El disco seleccionado es SATA tradicional (~500 MB/s). Un SSD M.2 NVMe PCIe directo a la placa madre alcanza entre 3.500 y 7.000 MB/s (hasta 10 veces más rápido) por un valor muy similar.`,
+        categoriaTarget: "ALMACENAMIENTO",
+        accionSugerida: "Cambiar a SSD M.2 NVMe automáticamente",
+        accionTipo: "AUTO_UPGRADE_NVME",
+      });
+    } else if (gpus.length > 0 && totalCapacidad > 0 && totalCapacidad < 480) {
       alertas.push({
         tipo: "SUGGESTION",
         titulo: "💡 Almacenamiento Ajustado para Juegos Actuales",
-        detalle: `240GB se saturan rápidamente (Windows y utilitarios ocupan ~50GB, y los juegos modernos pesan de 70GB a 150GB c/u). Se recomienda sugerir un SSD M.2 NVMe de 500GB o 1TB.`,
+        detalle: `240GB se saturan rápidamente (Windows ocupa ~50GB y los juegos modernos pesan de 70GB a 150GB c/u). Se recomienda subir a un SSD M.2 NVMe de 500GB o 1TB.`,
         categoriaTarget: "ALMACENAMIENTO",
-        accionSugerida: "Ver SSDs de 500GB / 1TB",
-        accionTipo: "CAMBIAR_TAB",
+        accionSugerida: "Subir a SSD 1TB M.2 NVMe automáticamente",
+        accionTipo: "AUTO_UPGRADE_SSD_1TB",
       });
+    } else if (gpus.length > 0 && totalCapacidad >= 480 && totalCapacidad < 900) {
+      const gpuDesc = `${gpus[0].descripcion} ${gpus[0].nombreWeb || ""}`.toUpperCase();
+      if (/\b(RTX\s*3060|RTX\s*4060|RTX\s*5060|RTX\s*4070|RTX\s*5070|RX\s*7600|RX\s*6600)\b/.test(gpuDesc)) {
+        alertas.push({
+          tipo: "SUGGESTION",
+          titulo: "💡 Espacio Recomendado para Gaming AAA & Trabajo: 1TB NVMe",
+          detalle: `Con 500GB caben 2 a 3 juegos AAA actuales además del sistema operativo. Subir a 1TB M.2 NVMe duplica la capacidad de almacenamiento con excelente relación precio/GB.`,
+          categoriaTarget: "ALMACENAMIENTO",
+          accionSugerida: "Subir a 1TB M.2 NVMe en 1 clic",
+          accionTipo: "AUTO_UPGRADE_SSD_1TB",
+        });
+      }
     }
   }
 
   // =========================================================================
-  // 10. SUGERENCIA PRO: REFRIGERACIÓN LÍQUIDA PARA CPUS CALIENTES
+  // 10. SUGERENCIA PRO: REFRIGERACIÓN DEDICADA Y PROTECCIÓN 80 PLUS
   // =========================================================================
   if (cpu) {
     const descCpu = (cpu.nombreWeb || cpu.descripcion).toUpperCase();
@@ -1136,17 +1194,44 @@ export function verificarCompatibilidadPC(
       descCpu.includes("7950X");
 
     if (esCpuMuyCaliente) {
-      const esAioLiquid = cooler && (/240|360|LIQUID|WATER|AIO/i.test(cooler.descripcion) || /240|360|LIQUID|WATER|AIO/i.test(cooler.nombreWeb || ""));
+      const esAioLiquid =
+        cooler &&
+        (/240|360|LIQUID|WATER|AIO/i.test(cooler.descripcion) ||
+          /240|360|LIQUID|WATER|AIO/i.test(cooler.nombreWeb || ""));
       if (!esAioLiquid) {
         alertas.push({
           tipo: "SUGGESTION",
           titulo: "💡 Refrigeración Líquida AIO Recomendada",
-          detalle: `Este procesador trabaja a temperaturas elevadas bajo carga plena. Una Refrigeración Líquida AIO de 240mm o 360mm mantendrá el equipo en temperaturas óptimas y totalmente silencioso.`,
+          detalle: `Este procesador trabaja a temperaturas elevadas bajo carga plena. Una Refrigeración Líquida AIO de 240mm o 360mm mantendrá frecuencias Boost máximas y operación silenciosa.`,
           categoriaTarget: "REFRIGERACION",
-          accionSugerida: "Ver Water Coolers AIO",
-          accionTipo: "CAMBIAR_TAB",
+          accionSugerida: "Aplicar Cooler Líquido AIO compatible",
+          accionTipo: "AGREGAR_COOLER",
         });
       }
+    } else if (cooler?.sku === "STOCK-COOLER" && gpus.length > 0) {
+      alertas.push({
+        tipo: "SUGGESTION",
+        titulo: "💡 Mejora Térmica & Silencio: Cooler de CPU Dedicado",
+        detalle: `Para sesiones prolongadas de Gaming o Render, un disipador de torre o líquido dedicado reduce entre 12°C y 18°C la temperatura respecto al cooler básico de fábrica.`,
+        categoriaTarget: "REFRIGERACION",
+        accionSugerida: "Agregar Cooler CPU dedicado en 1 clic",
+        accionTipo: "AGREGAR_COOLER",
+      });
+    }
+  }
+
+  if (gpus.length > 0 && psu) {
+    const psuDesc = `${psu.descripcion} ${psu.nombreWeb || ""}`;
+    const is80Plus = /80\s*PLUS|80PLUS|BRONZE|BRONCE|GOLD|SILVER|PLATINUM|CYBENETICS/i.test(psuDesc);
+    if (!is80Plus) {
+      alertas.push({
+        tipo: "SUGGESTION",
+        titulo: "💡 Protección Eléctrica: Fuente Certificada 80 Plus",
+        detalle: `Al contar con placa de video dedicada, se sugiere una fuente con certificación 80 Plus (Bronze o Gold) para mayor eficiencia energética y protección ante variaciones de tensión.`,
+        categoriaTarget: "FUENTE",
+        accionSugerida: "Cambiar a Fuente 80 Plus compatible",
+        accionTipo: "AUTO_UPGRADE_PSU",
+      });
     }
   }
 
