@@ -31,6 +31,7 @@ import {
   ShieldAlert,
   TrendingUp,
   Award,
+  DollarSign,
 } from "lucide-react";
 import {
   CATALOGO_PRESUPUESTO_OFICIAL,
@@ -469,6 +470,13 @@ export default function ArmarPcPresupuestadorPage() {
   );
   const [moneda, setMoneda] = useState<"PYG" | "USD">("PYG");
 
+  // Modal obligatorio de Cotización del Dólar en cada recarga/inicio de página
+  const [isTipoCambioModalOpen, setIsTipoCambioModalOpen] = useState<boolean>(true);
+  const [modalTipoCambioInput, setModalTipoCambioInput] = useState<string>(
+    TIPO_CAMBIO_PYG_DEFECTO.toLocaleString("es-PY")
+  );
+  const [modalTipoCambioError, setModalTipoCambioError] = useState<string | null>(null);
+
   // Alertas secuenciales de 8 segundos al ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs)
   const [warningStage, setWarningStage] = useState<"STOCK" | "TIEMPO_MONTAJE" | null>("STOCK");
   const [warningSecondsLeft, setWarningSecondsLeft] = useState<number>(8);
@@ -569,6 +577,20 @@ export default function ArmarPcPresupuestadorPage() {
     }
   };
 
+  const handleConfirmTipoCambio = () => {
+    const num = parsePygNumber(modalTipoCambioInput);
+    if (!num || num < 4000 || num > 30000) {
+      setModalTipoCambioError(
+        "Por favor ingresá una cotización válida en Guaraníes (ej: 7.950 Gs/USD)."
+      );
+      return;
+    }
+    setTipoCambio(num);
+    setTipoCambioInput(num.toLocaleString("es-PY"));
+    setModalTipoCambioError(null);
+    setIsTipoCambioModalOpen(false);
+  };
+
   const handleCustomBudgetChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const cursor = e.target.selectionStart || 0;
     const raw = e.target.value;
@@ -595,9 +617,9 @@ export default function ArmarPcPresupuestadorPage() {
     }
   }, []);
 
-  // Temporizador secuencial de 8 segundos por cada advertencia al ingresar
+  // Temporizador secuencial de 8 segundos por cada advertencia al ingresar (inicia al confirmar el tipo de cambio)
   useEffect(() => {
-    if (!warningStage) return;
+    if (isTipoCambioModalOpen || !warningStage) return;
     setWarningSecondsLeft(8);
     const interval = setInterval(() => {
       setWarningSecondsLeft((prev) => {
@@ -615,7 +637,7 @@ export default function ArmarPcPresupuestadorPage() {
       clearInterval(interval);
       clearTimeout(timer);
     };
-  }, [warningStage]);
+  }, [warningStage, isTipoCambioModalOpen]);
 
   const syncWithNisseiWeb = async (forceRefresh = false) => {
     setIsLoadingWeb(true);
@@ -3614,6 +3636,122 @@ export default function ArmarPcPresupuestadorPage() {
 
   return (
     <>
+      {/* Modal Obligatorio al Iniciar o Recargar la Página: Cotización del Dólar */}
+      {isTipoCambioModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[100] bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 sm:p-4 animate-in fade-in duration-200"
+        >
+          <div className="w-full max-w-md bg-white border border-zinc-200 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Cabecera del Modal */}
+            <div className="p-5 sm:p-6 bg-gradient-to-b from-emerald-50/70 via-emerald-50/20 to-white border-b border-zinc-100 flex items-start gap-3.5">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/25">
+                <DollarSign className="w-6 h-6 stroke-[2.5]" />
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-md inline-block mb-1">
+                  Requerido antes de continuar
+                </span>
+                <h2 className="text-base sm:text-lg font-black text-zinc-900 tracking-tight">
+                  Cotización del Dólar del Día
+                </h2>
+                <p className="text-xs text-zinc-600 mt-1 leading-relaxed">
+                  Ingresá la cotización oficial de caja en Guaraníes para calcular y presupuestar todos los componentes del ensamble.
+                </p>
+              </div>
+            </div>
+
+            {/* Cuerpo del Formulario */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-zinc-800 block mb-1.5">
+                  Cotización Actual (Gs por cada 1 USD):
+                </label>
+                <div className="relative">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-zinc-400 select-none">
+                    ₲
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    autoFocus
+                    value={modalTipoCambioInput}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/[^0-9]/g, "");
+                      if (!raw) {
+                        setModalTipoCambioInput("");
+                        return;
+                      }
+                      const num = parseInt(raw, 10);
+                      setModalTipoCambioInput(num.toLocaleString("es-PY"));
+                      setModalTipoCambioError(null);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleConfirmTipoCambio();
+                      }
+                    }}
+                    placeholder="Ej: 7.950"
+                    className="w-full pl-9 pr-24 py-3 bg-zinc-50 border-2 border-zinc-300 focus:border-zinc-900 focus:bg-white rounded-xl text-xl font-mono font-black text-zinc-900 outline-none transition-all shadow-inner"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-zinc-600 bg-zinc-200/80 px-2 py-1 rounded-md select-none">
+                    Gs / USD
+                  </span>
+                </div>
+                {modalTipoCambioError && (
+                  <p className="text-[11px] font-semibold text-rose-600 mt-1.5 animate-in fade-in">
+                    ⚠️ {modalTipoCambioError}
+                  </p>
+                )}
+              </div>
+
+              {/* Botones de Selección Rápida */}
+              <div>
+                <span className="text-[10px] font-mono font-semibold text-zinc-500 uppercase block mb-1.5">
+                  Cotizaciones Frecuentes (selección con un toque):
+                </span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {[7800, 7850, 7900, 7950, 8000, 8050].map((val) => {
+                    const str = val.toLocaleString("es-PY");
+                    const isSelected = modalTipoCambioInput === str;
+                    return (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => {
+                          setModalTipoCambioInput(str);
+                          setModalTipoCambioError(null);
+                        }}
+                        className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                          isSelected
+                            ? "bg-zinc-900 text-white shadow-xs"
+                            : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200"
+                        }`}
+                      >
+                        ₲ {str}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Botón de Confirmación Obligatorio */}
+              <button
+                type="button"
+                onClick={handleConfirmTipoCambio}
+                className="w-full py-3 px-4 rounded-xl bg-zinc-900 hover:bg-black text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-[0.99]"
+              >
+                <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                <span>Confirmar Cotización y Continuar</span>
+                <ArrowRight className="w-4 h-4 text-zinc-400" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     <main className={`min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans relative ${isThermalPrintModalOpen ? "print:hidden" : ""}`}>
       {/* Alertas Secuenciales de 8 Segundos al Ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs) */}
       {warningStage && (
@@ -3842,18 +3980,22 @@ export default function ArmarPcPresupuestadorPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-2 text-[11px] font-mono shrink-0">
-              <span className="text-zinc-600">TC Ref Gs/USD:</span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={tipoCambioInput}
-                onChange={handleTipoCambioChange}
-                onBlur={handleTipoCambioBlur}
-                placeholder={TIPO_CAMBIO_PYG_DEFECTO.toLocaleString("es-PY")}
-                className="w-24 px-2 py-0.5 bg-white border border-zinc-300 rounded text-xs font-bold text-zinc-900 text-right outline-none focus:border-zinc-900"
-                title="Tipo de cambio referencial para conversión a USD (Permite borrar y escribir ej: 7.600)"
-              />
+            <div className="flex items-center gap-1.5 text-[11px] font-mono shrink-0">
+              <span className="text-zinc-600">TC Dólar:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalTipoCambioInput(tipoCambio.toLocaleString("es-PY"));
+                  setModalTipoCambioError(null);
+                  setIsTipoCambioModalOpen(true);
+                }}
+                className="px-2.5 py-1 bg-white hover:bg-emerald-50 border border-zinc-300 hover:border-emerald-400 rounded-lg text-xs font-bold text-zinc-900 transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs group"
+                title="Hacé clic para cambiar la cotización del dólar"
+              >
+                <DollarSign className="w-3 h-3 text-emerald-600 group-hover:scale-110 transition-transform" />
+                <span>₲ {tipoCambioInput}</span>
+                <span className="text-[10px] text-zinc-400 group-hover:text-emerald-700">✎</span>
+              </button>
             </div>
           </div>
 
