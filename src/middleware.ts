@@ -124,7 +124,8 @@ export function middleware(req: NextRequest) {
     if (
       pathname !== "/armar-pc" &&
       !pathname.startsWith("/api/nissei-live") &&
-      !pathname.startsWith("/api/version")
+      !pathname.startsWith("/api/version") &&
+      !pathname.startsWith("/api/feedback")
     ) {
       const armarUrl = new URL("/armar-pc", req.url);
       return NextResponse.redirect(armarUrl, 307);

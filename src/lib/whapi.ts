@@ -135,3 +135,92 @@ export async function sendWhapiMessage({
     };
   }
 }
+
+let cachedOwnerPhone: string | null = null;
+let cachedOwnerPhoneAt = 0;
+
+/**
+ * Resuelve dinámicamente el número personal de WhatsApp conectado a la cuenta de WhaApi
+ * o lee la variable de entorno WHAPI_FEEDBACK_TO / WHAPI_ADMIN_PHONE si fue configurada.
+ */
+async function resolveWhapiOwnerDestination(): Promise<string | null> {
+  const explicitTarget = (
+    process.env.WHAPI_FEEDBACK_TO ||
+    process.env.WHAPI_ADMIN_PHONE ||
+    ""
+  ).trim();
+  if (explicitTarget) {
+    return explicitTarget;
+  }
+
+  if (cachedOwnerPhone && Date.now() - cachedOwnerPhoneAt < 60 * 60 * 1000) {
+    return cachedOwnerPhone;
+  }
+
+  const token = (process.env.WHAPI_API_TOKEN || process.env.WHAPI_TOKEN || "").trim();
+  const baseUrl = (process.env.WHAPI_API_URL || "https://gate.whapi.cloud")
+    .trim()
+    .replace(/\/+$/, "");
+
+  if (!token || token === "tu_token_whapi_aqui") {
+    return null;
+  }
+
+  try {
+    const res = await fetch(`${baseUrl}/health`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = (await res.json().catch(() => null)) as {
+      user?: { id?: string };
+    } | null;
+    const ownerId = (data?.user?.id || "").trim().replace(/[^0-9]/g, "");
+    if (ownerId && ownerId.length >= 8) {
+      cachedOwnerPhone = ownerId;
+      cachedOwnerPhoneAt = Date.now();
+      return ownerId;
+    }
+  } catch {
+    // Fallback silencioso
+  }
+
+  return null;
+}
+
+/**
+ * Envía un reporte de sugerencia o bug directamente al WhatsApp del administrador/propietario,
+ * con respaldo automático al canal de Montajes/Taller si fuera necesario.
+ */
+export async function sendWhapiFeedbackMessage(body: string): Promise<WhapiResponse> {
+  const ownerDestination = await resolveWhapiOwnerDestination();
+
+  if (ownerDestination) {
+    const directRes = await sendWhapiMessage({
+      to: ownerDestination,
+      body,
+    });
+    if (directRes.sent) {
+      return directRes;
+    }
+  }
+
+  // Fallback a grupo operativo configurado si el envío directo no estuvo disponible
+  const fallbackGroup =
+    WHAPI_GROUPS.MONTAJES || WHAPI_GROUPS.TALLER || WHAPI_GROUPS.RECEPCION;
+  if (fallbackGroup) {
+    return sendWhapiMessage({
+      to: fallbackGroup,
+      body,
+    });
+  }
+
+  return {
+    sent: false,
+    error: "No se pudo resolver el destinatario de WhatsApp para recibir el reporte.",
+  };
+}
