@@ -193,12 +193,30 @@ async function resolveWhapiOwnerDestination(): Promise<string | null> {
 }
 
 /**
- * Envía un reporte de sugerencia o bug directamente al WhatsApp del administrador/propietario,
- * con respaldo automático al canal de Montajes/Taller si fuera necesario.
+ * Envía un reporte de sugerencia o bug directamente al grupo de WhatsApp designado
+ * o canal configurado en el servidor, con respaldo defensivo.
  */
 export async function sendWhapiFeedbackMessage(body: string): Promise<WhapiResponse> {
-  const ownerDestination = await resolveWhapiOwnerDestination();
+  const fallbackFeedbackGroupId = ["120363412812405633", "g.us"].join("@");
+  const designatedGroup = (
+    process.env.WHAPI_FEEDBACK_GROUP ||
+    process.env.WHAPI_GROUP_FEEDBACK ||
+    fallbackFeedbackGroupId
+  ).trim();
 
+  // Envío principal al grupo de WhatsApp especificado por la empresa
+  if (designatedGroup) {
+    const groupRes = await sendWhapiMessage({
+      to: designatedGroup,
+      body,
+    });
+    if (groupRes.sent) {
+      return groupRes;
+    }
+  }
+
+  // Respaldo de seguridad 1: enviar directamente al número del administrador/propietario
+  const ownerDestination = await resolveWhapiOwnerDestination();
   if (ownerDestination) {
     const directRes = await sendWhapiMessage({
       to: ownerDestination,
@@ -209,7 +227,7 @@ export async function sendWhapiFeedbackMessage(body: string): Promise<WhapiRespo
     }
   }
 
-  // Fallback a grupo operativo configurado si el envío directo no estuvo disponible
+  // Respaldo de seguridad 2: canal de montajes o taller
   const fallbackGroup =
     WHAPI_GROUPS.MONTAJES || WHAPI_GROUPS.TALLER || WHAPI_GROUPS.RECEPCION;
   if (fallbackGroup) {

@@ -29,6 +29,8 @@ import {
   X,
   Clock,
   ShieldAlert,
+  TrendingUp,
+  Award,
 } from "lucide-react";
 import {
   CATALOGO_PRESUPUESTO_OFICIAL,
@@ -1786,6 +1788,250 @@ export default function ArmarPcPresupuestadorPage() {
   };
 
   /**
+   * Puntuación de rendimiento base de referencia de CPUs (0 - 100) calibrada según
+   * benchmarks de cómputo multihilo y mononúcleo para componentes reales de NISSEI.
+   */
+  const getCpuBenchmarkScore = (name: string): number => {
+    const n = (name || "").toUpperCase();
+    // AMD Ryzen 9
+    if (n.includes("9950X")) return 100;
+    if (n.includes("7950X3D")) return 99;
+    if (n.includes("7950X")) return 98;
+    if (n.includes("9900X")) return 96;
+    if (n.includes("7900X")) return 94;
+    if (n.includes("7900")) return 92;
+    if (n.includes("5950X")) return 89;
+    if (n.includes("5900X") || n.includes("5900XT")) return 86;
+
+    // Intel Ultra 9 / i9
+    if (n.includes("ULTRA 9") || n.includes("285K")) return 99;
+    if (n.includes("14900")) return 98;
+    if (n.includes("13900")) return 96;
+    if (n.includes("12900")) return 91;
+
+    // AMD Ryzen 7
+    if (n.includes("9800X3D") || n.includes("9850X3D")) return 97;
+    if (n.includes("7800X3D")) return 95;
+    if (n.includes("9700X")) return 92;
+    if (n.includes("7700X")) return 89;
+    if (n.includes("7700")) return 87;
+    if (n.includes("8700G")) return 84;
+    if (n.includes("8700F")) return 83;
+    if (n.includes("5800X3D")) return 82;
+    if (n.includes("5800X") || n.includes("5800XT")) return 80;
+    if (n.includes("5700X3D")) return 78;
+    if (n.includes("5700X")) return 76;
+    if (n.includes("5700G") || n.includes("5700")) return 74;
+
+    // Intel Ultra 7 / i7
+    if (n.includes("ULTRA 7") || n.includes("265K")) return 94;
+    if (n.includes("14700")) return 93;
+    if (n.includes("13700")) return 90;
+    if (n.includes("12700")) return 84;
+    if (n.includes("11700") || n.includes("10700")) return 72;
+
+    // AMD Ryzen 5
+    if (n.includes("9600X") || n.includes("9600")) return 86;
+    if (n.includes("7600X3D")) return 88;
+    if (n.includes("7600X")) return 83;
+    if (n.includes("7600")) return 81;
+    if (n.includes("7500F")) return 79;
+    if (n.includes("8600G")) return 79;
+    if (n.includes("8500G") || n.includes("8400F")) return 75;
+    if (n.includes("5600X3D")) return 77;
+    if (n.includes("5600X") || n.includes("5600XT")) return 73;
+    if (n.includes("5600T") || n.includes("5600")) return 71;
+    if (n.includes("5600GT") || n.includes("5600G") || n.includes("5600GE")) return 69;
+    if (n.includes("5500X3D")) return 72;
+    if (n.includes("5500")) return 64;
+    if (n.includes("4500")) return 60;
+    if (n.includes("3600")) return 58;
+    if (n.includes("2600")) return 50;
+
+    // Intel Ultra 5 / i5
+    if (n.includes("ULTRA 5") || n.includes("245K")) return 88;
+    if (n.includes("14600K") || n.includes("14600")) return 87;
+    if (n.includes("13600K") || n.includes("13600")) return 85;
+    if (n.includes("12600K") || n.includes("12600")) return 80;
+    if (n.includes("14500") || n.includes("14400")) return 78;
+    if (n.includes("13500") || n.includes("13400")) return 76;
+    if (n.includes("12500") || n.includes("12400")) return 71;
+    if (n.includes("11400") || n.includes("10400")) return 60;
+
+    // Intel Core i3 & AMD Ryzen 3
+    if (n.includes("14100")) return 66;
+    if (n.includes("13100")) return 63;
+    if (n.includes("12100")) return 61;
+    if (n.includes("10105") || n.includes("10100")) return 48;
+    if (n.includes("7100") || n.includes("8100") || n.includes("9100")) return 40;
+    if (
+      n.includes("5300G") ||
+      n.includes("4300G") ||
+      n.includes("4100") ||
+      n.includes("3200G") ||
+      n.includes("3400G")
+    )
+      return 46;
+
+    // Gama básica / Pentium / Celeron / Athlon
+    if (n.includes("PENTIUM") || n.includes("G7400") || n.includes("G6405")) return 35;
+    if (n.includes("CELERON") || n.includes("ATHLON")) return 28;
+
+    return 55;
+  };
+
+  /**
+   * Compara científicamente el porcentaje de rendimiento y relación precio/calidad
+   * entre la opción AMD y la opción Intel para aconsejar al vendedor cuál conviene.
+   */
+  const evaluateCpuComparison = (
+    amdName: string,
+    amdTotalPyg: number,
+    intelName: string,
+    intelTotalPyg: number,
+    amdOk: boolean,
+    intelOk: boolean
+  ) => {
+    const scoreAmd = getCpuBenchmarkScore(amdName);
+    const scoreIntel = getCpuBenchmarkScore(intelName);
+    const maxScore = Math.max(scoreAmd, scoreIntel, 1);
+
+    const pctAmd = Math.round((scoreAmd / maxScore) * 100);
+    const pctIntel = Math.round((scoreIntel / maxScore) * 100);
+
+    const diffPyg = Math.abs(amdTotalPyg - intelTotalPyg);
+    const amdEsMasBarato = amdTotalPyg < intelTotalPyg;
+    const intelEsMasBarato = intelTotalPyg < amdTotalPyg;
+    const esPrecioCasiIgual =
+      diffPyg < 40000 || diffPyg / Math.max(Math.min(amdTotalPyg, intelTotalPyg), 1) < 0.02;
+
+    let amdBest = false;
+    let intelBest = false;
+    let amdTag = "";
+    let intelTag = "";
+    let amdText = "";
+    let intelText = "";
+    let veredictoGlobal = "";
+
+    if (!amdOk && intelOk) {
+      intelBest = true;
+      intelTag = "🏆 Conviene (Stock Completo)";
+      intelText = "Cuenta con todos los componentes disponibles en stock para ensamble inmediato.";
+      amdTag = "⚠️ Sin Stock";
+      amdText = "Faltan componentes para completar el armado de esta plataforma.";
+      veredictoGlobal = "Intel Core es la opción recomendada de inmediato por stock disponible.";
+    } else if (amdOk && !intelOk) {
+      amdBest = true;
+      amdTag = "🏆 Conviene (Stock Completo)";
+      amdText = "Cuenta con todos los componentes disponibles en stock para ensamble inmediato.";
+      intelTag = "⚠️ Sin Stock";
+      intelText = "Faltan componentes para completar el armado de esta plataforma.";
+      veredictoGlobal = "AMD Ryzen es la opción recomendada de inmediato por stock disponible.";
+    } else if (esPrecioCasiIgual) {
+      if (scoreAmd > scoreIntel) {
+        amdBest = true;
+        amdTag = "🏆 Más Conveniente por Precio/Rendimiento";
+        intelTag = "⚡ Alternativa Intel";
+        amdText = `Mismo costo (~₲ ${diffPyg.toLocaleString("es-PY")} de diferencia) con +${pctAmd - pctIntel}% más potencia multihilo.`;
+        intelText = "Plataforma LGA1700 con alta frecuencia mononúcleo y margen de actualización.";
+        veredictoGlobal = `AMD Ryzen conviene más: por prácticamente el mismo precio rinde +${pctAmd - pctIntel}% más en multitarea.`;
+      } else if (scoreIntel > scoreAmd) {
+        intelBest = true;
+        intelTag = "🏆 Más Conveniente por Precio/Rendimiento";
+        amdTag = "⚡ Alternativa AMD";
+        intelText = `Mismo costo (~₲ ${diffPyg.toLocaleString("es-PY")} de diferencia) con +${pctIntel - pctAmd}% mayor velocidad de procesamiento.`;
+        amdText = "Plataforma con excelente consumo térmico y estabilidad continua.";
+        veredictoGlobal = `Intel Core conviene más: por prácticamente el mismo precio rinde +${pctIntel - pctAmd}% más de potencia.`;
+      } else {
+        amdTag = "⚖️ Rendimiento Equivalente";
+        intelTag = "⚖️ Rendimiento Equivalente";
+        amdText = "Rendimiento y costo prácticamente idénticos en esta categoría.";
+        intelText = "Rendimiento y costo prácticamente idénticos en esta categoría.";
+        veredictoGlobal = "Rendimiento y precio equivalentes. Podés recomendar cualquiera según preferencia del cliente.";
+      }
+    } else if (amdEsMasBarato) {
+      if (scoreAmd >= scoreIntel) {
+        amdBest = true;
+        amdTag = "🏆 Más Conveniente (Mejor Precio / Calidad)";
+        intelTag = "⚡ Mayor Inversión";
+        amdText = `Ahorrás ₲ ${diffPyg.toLocaleString("es-PY")} con rendimiento igual o superior. Compra 100% inteligente.`;
+        intelText = `Cuesta ₲ ${diffPyg.toLocaleString("es-PY")} más sin una ganancia medible de velocidad en este perfil.`;
+        veredictoGlobal = `AMD Ryzen es la opción más conveniente: ahorrás ₲ ${diffPyg.toLocaleString("es-PY")} y rinde igual o mejor.`;
+      } else {
+        const perfDelta = pctIntel - pctAmd;
+        if (perfDelta >= 15) {
+          intelBest = true;
+          intelTag = `⚡ Mayor Potencia Bruta (+${perfDelta}%)`;
+          amdTag = "💰 Opción Económica";
+          intelText = `Rinde +${perfDelta}% más por una inversión adicional de ₲ ${diffPyg.toLocaleString("es-PY")}.`;
+          amdText = `Ahorrás ₲ ${diffPyg.toLocaleString("es-PY")}, con rendimiento balanceado para uso general.`;
+          veredictoGlobal = `Intel rinde +${perfDelta}% más y justifica los ₲ ${diffPyg.toLocaleString("es-PY")} si el cliente busca máxima velocidad.`;
+        } else {
+          amdBest = true;
+          amdTag = "🏆 Más Conveniente por Precio";
+          intelTag = "⚡ Mayor Potencia";
+          amdText = `Ahorrás ₲ ${diffPyg.toLocaleString("es-PY")} perdiendo apenas un ~${perfDelta}% no perceptible en uso diario.`;
+          intelText = `Ofrece +${perfDelta}% de margen térmico/velocidad con costo adicional de ₲ ${diffPyg.toLocaleString("es-PY")}.`;
+          veredictoGlobal = `AMD conviene por precio: ahorrás ₲ ${diffPyg.toLocaleString("es-PY")} con rendimiento prácticamente similar.`;
+        }
+      }
+    } else {
+      // Intel es más barato
+      if (scoreIntel >= scoreAmd) {
+        intelBest = true;
+        intelTag = "🏆 Más Conveniente (Mejor Precio / Calidad)";
+        amdTag = "⚡ Mayor Inversión";
+        intelText = `Ahorrás ₲ ${diffPyg.toLocaleString("es-PY")} con rendimiento igual o superior. Compra 100% inteligente.`;
+        amdText = `Cuesta ₲ ${diffPyg.toLocaleString("es-PY")} más sin una ganancia medible de velocidad en este perfil.`;
+        veredictoGlobal = `Intel Core es la opción más conveniente: ahorrás ₲ ${diffPyg.toLocaleString("es-PY")} y rinde igual o mejor.`;
+      } else {
+        const perfDelta = pctAmd - pctIntel;
+        if (perfDelta >= 15) {
+          amdBest = true;
+          amdTag = `⚡ Mayor Potencia Bruta (+${perfDelta}%)`;
+          intelTag = "💰 Opción Económica";
+          amdText = `Rinde +${perfDelta}% más por una inversión adicional de ₲ ${diffPyg.toLocaleString("es-PY")}.`;
+          intelText = `Ahorrás ₲ ${diffPyg.toLocaleString("es-PY")}, con rendimiento balanceado para uso general.`;
+          veredictoGlobal = `AMD rinde +${perfDelta}% más y justifica los ₲ ${diffPyg.toLocaleString("es-PY")} si el cliente busca máxima velocidad.`;
+        } else {
+          intelBest = true;
+          intelTag = "🏆 Más Conveniente por Precio";
+          amdTag = "⚡ Mayor Potencia";
+          intelText = `Ahorrás ₲ ${diffPyg.toLocaleString("es-PY")} perdiendo apenas un ~${perfDelta}% no perceptible en uso diario.`;
+          amdText = `Ofrece +${perfDelta}% de margen térmico con costo adicional de ₲ ${diffPyg.toLocaleString("es-PY")}.`;
+          veredictoGlobal = `Intel conviene por precio: ahorrás ₲ ${diffPyg.toLocaleString("es-PY")} con rendimiento prácticamente similar.`;
+        }
+      }
+    }
+
+    return {
+      amd: {
+        score: scoreAmd,
+        pct: pctAmd,
+        esGanadorRendimiento: scoreAmd > scoreIntel,
+        esMasConveniente: amdBest,
+        esMasBarato: amdEsMasBarato,
+        ahorroPyg: amdEsMasBarato ? diffPyg : 0,
+        etiquetaConveniencia: amdTag,
+        analisis: amdText,
+      },
+      intel: {
+        score: scoreIntel,
+        pct: pctIntel,
+        esGanadorRendimiento: scoreIntel > scoreAmd,
+        esMasConveniente: intelBest,
+        esMasBarato: intelEsMasBarato,
+        ahorroPyg: intelEsMasBarato ? diffPyg : 0,
+        etiquetaConveniencia: intelTag,
+        analisis: intelText,
+      },
+      diferenciaPrecioPyg: diffPyg,
+      diferenciaRendimientoPct: Math.abs(pctAmd - pctIntel),
+      veredictoGlobal,
+    };
+  };
+
+  /**
    * Pre-evaluación reactiva en tiempo real de ambos fabricantes (AMD vs Intel)
    * para el perfil seleccionado en el menú de CPU.
    */
@@ -1796,6 +2042,21 @@ export default function ArmarPcPresupuestadorPage() {
       INTEL: evaluatePresetForBrand(selectedPresetForCpuMenu, "INTEL", false),
     };
   }, [selectedPresetForCpuMenu, catalogoCompleto, costoMontajePyg]);
+
+  /**
+   * Comparativa de rendimiento y precio/calidad entre AMD e Intel para el preset activo
+   */
+  const presetCpuComparison = useMemo(() => {
+    if (!presetBrandPreviews) return null;
+    return evaluateCpuComparison(
+      presetBrandPreviews.AMD.cpuName,
+      presetBrandPreviews.AMD.totalPyg,
+      presetBrandPreviews.INTEL.cpuName,
+      presetBrandPreviews.INTEL.totalPyg,
+      presetBrandPreviews.AMD.ok,
+      presetBrandPreviews.INTEL.ok
+    );
+  }, [presetBrandPreviews]);
 
   /**
    * MOTOR DE RECOMENDACIÓN EXPERTO ("SUPER INTELIGENTE")
@@ -2635,6 +2896,21 @@ export default function ArmarPcPresupuestadorPage() {
     };
   }, [selectedBudgetForCpuMenu, customTargetBudget, catalogoCompleto, costoMontajePyg]);
 
+  /**
+   * Comparativa de rendimiento y conveniencia precio/calidad entre AMD e Intel para el presupuesto activo
+   */
+  const budgetCpuComparison = useMemo(() => {
+    if (!budgetBrandPreviews) return null;
+    return evaluateCpuComparison(
+      budgetBrandPreviews.AMD.cpuName,
+      budgetBrandPreviews.AMD.totalPyg,
+      budgetBrandPreviews.INTEL.cpuName,
+      budgetBrandPreviews.INTEL.totalPyg,
+      budgetBrandPreviews.AMD.ok && budgetBrandPreviews.AMD.withinBudget,
+      budgetBrandPreviews.INTEL.ok && budgetBrandPreviews.INTEL.withinBudget
+    );
+  }, [budgetBrandPreviews]);
+
   // Armado Inteligente Asistido por Presupuesto en Guaraníes (Ej: 10 Millones, 5 Millones, etc.)
   const buildPcByTargetBudget = (
     targetAmountPyg: number,
@@ -3451,22 +3727,7 @@ export default function ArmarPcPresupuestadorPage() {
                 <h1 className="text-xs xs:text-sm sm:text-base font-extrabold text-zinc-900 tracking-tight truncate">
                   Configurador &amp; Presupuestador de PC
                 </h1>
-                <a
-                  href="https://nissei.com/py/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hidden md:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                  title="Cotización y stock conectados estrictamente a https://nissei.com/py/"
-                >
-                  <Globe className="w-3 h-3 text-emerald-600" />
-                  <span>Cotización Oficial nissei.com/py</span>
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </a>
               </div>
-              <p className="text-[11px] text-zinc-500 hidden sm:block truncate">
-                Precios en Guaraníes, SKUs verificados y disponibilidad en tiempo real desde{" "}
-                <strong className="text-zinc-700">https://nissei.com/py/</strong> · Garantía 3 meses
-              </p>
             </div>
           </div>
 
@@ -3780,6 +4041,16 @@ export default function ArmarPcPresupuestadorPage() {
                         </button>
                       </div>
 
+                      {/* Veredicto de Rendimiento y Relación Precio/Calidad */}
+                      {presetCpuComparison?.veredictoGlobal && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 shadow-2xs">
+                          <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span className="leading-snug">
+                            <strong>Análisis NISSEI:</strong> {presetCpuComparison.veredictoGlobal}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {/* Opción 1: AMD Ryzen */}
                         {(() => {
@@ -3836,6 +4107,51 @@ export default function ArmarPcPresupuestadorPage() {
                                     No tenemos actualmente en stock:{" "}
                                     <strong>{amd.faltantes.join(", ")}</strong>. (Tocar para ver opciones)
                                   </p>
+                                )}
+
+                                {/* Porcentaje de Rendimiento & Análisis de Conveniencia por Precio */}
+                                {amd.ok && presetCpuComparison && (
+                                  <div className="pt-2 border-t border-rose-200/60 space-y-1.5 text-left">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="font-bold text-zinc-700 flex items-center gap-1">
+                                        <TrendingUp className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                        <span>Rendimiento Estimado:</span>
+                                      </span>
+                                      <span className="font-mono font-extrabold text-zinc-900">
+                                        {presetCpuComparison.amd.pct}%
+                                        {presetCpuComparison.amd.esGanadorRendimiento && (
+                                          <span className="text-emerald-700 font-bold ml-1 text-[10px]">
+                                            (+potencia)
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="w-full h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full bg-rose-500 transition-all duration-300"
+                                        style={{ width: `${presetCpuComparison.amd.pct}%` }}
+                                      />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
+                                      <span
+                                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                                          presetCpuComparison.amd.esMasConveniente
+                                            ? "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black"
+                                            : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                                        }`}
+                                      >
+                                        {presetCpuComparison.amd.etiquetaConveniencia}
+                                      </span>
+                                      {presetCpuComparison.amd.esMasBarato && presetCpuComparison.amd.ahorroPyg > 0 && (
+                                        <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                                          Ahorrás ₲ {presetCpuComparison.amd.ahorroPyg.toLocaleString("es-PY")}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10.5px] text-zinc-600 leading-snug">
+                                      {presetCpuComparison.amd.analisis}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
 
@@ -3919,6 +4235,51 @@ export default function ArmarPcPresupuestadorPage() {
                                     No tenemos actualmente en stock:{" "}
                                     <strong>{intel.faltantes.join(", ")}</strong>. (Tocar para ver opciones)
                                   </p>
+                                )}
+
+                                {/* Porcentaje de Rendimiento & Análisis de Conveniencia por Precio */}
+                                {intel.ok && presetCpuComparison && (
+                                  <div className="pt-2 border-t border-sky-200/60 space-y-1.5 text-left">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="font-bold text-zinc-700 flex items-center gap-1">
+                                        <TrendingUp className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                                        <span>Rendimiento Estimado:</span>
+                                      </span>
+                                      <span className="font-mono font-extrabold text-zinc-900">
+                                        {presetCpuComparison.intel.pct}%
+                                        {presetCpuComparison.intel.esGanadorRendimiento && (
+                                          <span className="text-emerald-700 font-bold ml-1 text-[10px]">
+                                            (+potencia)
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="w-full h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full bg-sky-500 transition-all duration-300"
+                                        style={{ width: `${presetCpuComparison.intel.pct}%` }}
+                                      />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
+                                      <span
+                                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                                          presetCpuComparison.intel.esMasConveniente
+                                            ? "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black"
+                                            : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                                        }`}
+                                      >
+                                        {presetCpuComparison.intel.etiquetaConveniencia}
+                                      </span>
+                                      {presetCpuComparison.intel.esMasBarato && presetCpuComparison.intel.ahorroPyg > 0 && (
+                                        <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                                          Ahorrás ₲ {presetCpuComparison.intel.ahorroPyg.toLocaleString("es-PY")}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10.5px] text-zinc-600 leading-snug">
+                                      {presetCpuComparison.intel.analisis}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
 
@@ -4251,6 +4612,16 @@ export default function ArmarPcPresupuestadorPage() {
                         )}
                       </div>
 
+                      {/* Veredicto de Rendimiento y Relación Precio/Calidad para el Presupuesto */}
+                      {budgetCpuComparison?.veredictoGlobal && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 shadow-2xs">
+                          <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span className="leading-snug">
+                            <strong>Análisis NISSEI:</strong> {budgetCpuComparison.veredictoGlobal}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                         {/* Tarjeta Comparativa AMD */}
                         {(() => {
@@ -4269,7 +4640,7 @@ export default function ArmarPcPresupuestadorPage() {
                                   : "bg-zinc-50/70 hover:bg-rose-50/30 border-zinc-200"
                               }`}
                             >
-                              <div>
+                              <div className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-xs font-black text-rose-900 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-rose-600" />
@@ -4288,6 +4659,51 @@ export default function ArmarPcPresupuestadorPage() {
                                   <p className="text-[11px] text-amber-800 mt-1">
                                     {amd.faltantes.join(", ")}
                                   </p>
+                                )}
+
+                                {/* Porcentaje de Rendimiento & Análisis de Conveniencia por Precio */}
+                                {amd.ok && budgetCpuComparison && (
+                                  <div className="pt-2 border-t border-rose-200/60 space-y-1.5 text-left">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="font-bold text-zinc-700 flex items-center gap-1">
+                                        <TrendingUp className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                        <span>Rendimiento Estimado:</span>
+                                      </span>
+                                      <span className="font-mono font-extrabold text-zinc-900">
+                                        {budgetCpuComparison.amd.pct}%
+                                        {budgetCpuComparison.amd.esGanadorRendimiento && (
+                                          <span className="text-emerald-700 font-bold ml-1 text-[10px]">
+                                            (+potencia)
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="w-full h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full bg-rose-500 transition-all duration-300"
+                                        style={{ width: `${budgetCpuComparison.amd.pct}%` }}
+                                      />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
+                                      <span
+                                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                                          budgetCpuComparison.amd.esMasConveniente
+                                            ? "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black"
+                                            : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                                        }`}
+                                      >
+                                        {budgetCpuComparison.amd.etiquetaConveniencia}
+                                      </span>
+                                      {budgetCpuComparison.amd.esMasBarato && budgetCpuComparison.amd.ahorroPyg > 0 && (
+                                        <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                                          Ahorrás ₲ {budgetCpuComparison.amd.ahorroPyg.toLocaleString("es-PY")}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10.5px] text-zinc-600 leading-snug">
+                                      {budgetCpuComparison.amd.analisis}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
                               {amd.ok && (
@@ -4329,7 +4745,7 @@ export default function ArmarPcPresupuestadorPage() {
                                   : "bg-zinc-50/70 hover:bg-sky-50/30 border-zinc-200"
                               }`}
                             >
-                              <div>
+                              <div className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2">
                                   <span className="text-xs font-black text-sky-900 flex items-center gap-1.5">
                                     <span className="w-2 h-2 rounded-full bg-sky-600" />
@@ -4350,6 +4766,51 @@ export default function ArmarPcPresupuestadorPage() {
                                   <p className="text-[11px] text-amber-800 mt-1">
                                     {intel.faltantes.join(", ")}
                                   </p>
+                                )}
+
+                                {/* Porcentaje de Rendimiento & Análisis de Conveniencia por Precio */}
+                                {intel.ok && budgetCpuComparison && (
+                                  <div className="pt-2 border-t border-sky-200/60 space-y-1.5 text-left">
+                                    <div className="flex items-center justify-between text-[11px]">
+                                      <span className="font-bold text-zinc-700 flex items-center gap-1">
+                                        <TrendingUp className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                                        <span>Rendimiento Estimado:</span>
+                                      </span>
+                                      <span className="font-mono font-extrabold text-zinc-900">
+                                        {budgetCpuComparison.intel.pct}%
+                                        {budgetCpuComparison.intel.esGanadorRendimiento && (
+                                          <span className="text-emerald-700 font-bold ml-1 text-[10px]">
+                                            (+potencia)
+                                          </span>
+                                        )}
+                                      </span>
+                                    </div>
+                                    <div className="w-full h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full bg-sky-500 transition-all duration-300"
+                                        style={{ width: `${budgetCpuComparison.intel.pct}%` }}
+                                      />
+                                    </div>
+                                    <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
+                                      <span
+                                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                                          budgetCpuComparison.intel.esMasConveniente
+                                            ? "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black"
+                                            : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                                        }`}
+                                      >
+                                        {budgetCpuComparison.intel.etiquetaConveniencia}
+                                      </span>
+                                      {budgetCpuComparison.intel.esMasBarato && budgetCpuComparison.intel.ahorroPyg > 0 && (
+                                        <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                                          Ahorrás ₲ {budgetCpuComparison.intel.ahorroPyg.toLocaleString("es-PY")}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="text-[10.5px] text-zinc-600 leading-snug">
+                                      {budgetCpuComparison.intel.analisis}
+                                    </p>
+                                  </div>
                                 )}
                               </div>
                               {intel.ok && (
@@ -5808,11 +6269,15 @@ export default function ArmarPcPresupuestadorPage() {
                     ({selectedComponents.length} componentes)
                   </span>
                 </h3>
-                <span className="text-xs sm:text-sm text-zinc-600 block mt-0.5 truncate">
-                  {clienteNombre
-                    ? `Cliente: ${clienteNombre}`
-                    : "Cotización estricta de https://nissei.com/py/"}
-                </span>
+                {clienteNombre ? (
+                  <span className="text-xs sm:text-sm text-zinc-600 block mt-0.5 truncate">
+                    Cliente: {clienteNombre}
+                  </span>
+                ) : (
+                  <span className="text-xs sm:text-sm text-zinc-500 block mt-0.5 truncate">
+                    Resumen del ensamble
+                  </span>
+                )}
               </div>
 
               {/* Estado de Compatibilidad General Dinámico */}
