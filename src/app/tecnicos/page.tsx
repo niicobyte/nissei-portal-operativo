@@ -1678,12 +1678,12 @@ export default function TecnicosDashboardPage() {
                     {selectedOrderForCert.componentes.map((c, i) => (
                       <li
                         key={i}
-                        className="text-[10px] leading-snug text-black break-words border-b border-dotted border-zinc-400 print:border-black pb-1 last:border-b-0 last:pb-0"
+                        className="text-[10px] leading-snug text-black border-b border-dotted border-zinc-400 print:border-black pb-1 last:border-b-0 last:pb-0 flex items-start gap-1.5"
                       >
-                        <span className="font-mono font-black thermal-label">
+                        <span className="font-mono font-black thermal-label shrink-0">
                           [{c.sku ? `SKU: ${c.sku}` : formatCategoriaSticker(c.categoria)}]
-                        </span>{" "}
-                        <span className="font-black thermal-value">
+                        </span>
+                        <span className="font-black thermal-value flex-1 min-w-0 break-words">
                           {formatearNombreComponenteBasico(c.descripcion, c.categoria)}
                         </span>
                       </li>
