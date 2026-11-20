@@ -27304,20 +27304,77 @@ export const INITIAL_RECEPCION_DATA: RecepcionTicket[] = [
 ];
 
 export const STORAGE_KEY = 'nissei_recepcion_tickets_v1';
+export const RECEPCION_CUSTOM_DETAILS_STORAGE_KEY = 'nissei_recepcion_custom_details_v2';
+
+export interface RecepcionCustomDetails {
+  mensaje?: string;
+  accesorios?: string;
+  dictamenTipo?: string;
+  mensajeEditadoManualmente?: boolean;
+  updatedAt?: string;
+}
+
+export function getStoredCustomDetails(): Map<string, RecepcionCustomDetails> {
+  if (typeof window === 'undefined') return new Map();
+  try {
+    const raw = localStorage.getItem(RECEPCION_CUSTOM_DETAILS_STORAGE_KEY);
+    if (!raw) return new Map();
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object') {
+      return new Map(Object.entries(parsed));
+    }
+  } catch (e) {
+    console.error('Error cargando detalles personalizados:', e);
+  }
+  return new Map();
+}
+
+export function saveStoredCustomDetails(idOrden: string, details: RecepcionCustomDetails): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const map = getStoredCustomDetails();
+    const cleanId = String(idOrden).trim();
+    const prev = map.get(cleanId) || {};
+    map.set(cleanId, {
+      ...prev,
+      ...details,
+      updatedAt: new Date().toISOString(),
+    });
+    const obj = Object.fromEntries(map.entries());
+    localStorage.setItem(RECEPCION_CUSTOM_DETAILS_STORAGE_KEY, JSON.stringify(obj));
+  } catch (e) {
+    console.error('Error guardando detalles personalizados:', e);
+  }
+}
 
 export function getStoredTickets(): RecepcionTicket[] {
   if (typeof window === 'undefined') return INITIAL_RECEPCION_DATA;
   try {
+    const customMap = getStoredCustomDetails();
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
+    let base: RecepcionTicket[] = INITIAL_RECEPCION_DATA;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        base = parsed;
+      }
+    } else {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_RECEPCION_DATA));
-      return INITIAL_RECEPCION_DATA;
     }
-    const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      return parsed;
-    }
-    return INITIAL_RECEPCION_DATA;
+
+    if (customMap.size === 0) return base;
+
+    return base.map((t: RecepcionTicket) => {
+      const c = customMap.get(String(t.idOrden).trim());
+      if (!c) return t;
+      return {
+        ...t,
+        mensaje: c.mensajeEditadoManualmente && c.mensaje !== undefined ? c.mensaje : (t.mensaje || c.mensaje || ''),
+        accesorios: c.accesorios !== undefined ? c.accesorios : t.accesorios,
+        dictamenTipo: c.dictamenTipo !== undefined ? c.dictamenTipo : t.dictamenTipo,
+        mensajeEditadoManualmente: c.mensajeEditadoManualmente !== undefined ? c.mensajeEditadoManualmente : t.mensajeEditadoManualmente,
+      };
+    });
   } catch (e) {
     console.error('Error cargando tickets de localStorage:', e);
     return INITIAL_RECEPCION_DATA;
@@ -27409,13 +27466,50 @@ export function applyCloudRecepcionTickets(rawData: RecepcionTicket[]): Recepcio
   const localNewIds = new Set(getStoredIds(NEW_INGRESOS_STORAGE_KEY));
   const localChangedIds = new Set(getStoredIds(ESTADOS_CAMBIADOS_STORAGE_KEY));
   const localDeliveredIds = new Set(getStoredIds(ENTREGADOS_RECIENTES_STORAGE_KEY));
+  const customMap = getStoredCustomDetails();
+
+  let localMap = new Map<string, RecepcionTicket>();
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        localMap = new Map(parsed.map((t) => [String(t.idOrden).trim(), t]));
+      }
+    }
+  } catch {}
 
   const enriched: RecepcionTicket[] = rawData.map((t: RecepcionTicket) => {
     const cleanId = String(t.idOrden).trim();
     const estLow = (t.estado || '').trim().toLowerCase();
     const initialEst = INITIAL_STATUS_MAP.get(cleanId);
+    const local = localMap.get(cleanId);
+    const custom = customMap.get(cleanId);
+
+    const finalAccesorios =
+      custom?.accesorios !== undefined
+        ? custom.accesorios
+        : (t.accesorios || local?.accesorios || undefined);
+
+    const isManualEdit = Boolean(
+      custom?.mensajeEditadoManualmente ||
+      local?.mensajeEditadoManualmente ||
+      t.mensajeEditadoManualmente
+    );
+
+    const finalMensaje =
+      isManualEdit && custom?.mensaje !== undefined
+        ? custom.mensaje
+        : (isManualEdit && local?.mensaje ? local.mensaje : (t.mensaje || custom?.mensaje || local?.mensaje || ''));
+
+    const finalDictamen = custom?.dictamenTipo || t.dictamenTipo || local?.dictamenTipo;
+
     return {
       ...t,
+      mensaje: finalMensaje,
+      accesorios: finalAccesorios,
+      dictamenTipo: finalDictamen,
+      mensajeEditadoManualmente: isManualEdit || undefined,
       esNuevoIngreso:
         Boolean(t.esNuevoIngreso) ||
         localNewIds.has(cleanId) ||
@@ -27525,9 +27619,87 @@ export function addTicket(ticket: RecepcionTicket): RecepcionTicket[] {
   return updated;
 }
 
+export async function updateTicketDetailsAsync(
+  idOrden: string,
+  updates: Partial<RecepcionTicket> & { idOrdenCde?: string }
+): Promise<RecepcionTicket[]> {
+  const isDelivered = updates.estado?.trim().toLowerCase() === 'entregada';
+  if (updates.estado) {
+    recordStoredId(ESTADOS_CAMBIADOS_STORAGE_KEY, idOrden);
+    if (isDelivered) {
+      recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, idOrden);
+    }
+  }
+
+  // 1. Guardar en mapa de persistencia de detalles personalizados resiliente
+  saveStoredCustomDetails(idOrden, {
+    mensaje: updates.mensaje,
+    accesorios: updates.accesorios,
+    dictamenTipo: updates.dictamenTipo,
+    mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
+  });
+
+  if (updates.idOrdenCde) {
+    saveStoredCustomDetails(updates.idOrdenCde, {
+      mensaje: updates.mensaje,
+      accesorios: updates.accesorios,
+      dictamenTipo: updates.dictamenTipo,
+      mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
+    });
+  }
+
+  const nowDate = new Date().toLocaleDateString('es-PY', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+
+  const current = getStoredTickets();
+  const updated = current.map((t) => {
+    if (t.idOrden !== idOrden) return t;
+    return {
+      ...t,
+      ...updates,
+      fechaEntregada: isDelivered
+        ? (updates.fechaEntregada || t.fechaEntregada || nowDate)
+        : (updates.fechaEntregada !== undefined ? updates.fechaEntregada : t.fechaEntregada),
+      esEstadoCambiadoReciente: updates.estado ? true : t.esEstadoCambiadoReciente,
+      esEntregadoReciente: isDelivered ? true : t.esEntregadoReciente,
+    };
+  });
+  saveTickets(updated);
+
+  // 2. Persistir en Railway MySQL y esperar confirmación
+  if (typeof window !== 'undefined') {
+    try {
+      const res = await fetch('/api/db', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'UPDATE_RECEPCION_DETALLES',
+          idOrden,
+          idOrdenCde: updates.idOrdenCde,
+          mensaje: updates.mensaje,
+          accesorios: updates.accesorios,
+          dictamenTipo: updates.dictamenTipo,
+          mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
+        }),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.ok && Array.isArray(json.data) && json.data.length > 0) {
+        return applyCloudRecepcionTickets(json.data as RecepcionTicket[]);
+      }
+    } catch (err) {
+      console.warn('[MySQL Update Ticket Details Async Fallback]:', err);
+    }
+  }
+
+  return updated;
+}
+
 export function updateTicketDetails(
   idOrden: string,
-  updates: Partial<RecepcionTicket>
+  updates: Partial<RecepcionTicket> & { idOrdenCde?: string }
 ): RecepcionTicket[] {
   const isDelivered = updates.estado?.trim().toLowerCase() === 'entregada';
   if (updates.estado) {
@@ -27535,6 +27707,22 @@ export function updateTicketDetails(
     if (isDelivered) {
       recordStoredId(ENTREGADOS_RECIENTES_STORAGE_KEY, idOrden);
     }
+  }
+
+  saveStoredCustomDetails(idOrden, {
+    mensaje: updates.mensaje,
+    accesorios: updates.accesorios,
+    dictamenTipo: updates.dictamenTipo,
+    mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
+  });
+
+  if (updates.idOrdenCde) {
+    saveStoredCustomDetails(updates.idOrdenCde, {
+      mensaje: updates.mensaje,
+      accesorios: updates.accesorios,
+      dictamenTipo: updates.dictamenTipo,
+      mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
+    });
   }
 
   const nowDate = new Date().toLocaleDateString('es-PY', {
@@ -27559,14 +27747,19 @@ export function updateTicketDetails(
   saveTickets(updated);
 
   if (typeof window !== 'undefined') {
-    const updatedTicket = updated.find((t) => t.idOrden === idOrden);
-    if (updatedTicket) {
-      fetch('/api/db', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'ADD_RECEPCION_TICKET', ticket: updatedTicket }),
-      }).catch((err) => console.error('[MySQL Error Update Ticket Details]', err));
-    }
+    fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'UPDATE_RECEPCION_DETALLES',
+        idOrden,
+        idOrdenCde: updates.idOrdenCde,
+        mensaje: updates.mensaje,
+        accesorios: updates.accesorios,
+        dictamenTipo: updates.dictamenTipo,
+        mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
+      }),
+    }).catch((err) => console.error('[MySQL Error Update Ticket Details]', err));
   }
 
   return updated;

@@ -387,6 +387,14 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
       `);
 
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_cde_tickets ADD COLUMN accesorios TEXT DEFAULT NULL"
+        );
+      } catch {
+        // La columna accesorios ya existe
+      }
+
       // Tabla de cruces manuales de órdenes SATI (ASU ↔ CDE) confirmados por el usuario
       await pool.query(`
         CREATE TABLE IF NOT EXISTS sati_cross_matches (
@@ -872,6 +880,7 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
     `SELECT r.*,
             c.id_orden AS matched_cde_id,
             c.mensaje AS matched_cde_mensaje,
+            c.accesorios AS matched_cde_accesorios,
             c.fecha_entregada AS matched_cde_despacho,
             c.fecha_ingreso AS matched_cde_ingreso,
             c.estado AS matched_cde_estado
@@ -883,6 +892,10 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
   return rows.map((r) => {
     const cdeMsg = (r.matched_cde_mensaje || "").trim();
     const finalMsg = cdeMsg || r.mensaje || "";
+    const directAcc = r.accesorios || r.matched_cde_accesorios || undefined;
+    const parsedAcc = !directAcc && String(finalMsg).includes("Accesorios:")
+      ? String(finalMsg).split(/Accesorios:/i)[1]?.trim()
+      : undefined;
     return {
       idOrden: r.id_orden,
       codigoProducto: r.codigo_producto || "",
@@ -900,11 +913,7 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
       fechaIngresoCde: r.matched_cde_ingreso || undefined,
       fechaDespachoCde: r.matched_cde_despacho || undefined,
       estadoCde: r.matched_cde_estado || undefined,
-      accesorios:
-        r.accesorios ||
-        (String(finalMsg).includes("Accesorios:")
-          ? String(finalMsg).split(/Accesorios:/i)[1]?.trim()
-          : undefined),
+      accesorios: directAcc || parsedAcc,
       esNuevoIngreso:
         r.origen === "NUEVO_INGRESO" ||
         String(finalMsg).includes("Accesorios:"),
@@ -1023,6 +1032,7 @@ export async function dbGetCdeTickets(): Promise<RecepcionCdeTicket[]> {
     modelo: r.modelo,
     marca: r.marca,
     serial: r.serial,
+    accesorios: r.accesorios || undefined,
     diasResolucion: r.dias_resolucion,
     esDanesa: Boolean(r.es_danesa),
     recibidoEnDeposito: Boolean(r.recibido_en_deposito),

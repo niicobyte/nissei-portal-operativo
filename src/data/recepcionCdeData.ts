@@ -29,6 +29,7 @@ export interface RecepcionCdeTicket {
   modelo: string;
   marca: string;
   serial: string;
+  accesorios?: string;
   // Campos calculados y operativos de depósito
   diasResolucion?: number | null;
   esDanesa?: boolean;

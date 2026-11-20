@@ -1181,16 +1181,24 @@ export function crossMatchAsuWithCde(
       const ingresadoEnCde = !isRecibido && !esEntregadaAsu && !tieneDespachoValido && tieneIngresoValido;
 
       // Sincronización oficial del dictamen técnico / mensaje de servicio:
-      // Si CDE (laboratorio central) tiene dictamen cargado, CDE tiene prioridad absoluta sobre cualquier texto local antiguo
+      // Si CDE (laboratorio central) tiene dictamen cargado, CDE tiene prioridad a menos que el usuario lo haya editado manualmente
       const matchMsg = (match.mensaje || "").trim();
       const resolvedMensaje =
-        matchMsg && !asu.mensajeEditadoManualmente ? match.mensaje : (asu.mensaje || match.mensaje || "");
+        asu.mensajeEditadoManualmente && asu.mensaje
+          ? asu.mensaje
+          : matchMsg || asu.mensaje || "";
+
+      const resolvedAccesorios =
+        asu.accesorios || match.accesorios || undefined;
 
       const dias = tieneDespachoValido ? calcularDiasResolucion(asu.fechaIngreso, match.fechaEntregada) : null;
 
       return {
         ...asu,
         mensaje: resolvedMensaje,
+        accesorios: resolvedAccesorios,
+        mensajeEditadoManualmente: asu.mensajeEditadoManualmente,
+        dictamenTipo: asu.dictamenTipo,
         mensajeCde: match.mensaje || undefined,
         idOrdenCde: match.idOrden,
         estadoCde: match.estado,

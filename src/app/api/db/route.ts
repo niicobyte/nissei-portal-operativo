@@ -22,6 +22,7 @@ import {
   formatMysqlError,
 } from "@/lib/mysql";
 import { clasificarMensajeCSV } from "@/data/tallerReparacionesData";
+import { INITIAL_RECEPCION_DATA } from "@/data/recepcionData";
 import {
   isOrderPairChronologicallyCoherent,
   pickBestChronologicalCandidate,
@@ -342,6 +343,102 @@ export async function POST(req: NextRequest) {
             ticket.fechaIngreso || "",
           ]
         );
+      }
+
+      const data = await dbGetRecepcionTickets();
+      return NextResponse.json({ ok: true, data });
+    }
+
+    // 4b. Actualizar detalles técnicos, accesorios y notas de ticket en Recepción
+    if (action === "UPDATE_RECEPCION_DETALLES") {
+      const {
+        idOrden,
+        idOrdenCde,
+        mensaje,
+        accesorios,
+        dictamenTipo,
+        mensajeEditadoManualmente,
+      } = body;
+
+      if (!idOrden) {
+        return NextResponse.json(
+          { ok: false, error: "idOrden es obligatorio." },
+          { status: 400 }
+        );
+      }
+
+      const cleanId = String(idOrden).trim();
+      const cleanAcc = accesorios !== undefined && accesorios !== null ? String(accesorios).trim() : null;
+      const cleanMsg = mensaje !== undefined && mensaje !== null ? String(mensaje).trim() : null;
+
+      // Asegurar columna accesorios en recepcion_tickets y recepcion_cde_tickets
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN accesorios TEXT DEFAULT NULL"
+        );
+      } catch {}
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_cde_tickets ADD COLUMN accesorios TEXT DEFAULT NULL"
+        );
+      } catch {}
+
+      // 1. Actualizar en recepcion_tickets
+      const [updateResult] = await pool.query<any>(
+        `UPDATE recepcion_tickets
+         SET mensaje = COALESCE(?, mensaje),
+             accesorios = ?,
+             updated_at = NOW()
+         WHERE id_orden = ?`,
+        [cleanMsg, cleanAcc, cleanId]
+      );
+
+      // Si no existía en recepcion_tickets (orden base del sistema que aún no fue alterada en MySQL), insertarla
+      if (updateResult && updateResult.affectedRows === 0) {
+        const baseTicket = INITIAL_RECEPCION_DATA.find(
+          (t) => String(t.idOrden).trim() === cleanId
+        );
+        if (baseTicket) {
+          await pool.query(
+            `INSERT INTO recepcion_tickets
+             (id_orden, codigo_producto, cliente, mensaje, accesorios, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CSV')
+             ON DUPLICATE KEY UPDATE
+               mensaje = VALUES(mensaje),
+               accesorios = VALUES(accesorios)`,
+            [
+              baseTicket.idOrden,
+              baseTicket.codigoProducto || "",
+              baseTicket.cliente,
+              cleanMsg !== null ? cleanMsg : (baseTicket.mensaje || ""),
+              cleanAcc,
+              baseTicket.fechaIngreso || "",
+              baseTicket.fechaEntregada || null,
+              baseTicket.fechaVenta || null,
+              baseTicket.estado || "En Asignacion",
+              baseTicket.tipoComponente || "GENERAL",
+              baseTicket.marca || "",
+              baseTicket.modelo || "",
+              baseTicket.serial || "S/N",
+            ]
+          );
+        }
+      }
+
+      // 2. Si la orden está cruzada con CDE o es una orden CDE directa, reflejarlo también en recepcion_cde_tickets
+      const cdeTargetId =
+        (idOrdenCde && String(idOrdenCde).trim()) ||
+        (parseInt(cleanId, 10) >= 100000 ? cleanId : null);
+
+      if (cdeTargetId) {
+        await pool.query(
+          `UPDATE recepcion_cde_tickets
+           SET mensaje = COALESCE(?, mensaje),
+               accesorios = COALESCE(?, accesorios),
+               updated_at = NOW()
+           WHERE id_orden = ?`,
+          [cleanMsg, cleanAcc, cdeTargetId]
+        ).catch(() => {});
       }
 
       const data = await dbGetRecepcionTickets();

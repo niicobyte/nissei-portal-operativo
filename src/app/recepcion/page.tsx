@@ -42,6 +42,7 @@ import {
   ShieldCheck,
   Timer,
   Users,
+  Loader2,
 } from "lucide-react";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
@@ -63,6 +64,7 @@ import {
   fetchTicketsFromMySQL,
   updateTicketStatus,
   updateTicketDetails,
+  updateTicketDetailsAsync,
   resetTickets,
   procesarActualizacionCSV,
   ResultadoCargaCSV,
@@ -717,6 +719,7 @@ export default function RecepcionDashboardPage() {
   const [modalAccesorios, setModalAccesorios] = useState<string>("");
   const [modalAccessoriesList, setModalAccessoriesList] = useState<string[]>([]);
   const [modalNewAccessory, setModalNewAccessory] = useState<string>("");
+  const [isSavingDetails, setIsSavingDetails] = useState(false);
   const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
   const draftHydratedRef = useRef(false);
   const pendingModalDraftRef = useRef<{
@@ -883,20 +886,23 @@ export default function RecepcionDashboardPage() {
       if (draft.selectedTicketId) {
         const matched = initEnriched.find((t) => t.idOrden === draft.selectedTicketId);
         if (matched) {
-          // Si la orden está cruzada con CDE y CDE tiene informe oficial, priorizar siempre el informe real de CDE
+          // Si la orden tiene edición manual o draft pendiente, respetarlo; de lo contrario usar mensaje enriquecido
           const cdeMsg = (matched.mensaje || "").trim();
           const draftMsg = (draft.modalMensaje || "").trim();
           const shouldUseDraftMsg =
-            draftMsg &&
-            (!cdeMsg || draftMsg === cdeMsg || !matched.idOrdenCde);
+            Boolean(matched.mensajeEditadoManualmente) ||
+            Boolean(draftMsg && (!cdeMsg || draftMsg === cdeMsg || !matched.idOrdenCde));
+
+          const draftAccList =
+            Array.isArray(draft.modalAccessoriesList) && draft.modalAccessoriesList.length > 0
+              ? draft.modalAccessoriesList
+              : parseAccesoriosString(matched.accesorios);
 
           pendingModalDraftRef.current = {
             idOrden: matched.idOrden,
-            modalMensaje: shouldUseDraftMsg ? draftMsg : cdeMsg,
+            modalMensaje: shouldUseDraftMsg && draftMsg ? draftMsg : (matched.mensaje || cdeMsg),
             modalDictamenTipo: draft.modalDictamenTipo || matched.dictamenTipo || "AUTO",
-            modalAccessoriesList: Array.isArray(draft.modalAccessoriesList)
-              ? draft.modalAccessoriesList
-              : [],
+            modalAccessoriesList: draftAccList,
             modalNewAccessory: draft.modalNewAccessory || "",
           };
           setSelectedTicket(matched);
@@ -1117,36 +1123,47 @@ export default function RecepcionDashboardPage() {
   };
 
   // Guardar notas o comentarios del informe técnico, dictamen y accesorios de la orden
-  const handleGuardarMensaje = () => {
-    if (!selectedTicket) return;
+  const handleGuardarMensaje = async () => {
+    if (!selectedTicket || isSavingDetails) return;
+    setIsSavingDetails(true);
     const accFinal =
       modalAccessoriesList.length > 0
         ? modalAccessoriesList.join(", ")
         : modalAccesorios.trim();
 
-    const updated = updateTicketDetails(selectedTicket.idOrden, {
-      mensaje: modalMensaje,
-      accesorios: accFinal,
-      dictamenTipo: modalDictamenTipo,
-      mensajeEditadoManualmente: true,
-    });
-    const cdeTickets = getStoredCdeTickets();
-    const checkins = getStoredCdeCheckins();
-    const overrides = getStoredSatiOverrides();
-    const cross = getStoredSatiCrossMatches();
-    const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
-    setTickets(enriched);
-    const enrichedSelected = enriched.find((t) => t.idOrden === selectedTicket.idOrden);
-    setSelectedTicket(enrichedSelected || {
-      ...selectedTicket,
-      mensaje: modalMensaje,
-      accesorios: accFinal,
-      dictamenTipo: modalDictamenTipo,
-      mensajeEditadoManualmente: true,
-    });
-    showToast(
-      `Detalles técnicos y accesorios de la orden #${selectedTicket.idOrden} guardados correctamente.`
-    );
+    try {
+      const updated = await updateTicketDetailsAsync(selectedTicket.idOrden, {
+        mensaje: modalMensaje,
+        accesorios: accFinal,
+        dictamenTipo: modalDictamenTipo,
+        mensajeEditadoManualmente: true,
+        idOrdenCde: selectedTicket.idOrdenCde,
+      });
+      const cdeTickets = getStoredCdeTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+      setTickets(enriched);
+      const enrichedSelected = enriched.find((t) => t.idOrden === selectedTicket.idOrden);
+      setSelectedTicket(enrichedSelected || {
+        ...selectedTicket,
+        mensaje: modalMensaje,
+        accesorios: accFinal,
+        dictamenTipo: modalDictamenTipo,
+        mensajeEditadoManualmente: true,
+      });
+      showToast(
+        `✓ Cambios guardados (accesorios e informe de la orden #${selectedTicket.idOrden} sincronizados con éxito).`
+      );
+    } catch (err) {
+      console.error("Error guardando detalles de orden:", err);
+      showToast(
+        `✓ Cambios guardados localmente para la orden #${selectedTicket.idOrden}.`
+      );
+    } finally {
+      setIsSavingDetails(false);
+    }
   };
 
   // Actualizar dictamen técnico / resolución QC de una orden en vivo
@@ -1162,6 +1179,7 @@ export default function RecepcionDashboardPage() {
       mensaje: modalMensaje,
       accesorios: accFinal,
       mensajeEditadoManualmente: true,
+      idOrdenCde: selectedTicket?.idOrdenCde,
     });
     const cdeTickets = getStoredCdeTickets();
     const checkins = getStoredCdeCheckins();
@@ -1200,6 +1218,7 @@ export default function RecepcionDashboardPage() {
       accesorios: accFinal,
       dictamenTipo: modalDictamenTipo,
       mensajeEditadoManualmente: true,
+      idOrdenCde: selectedTicket?.idOrdenCde,
       fechaEntregada: isDelivered
         ? selectedTicket?.fechaEntregada || nowDate
         : selectedTicket?.fechaEntregada,
@@ -3655,12 +3674,17 @@ ${dictamen.accText}`;
                     </div>
                     <button
                       type="button"
+                      disabled={isSavingDetails}
                       onClick={handleGuardarMensaje}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
                       title="Guardar observaciones y accesorios"
                     >
-                      <Save className="w-3.5 h-3.5" />
-                      <span>Guardar cambios</span>
+                      {isSavingDetails ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Save className="w-3.5 h-3.5" />
+                      )}
+                      <span>{isSavingDetails ? "Guardando..." : "Guardar cambios"}</span>
                     </button>
                   </div>
                   <textarea
