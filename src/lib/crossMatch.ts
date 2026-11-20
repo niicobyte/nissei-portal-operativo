@@ -944,13 +944,31 @@ export function crossMatchAsuWithCde(
 
   // Mapa de cruces manuales prioritarios confirmados
   const manualAsuToCde = new Map<string, string>();
+  const manualCdeToAsu = new Map<string, string>();
   if (Array.isArray(manualCrossMatches)) {
     manualCrossMatches.forEach((m) => {
       if (m.idOrdenAsu && m.idOrdenCde) {
-        manualAsuToCde.set(m.idOrdenAsu.trim(), m.idOrdenCde.trim());
+        const asuId = m.idOrdenAsu.trim();
+        const cdeId = m.idOrdenCde.trim();
+        manualAsuToCde.set(asuId, cdeId);
+        manualCdeToAsu.set(cdeId, asuId);
       }
     });
   }
+
+  // 1. Cruce CDE -> ASU idéntico a buildUnifiedSatiList (para garantizar 100% paridad con /recepcion/cde)
+  const enrichedCde = crossMatchCdeWithAsu(realCdeTickets, asuTickets);
+  const cdeByAsuId = new Map<string, RecepcionCdeTicket>();
+  enrichedCde.forEach((c) => {
+    const manualAsuId = manualCdeToAsu.get(c.idOrden);
+    if (manualAsuId) {
+      c.idOrdenAsu = manualAsuId;
+      c.matchReason = "Cruce Manual Confirmado";
+      cdeByAsuId.set(manualAsuId, c);
+    } else if (c.idOrdenAsu) {
+      cdeByAsuId.set(c.idOrdenAsu.trim(), c);
+    }
+  });
 
   // Índices de CDE
   const cdeById = new Map<string, RecepcionCdeTicket>();
@@ -998,6 +1016,7 @@ export function crossMatchAsuWithCde(
   return asuTickets.map((asu) => {
     const asuSerial = normalizeSerial(asu.serial);
     let match: RecepcionCdeTicket | null = null;
+    let matchReason = "";
 
     // 0. Cruce Manual prioritario (descarta enlaces históricamente imposibles por fechas invertidas)
     const manualCdeId = manualAsuToCde.get(asu.idOrden);
@@ -1012,6 +1031,7 @@ export function crossMatchAsuWithCde(
         })
       ) {
         match = manualCand;
+        matchReason = "Cruce Manual Confirmado";
       }
     }
 
@@ -1029,7 +1049,21 @@ export function crossMatchAsuWithCde(
           })
         ) {
           match = ovCand;
+          matchReason = "Override Guardado";
         }
+      }
+    }
+
+    // 0.2 Emparejamiento unificado de SATI CDE (100% de coherencia idéntica con /recepcion/cde)
+    if (!match) {
+      const cdeCand = cdeByAsuId.get(asu.idOrden);
+      if (
+        cdeCand &&
+        !matchedCdeIds.has(cdeCand.idOrden) &&
+        isOrderPairChronologicallyCoherent(asu, cdeCand)
+      ) {
+        match = cdeCand;
+        matchReason = cdeCand.matchReason || "Cruce SATI CDE";
       }
     }
 
@@ -1043,6 +1077,7 @@ export function crossMatchAsuWithCde(
       );
       if (hit) {
         match = hit;
+        matchReason = "Serial Físico Exacto";
       }
     }
 
@@ -1055,6 +1090,7 @@ export function crossMatchAsuWithCde(
           const cand = cdeById.get(id)!;
           if (!matchedCdeIds.has(cand.idOrden) && isOrderPairChronologicallyCoherent(asu, cand)) {
             match = cand;
+            matchReason = `Ref. en Mensaje (#${id})`;
             break;
           }
         }
@@ -1070,6 +1106,7 @@ export function crossMatchAsuWithCde(
       );
       if (hit) {
         match = hit;
+        matchReason = `Ref. en CDE (#${asu.idOrden})`;
       }
     }
 
@@ -1085,6 +1122,7 @@ export function crossMatchAsuWithCde(
       );
       if (hit) {
         match = hit;
+        matchReason = "Serial Mencionado en Mensaje";
       }
     }
 
@@ -1093,6 +1131,7 @@ export function crossMatchAsuWithCde(
       const hit = findBestClientEquipMatch(buildIndexedCand(asu), cdeByBaseClient, true);
       if (hit) {
         match = hit.entry.item;
+        matchReason = hit.viaJcFallback ? "Cliente (JC) & Equipo" : "Match: Cliente & Equipo";
       }
     }
 
@@ -1101,6 +1140,7 @@ export function crossMatchAsuWithCde(
       const hit = findBestDanesaMatch(buildIndexedCand(asu), cdeByCodigoDanesa, 30, true);
       if (hit) {
         match = hit.item;
+        matchReason = "Danesa SA (Código & Modelo)";
       }
     }
 
@@ -1120,6 +1160,12 @@ export function crossMatchAsuWithCde(
       ? asu.fechaRecibidoDeposito || ""
       : checkinInfo?.fecha || asu.fechaRecibidoDeposito || (match && match.fechaRecibidoDeposito) || "";
 
+    // Saneamiento de fechas de entrega incoherentes (fechas anteriores a la fecha de ingreso en ASU)
+    const tieneFechaEntregaIncoherente = Boolean(
+      asu.fechaEntregada && !isDespachoCoherente(asu.fechaIngreso, asu.fechaEntregada)
+    );
+    const fechaEntregadaLimpia = tieneFechaEntregaIncoherente ? undefined : asu.fechaEntregada;
+
     if (match) {
       matchedCdeIds.add(match.idOrden);
       const matchedEntry = cdeEntryById.get(match.idOrden.trim());
@@ -1134,21 +1180,39 @@ export function crossMatchAsuWithCde(
       const enCamino = !isRecibido && !esEntregadaAsu && tieneDespachoValido;
       const ingresadoEnCde = !isRecibido && !esEntregadaAsu && !tieneDespachoValido && tieneIngresoValido;
 
+      // Sincronización oficial del dictamen técnico / mensaje de servicio:
+      // Si CDE (laboratorio central) tiene dictamen cargado, CDE tiene prioridad absoluta sobre cualquier texto local antiguo
+      const matchMsg = (match.mensaje || "").trim();
+      const resolvedMensaje =
+        matchMsg && !asu.mensajeEditadoManualmente ? match.mensaje : (asu.mensaje || match.mensaje || "");
+
+      const dias = tieneDespachoValido ? calcularDiasResolucion(asu.fechaIngreso, match.fechaEntregada) : null;
+
       return {
         ...asu,
+        mensaje: resolvedMensaje,
+        mensajeCde: match.mensaje || undefined,
         idOrdenCde: match.idOrden,
         estadoCde: match.estado,
         fechaIngresoCde: match.fechaIngreso,
         fechaDespachoCde: match.fechaEntregada,
+        fechaEntregada: esEntregadaAsu
+          ? fechaEntregadaLimpia
+          : tieneDespachoValido
+          ? match.fechaEntregada
+          : fechaEntregadaLimpia,
         recibidoEnDeposito: isRecibido,
         fechaRecibidoDeposito: fechaRecibido,
         enCamino,
         ingresadoEnCde,
+        diasResolucion: dias,
+        matchReason: matchReason || match.matchReason || "Cruce SATI CDE",
       };
     }
 
     return {
       ...asu,
+      fechaEntregada: fechaEntregadaLimpia,
       recibidoEnDeposito: isRecibido,
       fechaRecibidoDeposito: fechaRecibido,
       enCamino: false,

@@ -917,7 +917,7 @@ export async function POST(req: NextRequest) {
 
       await dbSaveSatiCrossMatch(idOrdenAsu, idOrdenCde);
 
-      // Si la orden de CDE ya tiene fecha entregada, heredar a ASU para reflejar despacho
+      // Si la orden de CDE ya tiene fecha entregada o mensaje de laboratorio, heredar a ASU para reflejar despacho y dictamen oficial
       const [cdeRows]: any = await pool.query(
         "SELECT fecha_entregada, estado, mensaje FROM recepcion_cde_tickets WHERE id_orden = ?",
         [idOrdenCde]
@@ -926,6 +926,12 @@ export async function POST(req: NextRequest) {
         await pool.query(
           "UPDATE recepcion_tickets SET fecha_entregada = ? WHERE id_orden = ?",
           [cdeRows[0].fecha_entregada, idOrdenAsu]
+        ).catch(() => {});
+      }
+      if (cdeRows && cdeRows[0]?.mensaje && cdeRows[0].mensaje.trim()) {
+        await pool.query(
+          "UPDATE recepcion_tickets SET mensaje = ? WHERE id_orden = ?",
+          [cdeRows[0].mensaje.trim(), idOrdenAsu]
         ).catch(() => {});
       }
 

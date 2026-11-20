@@ -869,39 +869,56 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
   await ensureDatabaseInitialized();
   const pool = getPool();
   const [rows] = await pool.query<mysql.RowDataPacket[]>(
-    "SELECT * FROM recepcion_tickets ORDER BY CAST(id_orden AS UNSIGNED) DESC"
+    `SELECT r.*,
+            c.id_orden AS matched_cde_id,
+            c.mensaje AS matched_cde_mensaje,
+            c.fecha_entregada AS matched_cde_despacho,
+            c.fecha_ingreso AS matched_cde_ingreso,
+            c.estado AS matched_cde_estado
+     FROM recepcion_tickets r
+     LEFT JOIN sati_cross_matches m ON m.id_orden_asu = r.id_orden
+     LEFT JOIN recepcion_cde_tickets c ON c.id_orden = m.id_orden_cde
+     ORDER BY CAST(r.id_orden AS UNSIGNED) DESC`
   );
-  return rows.map((r) => ({
-    idOrden: r.id_orden,
-    codigoProducto: r.codigo_producto || "",
-    cliente: r.cliente,
-    mensaje: r.mensaje || "",
-    fechaIngreso: r.fecha_ingreso,
-    fechaEntregada: r.fecha_entregada || undefined,
-    fechaVenta: r.fecha_venta || undefined,
-    estado: r.estado,
-    tipoComponente: r.tipo_componente,
-    marca: r.marca,
-    modelo: r.modelo,
-    serial: r.serial,
-    accesorios:
-      r.accesorios ||
-      (String(r.mensaje || "").includes("Accesorios:")
-        ? String(r.mensaje).split(/Accesorios:/i)[1]?.trim()
-        : undefined),
-    esNuevoIngreso:
-      r.origen === "NUEVO_INGRESO" ||
-      String(r.mensaje || "").includes("Accesorios:"),
-    esEstadoCambiadoReciente:
-      r.origen === "ESTADO_CAMBIADO" ||
-      r.origen === "RECIEN_ENTREGADO",
-    esEntregadoReciente:
-      r.origen === "RECIEN_ENTREGADO" ||
-      (r.origen === "NUEVO_INGRESO" &&
-        String(r.estado || "").toLowerCase() === "entregada"),
-    recibidoEnDeposito: Boolean(r.recibido_en_deposito),
-    fechaRecibidoDeposito: r.fecha_recibido_deposito || undefined,
-  }));
+  return rows.map((r) => {
+    const cdeMsg = (r.matched_cde_mensaje || "").trim();
+    const finalMsg = cdeMsg || r.mensaje || "";
+    return {
+      idOrden: r.id_orden,
+      codigoProducto: r.codigo_producto || "",
+      cliente: r.cliente,
+      mensaje: finalMsg,
+      fechaIngreso: r.fecha_ingreso,
+      fechaEntregada: r.fecha_entregada || undefined,
+      fechaVenta: r.fecha_venta || undefined,
+      estado: r.estado,
+      tipoComponente: r.tipo_componente,
+      marca: r.marca,
+      modelo: r.modelo,
+      serial: r.serial,
+      idOrdenCde: r.matched_cde_id || undefined,
+      fechaIngresoCde: r.matched_cde_ingreso || undefined,
+      fechaDespachoCde: r.matched_cde_despacho || undefined,
+      estadoCde: r.matched_cde_estado || undefined,
+      accesorios:
+        r.accesorios ||
+        (String(finalMsg).includes("Accesorios:")
+          ? String(finalMsg).split(/Accesorios:/i)[1]?.trim()
+          : undefined),
+      esNuevoIngreso:
+        r.origen === "NUEVO_INGRESO" ||
+        String(finalMsg).includes("Accesorios:"),
+      esEstadoCambiadoReciente:
+        r.origen === "ESTADO_CAMBIADO" ||
+        r.origen === "RECIEN_ENTREGADO",
+      esEntregadoReciente:
+        r.origen === "RECIEN_ENTREGADO" ||
+        (r.origen === "NUEVO_INGRESO" &&
+          String(r.estado || "").toLowerCase() === "entregada"),
+      recibidoEnDeposito: Boolean(r.recibido_en_deposito),
+      fechaRecibidoDeposito: r.fecha_recibido_deposito || undefined,
+    };
+  });
 }
 
 export async function dbGetMontajes(): Promise<OrdenMontajeReal[]> {

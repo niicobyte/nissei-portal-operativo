@@ -883,9 +883,16 @@ export default function RecepcionDashboardPage() {
       if (draft.selectedTicketId) {
         const matched = initEnriched.find((t) => t.idOrden === draft.selectedTicketId);
         if (matched) {
+          // Si la orden está cruzada con CDE y CDE tiene informe oficial, priorizar siempre el informe real de CDE
+          const cdeMsg = (matched.mensaje || "").trim();
+          const draftMsg = (draft.modalMensaje || "").trim();
+          const shouldUseDraftMsg =
+            draftMsg &&
+            (!cdeMsg || draftMsg === cdeMsg || !matched.idOrdenCde);
+
           pendingModalDraftRef.current = {
             idOrden: matched.idOrden,
-            modalMensaje: draft.modalMensaje || "",
+            modalMensaje: shouldUseDraftMsg ? draftMsg : cdeMsg,
             modalDictamenTipo: draft.modalDictamenTipo || matched.dictamenTipo || "AUTO",
             modalAccessoriesList: Array.isArray(draft.modalAccessoriesList)
               ? draft.modalAccessoriesList
@@ -1121,13 +1128,21 @@ export default function RecepcionDashboardPage() {
       mensaje: modalMensaje,
       accesorios: accFinal,
       dictamenTipo: modalDictamenTipo,
+      mensajeEditadoManualmente: true,
     });
-    setTickets(updated);
-    setSelectedTicket({
+    const cdeTickets = getStoredCdeTickets();
+    const checkins = getStoredCdeCheckins();
+    const overrides = getStoredSatiOverrides();
+    const cross = getStoredSatiCrossMatches();
+    const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+    setTickets(enriched);
+    const enrichedSelected = enriched.find((t) => t.idOrden === selectedTicket.idOrden);
+    setSelectedTicket(enrichedSelected || {
       ...selectedTicket,
       mensaje: modalMensaje,
       accesorios: accFinal,
       dictamenTipo: modalDictamenTipo,
+      mensajeEditadoManualmente: true,
     });
     showToast(
       `Detalles técnicos y accesorios de la orden #${selectedTicket.idOrden} guardados correctamente.`
@@ -1146,14 +1161,22 @@ export default function RecepcionDashboardPage() {
       dictamenTipo: dictamenId,
       mensaje: modalMensaje,
       accesorios: accFinal,
+      mensajeEditadoManualmente: true,
     });
-    setTickets(updated);
+    const cdeTickets = getStoredCdeTickets();
+    const checkins = getStoredCdeCheckins();
+    const overrides = getStoredSatiOverrides();
+    const cross = getStoredSatiCrossMatches();
+    const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+    setTickets(enriched);
     if (selectedTicket && selectedTicket.idOrden === idOrden) {
-      setSelectedTicket({
+      const enrichedSelected = enriched.find((t) => t.idOrden === idOrden);
+      setSelectedTicket(enrichedSelected || {
         ...selectedTicket,
         dictamenTipo: dictamenId,
         mensaje: modalMensaje,
         accesorios: accFinal,
+        mensajeEditadoManualmente: true,
       });
     }
   };
@@ -1176,18 +1199,26 @@ export default function RecepcionDashboardPage() {
       mensaje: modalMensaje,
       accesorios: accFinal,
       dictamenTipo: modalDictamenTipo,
+      mensajeEditadoManualmente: true,
       fechaEntregada: isDelivered
         ? selectedTicket?.fechaEntregada || nowDate
         : selectedTicket?.fechaEntregada,
     });
-    setTickets(updated);
+    const cdeTickets = getStoredCdeTickets();
+    const checkins = getStoredCdeCheckins();
+    const overrides = getStoredSatiOverrides();
+    const cross = getStoredSatiCrossMatches();
+    const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+    setTickets(enriched);
     if (selectedTicket && selectedTicket.idOrden === idOrden) {
-      setSelectedTicket({
+      const enrichedSelected = enriched.find((t) => t.idOrden === idOrden);
+      setSelectedTicket(enrichedSelected || {
         ...selectedTicket,
         estado: nuevoEstado,
         mensaje: modalMensaje,
         accesorios: accFinal,
         dictamenTipo: modalDictamenTipo,
+        mensajeEditadoManualmente: true,
         fechaEntregada: isDelivered
           ? selectedTicket.fechaEntregada || nowDate
           : selectedTicket.fechaEntregada,
@@ -1306,13 +1337,21 @@ ${dictamen.accText}`;
           mensaje: modalMensaje,
           accesorios: accFinal,
           dictamenTipo: modalDictamenTipo,
+          mensajeEditadoManualmente: true,
         });
-        setTickets(updated);
-        currentTicket = {
+        const cdeTickets = getStoredCdeTickets();
+        const checkins = getStoredCdeCheckins();
+        const overrides = getStoredSatiOverrides();
+        const cross = getStoredSatiCrossMatches();
+        const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+        setTickets(enriched);
+        const enrichedCurrent = enriched.find((t) => t.idOrden === ticket.idOrden);
+        currentTicket = enrichedCurrent || {
           ...ticket,
           mensaje: modalMensaje,
           accesorios: accFinal,
           dictamenTipo: modalDictamenTipo,
+          mensajeEditadoManualmente: true,
         };
         setSelectedTicket(currentTicket);
       }
@@ -3487,6 +3526,21 @@ ${dictamen.accText}`;
                   <h3 className="text-lg 2xl:text-xl font-bold text-[#121212]">
                     Orden #{selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
                   </h3>
+                  {selectedTicket.idOrdenCde && (
+                    <div className="mt-2 p-2.5 bg-indigo-50/90 border border-indigo-200 rounded-xl flex items-center justify-between text-xs text-indigo-950 flex-wrap gap-2">
+                      <div className="flex items-center gap-2 font-semibold">
+                        <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[11px] font-bold">
+                          ASU #{selectedTicket.idOrden} ↔ CDE #{selectedTicket.idOrdenCde}
+                        </span>
+                        <span>{selectedTicket.matchReason || "Match: Cliente & Equipo"}</span>
+                      </div>
+                      {selectedTicket.estadoCde && (
+                        <span className="text-zinc-600 font-medium text-[11px]">
+                          Estado CDE: <strong className="text-zinc-900 font-bold">{selectedTicket.estadoCde}</strong>
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <button
                   onClick={() => setSelectedTicket(null)}
@@ -3506,7 +3560,7 @@ ${dictamen.accText}`;
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-2 gap-3.5 bg-[#f9f9f9] p-4 rounded-xl border border-[#f0f0f0]">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 bg-[#f9f9f9] p-4 rounded-xl border border-[#f0f0f0]">
                   <div>
                     <span className="text-zinc-500 block text-xs font-semibold">Cliente</span>
                     <strong className="text-zinc-900 text-sm sm:text-base">{selectedTicket.cliente}</strong>
@@ -3516,24 +3570,55 @@ ${dictamen.accText}`;
                     <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.codigoProducto || "N/A"}</strong>
                   </div>
                   <div>
-                    <span className="text-zinc-500 block text-xs font-semibold">Fecha de Ingreso</span>
+                    <span className="text-zinc-500 block text-xs font-semibold">Fecha de Ingreso ASU</span>
                     <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaIngreso || "N/A"}</strong>
                   </div>
+                  {selectedTicket.fechaIngresoCde && (
+                    <div>
+                      <span className="text-zinc-500 block text-xs font-semibold">Fecha de Ingreso CDE</span>
+                      <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaIngresoCde}</strong>
+                    </div>
+                  )}
+                  {selectedTicket.fechaDespachoCde && (
+                    <div>
+                      <span className="text-zinc-500 block text-xs font-semibold">Fecha de Despacho CDE</span>
+                      <strong className="text-amber-800 font-mono text-sm flex items-center gap-1 font-bold">
+                        <span>🚚</span>
+                        <span>{selectedTicket.fechaDespachoCde}</span>
+                      </strong>
+                    </div>
+                  )}
                   <div>
-                    <span className="text-zinc-500 block text-xs font-semibold">Fecha de Entrega</span>
+                    <span className="text-zinc-500 block text-xs font-semibold">Recepción en Sucursal</span>
                     {selectedTicket.recibidoEnDeposito ? (
                       <strong className="text-emerald-700 font-bold flex items-center gap-1.5 font-sans text-xs sm:text-sm">
                         <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Recibido · Listo para que retire el cliente</span>
+                        <span>Recibido ({selectedTicket.fechaRecibidoDeposito || "Listo para retiro"})</span>
                       </strong>
                     ) : (
-                      <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaEntregada || "Pendiente de retiro"}</strong>
+                      <strong className="text-zinc-500 font-sans text-xs italic">
+                        Pendiente de recepción física
+                      </strong>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-zinc-500 block text-xs font-semibold">Fecha de Entrega al Cliente</span>
+                    {(selectedTicket.estado || "").toLowerCase().includes("entregada") && selectedTicket.fechaEntregada ? (
+                      <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaEntregada}</strong>
+                    ) : (
+                      <strong className="text-zinc-400 font-sans text-xs italic">Pendiente de retiro</strong>
                     )}
                   </div>
                   {selectedTicket.fechaVenta && (
                     <div>
                       <span className="text-zinc-500 block text-xs font-semibold">Fecha de Venta</span>
                       <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaVenta}</strong>
+                    </div>
+                  )}
+                  {selectedTicket.diasResolucion !== null && selectedTicket.diasResolucion !== undefined && (
+                    <div>
+                      <span className="text-zinc-500 block text-xs font-semibold">Días en Taller</span>
+                      <strong className="text-zinc-900 font-mono text-sm font-bold">{selectedTicket.diasResolucion} días</strong>
                     </div>
                   )}
                   <div>
@@ -3556,10 +3641,18 @@ ${dictamen.accText}`;
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
-                      Informe Técnico / Mensaje de Servicio
-                    </span>
+                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
+                        Informe Técnico / Mensaje de Servicio
+                      </span>
+                      {selectedTicket.idOrdenCde && selectedTicket.mensaje && (
+                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span>Dictamen Oficial CDE (#{selectedTicket.idOrdenCde})</span>
+                        </span>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={handleGuardarMensaje}
