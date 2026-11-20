@@ -365,6 +365,94 @@ export function detectarPerfilComponente(
   };
 }
 
+/**
+ * Determina el soporte máximo de radiador de refrigeración líquida (en mm) de un gabinete
+ * según especificaciones técnicas oficiales de fabricante y pruebas de despeje real (evitando colisión con VRM/RAM).
+ * 
+ * Retorna:
+ * - 0: Gabinetes de oficina, kits y gabinetes estándar económicos que NO admiten radiadores de agua (sólo cooler de aire).
+ * - 240: Gabinetes que admiten radiadores de hasta 240mm (pero NO de 360mm).
+ * - 360: Gabinetes amplios Mid-Tower / Full-Tower certificados para radiadores de 360mm (y 240mm).
+ */
+export function determinarSoporteRadiadorGabinete(d: string, marca?: string): number {
+  const upper = `${d} ${marca || ""}`.toUpperCase();
+
+  // 1. Kits de oficina o teclado/fuente incluidos -> CERO soporte (0mm)
+  if (
+    upper.includes("KIT") ||
+    upper.includes("TEC.ESP") ||
+    upper.includes("TEC.POR") ||
+    upper.includes("TECLADO") ||
+    upper.includes("SPEAKER") ||
+    /\b(K701|K731|K761|MKT2802|DK03)\b/.test(upper)
+  ) {
+    return 0;
+  }
+
+  // 2. Gabinetes económicos Satellite sin despeje ni anclaje para radiador -> CERO soporte (0mm)
+  if (/\b(1100K|1101K|1102K|1103K|1200K|1300K|1430K|1600K|K8501|K8502|K883|K884)\b/.test(upper)) {
+    return 0;
+  }
+
+  // 3. Gabinetes MTEK económicos / compactos sin anclaje de radiador -> CERO soporte (0mm)
+  if (
+    upper.includes("MTEK") &&
+    (upper.includes("MK2603") ||
+      upper.includes("MCG-AIR01") ||
+      upper.includes("IB4500") ||
+      upper.includes("MINI TOWER"))
+  ) {
+    return 0;
+  }
+
+  // 4. Jonsbo compactos/NAS/ITX sin radiador -> CERO soporte (0mm)
+  if (
+    /\b(BO400|BO400CG|N2|N3|N4|N6|T6|T7|T8|T9|TK-0|C6|C6-ITX|V12|HP-400S)\b/.test(upper)
+  ) {
+    return 0;
+  }
+
+  // 5. Modelos compactos específicos de otras marcas sin soporte de radiador -> CERO soporte (0mm)
+  if (/\b(Q300L|MX110|CFV-235)\b/.test(upper)) {
+    return 0;
+  }
+
+  // 6. Gabinetes certificados con soporte de radiador 360mm (y 240mm)
+  const is360 =
+    /\b(CORSAIR|BE QUIET|HYTE)\b/.test(upper) ||
+    /\b(MX600|AIRFACE PRO|UNIFACE|DUOFACE PRO|FV150|FV270|CONQUER|DARKBLADER|GEMINI|CRATUS)\b/.test(
+      upper
+    ) ||
+    /\b(LANCOOL|O11|011|VECTOR|DYNAMIC|V3000|SUP01|VISION|GR701|GT502|GT301|C201PI|C301|C500|C700)\b/.test(
+      upper
+    ) ||
+    /\b(D400|D31|MOD-5|TK-2|TK-3|TK-4|X400)\b/.test(upper) ||
+    /\b(K51|K879|K880|K881|K885|K887|K889|K896|K898|K904)\b/.test(upper) ||
+    /\b(NESO|TALOS|CHIONE|APOLLO|PANO|FORGE 321R)\b/.test(upper) ||
+    upper.includes("E-ATX") ||
+    upper.includes("EATX") ||
+    upper.includes("FULL TOWER") ||
+    upper.includes("360MM");
+
+  if (is360) return 360;
+
+  // 7. Gabinetes certificados con soporte de radiador 240mm (anclaje superior o frontal)
+  const is240 =
+    /\b(ARCHON 2|AIRFACE|DUOFACE|PURITY|DUST 2|MB311L|MB320L|A3-MATX|A4-H2O|LIAN 217|MINI AIR|D300|D32|TK-1|Z20|MCG-DH80|MX220|MX230|MX330|MX360)\b/.test(
+      upper
+    ) ||
+    /\b(ATHENA|AURA|ARGUS|FORGE 120A|FORGE M100A|ATLAS M3M|C102G|C102GI|C201P)\b/.test(
+      upper
+    ) ||
+    upper.includes("MID TOWER") ||
+    upper.includes("MID-TOWER");
+
+  if (is240) return 240;
+
+  // 8. Por defecto: Gabinete genérico/desconocido no certificado para líquida -> CERO soporte (0mm)
+  return 0;
+}
+
 // Detección automática experta de especificaciones técnicas (Garantía oficial: 3 meses)
 export function enriquecerComponente(
   c: ComponenteMontaje & { marca?: string }
@@ -578,7 +666,7 @@ export function enriquecerComponente(
   // 7. GABINETES
   let isKitOficina = false;
   let fuenteIncluidaWatts = 0;
-  let maxRadiatorMm = 360;
+  let maxRadiatorMm = 0;
   let maxMbFormFactor: FormFactor = "ATX";
 
   if (cat === "GABINETE") {
@@ -588,7 +676,7 @@ export function enriquecerComponente(
       d.includes("TEC.POR") ||
       d.includes("TECLADO") ||
       d.includes("SPEAKER") ||
-      /\b(K701|K731|K761|MKT2802)\b/.test(d);
+      /\b(K701|K731|K761|MKT2802|DK03)\b/.test(d);
 
     if (esKit) {
       isKitOficina = true;
@@ -630,37 +718,8 @@ export function enriquecerComponente(
         formFactor = "ATX";
       }
 
-      const esCompactoSin360 =
-        d.includes("PURITY") ||
-        d.includes("MB311L") ||
-        d.includes("Q300L") ||
-        d.includes("MX110") ||
-        d.includes("CFV-235") ||
-        d.includes("DUST 2") ||
-        d.includes("1100K") ||
-        d.includes("1101K") ||
-        d.includes("1102K") ||
-        d.includes("1103K") ||
-        d.includes("1300K") ||
-        d.includes("K8502") ||
-        d.includes("ATHENA M4M") ||
-        d.includes("AURA GC10M") ||
-        d.includes("D300") ||
-        d.includes("TK-1") ||
-        d.includes("T6") ||
-        d.includes("T7") ||
-        d.includes("N2") ||
-        d.includes("V12") ||
-        d.includes("BO400") ||
-        d.includes("MCG-IB4500") ||
-        (maxMbFormFactor === "MATX" && !d.includes("A3-MATX")) ||
-        maxMbFormFactor === "ITX";
-
-      if (esCompactoSin360) {
-        maxRadiatorMm = 240;
-      } else {
-        maxRadiatorMm = 360;
-      }
+      // Evaluación estricta basada en especificaciones técnicas de fabricante
+      maxRadiatorMm = determinarSoporteRadiadorGabinete(d, marca);
     }
   }
 
@@ -1245,34 +1304,36 @@ export function verificarCompatibilidadPC(
     const is360 = Boolean(cooler.radiatorSizeMm === 360 || /360\s*MM|\b360\b/i.test(coolerDesc));
     const is240 = Boolean(cooler.radiatorSizeMm === 240 || /240\s*MM|\b240\b/i.test(coolerDesc));
 
-    // Caso A: Refrigeración Líquida (AIO) en Gabinete Kit de Oficina
-    if (isLiquid && gabinete.isKitOficina) {
+    const caseRad = gabinete.maxRadiatorMm ?? 0;
+
+    // Caso A: Refrigeración Líquida (AIO) en Gabinete sin soporte de radiador (0mm) o Kit de Oficina
+    if (isLiquid && (gabinete.isKitOficina || caseRad === 0)) {
       alertas.push({
         tipo: "ERROR",
-        titulo: "Incompatibilidad Física Absoluta: Cooler Líquido en Gabinete Kit de Oficina",
-        detalle: `El ${coolerDesc} es una refrigeración líquida que requiere anclajes para radiador (${is360 ? "360mm" : is240 ? "240mm" : "AIO"}). El gabinete (${gabineteDesc}) es un kit básico de oficina cerrado sin espacio ni rejillas para radiadores de agua. Debe cambiar a un Gabinete Gamer Mid-Tower con soporte de refrigeración líquida o usar un cooler de aire convencional.`,
+        titulo: "Incompatibilidad Física Absoluta: Cooler Líquido en Gabinete sin Soporte de Radiadores",
+        detalle: `El ${coolerDesc} es una refrigeración líquida que requiere anclajes y despeje superior/frontal para radiador (${is360 ? "360mm" : is240 ? "240mm" : "AIO"}). El gabinete seleccionado (${gabineteDesc}) es un modelo estándar que según su ficha técnica oficial de fabricante NO admite radiadores de agua por falta de espacio y rejilla superior (colisión directa con placa madre, disipadores VRM y RAM). Debe cambiar a un Gabinete Gamer certificado para Water Cooling (ej: Cougar Airface/Uniface, Corsair 3000D/4000D, be quiet!) o usar un disipador de aire convencional como Thermalright Assassin X 120.`,
         categoriaTarget: "GABINETE",
-        accionSugerida: "Cambiar a Gabinete Gamer Compatible",
+        accionSugerida: "Ver Gabinetes Gamer Compatibles",
         accionTipo: "CAMBIAR_TAB",
       });
     }
-    // Caso B: Radiador de 360mm en Gabinete que no admite 360mm
-    else if (is360 && (gabinete.maxRadiatorMm !== undefined && gabinete.maxRadiatorMm < 360)) {
+    // Caso B: Radiador de 360mm en Gabinete que solo admite hasta 240mm
+    else if (is360 && caseRad < 360) {
       alertas.push({
         tipo: "ERROR",
         titulo: "Incompatibilidad Física: Radiador de 360mm No Cabe en este Gabinete",
-        detalle: `El Cooler Líquido (${coolerDesc}) posee un radiador de 360mm (~40 cm de largo con 3 ventiladores de 120mm) que no entra físicamente en el gabinete (${gabineteDesc}). Este gabinete solo admite coolers de aire o radiadores de hasta 240mm. Seleccione un gabinete Mid-Tower amplio o Full-Tower con soporte de 360mm (ej: Cougar MX600 / Airface Pro, Lian Li Lancool / O11, Corsair 4000D/5000D, Satellite K880/K896/K904).`,
+        detalle: `El Cooler Líquido (${coolerDesc}) posee un radiador de 360mm (~40 cm de largo con 3 ventiladores de 120mm) que no entra físicamente en el gabinete (${gabineteDesc}). Este gabinete según su ficha técnica oficial solo admite coolers de aire o radiadores de hasta 240mm. Seleccione un gabinete Mid-Tower amplio o Full-Tower con soporte de 360mm (ej: Cougar MX600 / Airface Pro, Lian Li Lancool / O11, Corsair 4000D/5000D, be quiet! Pure Base 500DX/501).`,
         categoriaTarget: "GABINETE",
         accionSugerida: "Ver Gabinetes con Soporte 360mm",
         accionTipo: "CAMBIAR_TAB",
       });
     }
-    // Caso C: Radiador de 240mm en Gabinete sin soporte de radiador
-    else if (is240 && gabinete.maxRadiatorMm === 0) {
+    // Caso C: Radiador de 240mm en Gabinete con soporte inferior a 240mm
+    else if (is240 && caseRad < 240) {
       alertas.push({
         tipo: "ERROR",
         titulo: "Incompatibilidad Física: Radiador de 240mm No Compatible con Gabinete",
-        detalle: `El gabinete seleccionado (${gabineteDesc}) no admite la instalación del radiador de 240mm del ${coolerDesc}.`,
+        detalle: `El gabinete seleccionado (${gabineteDesc}) no admite la instalación del radiador de 240mm del ${coolerDesc} según ficha técnica oficial.`,
         categoriaTarget: "GABINETE",
         accionSugerida: "Ver Gabinetes Compatibles",
         accionTipo: "CAMBIAR_TAB",

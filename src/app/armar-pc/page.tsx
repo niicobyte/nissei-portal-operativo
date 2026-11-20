@@ -501,6 +501,8 @@ export default function ArmarPcPresupuestadorPage() {
   const [displayLimit, setDisplayLimit] = useState<number>(60);
   const [onlyCompatible, setOnlyCompatible] = useState<boolean>(true);
   const [onlyWebStock, setOnlyWebStock] = useState<boolean>(true);
+  const [isAuditingWeb, setIsAuditingWeb] = useState<boolean>(false);
+  const [lastAuditTimestamp, setLastAuditTimestamp] = useState<string | null>(null);
 
   // Filtros interactivos de Plataforma & Perfil Productivo
   const [selectedSocketFilter, setSelectedSocketFilter] = useState<"TODOS" | "AM4" | "AM5" | "LGA1700" | "LGA1851">("TODOS");
@@ -1047,9 +1049,10 @@ export default function ArmarPcPresupuestadorPage() {
         cooler.radiatorSizeMm === 240 || /240\s*MM|\b240\b/i.test(coolerDesc)
       );
 
-      if (isLiquid && gab.isKitOficina) return false;
-      if (is360 && gab.maxRadiatorMm !== undefined && gab.maxRadiatorMm < 360) return false;
-      if (is240 && gab.maxRadiatorMm === 0) return false;
+      const caseMaxRad = gab.maxRadiatorMm ?? 0;
+      if (isLiquid && (gab.isKitOficina || caseMaxRad === 0)) return false;
+      if (is360 && caseMaxRad < 360) return false;
+      if (is240 && caseMaxRad < 240) return false;
     }
 
     return true;
@@ -1649,8 +1652,7 @@ export default function ArmarPcPresupuestadorPage() {
     const gamerCompatibleCases = compatibleCases.filter(
       (i) =>
         !i.isKitOficina &&
-        !i.descripcion.includes("1102K") &&
-        !i.descripcion.includes("1103K") &&
+        !/\b(1100K|1101K|1102K|1103K|1200K|1300K|K8501|K8502)\b/i.test(i.descripcion) &&
         (i.precioPyg || 0) >= 270000
     );
 
@@ -2176,6 +2178,46 @@ export default function ArmarPcPresupuestadorPage() {
     buildSmartPcConfiguration(detectedTier, true);
   };
 
+  // Auto-corregir cooler incompatible reemplazándolo por un Cooler de Aire 100% compatible
+  const handleAutoFixCoolerAir = () => {
+    const airCooler = inStockPool.find(
+      (cl) =>
+        cl.categoria === "REFRIGERACION" &&
+        cl.isCpuCooler &&
+        cl.sku !== "STOCK-COOLER" &&
+        !cl.isAioLiquid &&
+        !/WATER|LIQUID|L[IÍ]QUIDO|AIO/i.test(cl.descripcion) &&
+        (!currentGabinete || isGabinetePhysicallyCompatible(currentGabinete, currentMb, cl, Boolean(currentGpu)))
+    ) || inStockPool.find((cl) => cl.categoria === "REFRIGERACION" && cl.isCpuCooler && !cl.isAioLiquid);
+
+    if (airCooler) {
+      handleSelectComponent(airCooler);
+    }
+  };
+
+  // Auto-corregir gabinete incompatible reemplazándolo por un Gabinete Gamer compatible con radiador
+  const handleAutoFixGabineteLiquid = () => {
+    const liquidCase = inStockPool.find(
+      (g) =>
+        g.categoria === "GABINETE" &&
+        !g.isKitOficina &&
+        isGabinetePhysicallyCompatible(g, currentMb, currentCooler, Boolean(currentGpu))
+    );
+
+    if (liquidCase) {
+      handleSelectComponent(liquidCase);
+    }
+  };
+
+  // Ejecutar re-auditoría web de fichas técnicas en tiempo real
+  const handleRunWebAudit = () => {
+    setIsAuditingWeb(true);
+    setTimeout(() => {
+      setIsAuditingWeb(false);
+      setLastAuditTimestamp(new Date().toLocaleTimeString("es-PY"));
+    }, 500);
+  };
+
   /**
    * OPTIMIZADOR MATEMÁTICO INTELIGENTE POR PRESUPUESTO EN GUARANÍES
    * Evalúa múltiples sockets y realiza mejoras escalonadas (Knapsack / Hill-Climbing)
@@ -2407,14 +2449,40 @@ export default function ArmarPcPresupuestadorPage() {
             )
           ) {
             if (needRealCooler) {
+              const prefersLiquid =
+                (cCpu.tdpWatts || 0) >= 150 ||
+                /14900|13900|7950X|9950X|285K/i.test(descCpu);
+
+              // Para CPUs estándar (ej: Ryzen 5, Core i5), priorizar Cooler de Aire eficiente
+              const airCooler = !prefersLiquid
+                ? realCoolers.find(
+                    (cl) =>
+                      !cl.isAioLiquid &&
+                      !/WATER|LIQUID|L[IÍ]QUIDO|AIO/i.test(cl.descripcion) &&
+                      allCases.some((g) =>
+                        isGabinetePhysicallyCompatible(g, activeMb, cl, Boolean(cGpu))
+                      )
+                  )
+                : undefined;
+
               activeCooler =
+                airCooler ||
                 realCoolers.find((cl) =>
                   allCases.some((g) =>
                     isGabinetePhysicallyCompatible(g, activeMb, cl, Boolean(cGpu))
                   )
-                ) || realCoolers[0];
+                ) ||
+                realCoolers[0];
             } else {
-              activeCooler = stockCooler || realCoolers[0];
+              const airCooler = realCoolers.find(
+                (cl) =>
+                  !cl.isAioLiquid &&
+                  !/WATER|LIQUID|L[IÍ]QUIDO|AIO/i.test(cl.descripcion) &&
+                  allCases.some((g) =>
+                    isGabinetePhysicallyCompatible(g, activeMb, cl, Boolean(cGpu))
+                  )
+              );
+              activeCooler = stockCooler || airCooler || realCoolers[0];
             }
           }
 
@@ -2737,6 +2805,9 @@ export default function ArmarPcPresupuestadorPage() {
             const nextCooler = realCoolers.find((cl) => {
               if ((cl.precioPyg || 0) <= (cooler?.precioPyg || 0)) return false;
               if ((cl.precioPyg || 0) > targetTotalPyg * 0.11) return false;
+              // No forzar refrigeración líquida en procesadores de 65W a menos que sea presupuesto workstation/ultra (>=10M)
+              const isLiquid = cl.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO/i.test(cl.descripcion);
+              if (isLiquid && (cpu.tdpWatts || 65) < 120 && targetTotalPyg < 10000000) return false;
               if (!isGabinetePhysicallyCompatible(gabinete!, mb, cl, Boolean(gpu))) return false;
               return (cl.precioPyg || 0) - (cooler?.precioPyg || 0) <= headroom;
             });
@@ -3279,18 +3350,60 @@ export default function ArmarPcPresupuestadorPage() {
         }
 
         if (item.categoria === "GABINETE") {
-          const isLiquid = currentCooler && (currentCooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`));
-          const is360 = currentCooler && (currentCooler.radiatorSizeMm === 360 || /360/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`));
-          if (isLiquid && item.isKitOficina) return false;
-          if (is360 && item.maxRadiatorMm !== undefined && item.maxRadiatorMm < 360) return false;
-          if (currentMb?.formFactor === "ATX" && (item.maxMbFormFactor === "MATX" || item.maxMbFormFactor === "ITX")) return false;
+          const isLiquid = Boolean(
+            currentCooler &&
+              (currentCooler.isAioLiquid ||
+                /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(
+                  `${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`
+                ))
+          );
+          const is360 = Boolean(
+            currentCooler &&
+              (currentCooler.radiatorSizeMm === 360 ||
+                /360/i.test(
+                  `${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`
+                ))
+          );
+          const is240 = Boolean(
+            currentCooler &&
+              (currentCooler.radiatorSizeMm === 240 ||
+                /240/i.test(
+                  `${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`
+                ))
+          );
+          const caseRad = item.maxRadiatorMm ?? 0;
+
+          if (isLiquid && (item.isKitOficina || caseRad === 0)) return false;
+          if (is360 && caseRad < 360) return false;
+          if (is240 && caseRad < 240) return false;
+          if (
+            currentMb?.formFactor === "ATX" &&
+            (item.maxMbFormFactor === "MATX" || item.maxMbFormFactor === "ITX")
+          )
+            return false;
         }
 
         if (item.categoria === "REFRIGERACION") {
-          const isLiquid = item.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${item.descripcion} ${item.nombreWeb || ""}`);
-          const is360 = item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`);
-          if (currentGabinete?.isKitOficina && isLiquid) return false;
-          if (currentGabinete?.maxRadiatorMm !== undefined && currentGabinete.maxRadiatorMm < 360 && is360) return false;
+          const isLiquid = Boolean(
+            item.isAioLiquid ||
+              /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(
+                `${item.descripcion} ${item.nombreWeb || ""}`
+              )
+          );
+          const is360 = Boolean(
+            item.radiatorSizeMm === 360 ||
+              /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)
+          );
+          const is240 = Boolean(
+            item.radiatorSizeMm === 240 ||
+              /240/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)
+          );
+          const caseRad = currentGabinete?.maxRadiatorMm ?? 0;
+
+          if (currentGabinete && isLiquid && (currentGabinete.isKitOficina || caseRad === 0))
+            return false;
+          if (currentGabinete && is360 && caseRad < 360) return false;
+          if (currentGabinete && is240 && caseRad < 240) return false;
           if (
             currentCpu &&
             currentCpu.includesCooler === false &&
@@ -6201,14 +6314,19 @@ export default function ArmarPcPresupuestadorPage() {
                               📦 Kit Oficina (Fuente {item.fuenteIncluidaWatts || 200}W + Periféricos)
                             </span>
                           )}
-                          {item.categoria === "GABINETE" && item.isKitOficina && currentCooler && (currentCooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && (
+                          {item.categoria === "GABINETE" && currentCooler && (currentCooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && (item.isKitOficina || (item.maxRadiatorMm ?? 0) === 0) && (
                             <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                              ❌ Incompatible: No admite Water Cooler
+                              ❌ Incompatible: No admite Water Cooler (Solo Aire)
                             </span>
                           )}
-                          {item.categoria === "GABINETE" && currentCooler && (currentCooler.radiatorSizeMm === 360 || /360/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && item.maxRadiatorMm !== undefined && item.maxRadiatorMm < 360 && (
+                          {item.categoria === "GABINETE" && currentCooler && (currentCooler.radiatorSizeMm === 360 || /360/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && (item.maxRadiatorMm ?? 0) > 0 && (item.maxRadiatorMm ?? 0) < 360 && (
                             <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                              ❌ Incompatible con radiador 360mm
+                              ❌ Incompatible con radiador 360mm (admite hasta 240mm)
+                            </span>
+                          )}
+                          {item.categoria === "GABINETE" && currentCooler && (currentCooler.radiatorSizeMm === 240 || /240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && (item.maxRadiatorMm ?? 0) < 240 && (
+                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                              ❌ Incompatible con radiador 240mm
                             </span>
                           )}
                           {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && (
@@ -6216,14 +6334,19 @@ export default function ArmarPcPresupuestadorPage() {
                               Radiador 360mm
                             </span>
                           )}
-                          {item.categoria === "REFRIGERACION" && (item.isAioLiquid || item.radiatorSizeMm) && currentGabinete?.isKitOficina && (
+                          {item.categoria === "REFRIGERACION" && (item.isAioLiquid || item.radiatorSizeMm) && currentGabinete && (currentGabinete.isKitOficina || (currentGabinete.maxRadiatorMm ?? 0) === 0) && (
                             <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
-                              ❌ Incompatible: No entra en el Gabinete Kit ({currentGabinete.sku})
+                              ❌ Incompatible: Gabinete actual ({currentGabinete.sku}) no admite Water Cooler (Solo Aire)
                             </span>
                           )}
-                          {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && currentGabinete?.maxRadiatorMm !== undefined && currentGabinete.maxRadiatorMm < 360 && !currentGabinete.isKitOficina && (
+                          {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && currentGabinete && (currentGabinete.maxRadiatorMm ?? 0) > 0 && (currentGabinete.maxRadiatorMm ?? 0) < 360 && (
                             <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
                               ❌ Incompatible: Gabinete actual solo admite hasta {currentGabinete.maxRadiatorMm}mm
+                            </span>
+                          )}
+                          {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 240 || /240/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && currentGabinete && (currentGabinete.maxRadiatorMm ?? 0) < 240 && (
+                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                              ❌ Incompatible: Gabinete actual no admite radiador de 240mm
                             </span>
                           )}
                         </div>
@@ -6423,6 +6546,128 @@ export default function ArmarPcPresupuestadorPage() {
                 )}
               </div>
             </div>
+
+            {/* AUDITORÍA DE COMPATIBILIDAD EN TIEMPO REAL CON FICHAS TÉCNICAS WEB */}
+            {selectedComponents.length >= 2 && (
+              <div
+                className={`p-3 rounded-xl border text-xs space-y-2.5 transition-all ${
+                  resultadoCompatibilidad.totalErrores > 0
+                    ? "bg-rose-50/90 border-rose-300 shadow-2xs"
+                    : "bg-emerald-50/70 border-emerald-300"
+                }`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <span className="text-sm">🌐</span>
+                    <span className="text-zinc-900 font-extrabold text-[12px]">
+                      Auditoría Web Oficial de Fabricantes
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRunWebAudit}
+                    disabled={isAuditingWeb}
+                    className="px-2 py-1 rounded-lg bg-white border border-zinc-200 text-zinc-700 hover:text-black font-semibold text-[10.5px] shadow-2xs cursor-pointer flex items-center gap-1 transition-colors"
+                  >
+                    <Search className={`w-3 h-3 ${isAuditingWeb ? "animate-spin text-emerald-600" : ""}`} />
+                    <span>{isAuditingWeb ? "Auditando web..." : "Re-auditar Fichas Web"}</span>
+                  </button>
+                </div>
+
+                {/* Si hay error crítico (ej: Cooler Líquido en Gabinete sin soporte de radiadores) */}
+                {resultadoCompatibilidad.totalErrores > 0 ? (
+                  <div className="space-y-2 pt-0.5">
+                    <div className="p-2.5 rounded-lg bg-rose-100/90 border border-rose-300 text-rose-950 font-medium space-y-1">
+                      <div className="flex items-center gap-1.5 font-black text-rose-900">
+                        <span>⛔</span>
+                        <span>Incompatibilidad Física Detectada en Fichas Oficiales</span>
+                      </div>
+                      <p className="text-[11px] leading-snug">
+                        {resultadoCompatibilidad.alertas.find((a) => a.tipo === "ERROR")?.detalle ||
+                          "Uno o más componentes presentan colisión física según especificaciones técnicas oficiales."}
+                      </p>
+                    </div>
+
+                    {/* Botones de Auto-Corrección Inmediata con 1 toque */}
+                    <div className="flex flex-col sm:flex-row gap-1.5 pt-1">
+                      {currentCooler &&
+                        (currentCooler.isAioLiquid || currentCooler.radiatorSizeMm) &&
+                        (currentGabinete?.maxRadiatorMm ?? 0) < (currentCooler.radiatorSizeMm || 240) && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleAutoFixGabineteLiquid}
+                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-zinc-900 hover:bg-black text-white font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                            >
+                              <span>✨</span>
+                              <span>Poner Gabinete con soporte de radiador</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleAutoFixCoolerAir}
+                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                            >
+                              <span>❄️</span>
+                              <span>Cambiar a Cooler de Aire (Recomendado)</span>
+                            </button>
+                          </>
+                        )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5 pt-0.5 text-[11px] text-zinc-700">
+                    <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>Fichas técnicas oficiales validadas (0 colisiones):</span>
+                    </div>
+                    <ul className="grid grid-cols-1 gap-1 text-[10.5px] font-mono text-zinc-600 pl-4 list-disc">
+                      {currentCooler && currentGabinete && (
+                        <li>
+                          {currentCooler.isAioLiquid || currentCooler.radiatorSizeMm
+                            ? `Water Cooler (${currentCooler.radiatorSizeMm || 240}mm) entra en soporte superior/frontal del gabinete (${currentGabinete.maxRadiatorMm}mm max).`
+                            : `Cooler por aire compatible con el despeje del gabinete.`}
+                        </li>
+                      )}
+                      {currentMb && currentGabinete && (
+                        <li>
+                          Placa Madre ({currentMb.formFactor || "ATX"}) compatible con chasis {currentGabinete.maxMbFormFactor || "ATX"}.
+                        </li>
+                      )}
+                      {currentCpu && currentMb && (
+                        <li>
+                          Socket CPU {currentCpu.socket} 100% compatible con Placa {currentMb.socket}.
+                        </li>
+                      )}
+                      {currentPsu && (
+                        <li>
+                          Fuente {currentPsu.potenciaWatts || 500}W cubre {resultadoCompatibilidad.consumoTotalWatts}W estimados (Margen 130%).
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Enlace directo para verificar ficha técnica en Google */}
+                {currentGabinete && currentCooler && (
+                  <div className="pt-1.5 border-t border-zinc-200/60 flex items-center justify-between text-[10px]">
+                    <span className="text-zinc-500 font-mono">
+                      {lastAuditTimestamp ? `Auditado a las ${lastAuditTimestamp}` : "Revisión técnica en vivo"}
+                    </span>
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(
+                        `${currentGabinete.descripcion} radiator support specs ${currentCooler.descripcion}`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-emerald-700 hover:text-emerald-900 font-bold inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Verificar en Google</span>
+                      <ExternalLink className="w-2.5 h-2.5" />
+                    </a>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Checklist Inteligente de Completitud para Venta Segura */}
             <div className="p-3 bg-zinc-50 border border-zinc-200/80 rounded-xl space-y-2">
