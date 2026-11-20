@@ -864,6 +864,18 @@ export default function ArmarPcPresupuestadorPage() {
     () => selectedComponents.find((c) => c.categoria === "REFRIGERACION"),
     [selectedComponents]
   );
+  const currentPsu = useMemo(
+    () => selectedComponents.find((c) => c.categoria === "FUENTE"),
+    [selectedComponents]
+  );
+  const currentRam = useMemo(
+    () => selectedComponents.find((c) => c.categoria === "RAM"),
+    [selectedComponents]
+  );
+  const currentStorage = useMemo(
+    () => selectedComponents.find((c) => c.categoria === "ALMACENAMIENTO"),
+    [selectedComponents]
+  );
 
   // Socket activo efectivo (determinado por CPU en carrito, Placa Madre o selección explícita del usuario)
   const effectiveSocket = useMemo<"TODOS" | "AM4" | "AM5" | "LGA1700" | "LGA1851">(() => {
@@ -2180,15 +2192,26 @@ export default function ArmarPcPresupuestadorPage() {
 
   // Auto-corregir cooler incompatible reemplazándolo por un Cooler de Aire 100% compatible
   const handleAutoFixCoolerAir = () => {
-    const airCooler = inStockPool.find(
-      (cl) =>
-        cl.categoria === "REFRIGERACION" &&
-        cl.isCpuCooler &&
-        cl.sku !== "STOCK-COOLER" &&
-        !cl.isAioLiquid &&
-        !/WATER|LIQUID|L[IÍ]QUIDO|AIO/i.test(cl.descripcion) &&
-        (!currentGabinete || isGabinetePhysicallyCompatible(currentGabinete, currentMb, cl, Boolean(currentGpu)))
-    ) || inStockPool.find((cl) => cl.categoria === "REFRIGERACION" && cl.isCpuCooler && !cl.isAioLiquid);
+    const inStock = catalogoCompleto.filter((i) => i.stockStatus === "IN_STOCK");
+    const airCooler =
+      inStock.find(
+        (cl) =>
+          cl.categoria === "REFRIGERACION" &&
+          cl.isCpuCooler &&
+          cl.sku !== "STOCK-COOLER" &&
+          !cl.isAioLiquid &&
+          !/WATER|LIQUID|L[IÍ]QUIDO|AIO/i.test(cl.descripcion) &&
+          (!currentGabinete ||
+            isGabinetePhysicallyCompatible(
+              currentGabinete,
+              currentMb,
+              cl,
+              Boolean(currentGpu)
+            ))
+      ) ||
+      inStock.find(
+        (cl) => cl.categoria === "REFRIGERACION" && cl.isCpuCooler && !cl.isAioLiquid
+      );
 
     if (airCooler) {
       handleSelectComponent(airCooler);
@@ -2197,7 +2220,8 @@ export default function ArmarPcPresupuestadorPage() {
 
   // Auto-corregir gabinete incompatible reemplazándolo por un Gabinete Gamer compatible con radiador
   const handleAutoFixGabineteLiquid = () => {
-    const liquidCase = inStockPool.find(
+    const inStock = catalogoCompleto.filter((i) => i.stockStatus === "IN_STOCK");
+    const liquidCase = inStock.find(
       (g) =>
         g.categoria === "GABINETE" &&
         !g.isKitOficina &&
