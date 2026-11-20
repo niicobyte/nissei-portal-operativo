@@ -1133,6 +1133,8 @@ export default function RecepcionDashboardPage() {
 
     try {
       const updated = await updateTicketDetailsAsync(selectedTicket.idOrden, {
+        estado: selectedTicket.estado,
+        fechaEntregada: selectedTicket.fechaEntregada,
         mensaje: modalMensaje,
         accesorios: accFinal,
         dictamenTipo: modalDictamenTipo,
@@ -1175,6 +1177,7 @@ export default function RecepcionDashboardPage() {
         : modalAccesorios.trim();
 
     const updated = updateTicketDetails(idOrden, {
+      estado: selectedTicket?.estado,
       dictamenTipo: dictamenId,
       mensaje: modalMensaje,
       accesorios: accFinal,
@@ -1200,50 +1203,62 @@ export default function RecepcionDashboardPage() {
   };
 
   // Actualizar estado de una orden sincronizado con el filtro y modal
-  const handleCambiarEstado = (idOrden: string, nuevoEstado: string) => {
+  const handleCambiarEstado = async (idOrden: string, nuevoEstado: string) => {
     const isDelivered = nuevoEstado.trim().toLowerCase() === "entregada";
     const nowDate = new Date().toLocaleDateString("es-PY", {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
     });
-    const accFinal =
-      modalAccessoriesList.length > 0
-        ? modalAccessoriesList.join(", ")
-        : modalAccesorios.trim();
 
-    const updated = updateTicketDetails(idOrden, {
-      estado: nuevoEstado,
-      mensaje: modalMensaje,
-      accesorios: accFinal,
-      dictamenTipo: modalDictamenTipo,
-      mensajeEditadoManualmente: true,
-      idOrdenCde: selectedTicket?.idOrdenCde,
-      fechaEntregada: isDelivered
-        ? selectedTicket?.fechaEntregada || nowDate
-        : selectedTicket?.fechaEntregada,
-    });
-    const cdeTickets = getStoredCdeTickets();
-    const checkins = getStoredCdeCheckins();
-    const overrides = getStoredSatiOverrides();
-    const cross = getStoredSatiCrossMatches();
-    const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
-    setTickets(enriched);
-    if (selectedTicket && selectedTicket.idOrden === idOrden) {
-      const enrichedSelected = enriched.find((t) => t.idOrden === idOrden);
-      setSelectedTicket(enrichedSelected || {
-        ...selectedTicket,
+    const targetTicket = tickets.find((t) => t.idOrden === idOrden) || selectedTicket;
+    const isTargetSelected = selectedTicket && selectedTicket.idOrden === idOrden;
+
+    const accFinal = isTargetSelected
+      ? (modalAccessoriesList.length > 0 ? modalAccessoriesList.join(", ") : modalAccesorios.trim())
+      : (targetTicket?.accesorios || "");
+
+    const msgFinal = isTargetSelected ? modalMensaje : (targetTicket?.mensaje || "");
+    const dictamenFinal = isTargetSelected ? modalDictamenTipo : (targetTicket?.dictamenTipo || "AUTO");
+    const cdeId = isTargetSelected ? selectedTicket?.idOrdenCde : targetTicket?.idOrdenCde;
+
+    const fechaEnt = isDelivered
+      ? (isTargetSelected ? selectedTicket?.fechaEntregada : targetTicket?.fechaEntregada) || nowDate
+      : (isTargetSelected ? selectedTicket?.fechaEntregada : targetTicket?.fechaEntregada);
+
+    try {
+      const updated = await updateTicketDetailsAsync(idOrden, {
         estado: nuevoEstado,
-        mensaje: modalMensaje,
+        mensaje: msgFinal,
         accesorios: accFinal,
-        dictamenTipo: modalDictamenTipo,
+        dictamenTipo: dictamenFinal,
         mensajeEditadoManualmente: true,
-        fechaEntregada: isDelivered
-          ? selectedTicket.fechaEntregada || nowDate
-          : selectedTicket.fechaEntregada,
+        idOrdenCde: cdeId,
+        fechaEntregada: fechaEnt,
       });
+      const cdeTickets = getStoredCdeTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+      setTickets(enriched);
+      if (isTargetSelected) {
+        const enrichedSelected = enriched.find((t) => t.idOrden === idOrden);
+        setSelectedTicket(enrichedSelected || {
+          ...selectedTicket,
+          estado: nuevoEstado,
+          mensaje: msgFinal,
+          accesorios: accFinal,
+          dictamenTipo: dictamenFinal,
+          mensajeEditadoManualmente: true,
+          fechaEntregada: fechaEnt,
+        });
+      }
+      showToast(`✓ Orden #${idOrden} actualizada a estado: ${nuevoEstado}`);
+    } catch (err) {
+      console.error("Error al actualizar estado:", err);
+      showToast(`✓ Estado de orden #${idOrden} actualizado localmente.`);
     }
-    showToast(`Orden #${idOrden} actualizada a estado: ${nuevoEstado}`);
   };
 
   // Generar mensaje con el estado exacto seleccionado, dictamen QC y detalle técnico para enviar al grupo de Recepción

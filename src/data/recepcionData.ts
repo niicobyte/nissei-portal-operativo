@@ -27307,6 +27307,8 @@ export const STORAGE_KEY = 'nissei_recepcion_tickets_v1';
 export const RECEPCION_CUSTOM_DETAILS_STORAGE_KEY = 'nissei_recepcion_custom_details_v2';
 
 export interface RecepcionCustomDetails {
+  estado?: string;
+  fechaEntregada?: string;
   mensaje?: string;
   accesorios?: string;
   dictamenTipo?: string;
@@ -27369,6 +27371,8 @@ export function getStoredTickets(): RecepcionTicket[] {
       if (!c) return t;
       return {
         ...t,
+        estado: c.estado !== undefined ? c.estado : t.estado,
+        fechaEntregada: c.fechaEntregada !== undefined ? c.fechaEntregada : t.fechaEntregada,
         mensaje: c.mensajeEditadoManualmente && c.mensaje !== undefined ? c.mensaje : (t.mensaje || c.mensaje || ''),
         accesorios: c.accesorios !== undefined ? c.accesorios : t.accesorios,
         dictamenTipo: c.dictamenTipo !== undefined ? c.dictamenTipo : t.dictamenTipo,
@@ -27503,9 +27507,16 @@ export function applyCloudRecepcionTickets(rawData: RecepcionTicket[]): Recepcio
         : (isManualEdit && local?.mensaje ? local.mensaje : (t.mensaje || custom?.mensaje || local?.mensaje || ''));
 
     const finalDictamen = custom?.dictamenTipo || t.dictamenTipo || local?.dictamenTipo;
+    const finalEstado = custom?.estado || local?.estado || t.estado;
+    const finalFechaEntregada =
+      custom?.fechaEntregada !== undefined
+        ? custom.fechaEntregada
+        : (local?.fechaEntregada !== undefined ? local.fechaEntregada : t.fechaEntregada);
 
     return {
       ...t,
+      estado: finalEstado,
+      fechaEntregada: finalFechaEntregada,
       mensaje: finalMensaje,
       accesorios: finalAccesorios,
       dictamenTipo: finalDictamen,
@@ -27633,6 +27644,8 @@ export async function updateTicketDetailsAsync(
 
   // 1. Guardar en mapa de persistencia de detalles personalizados resiliente
   saveStoredCustomDetails(idOrden, {
+    estado: updates.estado,
+    fechaEntregada: updates.fechaEntregada,
     mensaje: updates.mensaje,
     accesorios: updates.accesorios,
     dictamenTipo: updates.dictamenTipo,
@@ -27641,6 +27654,8 @@ export async function updateTicketDetailsAsync(
 
   if (updates.idOrdenCde) {
     saveStoredCustomDetails(updates.idOrdenCde, {
+      estado: updates.estado,
+      fechaEntregada: updates.fechaEntregada,
       mensaje: updates.mensaje,
       accesorios: updates.accesorios,
       dictamenTipo: updates.dictamenTipo,
@@ -27679,6 +27694,8 @@ export async function updateTicketDetailsAsync(
           action: 'UPDATE_RECEPCION_DETALLES',
           idOrden,
           idOrdenCde: updates.idOrdenCde,
+          estado: updates.estado,
+          fechaEntregada: updates.fechaEntregada,
           mensaje: updates.mensaje,
           accesorios: updates.accesorios,
           dictamenTipo: updates.dictamenTipo,
@@ -27710,6 +27727,8 @@ export function updateTicketDetails(
   }
 
   saveStoredCustomDetails(idOrden, {
+    estado: updates.estado,
+    fechaEntregada: updates.fechaEntregada,
     mensaje: updates.mensaje,
     accesorios: updates.accesorios,
     dictamenTipo: updates.dictamenTipo,
@@ -27718,6 +27737,8 @@ export function updateTicketDetails(
 
   if (updates.idOrdenCde) {
     saveStoredCustomDetails(updates.idOrdenCde, {
+      estado: updates.estado,
+      fechaEntregada: updates.fechaEntregada,
       mensaje: updates.mensaje,
       accesorios: updates.accesorios,
       dictamenTipo: updates.dictamenTipo,
@@ -27754,6 +27775,8 @@ export function updateTicketDetails(
         action: 'UPDATE_RECEPCION_DETALLES',
         idOrden,
         idOrdenCde: updates.idOrdenCde,
+        estado: updates.estado,
+        fechaEntregada: updates.fechaEntregada,
         mensaje: updates.mensaje,
         accesorios: updates.accesorios,
         dictamenTipo: updates.dictamenTipo,
@@ -27778,6 +27801,11 @@ export function updateTicketStatus(idOrden: string, newStatus: string): Recepcio
     year: 'numeric',
   });
 
+  saveStoredCustomDetails(idOrden, {
+    estado: newStatus,
+    fechaEntregada: isDelivered ? nowDate : undefined,
+  });
+
   const current = getStoredTickets();
   const updated = current.map((t) =>
     t.idOrden === idOrden
@@ -27796,7 +27824,12 @@ export function updateTicketStatus(idOrden: string, newStatus: string): Recepcio
     fetch('/api/db', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'UPDATE_RECEPCION_STATUS', idOrden, newStatus }),
+      body: JSON.stringify({
+        action: 'UPDATE_RECEPCION_DETALLES',
+        idOrden,
+        estado: newStatus,
+        fechaEntregada: isDelivered ? nowDate : undefined,
+      }),
     }).catch((err) => console.error('[MySQL Error Update Ticket Status]', err));
   }
 
