@@ -3649,433 +3649,461 @@ ${dictamen.accText}`;
           </div>
         )}
 
-        {/* Modal de Detalle Completo de la Orden */}
+        {/* Modal de Detalle Completo de la Orden (Diseño Horizontal Panorámico Sin Scroll) */}
         {selectedTicket && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2.5 sm:p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-lg 2xl:max-w-2xl w-full p-4 sm:p-6 shadow-2xl space-y-4 border border-[#e5e5e5] max-h-[92dvh] overflow-y-auto overscroll-contain">
-              <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-3">
-                <div>
-                  <span className="text-[11px] font-mono text-[#888888] uppercase">DETALLE DE ORDEN SATI</span>
-                  <h3 className="text-lg 2xl:text-xl font-bold text-[#121212]">
-                    Orden #{selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
-                  </h3>
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4 animate-in fade-in">
+            <div className="bg-white rounded-2xl max-w-6xl 2xl:max-w-7xl w-full p-4 sm:p-5 shadow-2xl space-y-3 border border-[#e5e5e5] max-h-[95dvh] overflow-y-auto overscroll-contain">
+              {/* Cabecera Horizontal Compacta */}
+              <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2.5 gap-3 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap min-w-0">
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-mono text-[#888888] uppercase tracking-wider">
+                        DETALLE DE ORDEN SATI
+                      </span>
+                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-zinc-100 text-zinc-800 border border-zinc-200">
+                        {selectedTicket.tipoComponente}
+                      </span>
+                      <span className="text-[11px] font-mono text-zinc-500">
+                        S/N: <strong className="text-zinc-800">{selectedTicket.serial || "N/A"}</strong>
+                      </span>
+                    </div>
+                    <h3 className="text-base sm:text-lg 2xl:text-xl font-extrabold text-[#121212] truncate">
+                      Orden #{selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
+                    </h3>
+                  </div>
+
                   {selectedTicket.idOrdenCde && (
-                    <div className="mt-2 p-2.5 bg-indigo-50/90 border border-indigo-200 rounded-xl flex items-center justify-between text-xs text-indigo-950 flex-wrap gap-2">
-                      <div className="flex items-center gap-2 font-semibold">
-                        <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[11px] font-bold">
-                          ASU #{selectedTicket.idOrden} ↔ CDE #{selectedTicket.idOrdenCde}
-                        </span>
-                        <span>{selectedTicket.matchReason || "Match: Cliente & Equipo"}</span>
-                      </div>
+                    <div className="px-2.5 py-1.5 bg-indigo-50/90 border border-indigo-200 rounded-xl flex items-center gap-2 text-xs text-indigo-950 flex-wrap">
+                      <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[11px] font-bold">
+                        ASU #{selectedTicket.idOrden} ↔ CDE #{selectedTicket.idOrdenCde}
+                      </span>
+                      <span className="font-medium text-[11px]">
+                        {selectedTicket.matchReason || "Match: Cliente & Equipo"}
+                      </span>
                       {selectedTicket.estadoCde && (
-                        <span className="text-zinc-600 font-medium text-[11px]">
-                          Estado CDE: <strong className="text-zinc-900 font-bold">{selectedTicket.estadoCde}</strong>
+                        <span className="text-zinc-600 text-[11px] border-l border-indigo-200 pl-2">
+                          CDE: <strong className="text-zinc-900 font-bold">{selectedTicket.estadoCde}</strong>
                         </span>
                       )}
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => setSelectedTicket(null)}
-                  className="text-[#888888] hover:text-[#121212] text-xl font-bold p-1"
-                >
-                  ✕
-                </button>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  {getStatusBadge(selectedTicket.estado)}
+                  <button
+                    onClick={() => setSelectedTicket(null)}
+                    className="text-[#888888] hover:text-[#121212] text-lg font-bold px-2 py-1 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer"
+                    title="Cerrar ventana"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
 
-              <div className="space-y-3.5 text-xs">
-                {isTicketVencidoDeposito(selectedTicket) && (
-                  <div className="bg-rose-50 border border-rose-300 p-3 rounded-xl flex items-start gap-2.5 text-rose-900 text-xs">
-                    <Package className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                    <div>
-                      <strong className="block font-bold">Equipo para remisión a depósito (+90 días):</strong>
-                      <span>Este equipo cumplió el plazo máximo de 90 días de permanencia en la sucursal ASU. Debe ser trasladado al depósito central para optimizar espacio.</span>
-                    </div>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 bg-[#f9f9f9] p-4 rounded-xl border border-[#f0f0f0]">
+              {isTicketVencidoDeposito(selectedTicket) && (
+                <div className="bg-rose-50 border border-rose-300 px-3 py-2 rounded-xl flex items-center gap-2.5 text-rose-900 text-xs">
+                  <Package className="w-4 h-4 text-rose-600 shrink-0" />
                   <div>
-                    <span className="text-zinc-500 block text-xs font-semibold">Cliente</span>
-                    <strong className="text-zinc-900 text-sm sm:text-base">{selectedTicket.cliente}</strong>
+                    <strong className="font-bold">Equipo para remisión a depósito (+90 días): </strong>
+                    <span>Cumplió el plazo máximo de 90 días de permanencia en sucursal ASU. Remitir al depósito central.</span>
                   </div>
-                  <div>
-                    <span className="text-zinc-500 block text-xs font-semibold">Código de Producto</span>
-                    <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.codigoProducto || "N/A"}</strong>
-                  </div>
-                  <div>
-                    <span className="text-zinc-500 block text-xs font-semibold">Fecha de Ingreso ASU</span>
-                    <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaIngreso || "N/A"}</strong>
-                  </div>
-                  {selectedTicket.fechaIngresoCde && (
-                    <div>
-                      <span className="text-zinc-500 block text-xs font-semibold">Fecha de Ingreso CDE</span>
-                      <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaIngresoCde}</strong>
-                    </div>
-                  )}
-                  {selectedTicket.fechaDespachoCde && (
-                    <div>
-                      <span className="text-zinc-500 block text-xs font-semibold">Fecha de Despacho CDE</span>
-                      <strong className="text-amber-800 font-mono text-sm flex items-center gap-1 font-bold">
-                        <span>🚚</span>
-                        <span>{selectedTicket.fechaDespachoCde}</span>
-                      </strong>
-                    </div>
-                  )}
-                  <div>
-                    <span className="text-zinc-500 block text-xs font-semibold">Recepción en Sucursal</span>
-                    {selectedTicket.recibidoEnDeposito ? (
-                      <strong className="text-emerald-700 font-bold flex items-center gap-1.5 font-sans text-xs sm:text-sm">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Recibido ({selectedTicket.fechaRecibidoDeposito || "Listo para retiro"})</span>
-                      </strong>
-                    ) : (
-                      <strong className="text-zinc-500 font-sans text-xs italic">
-                        Pendiente de recepción física
-                      </strong>
-                    )}
-                  </div>
-                  <div>
-                    <span className="text-zinc-500 block text-xs font-semibold">Fecha de Entrega al Cliente</span>
-                    {(selectedTicket.estado || "").toLowerCase().includes("entregada") && selectedTicket.fechaEntregada ? (
-                      <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaEntregada}</strong>
-                    ) : (
-                      <strong className="text-zinc-400 font-sans text-xs italic">Pendiente de retiro</strong>
-                    )}
-                  </div>
+                </div>
+              )}
+
+              {/* Barra Horizontal de Metadatos del Cliente y Fechas */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 bg-[#f9f9f9] px-3.5 py-2.5 rounded-xl border border-[#f0f0f0] text-xs">
+                <div className="min-w-0">
+                  <span className="text-zinc-500 block text-[11px] font-semibold">Cliente</span>
+                  <strong className="text-zinc-900 text-xs sm:text-sm truncate block" title={selectedTicket.cliente}>
+                    {selectedTicket.cliente}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[11px] font-semibold">Código Producto</span>
+                  <strong className="text-zinc-900 font-mono text-xs sm:text-sm">
+                    {selectedTicket.codigoProducto || "N/A"}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[11px] font-semibold">Ingreso ASU / Venta</span>
+                  <strong className="text-zinc-900 font-mono text-xs block">
+                    Ing: {selectedTicket.fechaIngreso || "N/A"}
+                  </strong>
                   {selectedTicket.fechaVenta && (
-                    <div>
-                      <span className="text-zinc-500 block text-xs font-semibold">Fecha de Venta</span>
-                      <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.fechaVenta}</strong>
-                    </div>
+                    <span className="text-zinc-500 font-mono text-[11px] block">
+                      Vta: {selectedTicket.fechaVenta}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[11px] font-semibold">Laboratorio CDE</span>
+                  {selectedTicket.fechaDespachoCde ? (
+                    <strong className="text-amber-800 font-mono text-xs flex items-center gap-1 font-bold">
+                      <span>🚚</span>
+                      <span>{selectedTicket.fechaDespachoCde}</span>
+                    </strong>
+                  ) : selectedTicket.fechaIngresoCde ? (
+                    <strong className="text-zinc-900 font-mono text-xs">
+                      Ing CDE: {selectedTicket.fechaIngresoCde}
+                    </strong>
+                  ) : (
+                    <span className="text-zinc-400 text-xs italic">Local ASU</span>
+                  )}
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[11px] font-semibold">Recepción Sucursal</span>
+                  {selectedTicket.recibidoEnDeposito ? (
+                    <strong className="text-emerald-700 font-bold flex items-center gap-1 font-sans text-xs">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span className="truncate">{selectedTicket.fechaRecibidoDeposito || "Listo retiro"}</span>
+                    </strong>
+                  ) : (
+                    <strong className="text-zinc-400 font-sans text-xs italic">
+                      Pendiente físico
+                    </strong>
+                  )}
+                </div>
+                <div>
+                  <span className="text-zinc-500 block text-[11px] font-semibold">Entrega / Taller</span>
+                  {(selectedTicket.estado || "").toLowerCase().includes("entregada") && selectedTicket.fechaEntregada ? (
+                    <strong className="text-zinc-900 font-mono text-xs block">{selectedTicket.fechaEntregada}</strong>
+                  ) : (
+                    <strong className="text-zinc-400 font-sans text-xs italic block">Pendiente de retiro</strong>
                   )}
                   {selectedTicket.diasResolucion !== null && selectedTicket.diasResolucion !== undefined && (
-                    <div>
-                      <span className="text-zinc-500 block text-xs font-semibold">Días en Taller</span>
-                      <strong className="text-zinc-900 font-mono text-sm font-bold">{selectedTicket.diasResolucion} días</strong>
-                    </div>
+                    <span className="text-zinc-700 font-mono text-[11px] font-bold">
+                      {selectedTicket.diasResolucion} días en taller
+                    </span>
                   )}
+                </div>
+              </div>
+
+              {/* Cuerpo Principal en 2 Columnas Horizontales (Izquierda: Informe + Accesorios + Ubicación | Derecha: Estado + Dictamen QC) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start text-xs">
+                {/* COLUMNA IZQUIERDA (6 cols): Informe Técnico, Accesorios y Ubicación en Cascada */}
+                <div className="lg:col-span-6 space-y-3">
+                  {/* 1. Informe Técnico / Mensaje de Servicio */}
                   <div>
-                    <span className="text-zinc-500 block text-xs font-semibold">Estado Actual</span>
-                    <div className="mt-1">{getStatusBadge(selectedTicket.estado)}</div>
-                  </div>
-                </div>
-
-                <div>
-                  <span className="text-zinc-500 block mb-1.5 text-xs font-bold uppercase tracking-wide">Identificación del Hardware</span>
-                  <div className="p-3.5 bg-white border border-[#e5e5e5] rounded-xl space-y-1.5 shadow-2xs">
-                    <div className="font-extrabold text-sm sm:text-base text-zinc-900">
-                      {selectedTicket.marca} {selectedTicket.modelo}
-                    </div>
-                    <div className="text-xs text-zinc-600 font-mono flex items-center justify-between">
-                      <span>Categoría: <strong className="text-zinc-800">{selectedTicket.tipoComponente}</strong></span>
-                      <span>S/N: <strong className="text-zinc-800">{selectedTicket.serial || "N/A"}</strong></span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
-                        Informe Técnico / Mensaje de Servicio
-                      </span>
-                      {selectedTicket.idOrdenCde && selectedTicket.mensaje && (
-                        <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                          <span>Dictamen Oficial CDE (#{selectedTicket.idOrdenCde})</span>
+                    <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
+                          Informe Técnico / Mensaje de Servicio
                         </span>
+                        {selectedTicket.idOrdenCde && selectedTicket.mensaje && (
+                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                            <span>Dictamen Oficial CDE (#{selectedTicket.idOrdenCde})</span>
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        disabled={isSavingDetails}
+                        onClick={handleGuardarMensaje}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
+                        title="Guardar observaciones, ubicación y accesorios"
+                      >
+                        {isSavingDetails ? (
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Save className="w-3.5 h-3.5" />
+                        )}
+                        <span>{isSavingDetails ? "Guardando..." : "Guardar cambios"}</span>
+                      </button>
+                    </div>
+                    <textarea
+                      ref={modalTextareaRef}
+                      value={modalMensaje}
+                      onChange={(e) => setModalMensaje(e.target.value)}
+                      placeholder="Añada o modifique aquí el informe técnico, observaciones del laboratorio, pruebas ejecutadas..."
+                      rows={2}
+                      className="w-full p-2.5 bg-white border border-slate-300 focus:border-zinc-900 rounded-xl text-xs sm:text-sm text-zinc-900 leading-relaxed outline-none transition-all placeholder:text-zinc-400 font-sans shadow-2xs"
+                    />
+                  </div>
+
+                  {/* 2. Sección de Accesorios Incluidos / Devueltos con el Equipo */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-zinc-600" />
+                        Accesorios Incluidos / Devueltos con el Equipo
+                      </span>
+                      {modalAccessoriesList.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={handleClearModalAccessories}
+                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                        >
+                          Limpiar todos
+                        </button>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      disabled={isSavingDetails}
-                      onClick={handleGuardarMensaje}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
-                      title="Guardar observaciones y accesorios"
-                    >
-                      {isSavingDetails ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Save className="w-3.5 h-3.5" />
-                      )}
-                      <span>{isSavingDetails ? "Guardando..." : "Guardar cambios"}</span>
-                    </button>
+
+                    <div className="p-2.5 bg-white border border-slate-300 rounded-xl space-y-2 shadow-2xs">
+                      {/* Chips de accesorios actuales */}
+                      <div className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
+                        {modalAccessoriesList.length > 0 ? (
+                          modalAccessoriesList.map((acc, idx) => (
+                            <span
+                              key={idx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-lg text-xs font-medium border border-zinc-200 transition-colors"
+                            >
+                              <Tag className="w-3 h-3 text-zinc-500" />
+                              <span>{acc}</span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveModalAccessory(idx)}
+                                className="ml-1 text-zinc-400 hover:text-rose-600 font-bold leading-none cursor-pointer"
+                                title="Quitar accesorio"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-zinc-400 italic">
+                            Sin accesorios registrados (se notificará &quot;Sin accesorios adicionales&quot;)
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Input para agregar accesorio personalizado */}
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          value={modalNewAccessory}
+                          onChange={(e) => setModalNewAccessory(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              handleAddModalAccessory(modalNewAccessory);
+                            }
+                          }}
+                          placeholder="Escriba un accesorio (ej: Cargador 230W, Funda, Caja) y presione Enter o +"
+                          className="flex-1 px-2.5 py-1 text-xs bg-zinc-50 border border-slate-200 focus:border-zinc-900 rounded-lg outline-none transition-colors placeholder:text-zinc-400 font-sans"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleAddModalAccessory(modalNewAccessory)}
+                          className="px-2.5 py-1 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          title="Agregar accesorio a la lista"
+                        >
+                          + Agregar
+                        </button>
+                      </div>
+
+                      {/* Sugerencias rápidas con un toque */}
+                      <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-dashed border-zinc-200 text-[11px]">
+                        <span className="text-zinc-400 mr-1 font-mono text-[10px]">RÁPIDOS:</span>
+                        {[
+                          "Cargador Original",
+                          "Caja Original",
+                          "Cable USB",
+                          "Funda / Estuche",
+                          "Control Remoto",
+                          "Batería",
+                          "Adaptador de Corriente",
+                        ].map((sug) => (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() => handleAddModalAccessory(sug)}
+                            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
+                              modalAccessoriesList.includes(sug)
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200"
+                            }`}
+                          >
+                            + {sug}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <textarea
-                    ref={modalTextareaRef}
-                    value={modalMensaje}
-                    onChange={(e) => setModalMensaje(e.target.value)}
-                    placeholder="Añada o modifique aquí el informe técnico, observaciones del laboratorio, pruebas ejecutadas..."
-                    rows={3}
-                    className="w-full p-3.5 bg-white border border-slate-300 focus:border-zinc-900 rounded-xl text-sm text-zinc-900 leading-relaxed outline-none transition-all placeholder:text-zinc-400 font-sans shadow-sm"
+
+                  {/* 3. Sección de Ubicación del Producto en Cascada Horizontal (Estantes / Muebles) */}
+                  <UbicacionCascadaSelector
+                    value={modalUbicacion}
+                    onChange={(nuevaUbicacion) =>
+                      handleCambiarUbicacion(selectedTicket.idOrden, nuevaUbicacion)
+                    }
                   />
                 </div>
 
-                {/* Sección de Accesorios Incluidos / Devueltos con el Equipo */}
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
-                      <Package className="w-4 h-4 text-zinc-600" />
-                      Accesorios Incluidos / Devueltos con el Equipo
-                    </span>
-                    {modalAccessoriesList.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={handleClearModalAccessories}
-                        className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
-                      >
-                        Limpiar todos
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="p-3.5 bg-white border border-slate-300 rounded-xl space-y-2.5 shadow-sm">
-                    {/* Chips de accesorios actuales */}
-                    <div className="flex flex-wrap items-center gap-1.5 min-h-[26px]">
-                      {modalAccessoriesList.length > 0 ? (
-                        modalAccessoriesList.map((acc, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-lg text-xs font-medium border border-zinc-200 transition-colors"
+                {/* COLUMNA DERECHA (6 cols): Cambiar Estado + Dictamen Técnico QC / WhatsApp */}
+                <div className="lg:col-span-6 space-y-3">
+                  {/* 1. Acciones de cambio de estado en el modal */}
+                  <div className="p-3 bg-[#fdfdfd] border border-zinc-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
+                        Cambiar estado:
+                      </span>
+                      <span className="text-[11px] text-zinc-400">
+                        Se incluirá al notificar al cliente
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {modalStatusOptions.map((st) => {
+                        const isActive =
+                          (selectedTicket.estado || "").trim().toLowerCase() ===
+                          st.trim().toLowerCase();
+                        const visual = getEstadoVisualConfig(st);
+                        return (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => handleCambiarEstado(selectedTicket.idOrden, st)}
+                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                              isActive ? visual.activeBtnClass : visual.inactiveBtnClass
+                            }`}
                           >
-                            <Tag className="w-3 h-3 text-zinc-500" />
-                            <span>{acc}</span>
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveModalAccessory(idx)}
-                              className="ml-1 text-zinc-400 hover:text-rose-600 font-bold leading-none cursor-pointer"
-                              title="Quitar accesorio"
-                            >
-                              ×
-                            </button>
+                            {isActive && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
+                            <span>{st}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 2. Selector de Dictamen Técnico / Resolución QC + Vista previa en vivo para WhatsApp */}
+                  {(() => {
+                    const accPreview =
+                      modalAccessoriesList.length > 0
+                        ? modalAccessoriesList.join(", ")
+                        : modalAccesorios;
+                    const preview = resolveDictamenRecepcion(
+                      selectedTicket.estado,
+                      modalMensaje,
+                      accPreview,
+                      modalDictamenTipo
+                    );
+                    return (
+                      <div className="p-3.5 bg-emerald-50/70 border-2 border-emerald-300 rounded-2xl space-y-2.5 shadow-2xs">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider font-mono">
+                            {isTicketDanesa(selectedTicket.cliente)
+                              ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
+                              : "Dictamen Técnico · Resolución QC (WhatsApp)"}
                           </span>
-                        ))
-                      ) : (
-                        <span className="text-xs text-zinc-400 italic">
-                          Sin accesorios registrados (se notificará &quot;Sin accesorios adicionales&quot;)
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Input para agregar accesorio personalizado */}
-                    <div className="flex items-center gap-1.5">
-                      <input
-                        type="text"
-                        value={modalNewAccessory}
-                        onChange={(e) => setModalNewAccessory(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault();
-                            handleAddModalAccessory(modalNewAccessory);
-                          }
-                        }}
-                        placeholder="Escriba un accesorio (ej: Cargador 230W, Funda, Caja) y presione Enter o +"
-                        className="flex-1 px-3 py-1.5 text-xs bg-zinc-50 border border-slate-200 focus:border-zinc-900 rounded-lg outline-none transition-colors placeholder:text-zinc-400 font-sans"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleAddModalAccessory(modalNewAccessory)}
-                        className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                        title="Agregar accesorio a la lista"
-                      >
-                        + Agregar
-                      </button>
-                    </div>
-
-                    {/* Sugerencias rápidas con un toque */}
-                    <div className="flex flex-wrap items-center gap-1 pt-1.5 border-t border-dashed border-zinc-200 text-[11px]">
-                      <span className="text-zinc-400 mr-1 font-mono text-[10px]">RÁPIDOS:</span>
-                      {[
-                        "Cargador Original",
-                        "Caja Original",
-                        "Cable USB",
-                        "Funda / Estuche",
-                        "Control Remoto",
-                        "Batería",
-                        "Adaptador de Corriente",
-                      ].map((sug) => (
-                        <button
-                          key={sug}
-                          type="button"
-                          onClick={() => handleAddModalAccessory(sug)}
-                          className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                            modalAccessoriesList.includes(sug)
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200"
-                          }`}
-                        >
-                          + {sug}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Sección de Ubicación del Producto en Cascada (Estantes / Muebles) */}
-                <UbicacionCascadaSelector
-                  value={modalUbicacion}
-                  onChange={(nuevaUbicacion) =>
-                    handleCambiarUbicacion(selectedTicket.idOrden, nuevaUbicacion)
-                  }
-                />
-
-                {/* Acciones de cambio de estado en el modal (sincronizado con el filtro de estados) */}
-                <div className="p-3.5 sm:p-4 bg-[#fdfdfd] border border-zinc-200 rounded-xl space-y-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-zinc-700">
-                      Cambiar estado:
-                    </span>
-                    <span className="text-xs text-zinc-400">
-                      Se incluirá al notificar al cliente
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {modalStatusOptions.map((st) => {
-                      const isActive =
-                        (selectedTicket.estado || "").trim().toLowerCase() ===
-                        st.trim().toLowerCase();
-                      const visual = getEstadoVisualConfig(st);
-                      return (
-                        <button
-                          key={st}
-                          type="button"
-                          onClick={() => handleCambiarEstado(selectedTicket.idOrden, st)}
-                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs sm:text-sm font-bold rounded-lg border transition-all cursor-pointer ${
-                            isActive ? visual.activeBtnClass : visual.inactiveBtnClass
-                          }`}
-                        >
-                          {isActive && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
-                          <span>{st}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Selector de Dictamen Técnico / Resolución QC + Vista previa en vivo para WhatsApp */}
-                {(() => {
-                  const accPreview =
-                    modalAccessoriesList.length > 0
-                      ? modalAccessoriesList.join(", ")
-                      : modalAccesorios;
-                  const preview = resolveDictamenRecepcion(
-                    selectedTicket.estado,
-                    modalMensaje,
-                    accPreview,
-                    modalDictamenTipo
-                  );
-                  return (
-                    <div className="p-4 sm:p-5 bg-emerald-50/70 border-2 border-emerald-300 rounded-2xl space-y-3.5 shadow-sm">
-                      <div className="flex items-center justify-between gap-2 flex-wrap">
-                        <span className="text-xs sm:text-sm font-extrabold text-emerald-950 uppercase tracking-wider font-mono">
-                          {isTicketDanesa(selectedTicket.cliente)
-                            ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
-                            : "Dictamen Técnico · Resolución QC (WhatsApp)"}
-                        </span>
-                        <span className="text-xs font-mono font-bold text-emerald-900 bg-white px-3 py-1 rounded-lg border border-emerald-300 shadow-2xs">
-                          {preview.sourceLabel}
-                        </span>
-                      </div>
-
-                      {/* Selector rápido de resoluciones QC (Expandido) */}
-                      <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                        {DICTAMEN_QC_OPTIONS.map((opt) => {
-                          const selected = modalDictamenTipo === opt.id;
-                          return (
-                            <button
-                              key={opt.id}
-                              type="button"
-                              onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
-                              className={`inline-flex items-center gap-2 px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-xl border-2 transition-all cursor-pointer shadow-xs hover:scale-[1.02] active:scale-[0.98] ${
-                                selected ? opt.chipActive : opt.chipInactive
-                              }`}
-                            >
-                              {selected && <Check className="w-4 h-4 stroke-[3] shrink-0" />}
-                              <span>{opt.label}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {isTicketDanesa(selectedTicket.cliente) ? (
-                        <div className="text-xs sm:text-sm text-amber-900 bg-amber-50/90 p-3 rounded-lg border border-amber-200 flex items-start gap-2.5">
-                          <Building2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                          <div>
-                            <div className="font-bold text-amber-950">Mercadería de Stock Propio (Danesa S.A.)</div>
-                            <p className="text-amber-800 text-xs leading-relaxed mt-0.5">
-                              Este equipo pertenece a la sucursal. Al tocar <strong>Marcar como Recibido</strong> se registrará la recepción interna en el sistema sin enviar notificaciones al grupo de WhatsApp.
-                            </p>
-                          </div>
+                          <span className="text-[11px] font-mono font-bold text-emerald-900 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs">
+                            {preview.sourceLabel}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="text-xs sm:text-sm text-zinc-800 space-y-1.5 bg-white/90 p-3 rounded-lg border border-emerald-100">
-                          <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
-                          <p className="text-zinc-600 leading-relaxed">{preview.body}</p>
-                          {preview.detalleTexto ? (
-                            <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200">
-                              <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
-                            </p>
-                          ) : (
-                            <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200">
-                              Complete &quot;Informe Técnico / Mensaje de Servicio&quot; arriba para incluir el detalle.
-                            </p>
-                          )}
-                          <div className="text-xs text-zinc-500 pt-1.5 border-t border-emerald-100/60 flex items-center justify-between flex-wrap gap-1 font-mono">
-                            <span>📅 Ingreso: <strong className="text-zinc-700 font-semibold">{selectedTicket.fechaIngreso || "N/A"}</strong></span>
-                            <span>🛒 Venta: <strong className="text-zinc-700 font-semibold">{selectedTicket.fechaVenta || "N/A"}</strong></span>
-                          </div>
+
+                        {/* Selector rápido de resoluciones QC */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {DICTAMEN_QC_OPTIONS.map((opt) => {
+                            const selected = modalDictamenTipo === opt.id;
+                            return (
+                              <button
+                                key={opt.id}
+                                type="button"
+                                onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-xl border-2 transition-all cursor-pointer shadow-2xs ${
+                                  selected ? opt.chipActive : opt.chipInactive
+                                }`}
+                              >
+                                {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                                <span>{opt.label}</span>
+                              </button>
+                            );
+                          })}
                         </div>
-                      )}
-                    </div>
-                  );
-                })()}
+
+                        {isTicketDanesa(selectedTicket.cliente) ? (
+                          <div className="text-xs text-amber-900 bg-amber-50/90 p-2.5 rounded-lg border border-amber-200 flex items-start gap-2">
+                            <Building2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                            <div>
+                              <div className="font-bold text-amber-950">Mercadería de Stock Propio (Danesa S.A.)</div>
+                              <p className="text-amber-800 text-[11px] leading-relaxed mt-0.5">
+                                Este equipo pertenece a la sucursal. Al tocar <strong>Marcar como Recibido</strong> se registrará la recepción interna en el sistema sin enviar notificaciones al grupo de WhatsApp.
+                              </p>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-xs text-zinc-800 space-y-1 bg-white/90 p-2.5 rounded-lg border border-emerald-100">
+                            <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
+                            <p className="text-zinc-600 leading-snug text-[11px]">{preview.body}</p>
+                            {preview.detalleTexto ? (
+                              <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200 text-[11px]">
+                                <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
+                              </p>
+                            ) : (
+                              <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200 text-[11px]">
+                                Complete &quot;Informe Técnico / Mensaje de Servicio&quot; para incluir el detalle.
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
               </div>
 
-              <div className="pt-3.5 border-t border-[#e5e5e5] flex justify-between items-center">
-                {isTicketDanesa(selectedTicket.cliente) ? (
+              {/* Pie de Acciones Horizontal Compacto */}
+              <div className="pt-2.5 border-t border-[#e5e5e5] flex justify-between items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {isTicketDanesa(selectedTicket.cliente) ? (
+                    <button
+                      type="button"
+                      onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
+                      className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-colors ${
+                        selectedTicket.recibidoEnDeposito
+                          ? "bg-zinc-800 hover:bg-zinc-900"
+                          : "bg-emerald-600 hover:bg-emerald-700"
+                      }`}
+                    >
+                      <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                      <span>
+                        {selectedTicket.recibidoEnDeposito
+                          ? "Recibido en Sucursal (Actualizar)"
+                          : "Marcar como Recibido"}
+                      </span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
+                      className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-colors ${
+                        selectedTicket.recibidoEnDeposito
+                          ? "bg-emerald-700 hover:bg-emerald-800"
+                          : "bg-emerald-600 hover:bg-emerald-700"
+                      }`}
+                    >
+                      {selectedTicket.recibidoEnDeposito ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                          <span>Recibido · Listo para retiro (Re-notificar)</span>
+                        </>
+                      ) : (
+                        <>
+                          <MessageSquare className="w-4 h-4" />
+                          <span>Notificar por WhatsApp &amp; Marcar Recibido</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   <button
                     type="button"
-                    onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                    className={`inline-flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-colors ${
-                      selectedTicket.recibidoEnDeposito
-                        ? "bg-zinc-800 hover:bg-zinc-900"
-                        : "bg-emerald-600 hover:bg-emerald-700"
-                    }`}
+                    onClick={(e) => {
+                      setAutoPrintTicket(e.shiftKey);
+                      setShowPrintModal(selectedTicket);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs sm:text-sm font-bold border border-zinc-200 transition-colors cursor-pointer"
+                    title="Imprimir comprobante térmico (Shift+Clic para imprimir directo)"
                   >
-                    <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                    <span>
-                      {selectedTicket.recibidoEnDeposito
-                        ? "Recibido en Sucursal (Actualizar)"
-                        : "Marcar como Recibido"}
-                    </span>
+                    <Printer className="w-4 h-4 text-zinc-700" />
+                    <span>Imprimir Comprobante</span>
                   </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                    className={`inline-flex items-center gap-2 px-4 py-2.5 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-colors ${
-                      selectedTicket.recibidoEnDeposito
-                        ? "bg-emerald-700 hover:bg-emerald-800"
-                        : "bg-emerald-600 hover:bg-emerald-700"
-                    }`}
-                  >
-                    {selectedTicket.recibidoEnDeposito ? (
-                      <>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-200" />
-                        <span>Recibido · Listo para retiro (Re-notificar)</span>
-                      </>
-                    ) : (
-                      <>
-                        <MessageSquare className="w-4 h-4" />
-                        <span>Notificar por WhatsApp &amp; Marcar Recibido</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                </div>
 
                 <button
                   onClick={() => setSelectedTicket(null)}
-                  className="px-5 py-2.5 bg-[#1c1c1e] hover:bg-black text-white rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                  className="px-5 py-2 bg-[#1c1c1e] hover:bg-black text-white rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
                 >
                   Cerrar
                 </button>
