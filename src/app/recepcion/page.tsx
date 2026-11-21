@@ -279,6 +279,46 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   };
 }
 
+/**
+ * Rango de agrupación por familia de color para ordenar los estados primero por color
+ * y luego alfabéticamente por su nombre.
+ */
+function getEstadoColorRank(estado?: string): number {
+  const norm = (estado || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+
+  // 1. Verde (Emerald)
+  if (norm === "entregada" || (norm.includes("cambio") && norm.includes("nuevo"))) {
+    return 1;
+  }
+  // 2. Azul / Celeste (Sky & Cyan)
+  if (norm === "reparada" || norm.includes("presupuest")) {
+    return 2;
+  }
+  // 3. Índigo / Púrpura (Indigo & Purple)
+  if (
+    norm === "asignada" ||
+    norm === "qc" ||
+    norm.includes("control de calidad") ||
+    norm.includes("nota de credito")
+  ) {
+    return 3;
+  }
+  // 4. Ámbar / Naranja (Amber & Orange)
+  if (norm.includes("reparacion") || (norm.includes("pendiente") && norm.includes("repuesto"))) {
+    return 4;
+  }
+  // 5. Rojo / Rosa (Rose)
+  if (norm.includes("sin reparo") || norm.includes("liquidacion") || norm.includes("rechaz")) {
+    return 5;
+  }
+  // 6. Gris / Neutro (Slate & Zinc)
+  return 6;
+}
+
 interface DictamenQcOption {
   id: string;
   label: string;
@@ -299,6 +339,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     chipInactive: "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100",
     chipActive: "bg-zinc-900 text-white border-zinc-900 shadow-xs ring-2 ring-zinc-300",
   },
+  // 1. Familia Verde / Esmeralda / Teal (Orden alfabético)
   {
     id: "CAMBIO_NUEVO",
     label: "Cambio por nuevo",
@@ -310,6 +351,17 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     chipActive: "bg-emerald-700 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-200",
   },
   {
+    id: "PRESUPUESTO_PENDIENTE",
+    label: "Presupuesto · Aguarda aprobación",
+    whatsappHeader: "💰 *PRESUPUESTO EMITIDO · AGUARDA APROBACIÓN*",
+    whatsappBody:
+      "La reparación se encuentra fuera de garantía y se emitió presupuesto técnico aguardando aprobación del cliente.",
+    readyForPickup: false,
+    chipInactive: "bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100",
+    chipActive: "bg-teal-700 text-white border-teal-700 shadow-xs ring-2 ring-teal-200",
+  },
+  // 2. Familia Azul / Celeste (Orden alfabético)
+  {
     id: "REPARADO",
     label: "Reparado con éxito",
     whatsappHeader: "✅ *REPARADO CON ÉXITO*",
@@ -318,16 +370,6 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     readyForPickup: true,
     chipInactive: "bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100",
     chipActive: "bg-sky-700 text-white border-sky-700 shadow-xs ring-2 ring-sky-200",
-  },
-  {
-    id: "QC_PRUEBAS",
-    label: "Control de Calidad (QC)",
-    whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
-    whatsappBody:
-      "El equipo se encuentra en fase final de pruebas de verificación y control de calidad.",
-    readyForPickup: true,
-    chipInactive: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
-    chipActive: "bg-purple-700 text-white border-purple-700 shadow-xs ring-2 ring-purple-200",
   },
   {
     id: "SIN_DEFECTO",
@@ -339,36 +381,18 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     chipInactive: "bg-cyan-50 text-cyan-800 border-cyan-200 hover:bg-cyan-100",
     chipActive: "bg-cyan-700 text-white border-cyan-700 shadow-xs ring-2 ring-cyan-200",
   },
+  // 3. Familia Púrpura
   {
-    id: "SIN_REPARO_REPUESTO",
-    label: "Sin reparo · Falta de repuesto",
-    whatsappHeader: "⏳ *SIN REPARO POR FALTA DE REPUESTO*",
+    id: "QC_PRUEBAS",
+    label: "Control de Calidad (QC)",
+    whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
     whatsappBody:
-      "No fue posible completar la reparación por falta de disponibilidad del repuesto requerido. Corresponde gestión de cambio / nota de crédito o retiro.",
+      "El equipo se encuentra en fase final de pruebas de verificación y control de calidad.",
     readyForPickup: true,
-    chipInactive: "bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100",
-    chipActive: "bg-orange-600 text-white border-orange-600 shadow-xs ring-2 ring-orange-200",
+    chipInactive: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
+    chipActive: "bg-purple-700 text-white border-purple-700 shadow-xs ring-2 ring-purple-200",
   },
-  {
-    id: "SIN_REPARO_IRREPARABLE",
-    label: "Sin reparo · No reparable",
-    whatsappHeader: "❌ *SIN REPARO · NO REPARABLE*",
-    whatsappBody:
-      "El diagnóstico técnico determinó que el daño no es reparable. Se deriva a gestión de garantía, cambio comercial o retiro.",
-    readyForPickup: true,
-    chipInactive: "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100",
-    chipActive: "bg-rose-700 text-white border-rose-700 shadow-xs ring-2 ring-rose-200",
-  },
-  {
-    id: "MALA_MANIPULACION",
-    label: "Mala manipulación (Cliente)",
-    whatsappHeader: "🚫 *MALA MANIPULACIÓN / FUERA DE GARANTÍA*",
-    whatsappBody:
-      "Se constató daño físico, golpe, humedad o manipulación indebida por parte del cliente, por lo que no aplica cobertura de garantía de fábrica.",
-    readyForPickup: true,
-    chipInactive: "bg-red-50 text-red-800 border-red-200 hover:bg-red-100",
-    chipActive: "bg-red-700 text-white border-red-700 shadow-xs ring-2 ring-red-200",
-  },
+  // 4. Familia Ámbar / Amarillo / Naranja (Orden alfabético)
   {
     id: "RMA_NC",
     label: "Derivado a RMA / Nota de crédito",
@@ -378,26 +402,6 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     readyForPickup: true,
     chipInactive: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
     chipActive: "bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200",
-  },
-  {
-    id: "PRESUPUESTO_PENDIENTE",
-    label: "Presupuesto · Aguarda aprobación",
-    whatsappHeader: "💰 *PRESUPUESTO EMITIDO · AGUARDA APROBACIÓN*",
-    whatsappBody:
-      "La reparación se encuentra fuera de garantía y se emitió presupuesto técnico aguardando aprobación del cliente.",
-    readyForPickup: false,
-    chipInactive: "bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100",
-    chipActive: "bg-teal-700 text-white border-teal-700 shadow-xs ring-2 ring-teal-200",
-  },
-  {
-    id: "PRESUPUESTO_RECHAZADO",
-    label: "Presupuesto rechazado",
-    whatsappHeader: "↩️ *PRESUPUESTO RECHAZADO*",
-    whatsappBody:
-      "El presupuesto informado no fue aprobado; el equipo se encuentra disponible para retiro sin reparar.",
-    readyForPickup: true,
-    chipInactive: "bg-stone-100 text-stone-800 border-stone-300 hover:bg-stone-200",
-    chipActive: "bg-stone-700 text-white border-stone-700 shadow-xs ring-2 ring-stone-300",
   },
   {
     id: "DESGASTE_NATURAL",
@@ -410,6 +414,38 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     chipActive: "bg-yellow-600 text-white border-yellow-600 shadow-xs ring-2 ring-yellow-200",
   },
   {
+    id: "SIN_REPARO_REPUESTO",
+    label: "Sin reparo · Falta de repuesto",
+    whatsappHeader: "⏳ *SIN REPARO POR FALTA DE REPUESTO*",
+    whatsappBody:
+      "No fue posible completar la reparación por falta de disponibilidad del repuesto requerido. Corresponde gestión de cambio / nota de crédito o retiro.",
+    readyForPickup: true,
+    chipInactive: "bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100",
+    chipActive: "bg-orange-600 text-white border-orange-600 shadow-xs ring-2 ring-orange-200",
+  },
+  // 5. Familia Rojo / Rosa (Orden alfabético)
+  {
+    id: "MALA_MANIPULACION",
+    label: "Mala manipulación (Cliente)",
+    whatsappHeader: "🚫 *MALA MANIPULACIÓN / FUERA DE GARANTÍA*",
+    whatsappBody:
+      "Se constató daño físico, golpe, humedad o manipulación indebida por parte del cliente, por lo que no aplica cobertura de garantía de fábrica.",
+    readyForPickup: true,
+    chipInactive: "bg-red-50 text-red-800 border-red-200 hover:bg-red-100",
+    chipActive: "bg-red-700 text-white border-red-700 shadow-xs ring-2 ring-red-200",
+  },
+  {
+    id: "SIN_REPARO_IRREPARABLE",
+    label: "Sin reparo · No reparable",
+    whatsappHeader: "❌ *SIN REPARO · NO REPARABLE*",
+    whatsappBody:
+      "El diagnóstico técnico determinó que el daño no es reparable. Se deriva a gestión de garantía, cambio comercial o retiro.",
+    readyForPickup: true,
+    chipInactive: "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100",
+    chipActive: "bg-rose-700 text-white border-rose-700 shadow-xs ring-2 ring-rose-200",
+  },
+  // 6. Familia Gris / Neutro (Orden alfabético)
+  {
     id: "GARANTIA_VENCIDA",
     label: "Garantía vencida",
     whatsappHeader: "📅 *GARANTÍA VENCIDA*",
@@ -418,6 +454,16 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     readyForPickup: true,
     chipInactive: "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200",
     chipActive: "bg-slate-700 text-white border-slate-700 shadow-xs ring-2 ring-slate-300",
+  },
+  {
+    id: "PRESUPUESTO_RECHAZADO",
+    label: "Presupuesto rechazado",
+    whatsappHeader: "↩️ *PRESUPUESTO RECHAZADO*",
+    whatsappBody:
+      "El presupuesto informado no fue aprobado; el equipo se encuentra disponible para retiro sin reparar.",
+    readyForPickup: true,
+    chipInactive: "bg-stone-100 text-stone-800 border-stone-300 hover:bg-stone-200",
+    chipActive: "bg-stone-700 text-white border-stone-700 shadow-xs ring-2 ring-stone-300",
   },
 ];
 
@@ -724,6 +770,9 @@ export default function RecepcionDashboardPage() {
   const [modalAccesorios, setModalAccesorios] = useState<string>("");
   const [modalAccessoriesList, setModalAccessoriesList] = useState<string[]>([]);
   const [modalNewAccessory, setModalNewAccessory] = useState<string>("");
+  const [quickAccessories, setQuickAccessories] = useState<string[]>([]);
+  const [isAddingQuickShortcut, setIsAddingQuickShortcut] = useState(false);
+  const [newQuickShortcutText, setNewQuickShortcutText] = useState("");
   const [modalUbicacion, setModalUbicacion] = useState<string>("");
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -736,6 +785,45 @@ export default function RecepcionDashboardPage() {
     modalNewAccessory: string;
     modalUbicacion?: string;
   } | null>(null);
+
+  const QUICK_ACCESSORIES_STORAGE_KEY = "nissei_recepcion_accesorios_rapidos_v1";
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(QUICK_ACCESSORIES_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setQuickAccessories(parsed.map((s) => String(s).trim()).filter(Boolean));
+        }
+      }
+    } catch {}
+  }, []);
+
+  const saveQuickAccessoryShortcut = (val: string) => {
+    const trimmed = val.trim();
+    if (!trimmed) return;
+    setQuickAccessories((prev) => {
+      if (prev.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
+        return prev;
+      }
+      const next = [...prev, trimmed];
+      try {
+        localStorage.setItem(QUICK_ACCESSORIES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const removeQuickAccessoryShortcut = (val: string) => {
+    setQuickAccessories((prev) => {
+      const next = prev.filter((p) => p !== val);
+      try {
+        localStorage.setItem(QUICK_ACCESSORIES_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   const parseAccesoriosString = (raw: string | undefined): string[] => {
     if (!raw) return [];
@@ -778,6 +866,8 @@ export default function RecepcionDashboardPage() {
       setModalAccesorios(accRaw);
       setModalAccessoriesList(parseAccesoriosString(accRaw));
       setModalNewAccessory("");
+      setIsAddingQuickShortcut(false);
+      setNewQuickShortcutText("");
       setModalUbicacion(selectedTicket.ubicacion || extractUbicacionFromText(rawMsg));
     }
   }, [selectedTicket]);
@@ -790,6 +880,8 @@ export default function RecepcionDashboardPage() {
       setModalAccessoriesList(updated);
       setModalAccesorios(updated.join(", "));
     }
+    // Guardar automáticamente como acceso directo para próximas órdenes
+    saveQuickAccessoryShortcut(trimmed);
     setModalNewAccessory("");
   };
 
@@ -2014,7 +2106,7 @@ ${dictamen.accText}`;
     ];
   }, [scopeTickets, viewScope]);
 
-  // Mismos estados exactos para seleccionar dentro del modal del ojito
+  // Mismos estados exactos para seleccionar dentro del modal del ojito (ordenados por familia de color y nombre alfabético)
   const modalStatusOptions = useMemo<string[]>(() => {
     const list = statusOptions
       .filter((opt) => opt.value !== "TODOS")
@@ -2022,8 +2114,12 @@ ${dictamen.accText}`;
     const current = (selectedTicket?.estado || "").trim();
     if (current && !list.some((st) => st.toLowerCase() === current.toLowerCase())) {
       list.push(current);
-      list.sort((a, b) => a.localeCompare(b, "es"));
     }
+    list.sort((a, b) => {
+      const rankDiff = getEstadoColorRank(a) - getEstadoColorRank(b);
+      if (rankDiff !== 0) return rankDiff;
+      return a.localeCompare(b, "es");
+    });
     return list;
   }, [statusOptions, selectedTicket]);
 
@@ -3712,11 +3808,11 @@ ${dictamen.accText}`;
                 </div>
               )}
 
-              {/* Barra Horizontal de Metadatos del Cliente y Fechas (100% Alineada) */}
+              {/* Barra Horizontal de Metadatos del Cliente y Fechas (100% Alineada y Nombre Completo) */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 bg-[#f9f9f9] px-3.5 py-2.5 rounded-xl border border-[#f0f0f0] text-xs items-start">
                 <div className="min-w-0">
-                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Cliente</span>
-                  <strong className="text-zinc-900 text-xs sm:text-sm truncate block" title={selectedTicket.cliente}>
+                  <span className="text-zinc-500 block text-[11px] font-semibold">Cliente</span>
+                  <strong className="text-zinc-900 text-xs sm:text-sm break-words leading-snug block">
                     {selectedTicket.cliente}
                   </strong>
                 </div>
@@ -3856,7 +3952,7 @@ ${dictamen.accText}`;
                                 type="button"
                                 onClick={() => handleRemoveModalAccessory(idx)}
                                 className="ml-1 text-zinc-400 hover:text-rose-600 font-bold leading-none cursor-pointer"
-                                title="Quitar accesorio"
+                                title="Quitar accesorio de esta orden"
                               >
                                 ×
                               </button>
@@ -3869,7 +3965,7 @@ ${dictamen.accText}`;
                         )}
                       </div>
 
-                      {/* Input para agregar accesorio personalizado */}
+                      {/* Input para agregar accesorio personalizado (también se guarda como acceso directo) */}
                       <div className="flex items-center gap-1.5">
                         <input
                           type="text"
@@ -3881,44 +3977,118 @@ ${dictamen.accText}`;
                               handleAddModalAccessory(modalNewAccessory);
                             }
                           }}
-                          placeholder="Escriba un accesorio (ej: Cargador 230W, Funda, Caja) y presione Enter o +"
+                          placeholder="Escriba un accesorio y presione Enter o + Agregar (se guardará en accesos directos)"
                           className="flex-1 px-2.5 py-1 text-xs bg-zinc-50 border border-slate-200 focus:border-zinc-900 rounded-lg outline-none transition-colors placeholder:text-zinc-400 font-sans"
                         />
                         <button
                           type="button"
                           onClick={() => handleAddModalAccessory(modalNewAccessory)}
                           className="px-2.5 py-1 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                          title="Agregar accesorio a la lista"
+                          title="Agregar accesorio y guardar como acceso directo"
                         >
                           + Agregar
                         </button>
                       </div>
 
-                      {/* Sugerencias rápidas con un toque */}
-                      <div className="flex flex-wrap items-center gap-1 pt-1 border-t border-dashed border-zinc-200 text-[11px]">
-                        <span className="text-zinc-400 mr-1 font-mono text-[10px]">RÁPIDOS:</span>
-                        {[
-                          "Cargador Original",
-                          "Caja Original",
-                          "Cable USB",
-                          "Funda / Estuche",
-                          "Control Remoto",
-                          "Batería",
-                          "Adaptador de Corriente",
-                        ].map((sug) => (
+                      {/* Accesos directos personalizados guardados por el usuario */}
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-dashed border-zinc-200 text-[11px]">
+                        <span className="text-zinc-400 mr-0.5 font-mono text-[10px] uppercase">
+                          ACCESOS DIRECTOS:
+                        </span>
+
+                        {quickAccessories.map((sug) => {
+                          const isAdded = modalAccessoriesList.includes(sug);
+                          return (
+                            <span
+                              key={sug}
+                              className={`inline-flex items-center rounded-md border text-[11px] font-medium transition-colors ${
+                                isAdded
+                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-200"
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => handleAddModalAccessory(sug)}
+                                className="px-2 py-0.5 cursor-pointer"
+                                title={`Agregar "${sug}" a la orden`}
+                              >
+                                + {sug}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => removeQuickAccessoryShortcut(sug)}
+                                className="pr-1.5 pl-0.5 text-zinc-400 hover:text-rose-600 font-bold leading-none cursor-pointer"
+                                title={`Quitar "${sug}" de los accesos directos`}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })}
+
+                        {isAddingQuickShortcut ? (
+                          <div className="inline-flex items-center gap-1">
+                            <input
+                              type="text"
+                              autoFocus
+                              value={newQuickShortcutText}
+                              onChange={(e) => setNewQuickShortcutText(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  e.preventDefault();
+                                  const clean = newQuickShortcutText.trim();
+                                  if (clean) {
+                                    saveQuickAccessoryShortcut(clean);
+                                    handleAddModalAccessory(clean);
+                                  }
+                                  setNewQuickShortcutText("");
+                                  setIsAddingQuickShortcut(false);
+                                } else if (e.key === "Escape") {
+                                  setNewQuickShortcutText("");
+                                  setIsAddingQuickShortcut(false);
+                                }
+                              }}
+                              placeholder="Nombre del acceso directo..."
+                              className="px-2 py-0.5 text-[11px] bg-white border border-zinc-400 focus:border-zinc-900 rounded-md outline-none w-40"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const clean = newQuickShortcutText.trim();
+                                if (clean) {
+                                  saveQuickAccessoryShortcut(clean);
+                                  handleAddModalAccessory(clean);
+                                }
+                                setNewQuickShortcutText("");
+                                setIsAddingQuickShortcut(false);
+                              }}
+                              className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-bold cursor-pointer"
+                            >
+                              Guardar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewQuickShortcutText("");
+                                setIsAddingQuickShortcut(false);
+                              }}
+                              className="px-1.5 py-0.5 text-zinc-500 hover:text-zinc-800 text-[11px] cursor-pointer"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            key={sug}
                             type="button"
-                            onClick={() => handleAddModalAccessory(sug)}
-                            className={`px-2 py-0.5 rounded text-[11px] font-medium transition-colors cursor-pointer ${
-                              modalAccessoriesList.includes(sug)
-                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                                : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border border-zinc-200"
-                            }`}
+                            onClick={() => setIsAddingQuickShortcut(true)}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-dashed border-indigo-300 transition-colors cursor-pointer"
+                            title="Crear y guardar un nuevo acceso directo de accesorio"
                           >
-                            + {sug}
+                            <Plus className="w-3 h-3" />
+                            <span>Agregar acceso directo</span>
                           </button>
-                        ))}
+                        )}
                       </div>
                     </div>
                   </div>
@@ -3934,43 +4104,35 @@ ${dictamen.accText}`;
 
                 {/* COLUMNA DERECHA (6 cols): Cambiar Estado + Dictamen Técnico QC / WhatsApp */}
                 <div className="lg:col-span-6 flex flex-col justify-between space-y-3">
-                  {/* 1. Acciones de cambio de estado en el modal (Alineado al mismo nivel superior que Informe Técnico) */}
+                  {/* 1. Acciones de cambio de estado en el modal (Ordenado por color y nombre alfabético) */}
                   <div>
                     <div className="h-7 flex items-center justify-between mb-1.5 gap-2">
                       <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
                         Cambiar Estado de la Orden
                       </span>
                       <span className="text-[11px] text-zinc-400">
-                        Se incluirá al notificar al cliente
+                        Ordenado por color y nombre
                       </span>
                     </div>
                     <div className="p-3 bg-white border border-slate-300 rounded-xl shadow-2xs">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-1.5">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                         {modalStatusOptions.map((st) => {
                           const isActive =
                             (selectedTicket.estado || "").trim().toLowerCase() ===
                             st.trim().toLowerCase();
                           const visual = getEstadoVisualConfig(st);
-                          const shortLabel =
-                            st === "Sin Reparo por falta de repuesto"
-                              ? "Falta de repuesto"
-                              : st === "Enviado Destruccion"
-                              ? "Env. Destrucción"
-                              : st === "Pendiente por repuesto"
-                              ? "Pend. Repuesto"
-                              : st;
                           return (
                             <button
                               key={st}
                               type="button"
                               onClick={() => handleCambiarEstado(selectedTicket.idOrden, st)}
                               title={st}
-                              className={`h-8 w-full inline-flex items-center justify-center gap-1 px-2 text-[11px] font-bold rounded-lg border transition-all cursor-pointer truncate ${
+                              className={`min-h-[32px] w-full inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer text-center leading-tight ${
                                 isActive ? visual.activeBtnClass : visual.inactiveBtnClass
                               }`}
                             >
                               {isActive && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
-                              <span className="truncate">{shortLabel}</span>
+                              <span>{st}</span>
                             </button>
                           );
                         })}
@@ -3998,13 +4160,13 @@ ${dictamen.accText}`;
                               ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
                               : "Dictamen Técnico · Resolución QC (WhatsApp)"}
                           </span>
-                          <span className="text-[11px] font-mono font-bold text-emerald-900 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0 truncate max-w-[240px]">
+                          <span className="text-[11px] font-mono font-bold text-emerald-900 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0">
                             {preview.sourceLabel}
                           </span>
                         </div>
 
                         <div className="flex-1 p-3.5 bg-emerald-50/70 border-2 border-emerald-300 rounded-xl space-y-2.5 shadow-2xs flex flex-col justify-between">
-                          {/* Selector rápido de resoluciones QC en Cuadrícula Perfectamente Alineada */}
+                          {/* Selector rápido de resoluciones QC ordenado por color y nombre */}
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                             {DICTAMEN_QC_OPTIONS.map((opt, idx) => {
                               const selected = modalDictamenTipo === opt.id;
@@ -4015,12 +4177,12 @@ ${dictamen.accText}`;
                                   type="button"
                                   onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
                                   title={opt.label}
-                                  className={`h-8 w-full inline-flex items-center justify-center gap-1.5 px-2 text-[11px] font-bold rounded-lg border-2 transition-all cursor-pointer shadow-2xs truncate ${
+                                  className={`min-h-[32px] w-full inline-flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] font-bold rounded-lg border-2 transition-all cursor-pointer shadow-2xs text-center leading-tight ${
                                     isFirstAuto ? "sm:col-span-3" : ""
                                   } ${selected ? opt.chipActive : opt.chipInactive}`}
                                 >
                                   {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
-                                  <span className="truncate">{opt.label}</span>
+                                  <span>{opt.label}</span>
                                 </button>
                               );
                             })}
