@@ -175,7 +175,7 @@ export function UbicacionCascadaSelector({
       </div>
 
       <div
-        className="p-3.5 bg-white border border-slate-300 rounded-xl shadow-sm space-y-3"
+        className="p-3.5 bg-white border border-slate-300 rounded-xl shadow-sm"
         onMouseLeave={() => {
           if (parsed.main) {
             setActiveMain(parsed.main);
@@ -183,13 +183,15 @@ export function UbicacionCascadaSelector({
           }
         }}
       >
-        {/* Contenedor Tipo Cascada en 3 Niveles */}
-        <div className="grid grid-cols-1 sm:grid-cols-12 gap-2.5 items-start">
+        {/* Contenedor Tipo Cascada en 3 Columnas Perfectamente Alineadas */}
+        <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-stretch">
           {/* NIVEL 1: OPCIONES PRINCIPALES (Estantes / Muebles) */}
-          <div className="sm:col-span-4 space-y-1.5">
-            <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 px-1">
-              1. Sector Principal
-            </span>
+          <div className="sm:col-span-4 flex flex-col">
+            <div className="h-5 flex items-center mb-1.5 px-1">
+              <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 truncate whitespace-nowrap">
+                1. Sector Principal
+              </span>
+            </div>
             <div className="space-y-1.5">
               {/* Opción Principal 1: Estantes */}
               <button
@@ -213,7 +215,7 @@ export function UbicacionCascadaSelector({
                       : "A"
                   );
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   activeMain === "ESTANTE"
                     ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
                     : parsed.main === "ESTANTE"
@@ -221,12 +223,12 @@ export function UbicacionCascadaSelector({
                     : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
                 }`}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 truncate">
                   <Layers className="w-3.5 h-3.5 shrink-0" />
                   <span>Estantes</span>
                 </span>
                 <ChevronRight
-                  className={`w-3.5 h-3.5 transition-transform ${
+                  className={`w-3.5 h-3.5 shrink-0 transition-transform ${
                     activeMain === "ESTANTE" ? "translate-x-0.5 text-white" : "text-zinc-400"
                   }`}
                 />
@@ -254,7 +256,7 @@ export function UbicacionCascadaSelector({
                       : "1"
                   );
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                   activeMain === "MUEBLE"
                     ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
                     : parsed.main === "MUEBLE"
@@ -262,12 +264,12 @@ export function UbicacionCascadaSelector({
                     : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
                 }`}
               >
-                <span className="flex items-center gap-2">
+                <span className="flex items-center gap-2 truncate">
                   <Archive className="w-3.5 h-3.5 shrink-0" />
                   <span>Muebles</span>
                 </span>
                 <ChevronRight
-                  className={`w-3.5 h-3.5 transition-transform ${
+                  className={`w-3.5 h-3.5 shrink-0 transition-transform ${
                     activeMain === "MUEBLE" ? "translate-x-0.5 text-white" : "text-zinc-400"
                   }`}
                 />
@@ -276,17 +278,19 @@ export function UbicacionCascadaSelector({
           </div>
 
           {/* NIVEL 2: SUB-OPCIONES EN CASCADA */}
-          <div className="sm:col-span-4 space-y-1.5 sm:border-l sm:border-zinc-200 sm:pl-2.5 min-h-[84px]">
-            <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 px-1">
-              {activeMain === "ESTANTE"
-                ? "2. Columna / Sección"
-                : activeMain === "MUEBLE"
-                ? "2. Nº de Mueble (1 al 3)"
-                : "2. Sub-nivel"}
-            </span>
+          <div className="sm:col-span-4 flex flex-col sm:border-l sm:border-zinc-200 sm:pl-3">
+            <div className="h-5 flex items-center mb-1.5 px-1">
+              <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 truncate whitespace-nowrap">
+                {activeMain === "ESTANTE"
+                  ? "2. Columna / Sección"
+                  : activeMain === "MUEBLE"
+                  ? "2. Nº de Mueble"
+                  : "2. Sub-nivel"}
+              </span>
+            </div>
 
             {!activeMain ? (
-              <div className="h-[68px] flex items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 px-3 text-center">
+              <div className="h-[78px] flex items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-3 text-center">
                 <span className="text-[11px] text-zinc-400">
                   Pase sobre <strong>Estantes</strong> o <strong>Muebles</strong>
                 </span>
@@ -303,7 +307,7 @@ export function UbicacionCascadaSelector({
                       disabled={disabled}
                       onMouseEnter={() => !disabled && setActiveSub(col)}
                       onClick={() => !disabled && setActiveSub(col)}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                         isHoveredOrActive
                           ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
                           : isSavedCol
@@ -311,8 +315,8 @@ export function UbicacionCascadaSelector({
                           : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
                       }`}
                     >
-                      <span>Estante {col}</span>
-                      <span className="flex items-center gap-1 text-[10px] font-mono opacity-85">
+                      <span className="truncate">Estante {col}</span>
+                      <span className="flex items-center gap-1 text-[10px] font-mono opacity-85 shrink-0">
                         <span>1-{col === "A" ? "7" : "6"}</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </span>
@@ -331,7 +335,7 @@ export function UbicacionCascadaSelector({
                       disabled={disabled}
                       onMouseEnter={() => !disabled && setActiveSub("SIN_REPARO")}
                       onClick={handleSelectEstanteSinReparo}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                         isSelected
                           ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
                           : isHovered
@@ -339,11 +343,11 @@ export function UbicacionCascadaSelector({
                           : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
                       }`}
                     >
-                      <span>Sin reparo</span>
+                      <span className="truncate">Sin reparo</span>
                       {isSelected ? (
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />
                       ) : (
-                        <span className="text-[10px] font-mono opacity-75">
+                        <span className="text-[10px] font-mono opacity-75 shrink-0">
                           Directo
                         </span>
                       )}
@@ -364,7 +368,7 @@ export function UbicacionCascadaSelector({
                       disabled={disabled}
                       onMouseEnter={() => !disabled && setActiveSub(num)}
                       onClick={() => !disabled && setActiveSub(num)}
-                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
                         isHoveredOrActive
                           ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
                           : isSavedMueble
@@ -372,8 +376,8 @@ export function UbicacionCascadaSelector({
                           : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
                       }`}
                     >
-                      <span>Mueble {num}</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
+                      <span className="truncate">Mueble {num}</span>
+                      <ChevronRight className="w-3.5 h-3.5 shrink-0" />
                     </button>
                   );
                 })}
@@ -382,14 +386,16 @@ export function UbicacionCascadaSelector({
           </div>
 
           {/* NIVEL 3: DESPLIEGUE FINAL DE UBICACIÓN */}
-          <div className="sm:col-span-4 space-y-1.5 sm:border-l sm:border-zinc-200 sm:pl-2.5 min-h-[84px]">
-            <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 px-1">
-              {activeMain === "ESTANTE" && (activeSub === "A" || activeSub === "B")
-                ? `3. Nivel de Estante ${activeSub} (1 al ${activeSub === "A" ? "7" : "6"})`
-                : activeMain === "MUEBLE" && activeSub
-                ? `3. Sector de Mueble ${activeSub}`
-                : "3. Posición / Sector"}
-            </span>
+          <div className="sm:col-span-4 flex flex-col sm:border-l sm:border-zinc-200 sm:pl-3">
+            <div className="h-5 flex items-center mb-1.5 px-1">
+              <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 truncate whitespace-nowrap">
+                {activeMain === "ESTANTE" && (activeSub === "A" || activeSub === "B")
+                  ? `3. Nivel Estante ${activeSub}`
+                  : activeMain === "MUEBLE" && activeSub
+                  ? `3. Sector Mueble ${activeSub}`
+                  : "3. Posición / Sector"}
+              </span>
+            </div>
 
             {activeMain === "ESTANTE" && (activeSub === "A" || activeSub === "B") ? (
               <div className="grid grid-cols-4 gap-1.5 animate-in fade-in duration-150">
@@ -407,7 +413,7 @@ export function UbicacionCascadaSelector({
                         onClick={() =>
                           handleSelectEstanteLeaf(activeSub as "A" | "B", num)
                         }
-                        className={`py-2 px-2 rounded-lg text-xs font-mono font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-0.5 ${
+                        className={`h-9 px-2 rounded-lg text-xs font-mono font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-0.5 ${
                           isSelected
                             ? "bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-200"
                             : "bg-zinc-50 hover:bg-indigo-50 hover:text-indigo-900 hover:border-indigo-300 text-zinc-800 border-zinc-200"
@@ -425,7 +431,7 @@ export function UbicacionCascadaSelector({
                 )}
               </div>
             ) : activeMain === "ESTANTE" && activeSub === "SIN_REPARO" ? (
-              <div className="h-[68px] flex flex-col items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50/50 px-3 text-center">
+              <div className="h-[78px] flex flex-col items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 text-center">
                 <span className="text-xs font-bold text-emerald-900">
                   Estante · Sin reparo
                 </span>
@@ -449,13 +455,13 @@ export function UbicacionCascadaSelector({
                       onClick={() =>
                         handleSelectMuebleLeaf(activeSub as "1" | "2" | "3", opt)
                       }
-                      className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-xs font-bold border transition-all cursor-pointer text-left ${
+                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer text-left ${
                         isSelected
                           ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs ring-2 ring-emerald-200"
                           : "bg-zinc-50 hover:bg-indigo-50 hover:text-indigo-900 hover:border-indigo-300 text-zinc-800 border-zinc-200"
                       }`}
                     >
-                      <span>{opt}</span>
+                      <span className="truncate">{opt}</span>
                       {isSelected && (
                         <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />
                       )}
@@ -464,7 +470,7 @@ export function UbicacionCascadaSelector({
                 })}
               </div>
             ) : (
-              <div className="h-[68px] flex items-center justify-center rounded-xl border border-dashed border-zinc-200 bg-zinc-50/50 px-3 text-center">
+              <div className="h-[78px] flex items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-3 text-center">
                 <span className="text-[11px] text-zinc-400">
                   Seleccione una opción del paso 2
                 </span>
