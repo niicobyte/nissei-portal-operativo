@@ -140,37 +140,83 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         padding: 0 !important;
         height: auto !important;
         min-height: 0 !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
         background: #ffffff !important;
       }
 
-      /* 1. Ocultar absolutamente todos los elementos en la página */
+      /* 1. Ocultar absolutamente todos los elementos en el body excepto los modales térmicos */
+      body.thermal-80mm-print > *:not(#sati-thermal-print-modal-overlay):not(#thermal-print-modal-overlay) {
+        display: none !important;
+        height: 0 !important;
+        min-height: 0 !important;
+        max-height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      /* 2. Ocultar elementos dentro del modal que no formen parte del ticket térmico */
       body.thermal-80mm-print * {
         visibility: hidden !important;
       }
 
-      /* 2. Rescatar y hacer visibles EXCLUSIVAMENTE el contenedor térmico y sus hijos */
       body.thermal-80mm-print #thermal-sticker-wrapper,
       body.thermal-80mm-print #thermal-sticker-wrapper * {
         visibility: visible !important;
       }
 
-      /* 3. Posicionar el comprobante en la parte superior exacta sin margen forzado */
+      /* 3. Aplanar contenedores de modal para evitar scroll o altura fantasma */
+      #sati-thermal-print-modal-overlay,
+      #thermal-print-modal-overlay {
+        position: static !important;
+        display: block !important;
+        inset: auto !important;
+        width: 100% !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: transparent !important;
+        backdrop-filter: none !important;
+        filter: none !important;
+        transform: none !important;
+      }
+
+      #sati-thermal-modal-card,
+      #thermal-print-modal-card {
+        position: static !important;
+        display: block !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: auto !important;
+        min-height: 0 !important;
+        max-height: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+        background: transparent !important;
+      }
+
+      /* 4. Posicionar el comprobante en la parte superior exacta sin margen forzado ni saltos de página */
       body.thermal-80mm-print #thermal-sticker-wrapper {
-        position: absolute !important;
-        left: 0 !important;
-        top: ${offsetY}mm !important;
-        right: 0 !important;
+        position: static !important;
+        display: block !important;
         width: ${contentWidthMm}mm !important;
         max-width: ${contentWidthMm}mm !important;
         margin: 0 auto !important;
+        margin-top: ${offsetY}mm !important;
         padding: 0 !important;
         padding-left: ${settings.marginMm}mm !important;
         padding-right: ${settings.marginMm}mm !important;
         overflow: visible !important;
         transform: ${offsetX !== 0 ? `translateX(${offsetX}mm)` : "none"} !important;
-        z-index: 999999 !important;
-        page-break-inside: auto !important;
-        break-inside: auto !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
 
       body.thermal-80mm-print #thermal-sticker-80mm {
@@ -183,8 +229,10 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         padding-top: 0 !important;
         border: 0 !important;
         zoom: ${scale};
-        page-break-inside: auto !important;
-        break-inside: auto !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
 
       body.thermal-80mm-print #thermal-sticker-80mm li {

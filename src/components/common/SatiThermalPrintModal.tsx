@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import {
   Printer,
   SlidersHorizontal,
@@ -138,16 +139,50 @@ export function compute90DaysPolicy(params: {
 interface SatiThermalPrintModalProps {
   data: SatiComprobanteData;
   onClose: () => void;
+  autoPrint?: boolean;
 }
 
 export function SatiThermalPrintModal({
   data,
   onClose,
+  autoPrint,
 }: SatiThermalPrintModalProps) {
+  const [mounted, setMounted] = useState(false);
   const [thermalSettings, setThermalSettings] = useState<ThermalPrintSettings>(
     DEFAULT_THERMAL_PRINT_SETTINGS
   );
   const [showThermalConfig, setShowThermalConfig] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Atajo de teclado: Enter imprime de inmediato, Escape cierra
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey) {
+        const target = e.target as HTMLElement;
+        if (target.tagName !== "TEXTAREA" && target.tagName !== "INPUT") {
+          e.preventDefault();
+          window.print();
+        }
+      } else if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  // Si se solicita autoPrint (impresión directa en 1 toque), disparar window.print()
+  useEffect(() => {
+    if (autoPrint && mounted) {
+      const t = setTimeout(() => {
+        window.print();
+      }, 120);
+      return () => clearTimeout(t);
+    }
+  }, [autoPrint, mounted]);
 
   const isDanesa = Boolean(
     data.esDanesa ?? (data.cliente ? isTicketDanesa(data.cliente) : false)
@@ -189,8 +224,13 @@ export function SatiThermalPrintModal({
 
   const isUltraBlack = thermalSettings.highContrast;
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block animate-in fade-in">
+  if (!mounted) return null;
+
+  const modalContent = (
+    <div
+      id="sati-thermal-print-modal-overlay"
+      className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block animate-in fade-in"
+    >
       <style media="print">{buildThermalPrintCss(thermalSettings)}</style>
 
       {/* Estilos especiales para ultra negro y cabezales térmicos POS */}
@@ -262,7 +302,10 @@ export function SatiThermalPrintModal({
         }
       `}</style>
 
-      <div className="bg-white rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
+      <div
+        id="sati-thermal-modal-card"
+        className="bg-white rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none"
+      >
         
         {/* Cabecera del modal (oculta al imprimir) */}
         <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-3 print:hidden">
@@ -716,4 +759,6 @@ export function SatiThermalPrintModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

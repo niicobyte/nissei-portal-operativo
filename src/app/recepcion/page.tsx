@@ -791,6 +791,7 @@ export default function RecepcionDashboardPage() {
     setModalAccesorios("");
   };
   const [showPrintModal, setShowPrintModal] = useState<RecepcionTicket | null>(null);
+  const [autoPrintTicket, setAutoPrintTicket] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
   // Estado para subida de CSV y reporte de cambios
@@ -3338,9 +3339,12 @@ ${dictamen.accText}`;
                           </button>
                           
                           <button
-                            onClick={() => setShowPrintModal(ticket)}
+                            onClick={(e) => {
+                              setAutoPrintTicket(e.shiftKey);
+                              setShowPrintModal(ticket);
+                            }}
                             className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center border border-transparent hover:border-zinc-200"
-                            title="Imprimir Boleta SATI"
+                            title="Imprimir Boleta SATI (Shift+Clic para imprimir directo)"
                           >
                             <Printer className="w-4 h-4" />
                           </button>
@@ -3980,6 +3984,7 @@ ${dictamen.accText}`;
         {/* Modal de Impresión de Boleta / Comprobante Térmico Calibrable */}
         {showPrintModal && (
           <SatiThermalPrintModal
+            autoPrint={autoPrintTicket}
             data={{
               idOrden: showPrintModal.idOrden,
               codigoProducto: showPrintModal.codigoProducto,
@@ -4000,7 +4005,10 @@ ${dictamen.accText}`;
                 (showPrintModal.recibidoEnDeposito ? showPrintModal.fechaEntregada || new Date().toLocaleDateString("es-PY") : undefined),
               recibidoListoRetiro: Boolean(showPrintModal.recibidoEnDeposito),
             }}
-            onClose={() => setShowPrintModal(null)}
+            onClose={() => {
+              setShowPrintModal(null);
+              setAutoPrintTicket(false);
+            }}
           />
         )}
 

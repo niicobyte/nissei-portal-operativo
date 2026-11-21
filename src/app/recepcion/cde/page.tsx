@@ -432,6 +432,7 @@ export default function RecepcionCdeDashboardPage() {
   };
 
   const [showPrintModal, setShowPrintModal] = useState<RecepcionCdeTicket | null>(null);
+  const [autoPrintTicket, setAutoPrintTicket] = useState(false);
 
   // Sincronizar y consolidar todas las órdenes recibidas, checkins y overrides con MySQL en la nube
   const handleSyncAllToCloud = async () => {
@@ -2364,9 +2365,12 @@ export default function RecepcionCdeDashboardPage() {
                             </button>
                             <button
                               type="button"
-                              onClick={() => setShowPrintModal(ticket)}
+                              onClick={(e) => {
+                                setAutoPrintTicket(e.shiftKey);
+                                setShowPrintModal(ticket);
+                              }}
                               className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer border border-transparent hover:border-zinc-300"
-                              title="Imprimir Comprobante SATI (Térmica calibrable)"
+                              title="Imprimir Comprobante SATI (Shift+Clic para imprimir directo)"
                             >
                               <Printer className="w-4 h-4" />
                             </button>
@@ -2962,6 +2966,7 @@ export default function RecepcionCdeDashboardPage() {
       {/* Modal de Impresión de Comprobante SATI Térmico Calibrable */}
       {showPrintModal && (
         <SatiThermalPrintModal
+          autoPrint={autoPrintTicket}
           data={{
             idOrden: showPrintModal.idOrdenAsu || showPrintModal.idOrden,
             codigoProducto: showPrintModal.codigoProducto,
@@ -2975,7 +2980,10 @@ export default function RecepcionCdeDashboardPage() {
             fechaRecepcionReparacion: showPrintModal.fechaRecibidoDeposito || (showPrintModal.recibidoEnDeposito ? showPrintModal.fechaEntregada : undefined),
             recibidoListoRetiro: Boolean(showPrintModal.recibidoEnDeposito),
           }}
-          onClose={() => setShowPrintModal(null)}
+          onClose={() => {
+            setShowPrintModal(null);
+            setAutoPrintTicket(false);
+          }}
         />
       )}
 
