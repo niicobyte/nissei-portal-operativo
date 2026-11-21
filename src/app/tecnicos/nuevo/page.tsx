@@ -16,12 +16,23 @@ import {
   User,
   Wrench,
   AlertCircle,
+  AlertTriangle,
   Laptop,
   Upload,
   FileSpreadsheet,
   Send,
   Database,
+  ShieldAlert,
+  ShieldCheck,
+  Zap,
 } from "lucide-react";
+import {
+  enriquecerComponente,
+  verificarCompatibilidadPC,
+  ResultadoCompatibilidad,
+  AlertaCompatibilidad,
+  HardwarePresupuestoItem,
+} from "@/data/compatibilidadPcData";
 import { BarcodeScannerModal } from "@/components/common/BarcodeScannerModal";
 import { ScanButton } from "@/components/common/ScanButton";
 import {
@@ -183,6 +194,50 @@ export default function NuevoIngresoMontajePage() {
     | { mode: "row"; index: number }
     | null
   >(null);
+
+  // 3b. MOTOR INTELIGENTE DE COMPATIBILIDAD DE HARDWARE (ARMAR-PC)
+  const enrichedComponents = useMemo<HardwarePresupuestoItem[]>(() => {
+    return components.map((c) => enriquecerComponente(c));
+  }, [components]);
+
+  const resultadoCompatibilidad = useMemo<ResultadoCompatibilidad | null>(() => {
+    if (tipoServicio !== "Montaje" || enrichedComponents.length === 0) return null;
+    return verificarCompatibilidadPC(enrichedComponents);
+  }, [tipoServicio, enrichedComponents]);
+
+  // Detección preventiva de conflicto mientras se escribe el SKU o Descripción antes de agregar
+  const prospectiveItem = useMemo<HardwarePresupuestoItem | null>(() => {
+    if (tipoServicio !== "Montaje" || !customDesc.trim()) return null;
+    return enriquecerComponente({
+      sku: customSku.trim() || "PREVIEW",
+      upc: customUpc.trim() || undefined,
+      categoria: customCategory,
+      descripcion: customDesc.trim(),
+      seriales: customSerial.trim() || "N/A",
+    });
+  }, [tipoServicio, customDesc, customSku, customUpc, customCategory, customSerial]);
+
+  const prospectiveConflict = useMemo<AlertaCompatibilidad | null>(() => {
+    if (!prospectiveItem || tipoServicio !== "Montaje" || enrichedComponents.length === 0) return null;
+    const testBuild = [...enrichedComponents, prospectiveItem];
+    const testResult = verificarCompatibilidadPC(testBuild);
+
+    const baseAlertKeys = new Set(
+      resultadoCompatibilidad?.alertas.map((a) => `${a.tipo}-${a.titulo}`) || []
+    );
+
+    const newErrors = testResult.alertas.filter(
+      (a) => a.tipo === "ERROR" && !baseAlertKeys.has(`${a.tipo}-${a.titulo}`)
+    );
+    if (newErrors.length > 0) return newErrors[0];
+
+    const newWarnings = testResult.alertas.filter(
+      (a) => a.tipo === "WARNING" && !baseAlertKeys.has(`${a.tipo}-${a.titulo}`)
+    );
+    if (newWarnings.length > 0) return newWarnings[0];
+
+    return null;
+  }, [prospectiveItem, enrichedComponents, resultadoCompatibilidad, tipoServicio]);
 
   // 4. APARTADO DE TÉCNICO RESPONSABLE & PRIORIDAD
   const [assignedTech, setAssignedTech] = useState<string>(LISTA_TECNICOS_MONTAJE[0]);
@@ -744,6 +799,26 @@ export default function NuevoIngresoMontajePage() {
       return;
     }
 
+    // Validación defensiva del Escudo de Compatibilidad de Hardware (Motor Armar-PC)
+    if (tipoServicio === "Montaje" && resultadoCompatibilidad && resultadoCompatibilidad.totalErrores > 0) {
+      const errorLines = resultadoCompatibilidad.alertas
+        .filter((a) => a.tipo === "ERROR")
+        .map((a, i) => `${i + 1}. ${a.titulo}:\n   ${a.detalle}`)
+        .join("\n\n");
+      const confirmed = window.confirm(
+        `⚠️ ADVERTENCIA CRÍTICA DE COMPATIBILIDAD (MOTOR ARMAR-PC):\n\n` +
+        `Se detectaron ${resultadoCompatibilidad.totalErrores} incompatibilidad(es) física(s) insalvable(s) en los componentes de este ensamble:\n\n` +
+        errorLines +
+        `\n\n¿Desea forzar y registrar de todas formas esta orden de montaje con incompatibilidades físicas? Presione Aceptar para forzar o Cancelar para corregir los componentes.`
+      );
+      if (!confirmed) {
+        setFormError(
+          `Ingreso detenido: corrija las ${resultadoCompatibilidad.totalErrores} incompatibilidad(es) crítica(s) de hardware antes de registrar.`
+        );
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     let effectiveVendedor = salesAgent;
@@ -806,7 +881,12 @@ export default function NuevoIngresoMontajePage() {
       etapa: "ARMADO_MECANICO",
       progreso: 35,
       prioridad: priority,
-      consumoEstimado: tipoServicio === "Montaje" ? "550W" : undefined,
+      consumoEstimado:
+        tipoServicio === "Montaje" && resultadoCompatibilidad
+          ? `${resultadoCompatibilidad.consumoTotalWatts}W (Recomendado: ${resultadoCompatibilidad.fuenteRecomendadaWatts}W+)`
+          : tipoServicio === "Montaje"
+          ? "550W"
+          : undefined,
       observaciones: observations.trim(),
       componentes: normalizedComponents,
     };
@@ -1418,7 +1498,197 @@ export default function NuevoIngresoMontajePage() {
                     <span>{skuMatchNotice}</span>
                   </div>
                 )}
+
+                {/* Alerta en tiempo real de conflicto previsto al escribir o escanear un componente */}
+                {prospectiveConflict && (
+                  <div
+                    className={`p-3.5 rounded-xl border text-xs flex items-start gap-3 transition-all ${
+                      prospectiveConflict.tipo === "ERROR"
+                        ? "bg-rose-50 border-rose-300 text-rose-950 animate-pulse shadow-2xs"
+                        : "bg-amber-50 border-amber-300 text-amber-950 shadow-2xs"
+                    }`}
+                  >
+                    {prospectiveConflict.tipo === "ERROR" ? (
+                      <ShieldAlert className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                    )}
+                    <div className="space-y-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span
+                          className={`font-mono font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded ${
+                            prospectiveConflict.tipo === "ERROR"
+                              ? "bg-rose-200 text-rose-900"
+                              : "bg-amber-200 text-amber-900"
+                          }`}
+                        >
+                          {prospectiveConflict.tipo === "ERROR" ? "Conflicto Detectado antes de Agregar" : "Advertencia Técnica"}
+                        </span>
+                        <strong className="text-xs sm:text-sm font-bold">
+                          {prospectiveConflict.titulo}
+                        </strong>
+                      </div>
+                      <p className="text-xs leading-relaxed font-normal">
+                        {prospectiveConflict.detalle}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              {/* ESCUDO DE COMPATIBILIDAD DE HARDWARE (MOTOR ARMAR-PC) */}
+              {tipoServicio === "Montaje" && components.length > 0 && resultadoCompatibilidad && (
+                <div
+                  className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3.5 shadow-sm ${
+                    resultadoCompatibilidad.totalErrores > 0
+                      ? "bg-rose-50/90 border-rose-300 shadow-rose-100/50"
+                      : resultadoCompatibilidad.totalWarnings > 0
+                      ? "bg-amber-50/80 border-amber-300"
+                      : "bg-emerald-50/80 border-emerald-300 shadow-emerald-100/50"
+                  }`}
+                >
+                  {/* Cabecera del Escudo */}
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2.5">
+                      <div
+                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                          resultadoCompatibilidad.totalErrores > 0
+                            ? "bg-rose-600 text-white shadow-sm"
+                            : resultadoCompatibilidad.totalWarnings > 0
+                            ? "bg-amber-500 text-white shadow-sm"
+                            : "bg-emerald-600 text-white shadow-sm"
+                        }`}
+                      >
+                        {resultadoCompatibilidad.totalErrores > 0 ? (
+                          <ShieldAlert className="w-5 h-5" />
+                        ) : resultadoCompatibilidad.totalWarnings > 0 ? (
+                          <AlertTriangle className="w-5 h-5" />
+                        ) : (
+                          <ShieldCheck className="w-5 h-5" />
+                        )}
+                      </div>
+                      <div>
+                        <h3 className="text-sm sm:text-base font-extrabold text-zinc-900 flex items-center gap-2">
+                          <span>Escudo de Compatibilidad de Ensamble</span>
+                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-white/90 border border-zinc-200 text-zinc-700">
+                            Motor Armar-PC
+                          </span>
+                        </h3>
+                        <p className="text-xs text-zinc-600">
+                          {resultadoCompatibilidad.totalErrores > 0
+                            ? `Se detectaron ${resultadoCompatibilidad.totalErrores} incompatibilidad(es) física(s) que impiden el funcionamiento correcto.`
+                            : resultadoCompatibilidad.totalWarnings > 0
+                            ? `Componentes compatibles con ${resultadoCompatibilidad.totalWarnings} advertencia(s) para optimización.`
+                            : "Todos los componentes cargados son 100% compatibles física y eléctricamente."}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Badges de Consumo Eléctrico y Estado */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-zinc-200 text-xs font-mono font-bold text-zinc-800 shadow-2xs">
+                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                        <span>Consumo: ~{resultadoCompatibilidad.consumoTotalWatts}W</span>
+                        <span className="text-zinc-300">|</span>
+                        <span className="text-zinc-600">Fuente recomendada: {resultadoCompatibilidad.fuenteRecomendadaWatts}W+</span>
+                      </div>
+
+                      <span
+                        className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-2xs ${
+                          resultadoCompatibilidad.totalErrores > 0
+                            ? "bg-rose-600 text-white animate-pulse"
+                            : resultadoCompatibilidad.totalWarnings > 0
+                            ? "bg-amber-500 text-white"
+                            : "bg-emerald-600 text-white"
+                        }`}
+                      >
+                        {resultadoCompatibilidad.totalErrores > 0 ? (
+                          <>
+                            <AlertCircle className="w-3.5 h-3.5" />
+                            <span>Incompatible ({resultadoCompatibilidad.totalErrores})</span>
+                          </>
+                        ) : resultadoCompatibilidad.totalWarnings > 0 ? (
+                          <>
+                            <AlertTriangle className="w-3.5 h-3.5" />
+                            <span>Con Advertencias ({resultadoCompatibilidad.totalWarnings})</span>
+                          </>
+                        ) : (
+                          <>
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>100% Compatible</span>
+                          </>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Lista de Alertas Críticas (Errores) */}
+                  {resultadoCompatibilidad.totalErrores > 0 && (
+                    <div className="space-y-2 pt-1">
+                      {resultadoCompatibilidad.alertas
+                        .filter((a) => a.tipo === "ERROR")
+                        .map((alerta, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3 sm:p-3.5 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950 space-y-1 shadow-2xs"
+                          >
+                            <div className="flex items-center gap-2 font-black text-rose-900 text-xs sm:text-sm">
+                              <span>⛔</span>
+                              <span>{alerta.titulo}</span>
+                            </div>
+                            <p className="text-xs sm:text-[13px] leading-relaxed text-rose-900 font-medium pl-6">
+                              {alerta.detalle}
+                            </p>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Lista de Advertencias Técnicas (Warnings) */}
+                  {resultadoCompatibilidad.totalWarnings > 0 && (
+                    <div className="space-y-2 pt-1">
+                      {resultadoCompatibilidad.alertas
+                        .filter((a) => a.tipo === "WARNING")
+                        .map((alerta, idx) => (
+                          <div
+                            key={idx}
+                            className="p-3 rounded-xl bg-amber-100/80 border border-amber-300 text-amber-950 space-y-1 shadow-2xs"
+                          >
+                            <div className="flex items-center gap-2 font-bold text-amber-900 text-xs">
+                              <span>⚠️</span>
+                              <span>{alerta.titulo}</span>
+                            </div>
+                            <p className="text-xs leading-relaxed text-amber-900 pl-6">
+                              {alerta.detalle}
+                            </p>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+
+                  {/* Checklist de Compatibilidad cuando está 100% Compatible */}
+                  {resultadoCompatibilidad.totalErrores === 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                      <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="font-semibold text-zinc-800">Socket CPU &amp; Placa</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="font-semibold text-zinc-800">Generación de RAM</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="font-semibold text-zinc-800">Refrigeración &amp; Gabinete</span>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="font-semibold text-zinc-800">Capacidad Eléctrica</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Tabla de Componentes Agregados */}
               {components.length === 0 ? (
@@ -1462,7 +1732,42 @@ export default function NuevoIngresoMontajePage() {
                             </span>
                           </td>
                           <td className="py-3 px-3.5 font-semibold text-zinc-900 min-w-[240px] text-sm">
-                            {item.descripcion}
+                            <div>{item.descripcion}</div>
+                            {enrichedComponents[index] && (
+                              <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                                {enrichedComponents[index].socket && (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-bold">
+                                    Socket {enrichedComponents[index].socket}
+                                  </span>
+                                )}
+                                {enrichedComponents[index].ramType && (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-bold">
+                                    {enrichedComponents[index].ramType}
+                                  </span>
+                                )}
+                                {enrichedComponents[index].categoria === "GABINETE" && (
+                                  <span
+                                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded border font-bold ${
+                                      (enrichedComponents[index].maxRadiatorMm ?? 0) > 0
+                                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                        : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                                    }`}
+                                  >
+                                    Soporte Rad: {(enrichedComponents[index].maxRadiatorMm ?? 0) > 0 ? `${enrichedComponents[index].maxRadiatorMm}mm` : "0mm (Solo Aire)"}
+                                  </span>
+                                )}
+                                {enrichedComponents[index].categoria === "REFRIGERACION" && enrichedComponents[index].isAioLiquid && (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-bold">
+                                    Líquida {enrichedComponents[index].radiatorSizeMm ? `${enrichedComponents[index].radiatorSizeMm}mm` : "AIO"}
+                                  </span>
+                                )}
+                                {enrichedComponents[index].potenciaWatts ? (
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                                    {enrichedComponents[index].potenciaWatts}W
+                                  </span>
+                                ) : null}
+                              </div>
+                            )}
                           </td>
                           <td className="py-3 px-3.5 min-w-[200px]">
                             <div className="flex items-center gap-2">
@@ -1686,6 +1991,41 @@ export default function NuevoIngresoMontajePage() {
                     {components.length} ítems
                   </span>
                 </div>
+
+                {tipoServicio === "Montaje" && (
+                  <>
+                    <div className="pt-2 flex justify-between items-center">
+                      <span className="text-zinc-500">Compatibilidad:</span>
+                      {components.length === 0 ? (
+                        <span className="text-zinc-400 font-mono text-xs">Sin piezas</span>
+                      ) : (resultadoCompatibilidad?.totalErrores ?? 0) > 0 ? (
+                        <span className="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 font-mono text-xs font-bold flex items-center gap-1">
+                          <ShieldAlert className="w-3 h-3 text-rose-600" />
+                          <span>Incompatible ({resultadoCompatibilidad?.totalErrores})</span>
+                        </span>
+                      ) : (resultadoCompatibilidad?.totalWarnings ?? 0) > 0 ? (
+                        <span className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 font-mono text-xs font-bold flex items-center gap-1">
+                          <AlertTriangle className="w-3 h-3 text-amber-600" />
+                          <span>Con Advertencia</span>
+                        </span>
+                      ) : (
+                        <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono text-xs font-bold flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                          <span>100% Compatible</span>
+                        </span>
+                      )}
+                    </div>
+
+                    {components.length > 0 && resultadoCompatibilidad && (
+                      <div className="pt-2 flex justify-between items-center text-xs">
+                        <span className="text-zinc-500">Potencia estimada:</span>
+                        <span className="font-mono font-bold text-zinc-800">
+                          ~{resultadoCompatibilidad.consumoTotalWatts}W (Pico: {resultadoCompatibilidad.fuenteRecomendadaWatts}W)
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Previsualización Notificación WhatsApp al Grupo Montajes */}
