@@ -27,6 +27,7 @@ import {
 import { AuthBadge } from "@/components/common/AuthBadge";
 import { AuthGuard } from "@/components/common/AuthGuard";
 import { CleanDatePicker } from "@/components/common/CleanDatePicker";
+import { UbicacionCascadaSelector } from "@/components/common/UbicacionCascadaSelector";
 
 export default function NuevoIngresoRetornoPage() {
   const router = useRouter();
@@ -67,6 +68,7 @@ export default function NuevoIngresoRetornoPage() {
     "Caja Original",
   ]);
   const [newAccessoryText, setNewAccessoryText] = useState("");
+  const [ubicacion, setUbicacion] = useState("");
   const [isSaved, setIsSaved] = useState(false);
 
   // Obtener la familia actual seleccionada
@@ -304,6 +306,7 @@ export default function NuevoIngresoRetornoPage() {
       marca: marca.trim().toUpperCase(),
       modelo: productModel.trim(),
       serial: serialNumber.trim() || "SIN SERIAL",
+      ubicacion: ubicacion.trim() || undefined,
     };
 
     try {
@@ -810,6 +813,12 @@ ${accText}`;
                   </div>
                 </div>
               </div>
+
+              {/* Ubicación del Producto en Cascada (Estantes / Muebles) */}
+              <UbicacionCascadaSelector
+                value={ubicacion}
+                onChange={setUbicacion}
+              />
             </section>
 
             {/* Acciones Secundarias */}

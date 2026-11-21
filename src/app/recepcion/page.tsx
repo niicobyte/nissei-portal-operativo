@@ -43,7 +43,12 @@ import {
   Timer,
   Users,
   Loader2,
+  MapPin,
 } from "lucide-react";
+import {
+  UbicacionCascadaSelector,
+  extractUbicacionFromText,
+} from "@/components/common/UbicacionCascadaSelector";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { OrderSearchInput } from "@/components/common/OrderSearchInput";
@@ -719,6 +724,7 @@ export default function RecepcionDashboardPage() {
   const [modalAccesorios, setModalAccesorios] = useState<string>("");
   const [modalAccessoriesList, setModalAccessoriesList] = useState<string[]>([]);
   const [modalNewAccessory, setModalNewAccessory] = useState<string>("");
+  const [modalUbicacion, setModalUbicacion] = useState<string>("");
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
   const draftHydratedRef = useRef(false);
@@ -728,6 +734,7 @@ export default function RecepcionDashboardPage() {
     modalDictamenTipo?: string;
     modalAccessoriesList: string[];
     modalNewAccessory: string;
+    modalUbicacion?: string;
   } | null>(null);
 
   const parseAccesoriosString = (raw: string | undefined): string[] => {
@@ -746,6 +753,11 @@ export default function RecepcionDashboardPage() {
         setModalAccessoriesList(pending.modalAccessoriesList);
         setModalAccesorios(pending.modalAccessoriesList.join(", "));
         setModalNewAccessory(pending.modalNewAccessory);
+        setModalUbicacion(
+          pending.modalUbicacion !== undefined
+            ? pending.modalUbicacion
+            : (selectedTicket.ubicacion || extractUbicacionFromText(selectedTicket.mensaje))
+        );
         pendingModalDraftRef.current = null;
         return;
       }
@@ -766,6 +778,7 @@ export default function RecepcionDashboardPage() {
       setModalAccesorios(accRaw);
       setModalAccessoriesList(parseAccesoriosString(accRaw));
       setModalNewAccessory("");
+      setModalUbicacion(selectedTicket.ubicacion || extractUbicacionFromText(rawMsg));
     }
   }, [selectedTicket]);
 
@@ -870,6 +883,7 @@ export default function RecepcionDashboardPage() {
       modalDictamenTipo?: string;
       modalAccessoriesList?: string[];
       modalNewAccessory?: string;
+      modalUbicacion?: string;
     }>("recepcion_workspace");
 
     if (draft) {
@@ -905,6 +919,10 @@ export default function RecepcionDashboardPage() {
             modalDictamenTipo: draft.modalDictamenTipo || matched.dictamenTipo || "AUTO",
             modalAccessoriesList: draftAccList,
             modalNewAccessory: draft.modalNewAccessory || "",
+            modalUbicacion:
+              draft.modalUbicacion !== undefined
+                ? draft.modalUbicacion
+                : (matched.ubicacion || extractUbicacionFromText(matched.mensaje)),
           };
           setSelectedTicket(matched);
         }
@@ -943,6 +961,7 @@ export default function RecepcionDashboardPage() {
     modalDictamenTipo,
     modalAccessoriesList,
     modalNewAccessory,
+    modalUbicacion,
   });
 
   useEffect(() => {
@@ -963,6 +982,7 @@ export default function RecepcionDashboardPage() {
     modalDictamenTipo,
     modalAccessoriesList,
     modalNewAccessory,
+    modalUbicacion,
   ]);
 
   useFlushDraftBeforeLogout(() => {
@@ -1123,7 +1143,7 @@ export default function RecepcionDashboardPage() {
     }
   };
 
-  // Guardar notas o comentarios del informe técnico, dictamen y accesorios de la orden
+  // Guardar notas o comentarios del informe técnico, dictamen, ubicación y accesorios de la orden
   const handleGuardarMensaje = async () => {
     if (!selectedTicket || isSavingDetails) return;
     setIsSavingDetails(true);
@@ -1138,6 +1158,7 @@ export default function RecepcionDashboardPage() {
         fechaEntregada: selectedTicket.fechaEntregada,
         mensaje: modalMensaje,
         accesorios: accFinal,
+        ubicacion: modalUbicacion.trim(),
         dictamenTipo: modalDictamenTipo,
         mensajeEditadoManualmente: true,
         idOrdenCde: selectedTicket.idOrdenCde,
@@ -1153,11 +1174,12 @@ export default function RecepcionDashboardPage() {
         ...selectedTicket,
         mensaje: modalMensaje,
         accesorios: accFinal,
+        ubicacion: modalUbicacion.trim(),
         dictamenTipo: modalDictamenTipo,
         mensajeEditadoManualmente: true,
       });
       showToast(
-        `✓ Cambios guardados (accesorios e informe de la orden #${selectedTicket.idOrden} sincronizados con éxito).`
+        `✓ Cambios guardados (accesorios, ubicación e informe de la orden #${selectedTicket.idOrden} sincronizados con éxito).`
       );
     } catch (err) {
       console.error("Error guardando detalles de orden:", err);
@@ -1166,6 +1188,53 @@ export default function RecepcionDashboardPage() {
       );
     } finally {
       setIsSavingDetails(false);
+    }
+  };
+
+  // Asignar ubicación física del producto en cascada (Estantes / Muebles) y persistir de inmediato
+  const handleCambiarUbicacion = async (idOrden: string, nuevaUbicacion: string) => {
+    setModalUbicacion(nuevaUbicacion);
+    const accFinal =
+      modalAccessoriesList.length > 0
+        ? modalAccessoriesList.join(", ")
+        : modalAccesorios.trim();
+
+    try {
+      const updated = await updateTicketDetailsAsync(idOrden, {
+        estado: selectedTicket?.estado,
+        fechaEntregada: selectedTicket?.fechaEntregada,
+        mensaje: modalMensaje,
+        accesorios: accFinal,
+        ubicacion: nuevaUbicacion,
+        dictamenTipo: modalDictamenTipo,
+        mensajeEditadoManualmente: true,
+        idOrdenCde: selectedTicket?.idOrdenCde,
+      });
+      const cdeTickets = getStoredCdeTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+      setTickets(enriched);
+      if (selectedTicket && selectedTicket.idOrden === idOrden) {
+        const enrichedSelected = enriched.find((t) => t.idOrden === idOrden);
+        setSelectedTicket(enrichedSelected || {
+          ...selectedTicket,
+          ubicacion: nuevaUbicacion,
+          mensaje: modalMensaje,
+          accesorios: accFinal,
+          dictamenTipo: modalDictamenTipo,
+          mensajeEditadoManualmente: true,
+        });
+      }
+      if (nuevaUbicacion) {
+        showToast(`📍 Ubicación asignada: "${nuevaUbicacion}" en orden #${idOrden}`);
+      } else {
+        showToast(`📍 Ubicación removida de la orden #${idOrden}`);
+      }
+    } catch (err) {
+      console.error("Error al actualizar ubicación:", err);
+      showToast(`📍 Ubicación actualizada localmente para la orden #${idOrden}.`);
     }
   };
 
@@ -1182,6 +1251,7 @@ export default function RecepcionDashboardPage() {
       dictamenTipo: dictamenId,
       mensaje: modalMensaje,
       accesorios: accFinal,
+      ubicacion: modalUbicacion.trim(),
       mensajeEditadoManualmente: true,
       idOrdenCde: selectedTicket?.idOrdenCde,
     });
@@ -1198,6 +1268,7 @@ export default function RecepcionDashboardPage() {
         dictamenTipo: dictamenId,
         mensaje: modalMensaje,
         accesorios: accFinal,
+        ubicacion: modalUbicacion.trim(),
         mensajeEditadoManualmente: true,
       });
     }
@@ -1219,6 +1290,10 @@ export default function RecepcionDashboardPage() {
       ? (modalAccessoriesList.length > 0 ? modalAccessoriesList.join(", ") : modalAccesorios.trim())
       : (targetTicket?.accesorios || "");
 
+    const ubicacionFinal = isTargetSelected
+      ? modalUbicacion.trim()
+      : (targetTicket?.ubicacion || "");
+
     const msgFinal = isTargetSelected ? modalMensaje : (targetTicket?.mensaje || "");
     const dictamenFinal = isTargetSelected ? modalDictamenTipo : (targetTicket?.dictamenTipo || "AUTO");
     const cdeId = isTargetSelected ? selectedTicket?.idOrdenCde : targetTicket?.idOrdenCde;
@@ -1232,6 +1307,7 @@ export default function RecepcionDashboardPage() {
         estado: nuevoEstado,
         mensaje: msgFinal,
         accesorios: accFinal,
+        ubicacion: ubicacionFinal,
         dictamenTipo: dictamenFinal,
         mensajeEditadoManualmente: true,
         idOrdenCde: cdeId,
@@ -1250,6 +1326,7 @@ export default function RecepcionDashboardPage() {
           estado: nuevoEstado,
           mensaje: msgFinal,
           accesorios: accFinal,
+          ubicacion: ubicacionFinal,
           dictamenTipo: dictamenFinal,
           mensajeEditadoManualmente: true,
           fechaEntregada: fechaEnt,
@@ -1360,17 +1437,19 @@ ${dictamen.accText}`;
       }
     }
 
-    // Si el mensaje, accesorios o dictamen en el modal fueron modificados, guardarlos antes de notificar
+    // Si el mensaje, accesorios, ubicación o dictamen en el modal fueron modificados, guardarlos antes de notificar
     let currentTicket = ticket;
     if (selectedTicket && selectedTicket.idOrden === ticket.idOrden) {
       if (
         modalMensaje !== ticket.mensaje ||
         accFinal !== (ticket.accesorios || "") ||
+        modalUbicacion.trim() !== (ticket.ubicacion || "") ||
         modalDictamenTipo !== (ticket.dictamenTipo || "AUTO")
       ) {
         const updated = updateTicketDetails(ticket.idOrden, {
           mensaje: modalMensaje,
           accesorios: accFinal,
+          ubicacion: modalUbicacion.trim(),
           dictamenTipo: modalDictamenTipo,
           mensajeEditadoManualmente: true,
         });
@@ -1385,6 +1464,7 @@ ${dictamen.accText}`;
           ...ticket,
           mensaje: modalMensaje,
           accesorios: accFinal,
+          ubicacion: modalUbicacion.trim(),
           dictamenTipo: modalDictamenTipo,
           mensajeEditadoManualmente: true,
         };
@@ -3273,9 +3353,24 @@ ${dictamen.accText}`;
                         <div className="font-bold text-zinc-900 truncate max-w-[220px] text-sm" title={`${ticket.marca} ${ticket.modelo}`}>
                           <span className="font-extrabold">{ticket.marca}</span> {ticket.modelo}
                         </div>
-                        <span className="inline-block px-2 py-0.5 mt-1 rounded text-xs bg-zinc-100 text-zinc-700 font-mono font-medium">
-                          {ticket.tipoComponente || "GENERAL"}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          <span className="inline-block px-2 py-0.5 rounded text-xs bg-zinc-100 text-zinc-700 font-mono font-medium">
+                            {ticket.tipoComponente || "GENERAL"}
+                          </span>
+                          {(() => {
+                            const ub = ticket.ubicacion || extractUbicacionFromText(ticket.mensaje);
+                            if (!ub) return null;
+                            return (
+                              <span
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 font-mono font-bold"
+                                title={`Ubicación física: ${ub}`}
+                              >
+                                <MapPin className="w-3 h-3 text-indigo-600 shrink-0" />
+                                <span>{ub}</span>
+                              </span>
+                            );
+                          })()}
+                        </div>
                       </td>
 
                       {/* Nº Serie */}
@@ -3816,6 +3911,14 @@ ${dictamen.accText}`;
                   </div>
                 </div>
 
+                {/* Sección de Ubicación del Producto en Cascada (Estantes / Muebles) */}
+                <UbicacionCascadaSelector
+                  value={modalUbicacion}
+                  onChange={(nuevaUbicacion) =>
+                    handleCambiarUbicacion(selectedTicket.idOrden, nuevaUbicacion)
+                  }
+                />
+
                 {/* Acciones de cambio de estado en el modal (sincronizado con el filtro de estados) */}
                 <div className="p-3.5 sm:p-4 bg-[#fdfdfd] border border-zinc-200 rounded-xl space-y-2.5">
                   <div className="flex items-center justify-between gap-2">
@@ -3993,6 +4096,7 @@ ${dictamen.accText}`;
               serial: showPrintModal.serial,
               estado: showPrintModal.estado,
               accesorios: showPrintModal.accesorios,
+              ubicacion: showPrintModal.ubicacion || extractUbicacionFromText(showPrintModal.mensaje) || undefined,
               informeTecnico: formatSatiSentenceCase(showPrintModal.mensaje),
               subtitulo: isTicketDanesa(showPrintModal.cliente)
                 ? "COMPROBANTE DE STOCK PROPIO - SUCURSAL"

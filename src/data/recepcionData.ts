@@ -27,6 +27,7 @@ export interface RecepcionTicket {
   modelo: string;
   serial: string;
   accesorios?: string;
+  ubicacion?: string;
   dictamenTipo?: string;
   esNuevoIngreso?: boolean;
   esEstadoCambiadoReciente?: boolean;
@@ -27311,6 +27312,7 @@ export interface RecepcionCustomDetails {
   fechaEntregada?: string;
   mensaje?: string;
   accesorios?: string;
+  ubicacion?: string;
   dictamenTipo?: string;
   mensajeEditadoManualmente?: boolean;
   updatedAt?: string;
@@ -27337,9 +27339,15 @@ export function saveStoredCustomDetails(idOrden: string, details: RecepcionCusto
     const map = getStoredCustomDetails();
     const cleanId = String(idOrden).trim();
     const prev = map.get(cleanId) || {};
+    const definedUpdates: Partial<RecepcionCustomDetails> = {};
+    for (const [k, v] of Object.entries(details)) {
+      if (v !== undefined) {
+        (definedUpdates as Record<string, unknown>)[k] = v;
+      }
+    }
     map.set(cleanId, {
       ...prev,
-      ...details,
+      ...definedUpdates,
       updatedAt: new Date().toISOString(),
     });
     const obj = Object.fromEntries(map.entries());
@@ -27375,6 +27383,7 @@ export function getStoredTickets(): RecepcionTicket[] {
         fechaEntregada: c.fechaEntregada !== undefined ? c.fechaEntregada : t.fechaEntregada,
         mensaje: c.mensajeEditadoManualmente && c.mensaje !== undefined ? c.mensaje : (t.mensaje || c.mensaje || ''),
         accesorios: c.accesorios !== undefined ? c.accesorios : t.accesorios,
+        ubicacion: c.ubicacion !== undefined ? c.ubicacion : t.ubicacion,
         dictamenTipo: c.dictamenTipo !== undefined ? c.dictamenTipo : t.dictamenTipo,
         mensajeEditadoManualmente: c.mensajeEditadoManualmente !== undefined ? c.mensajeEditadoManualmente : t.mensajeEditadoManualmente,
       };
@@ -27495,6 +27504,11 @@ export function applyCloudRecepcionTickets(rawData: RecepcionTicket[]): Recepcio
         ? custom.accesorios
         : (t.accesorios || local?.accesorios || undefined);
 
+    const finalUbicacion =
+      custom?.ubicacion !== undefined
+        ? custom.ubicacion
+        : (t.ubicacion || local?.ubicacion || undefined);
+
     const isManualEdit = Boolean(
       custom?.mensajeEditadoManualmente ||
       local?.mensajeEditadoManualmente ||
@@ -27519,6 +27533,7 @@ export function applyCloudRecepcionTickets(rawData: RecepcionTicket[]): Recepcio
       fechaEntregada: finalFechaEntregada,
       mensaje: finalMensaje,
       accesorios: finalAccesorios,
+      ubicacion: finalUbicacion,
       dictamenTipo: finalDictamen,
       mensajeEditadoManualmente: isManualEdit || undefined,
       esNuevoIngreso:
@@ -27648,6 +27663,7 @@ export async function updateTicketDetailsAsync(
     fechaEntregada: updates.fechaEntregada,
     mensaje: updates.mensaje,
     accesorios: updates.accesorios,
+    ubicacion: updates.ubicacion,
     dictamenTipo: updates.dictamenTipo,
     mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
   });
@@ -27658,6 +27674,7 @@ export async function updateTicketDetailsAsync(
       fechaEntregada: updates.fechaEntregada,
       mensaje: updates.mensaje,
       accesorios: updates.accesorios,
+      ubicacion: updates.ubicacion,
       dictamenTipo: updates.dictamenTipo,
       mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
     });
@@ -27698,6 +27715,7 @@ export async function updateTicketDetailsAsync(
           fechaEntregada: updates.fechaEntregada,
           mensaje: updates.mensaje,
           accesorios: updates.accesorios,
+          ubicacion: updates.ubicacion,
           dictamenTipo: updates.dictamenTipo,
           mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
         }),
@@ -27731,6 +27749,7 @@ export function updateTicketDetails(
     fechaEntregada: updates.fechaEntregada,
     mensaje: updates.mensaje,
     accesorios: updates.accesorios,
+    ubicacion: updates.ubicacion,
     dictamenTipo: updates.dictamenTipo,
     mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
   });
@@ -27741,6 +27760,7 @@ export function updateTicketDetails(
       fechaEntregada: updates.fechaEntregada,
       mensaje: updates.mensaje,
       accesorios: updates.accesorios,
+      ubicacion: updates.ubicacion,
       dictamenTipo: updates.dictamenTipo,
       mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
     });
@@ -27779,6 +27799,7 @@ export function updateTicketDetails(
         fechaEntregada: updates.fechaEntregada,
         mensaje: updates.mensaje,
         accesorios: updates.accesorios,
+        ubicacion: updates.ubicacion,
         dictamenTipo: updates.dictamenTipo,
         mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
       }),

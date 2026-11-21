@@ -295,6 +295,14 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 
       try {
         await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN ubicacion VARCHAR(150) DEFAULT NULL"
+        );
+      } catch {
+        // La columna ubicacion ya existe en la tabla
+      }
+
+      try {
+        await pool.query(
           "ALTER TABLE recepcion_tickets ADD COLUMN recibido_en_deposito TINYINT(1) DEFAULT 0"
         );
       } catch {
@@ -393,6 +401,14 @@ export async function ensureDatabaseInitialized(): Promise<void> {
         );
       } catch {
         // La columna accesorios ya existe
+      }
+
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_cde_tickets ADD COLUMN ubicacion VARCHAR(150) DEFAULT NULL"
+        );
+      } catch {
+        // La columna ubicacion ya existe
       }
 
       // Tabla de cruces manuales de órdenes SATI (ASU ↔ CDE) confirmados por el usuario
@@ -881,6 +897,7 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
             c.id_orden AS matched_cde_id,
             c.mensaje AS matched_cde_mensaje,
             c.accesorios AS matched_cde_accesorios,
+            c.ubicacion AS matched_cde_ubicacion,
             c.fecha_entregada AS matched_cde_despacho,
             c.fecha_ingreso AS matched_cde_ingreso,
             c.estado AS matched_cde_estado
@@ -893,6 +910,7 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
     const cdeMsg = (r.matched_cde_mensaje || "").trim();
     const finalMsg = cdeMsg || r.mensaje || "";
     const directAcc = r.accesorios || r.matched_cde_accesorios || undefined;
+    const directUbicacion = r.ubicacion || r.matched_cde_ubicacion || undefined;
     const parsedAcc = !directAcc && String(finalMsg).includes("Accesorios:")
       ? String(finalMsg).split(/Accesorios:/i)[1]?.trim()
       : undefined;
@@ -914,6 +932,7 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
       fechaDespachoCde: r.matched_cde_despacho || undefined,
       estadoCde: r.matched_cde_estado || undefined,
       accesorios: directAcc || parsedAcc,
+      ubicacion: directUbicacion,
       esNuevoIngreso:
         r.origen === "NUEVO_INGRESO" ||
         String(finalMsg).includes("Accesorios:"),

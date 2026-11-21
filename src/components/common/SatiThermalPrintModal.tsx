@@ -29,6 +29,7 @@ export interface SatiComprobanteData {
   serial?: string;
   estado?: string;
   accesorios?: string;
+  ubicacion?: string;
   informeTecnico?: string;
   tecnico?: string;
   subtitulo?: string;
@@ -664,6 +665,17 @@ export function SatiThermalPrintModal({
                   <p className="text-[11px] font-mono leading-snug whitespace-pre-wrap break-words thermal-value font-black">
                     {data.accesorios}
                   </p>
+                </div>
+              )}
+
+              {data.ubicacion && (
+                <div className="border-t-2 border-black border-dashed pt-1.5 leading-snug">
+                  <span className="thermal-label uppercase font-black">
+                    UBICACIÓN:
+                  </span>{" "}
+                  <span className="thermal-value font-black">
+                    {data.ubicacion}
+                  </span>
                 </div>
               )}
 
