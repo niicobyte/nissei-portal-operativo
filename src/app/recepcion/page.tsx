@@ -3712,89 +3712,89 @@ ${dictamen.accText}`;
                 </div>
               )}
 
-              {/* Barra Horizontal de Metadatos del Cliente y Fechas */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 bg-[#f9f9f9] px-3.5 py-2.5 rounded-xl border border-[#f0f0f0] text-xs">
+              {/* Barra Horizontal de Metadatos del Cliente y Fechas (100% Alineada) */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 bg-[#f9f9f9] px-3.5 py-2.5 rounded-xl border border-[#f0f0f0] text-xs items-start">
                 <div className="min-w-0">
-                  <span className="text-zinc-500 block text-[11px] font-semibold">Cliente</span>
+                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Cliente</span>
                   <strong className="text-zinc-900 text-xs sm:text-sm truncate block" title={selectedTicket.cliente}>
                     {selectedTicket.cliente}
                   </strong>
                 </div>
-                <div>
-                  <span className="text-zinc-500 block text-[11px] font-semibold">Código Producto</span>
-                  <strong className="text-zinc-900 font-mono text-xs sm:text-sm">
+                <div className="min-w-0">
+                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Código Producto</span>
+                  <strong className="text-zinc-900 font-mono text-xs sm:text-sm truncate block">
                     {selectedTicket.codigoProducto || "N/A"}
                   </strong>
                 </div>
-                <div>
-                  <span className="text-zinc-500 block text-[11px] font-semibold">Ingreso ASU / Venta</span>
-                  <strong className="text-zinc-900 font-mono text-xs block">
+                <div className="min-w-0">
+                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Ingreso ASU / Venta</span>
+                  <strong className="text-zinc-900 font-mono text-xs truncate block" title={`Ingreso ASU: ${selectedTicket.fechaIngreso || "N/A"}`}>
                     Ing: {selectedTicket.fechaIngreso || "N/A"}
                   </strong>
                   {selectedTicket.fechaVenta && (
-                    <span className="text-zinc-500 font-mono text-[11px] block">
+                    <span className="text-zinc-500 font-mono text-[11px] truncate block">
                       Vta: {selectedTicket.fechaVenta}
                     </span>
                   )}
                 </div>
-                <div>
-                  <span className="text-zinc-500 block text-[11px] font-semibold">Laboratorio CDE</span>
+                <div className="min-w-0">
+                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Laboratorio CDE</span>
                   {selectedTicket.fechaDespachoCde ? (
-                    <strong className="text-amber-800 font-mono text-xs flex items-center gap-1 font-bold">
-                      <span>🚚</span>
-                      <span>{selectedTicket.fechaDespachoCde}</span>
+                    <strong className="text-amber-800 font-mono text-xs flex items-center gap-1 font-bold truncate" title={`Despacho CDE: ${selectedTicket.fechaDespachoCde}`}>
+                      <span className="shrink-0">🚚</span>
+                      <span className="truncate">{selectedTicket.fechaDespachoCde}</span>
                     </strong>
                   ) : selectedTicket.fechaIngresoCde ? (
-                    <strong className="text-zinc-900 font-mono text-xs">
+                    <strong className="text-zinc-900 font-mono text-xs truncate block" title={`Ingreso CDE: ${selectedTicket.fechaIngresoCde}`}>
                       Ing CDE: {selectedTicket.fechaIngresoCde}
                     </strong>
                   ) : (
-                    <span className="text-zinc-400 text-xs italic">Local ASU</span>
+                    <span className="text-zinc-400 text-xs italic block truncate">Local ASU</span>
                   )}
                 </div>
-                <div>
-                  <span className="text-zinc-500 block text-[11px] font-semibold">Recepción Sucursal</span>
+                <div className="min-w-0">
+                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Recepción Sucursal</span>
                   {selectedTicket.recibidoEnDeposito ? (
-                    <strong className="text-emerald-700 font-bold flex items-center gap-1 font-sans text-xs">
+                    <strong className="text-emerald-700 font-bold flex items-center gap-1 font-sans text-xs truncate">
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                       <span className="truncate">{selectedTicket.fechaRecibidoDeposito || "Listo retiro"}</span>
                     </strong>
                   ) : (
-                    <strong className="text-zinc-400 font-sans text-xs italic">
+                    <strong className="text-zinc-400 font-sans text-xs italic block truncate">
                       Pendiente físico
                     </strong>
                   )}
                 </div>
-                <div>
-                  <span className="text-zinc-500 block text-[11px] font-semibold">Entrega / Taller</span>
+                <div className="min-w-0">
+                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Entrega / Taller</span>
                   {(selectedTicket.estado || "").toLowerCase().includes("entregada") && selectedTicket.fechaEntregada ? (
-                    <strong className="text-zinc-900 font-mono text-xs block">{selectedTicket.fechaEntregada}</strong>
+                    <strong className="text-zinc-900 font-mono text-xs block truncate">{selectedTicket.fechaEntregada}</strong>
                   ) : (
-                    <strong className="text-zinc-400 font-sans text-xs italic block">Pendiente de retiro</strong>
+                    <strong className="text-zinc-400 font-sans text-xs italic block truncate">Pendiente de retiro</strong>
                   )}
                   {selectedTicket.diasResolucion !== null && selectedTicket.diasResolucion !== undefined && (
-                    <span className="text-zinc-700 font-mono text-[11px] font-bold">
+                    <span className="text-zinc-700 font-mono text-[11px] font-bold block truncate">
                       {selectedTicket.diasResolucion} días en taller
                     </span>
                   )}
                 </div>
               </div>
 
-              {/* Cuerpo Principal en 2 Columnas Horizontales (Izquierda: Informe + Accesorios + Ubicación | Derecha: Estado + Dictamen QC) */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start text-xs">
+              {/* Cuerpo Principal en 2 Columnas Horizontales Simétricas */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch text-xs">
                 {/* COLUMNA IZQUIERDA (6 cols): Informe Técnico, Accesorios y Ubicación en Cascada */}
-                <div className="lg:col-span-6 space-y-3">
+                <div className="lg:col-span-6 flex flex-col justify-between space-y-3">
                   {/* 1. Informe Técnico / Mensaje de Servicio */}
                   <div>
-                    <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
+                    <div className="h-7 flex items-center justify-between mb-1.5 gap-2 flex-nowrap">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider truncate">
                           Informe Técnico / Mensaje de Servicio
                         </span>
                         {selectedTicket.idOrdenCde && selectedTicket.mensaje && (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1 shrink-0">
                             <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
-                            <span>Dictamen Oficial CDE (#{selectedTicket.idOrdenCde})</span>
+                            <span>CDE #{selectedTicket.idOrdenCde}</span>
                           </span>
                         )}
                       </div>
@@ -3802,7 +3802,7 @@ ${dictamen.accText}`;
                         type="button"
                         disabled={isSavingDetails}
                         onClick={handleGuardarMensaje}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
                         title="Guardar observaciones, ubicación y accesorios"
                       >
                         {isSavingDetails ? (
@@ -3818,14 +3818,14 @@ ${dictamen.accText}`;
                       value={modalMensaje}
                       onChange={(e) => setModalMensaje(e.target.value)}
                       placeholder="Añada o modifique aquí el informe técnico, observaciones del laboratorio, pruebas ejecutadas..."
-                      rows={2}
+                      rows={3}
                       className="w-full p-2.5 bg-white border border-slate-300 focus:border-zinc-900 rounded-xl text-xs sm:text-sm text-zinc-900 leading-relaxed outline-none transition-all placeholder:text-zinc-400 font-sans shadow-2xs"
                     />
                   </div>
 
                   {/* 2. Sección de Accesorios Incluidos / Devueltos con el Equipo */}
                   <div>
-                    <div className="flex items-center justify-between mb-1">
+                    <div className="h-6 flex items-center justify-between mb-1.5">
                       <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
                         <Package className="w-3.5 h-3.5 text-zinc-600" />
                         Accesorios Incluidos / Devueltos con el Equipo
@@ -3923,7 +3923,7 @@ ${dictamen.accText}`;
                     </div>
                   </div>
 
-                  {/* 3. Sección de Ubicación del Producto en Cascada Horizontal (Estantes / Muebles) */}
+                  {/* 3. Sección de Ubicación del Producto en Cascada (Estantes / Muebles) */}
                   <UbicacionCascadaSelector
                     value={modalUbicacion}
                     onChange={(nuevaUbicacion) =>
@@ -3933,37 +3933,48 @@ ${dictamen.accText}`;
                 </div>
 
                 {/* COLUMNA DERECHA (6 cols): Cambiar Estado + Dictamen Técnico QC / WhatsApp */}
-                <div className="lg:col-span-6 space-y-3">
-                  {/* 1. Acciones de cambio de estado en el modal */}
-                  <div className="p-3 bg-[#fdfdfd] border border-zinc-200 rounded-xl space-y-2">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-zinc-700 uppercase tracking-wider">
-                        Cambiar estado:
+                <div className="lg:col-span-6 flex flex-col justify-between space-y-3">
+                  {/* 1. Acciones de cambio de estado en el modal (Alineado al mismo nivel superior que Informe Técnico) */}
+                  <div>
+                    <div className="h-7 flex items-center justify-between mb-1.5 gap-2">
+                      <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
+                        Cambiar Estado de la Orden
                       </span>
                       <span className="text-[11px] text-zinc-400">
                         Se incluirá al notificar al cliente
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {modalStatusOptions.map((st) => {
-                        const isActive =
-                          (selectedTicket.estado || "").trim().toLowerCase() ===
-                          st.trim().toLowerCase();
-                        const visual = getEstadoVisualConfig(st);
-                        return (
-                          <button
-                            key={st}
-                            type="button"
-                            onClick={() => handleCambiarEstado(selectedTicket.idOrden, st)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                              isActive ? visual.activeBtnClass : visual.inactiveBtnClass
-                            }`}
-                          >
-                            {isActive && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
-                            <span>{st}</span>
-                          </button>
-                        );
-                      })}
+                    <div className="p-3 bg-white border border-slate-300 rounded-xl shadow-2xs">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-1.5">
+                        {modalStatusOptions.map((st) => {
+                          const isActive =
+                            (selectedTicket.estado || "").trim().toLowerCase() ===
+                            st.trim().toLowerCase();
+                          const visual = getEstadoVisualConfig(st);
+                          const shortLabel =
+                            st === "Sin Reparo por falta de repuesto"
+                              ? "Falta de repuesto"
+                              : st === "Enviado Destruccion"
+                              ? "Env. Destrucción"
+                              : st === "Pendiente por repuesto"
+                              ? "Pend. Repuesto"
+                              : st;
+                          return (
+                            <button
+                              key={st}
+                              type="button"
+                              onClick={() => handleCambiarEstado(selectedTicket.idOrden, st)}
+                              title={st}
+                              className={`h-8 w-full inline-flex items-center justify-center gap-1 px-2 text-[11px] font-bold rounded-lg border transition-all cursor-pointer truncate ${
+                                isActive ? visual.activeBtnClass : visual.inactiveBtnClass
+                              }`}
+                            >
+                              {isActive && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
+                              <span className="truncate">{shortLabel}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
 
@@ -3980,63 +3991,67 @@ ${dictamen.accText}`;
                       modalDictamenTipo
                     );
                     return (
-                      <div className="p-3.5 bg-emerald-50/70 border-2 border-emerald-300 rounded-2xl space-y-2.5 shadow-2xs">
-                        <div className="flex items-center justify-between gap-2 flex-wrap">
-                          <span className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider font-mono">
+                      <div className="flex-1 flex flex-col">
+                        <div className="h-6 flex items-center justify-between mb-1.5 gap-2 flex-nowrap">
+                          <span className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider font-mono truncate">
                             {isTicketDanesa(selectedTicket.cliente)
                               ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
                               : "Dictamen Técnico · Resolución QC (WhatsApp)"}
                           </span>
-                          <span className="text-[11px] font-mono font-bold text-emerald-900 bg-white px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs">
+                          <span className="text-[11px] font-mono font-bold text-emerald-900 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0 truncate max-w-[240px]">
                             {preview.sourceLabel}
                           </span>
                         </div>
 
-                        {/* Selector rápido de resoluciones QC */}
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          {DICTAMEN_QC_OPTIONS.map((opt) => {
-                            const selected = modalDictamenTipo === opt.id;
-                            return (
-                              <button
-                                key={opt.id}
-                                type="button"
-                                onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-xl border-2 transition-all cursor-pointer shadow-2xs ${
-                                  selected ? opt.chipActive : opt.chipInactive
-                                }`}
-                              >
-                                {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
-                                <span>{opt.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <div className="flex-1 p-3.5 bg-emerald-50/70 border-2 border-emerald-300 rounded-xl space-y-2.5 shadow-2xs flex flex-col justify-between">
+                          {/* Selector rápido de resoluciones QC en Cuadrícula Perfectamente Alineada */}
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                            {DICTAMEN_QC_OPTIONS.map((opt, idx) => {
+                              const selected = modalDictamenTipo === opt.id;
+                              const isFirstAuto = idx === 0 && DICTAMEN_QC_OPTIONS.length % 3 === 1;
+                              return (
+                                <button
+                                  key={opt.id}
+                                  type="button"
+                                  onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
+                                  title={opt.label}
+                                  className={`h-8 w-full inline-flex items-center justify-center gap-1.5 px-2 text-[11px] font-bold rounded-lg border-2 transition-all cursor-pointer shadow-2xs truncate ${
+                                    isFirstAuto ? "sm:col-span-3" : ""
+                                  } ${selected ? opt.chipActive : opt.chipInactive}`}
+                                >
+                                  {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                                  <span className="truncate">{opt.label}</span>
+                                </button>
+                              );
+                            })}
+                          </div>
 
-                        {isTicketDanesa(selectedTicket.cliente) ? (
-                          <div className="text-xs text-amber-900 bg-amber-50/90 p-2.5 rounded-lg border border-amber-200 flex items-start gap-2">
-                            <Building2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
-                            <div>
-                              <div className="font-bold text-amber-950">Mercadería de Stock Propio (Danesa S.A.)</div>
-                              <p className="text-amber-800 text-[11px] leading-relaxed mt-0.5">
-                                Este equipo pertenece a la sucursal. Al tocar <strong>Marcar como Recibido</strong> se registrará la recepción interna en el sistema sin enviar notificaciones al grupo de WhatsApp.
-                              </p>
+                          {isTicketDanesa(selectedTicket.cliente) ? (
+                            <div className="text-xs text-amber-900 bg-amber-50/90 p-2.5 rounded-lg border border-amber-200 flex items-start gap-2">
+                              <Building2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                              <div>
+                                <div className="font-bold text-amber-950">Mercadería de Stock Propio (Danesa S.A.)</div>
+                                <p className="text-amber-800 text-[11px] leading-relaxed mt-0.5">
+                                  Este equipo pertenece a la sucursal. Al tocar <strong>Marcar como Recibido</strong> se registrará la recepción interna en el sistema sin enviar notificaciones al grupo de WhatsApp.
+                                </p>
+                              </div>
                             </div>
-                          </div>
-                        ) : (
-                          <div className="text-xs text-zinc-800 space-y-1 bg-white/90 p-2.5 rounded-lg border border-emerald-100">
-                            <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
-                            <p className="text-zinc-600 leading-snug text-[11px]">{preview.body}</p>
-                            {preview.detalleTexto ? (
-                              <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200 text-[11px]">
-                                <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
-                              </p>
-                            ) : (
-                              <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200 text-[11px]">
-                                Complete &quot;Informe Técnico / Mensaje de Servicio&quot; para incluir el detalle.
-                              </p>
-                            )}
-                          </div>
-                        )}
+                          ) : (
+                            <div className="text-xs text-zinc-800 space-y-1 bg-white/95 p-2.5 rounded-lg border border-emerald-200">
+                              <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
+                              <p className="text-zinc-600 leading-snug text-[11px]">{preview.body}</p>
+                              {preview.detalleTexto ? (
+                                <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200 text-[11px] truncate" title={preview.detalleTexto}>
+                                  <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
+                                </p>
+                              ) : (
+                                <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200 text-[11px]">
+                                  Complete &quot;Informe Técnico / Mensaje de Servicio&quot; para incluir el detalle.
+                                </p>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     );
                   })()}
