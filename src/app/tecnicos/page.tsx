@@ -517,7 +517,7 @@ export default function TecnicosDashboardPage() {
 
   return (
     <AuthGuard requiredModule="montajes">
-      <main className="min-h-dvh bg-[#fbf9f9] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10 print:min-h-0 print:bg-white print:p-0">
+      <main className="min-h-dvh bg-[#FAF6EE] text-[#111111] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10 print:min-h-0 print:bg-white print:p-0">
       <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 print:hidden min-w-0">
         
         {/* Cabecera unificada */}
@@ -528,84 +528,86 @@ export default function TecnicosDashboardPage() {
           hideBadge
         />
 
-        {/* 5 KPIs Principales Basados en los Datos Reales de montaje.csv */}
+        {/* 5 KPIs Principales Basados en los Datos Reales de montaje.csv (Neo-Brutalismo Retro) */}
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 2xl:gap-6">
           
           {/* KPI 1: Total Órdenes */}
-          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Órdenes en Taller</span>
+          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
+            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Órdenes en Taller</span>
             <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalOrdenes}
               </span>
-              <span className="text-xs sm:text-sm text-zinc-600 font-medium">Registros</span>
+              <span className="text-xs sm:text-sm text-neutral-800 font-bold">Registros</span>
             </div>
-            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">Base oficial NISSEI CDE</span>
+            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">Base oficial NISSEI CDE</span>
           </div>
 
           {/* KPI 2: Montajes de PC (con desglose de equipos) */}
-          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Montajes de PC</span>
+          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
+            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Montajes de PC</span>
             <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalEquiposMontados}
               </span>
-              <span className="text-xs sm:text-sm text-sky-700 font-bold font-mono">
+              <span className="text-xs sm:text-sm text-black font-extrabold font-mono bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
                 {metrics.totalMontajesOrdenes} órdenes
               </span>
             </div>
-            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">
+            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">
               {metrics.clientesConLote} clientes con 2 equipos
             </span>
           </div>
 
           {/* KPI 3: Expansiones de Notebook */}
-          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Expansiones Notebook</span>
+          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
+            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Expansiones Notebook</span>
             <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalExpansiones}
               </span>
-              <span className="text-xs sm:text-sm text-purple-700 font-bold font-mono">RAM &amp; SSD</span>
+              <span className="text-xs sm:text-sm text-white font-extrabold font-mono bg-[#2A9D8F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
+                RAM &amp; SSD
+              </span>
             </div>
-            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">SODIMM y discos M.2</span>
+            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">SODIMM y discos M.2</span>
           </div>
 
           {/* KPI 4: Asesores Comerciales Reales */}
-          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Asesores Comerciales</span>
+          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
+            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Asesores Comerciales</span>
             <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalVendedores}
               </span>
-              <span className="text-xs sm:text-sm text-zinc-600 font-medium">Salón &amp; Web</span>
+              <span className="text-xs sm:text-sm text-neutral-800 font-bold">Salón &amp; Web</span>
             </div>
-            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">Ventas canalizadas a taller</span>
+            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">Ventas canalizadas a taller</span>
           </div>
 
           {/* KPI 5: Canales de Venta */}
-          <div className="bg-white p-4 sm:p-5 2xl:p-6 rounded-xl border border-zinc-200 shadow-sm col-span-2 sm:col-span-1">
-            <span className="text-xs sm:text-sm text-zinc-500 block font-bold uppercase tracking-wider">Canal Predominante</span>
+          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] col-span-2 sm:col-span-1">
+            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Canal Predominante</span>
             <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tabular-nums">
+              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.canales.canalTienda}
               </span>
-              <span className="text-xs sm:text-sm text-emerald-700 font-bold">Tienda CDE</span>
+              <span className="text-xs sm:text-sm text-black font-extrabold bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">Tienda CDE</span>
             </div>
-            <span className="text-xs text-zinc-500 block mt-1.5 font-mono">
+            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">
               {metrics.canales.canalEmpresas} Emp · {metrics.canales.canalEcommerce} Web
             </span>
           </div>
 
         </section>
 
-        {/* Notificación Toast */}
+        {/* Notificación Toast Neo-Brutalista */}
         {notification && (
-          <div className="fixed top-5 right-5 z-50 max-w-md bg-zinc-900 text-white px-4 py-3 rounded-xl text-xs font-semibold shadow-xl border border-zinc-700 flex items-start gap-2.5">
+          <div className="fixed top-5 right-5 z-50 max-w-md bg-[#FFD23F] text-black px-4 py-3 rounded-xl text-xs font-heading font-extrabold shadow-[4px_4px_0px_#000] border-2 border-black flex items-start gap-2.5">
             {/no se pudo|error|falló|no está configurado|sin confirmar/i.test(notification) ? (
-              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+              <AlertCircle className="w-4 h-4 text-black shrink-0 mt-0.5" />
             ) : (
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+              <CheckCircle2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
             )}
             <span className="leading-relaxed">{notification}</span>
           </div>
@@ -615,15 +617,15 @@ export default function TecnicosDashboardPage() {
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
           {/* Columna Izquierda: Ranking de Órdenes por Vendedor Comercial (7 cols) */}
-          <div className="lg:col-span-7 bg-white p-5 rounded-xl border border-zinc-200 shadow-sm space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+          <div className="lg:col-span-7 bg-[#FFFDF9] p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-black">
               <div className="flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-zinc-700" />
-                <h3 className="text-sm font-bold text-zinc-900">
+                <ShoppingBag className="w-4 h-4 text-black" />
+                <h3 className="text-sm font-heading font-extrabold text-black">
                   Órdenes por Asesor / Vendedor Comercial
                 </h3>
               </div>
-              <span className="text-xs text-zinc-500 font-mono">
+              <span className="text-xs text-neutral-800 font-mono font-bold">
                 {metrics.totalOrdenes} órdenes en tabla real
               </span>
             </div>
@@ -632,22 +634,22 @@ export default function TecnicosDashboardPage() {
               {metrics.rankingVendedores.slice(0, 6).map((v) => {
                 const pct = Math.round((v.ordenes / (metrics.totalOrdenes || 1)) * 100);
                 return (
-                  <div key={v.nombre} className="space-y-1.5 p-2.5 rounded-lg bg-zinc-50/75 border border-zinc-200">
+                  <div key={v.nombre} className="space-y-1.5 p-2.5 rounded-lg bg-[#FAF6EE] border-2 border-black shadow-[2px_2px_0px_#000]">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <strong className="text-zinc-900 font-bold">{v.nombre}</strong>
-                        <span className="text-[11px] text-zinc-500 font-mono">
+                        <strong className="text-black font-heading font-bold">{v.nombre}</strong>
+                        <span className="text-[11px] text-neutral-700 font-mono font-semibold">
                           ({v.montajes} Montajes · {v.expansiones} Expansiones)
                         </span>
                       </div>
-                      <span className="font-mono font-bold text-zinc-900 tabular-nums">
+                      <span className="font-mono font-extrabold text-black tabular-nums">
                         {v.ordenes} {v.ordenes === 1 ? "orden" : "órdenes"} ({pct}%)
                       </span>
                     </div>
 
-                    <div className="w-full bg-zinc-200 rounded-full h-1.5 overflow-hidden">
+                    <div className="w-full bg-neutral-200 border border-black rounded-full h-2 overflow-hidden">
                       <div
-                        className="bg-zinc-900 h-1.5 rounded-full transition-all"
+                        className="bg-black h-2 rounded-full transition-all"
                         style={{ width: `${Math.max(pct, 6)}%` }}
                       />
                     </div>
@@ -656,19 +658,19 @@ export default function TecnicosDashboardPage() {
               })}
             </div>
 
-            <div className="pt-2 text-[11px] text-zinc-500 border-t border-zinc-100 flex items-center justify-between">
+            <div className="pt-2 text-[11px] text-neutral-700 border-t-2 border-black flex items-center justify-between font-mono font-medium">
               <span>Supervisión de pedidos comercializados desde Salón Central CDE y Web.</span>
-              <span className="font-mono text-zinc-700 font-semibold">Registro NISSEI</span>
+              <span className="font-mono text-black font-bold">Registro NISSEI</span>
             </div>
           </div>
 
           {/* Columna Derecha: Canales y Desglose de Modalidades (5 cols) */}
-          <div className="lg:col-span-5 bg-white p-5 rounded-xl border border-zinc-200 shadow-sm space-y-4 flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-[#FFFDF9] p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 flex flex-col justify-between">
             <div className="space-y-3">
-              <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+              <div className="flex items-center justify-between pb-3 border-b-2 border-black">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-zinc-700" />
-                  <h3 className="text-sm font-bold text-zinc-900">
+                  <Layers className="w-4 h-4 text-black" />
+                  <h3 className="text-sm font-heading font-extrabold text-black">
                     Modalidades &amp; Canales Comerciales
                   </h3>
                 </div>
@@ -676,58 +678,58 @@ export default function TecnicosDashboardPage() {
 
               {/* Comparativa Montaje vs Expansión */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg border border-zinc-200 bg-sky-50/50 space-y-1">
-                  <span className="text-[11px] font-mono text-sky-800 uppercase block font-semibold">
+                <div className="p-3 rounded-lg border-2 border-black bg-[#FFD23F]/20 shadow-[2px_2px_0px_#000] space-y-1">
+                  <span className="text-[11px] font-mono text-black uppercase block font-extrabold">
                     Montaje de PC Completa
                   </span>
-                  <div className="text-xl font-extrabold text-zinc-900 tabular-nums">
-                    {metrics.totalEquiposMontados} <span className="text-xs font-normal text-zinc-600">PCs</span>
+                  <div className="text-xl font-mono font-extrabold text-black tabular-nums">
+                    {metrics.totalEquiposMontados} <span className="text-xs font-normal text-neutral-800">PCs</span>
                   </div>
-                  <p className="text-[10px] text-zinc-600 leading-tight">
+                  <p className="text-[10px] text-neutral-800 leading-tight font-medium">
                     Ensamble de procesador, placa madre, GPU, fuente, gabinete y cooler.
                   </p>
                 </div>
 
-                <div className="p-3 rounded-lg border border-zinc-200 bg-purple-50/50 space-y-1">
-                  <span className="text-[11px] font-mono text-purple-800 uppercase block font-semibold">
+                <div className="p-3 rounded-lg border-2 border-black bg-[#2A9D8F]/15 shadow-[2px_2px_0px_#000] space-y-1">
+                  <span className="text-[11px] font-mono text-black uppercase block font-extrabold">
                     Expansión Notebook
                   </span>
-                  <div className="text-xl font-extrabold text-zinc-900 tabular-nums">
-                    {metrics.totalExpansiones} <span className="text-xs font-normal text-zinc-600">Laptops</span>
+                  <div className="text-xl font-mono font-extrabold text-black tabular-nums">
+                    {metrics.totalExpansiones} <span className="text-xs font-normal text-neutral-800">Laptops</span>
                   </div>
-                  <p className="text-[10px] text-zinc-600 leading-tight">
+                  <p className="text-[10px] text-neutral-800 leading-tight font-medium">
                     Ampliación de memoria RAM SODIMM (DDR4/DDR5) o almacenamiento SSD.
                   </p>
                 </div>
               </div>
 
               {/* Canales: Tienda, Ecommerce, Empresas */}
-              <div className="p-3 bg-zinc-50 rounded-lg border border-zinc-200 space-y-2 text-xs">
-                <span className="font-semibold text-zinc-700 block text-[11px] uppercase font-mono">
+              <div className="p-3 bg-[#FAF6EE] rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] space-y-2 text-xs">
+                <span className="font-heading font-extrabold text-black block text-[11px] uppercase">
                   Origen por Canal Comercial:
                 </span>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-600 flex items-center gap-1.5">
-                    <ShoppingBag className="w-3.5 h-3.5 text-zinc-400" /> Tienda:
+                  <span className="text-neutral-800 flex items-center gap-1.5 font-medium">
+                    <ShoppingBag className="w-3.5 h-3.5 text-black" /> Tienda:
                   </span>
-                  <strong className="text-zinc-900 font-mono">{metrics.canales.canalTienda} pedidos</strong>
+                  <strong className="text-black font-mono font-bold">{metrics.canales.canalTienda} pedidos</strong>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-600 flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-zinc-400" /> Ecommerce - Web:
+                  <span className="text-neutral-800 flex items-center gap-1.5 font-medium">
+                    <Globe className="w-3.5 h-3.5 text-black" /> Ecommerce - Web:
                   </span>
-                  <strong className="text-zinc-900 font-mono">{metrics.canales.canalEcommerce} pedidos</strong>
+                  <strong className="text-black font-mono font-bold">{metrics.canales.canalEcommerce} pedidos</strong>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-600 flex items-center gap-1.5">
-                    <Building2 className="w-3.5 h-3.5 text-zinc-400" /> Empresas / Coorporativo:
+                  <span className="text-neutral-800 flex items-center gap-1.5 font-medium">
+                    <Building2 className="w-3.5 h-3.5 text-black" /> Empresas / Corporativo:
                   </span>
-                  <strong className="text-zinc-900 font-mono">{metrics.canales.canalEmpresas} pedidos</strong>
+                  <strong className="text-black font-mono font-bold">{metrics.canales.canalEmpresas} pedidos</strong>
                 </div>
               </div>
             </div>
 
-            <p className="text-[11px] text-zinc-500 pt-2 border-t border-zinc-100">
+            <p className="text-[11px] text-neutral-700 pt-2 border-t-2 border-black font-medium">
               * Los clientes con 2 equipos ensamblados cuentan con 2 gabinetes, 2 placas y 2 CPUs facturados en lote.
             </p>
           </div>
@@ -735,20 +737,20 @@ export default function TecnicosDashboardPage() {
         </section>
 
         {/* Sección Operativa: Equipo Técnico para Asignaciones a partir del Portal */}
-        <section className="bg-white p-4 sm:p-5 rounded-xl border border-zinc-200 shadow-sm space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-100">
+        <section className="bg-[#FFFDF9] p-4 sm:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b-2 border-black">
             <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-zinc-700" />
+              <UserCheck className="w-4 h-4 text-black" />
               <div>
-                <h3 className="text-sm font-bold text-zinc-900">
+                <h3 className="text-sm font-heading font-extrabold text-black">
                   Equipo Técnico Habilitado para Asignaciones en Portal
                 </h3>
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-neutral-800 font-medium">
                   A partir de este sistema los nuevos montajes se asignan a Nicolás Solís, Magaly Yegros o Juan Ronnebeck
                 </p>
               </div>
             </div>
-            <span className="text-xs font-mono font-medium px-2 py-0.5 bg-zinc-100 text-zinc-700 rounded border border-zinc-200">
+            <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] text-black rounded-full border border-black shadow-[1px_1px_0px_#000]">
               {metrics.totalAsignadasPortal} asignadas en portal · {metrics.sinAsignarCount} históricas sin técnico en planilla
             </span>
           </div>
@@ -757,21 +759,21 @@ export default function TecnicosDashboardPage() {
             {metrics.cargaPorTecnico.map((t) => (
               <div
                 key={t.nombre}
-                className="p-3.5 rounded-lg border border-zinc-200 bg-zinc-50/50 space-y-1.5 hover:border-zinc-400 transition-colors"
+                className="p-3.5 rounded-lg border-2 border-black bg-[#FAF6EE] space-y-1.5 hover:bg-[#FFD23F]/20 shadow-[2px_2px_0px_#000] transition-colors"
               >
                 <div className="flex items-center justify-between">
-                  <strong className="text-xs font-bold text-zinc-900">
+                  <strong className="text-xs font-heading font-extrabold text-black">
                     {t.nombre}
                   </strong>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded tabular-nums border ${
+                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full tabular-nums border border-black shadow-[1px_1px_0px_#000] ${
                     t.total > 0
-                      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                      : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                      ? "bg-[#2A9D8F] text-white"
+                      : "bg-neutral-200 text-black"
                   }`}>
                     {t.total} órdenes asignadas
                   </span>
                 </div>
-                <div className="text-[11px] text-zinc-500 font-mono">
+                <div className="text-[11px] text-neutral-700 font-mono font-semibold">
                   {t.montajes} Montajes PC · {t.expansiones} Expansiones
                 </div>
               </div>
@@ -779,16 +781,16 @@ export default function TecnicosDashboardPage() {
           </div>
         </section>
 
-        {/* Tabla de Órdenes de Montaje & Expansión */}
-        <section className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm space-y-4 p-4 sm:p-5">
+        {/* Tabla de Órdenes de Montaje & Expansión (Neo-Brutalismo Retro) */}
+        <section className="bg-[#FFFDF9] rounded-xl border-2 border-black overflow-hidden shadow-[4px_4px_0px_#000] space-y-4 p-4 sm:p-5">
           
           {/* Barra Superior con Filtros */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-zinc-200">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b-2 border-black">
             <div>
-              <h3 className="text-base font-bold text-zinc-900">
+              <h3 className="text-base font-heading font-extrabold text-black">
                 Cola de Órdenes de Montajes &amp; Expansiones
               </h3>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-neutral-800 font-medium">
                 Registros operativos oficiales con asignación a técnicos (Nicolas Solis, Magaly Yegros, Juan Ronnebeck).
               </p>
             </div>
@@ -796,16 +798,16 @@ export default function TecnicosDashboardPage() {
             <div className="flex items-center gap-2 flex-wrap">
               <Link
                 href="/armar-pc"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-cyan-800 bg-cyan-50 hover:bg-cyan-100 border border-cyan-200 rounded-lg shadow-2xs transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-heading font-extrabold text-black bg-[#FFD23F] hover:bg-yellow-400 border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                 title="Configurador de PC y Presupuestos con Hardware Compatible"
               >
-                <Wrench className="w-3.5 h-3.5 text-cyan-600" />
+                <Wrench className="w-3.5 h-3.5 text-black" />
                 <span>Armar PC &amp; Presupuestos</span>
               </Link>
 
               <Link
                 href="/tecnicos/nuevo"
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-zinc-900 hover:bg-black rounded-lg shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-heading font-extrabold text-[#FFD23F] bg-black hover:bg-neutral-800 border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Nuevo Ingreso</span>
@@ -818,13 +820,13 @@ export default function TecnicosDashboardPage() {
             
             {/* Buscador */}
             <div className="lg:col-span-5 relative">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3" />
+              <Search className="w-4 h-4 text-black absolute left-3.5 top-3" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por cliente, Nº registro interno, hardware..."
-                className="w-full text-sm bg-zinc-50 border border-zinc-200 rounded-lg pl-10 pr-3.5 py-2.5 outline-none focus:border-zinc-900 focus:bg-white transition-colors"
+                className="w-full text-sm bg-[#FAF6EE] border-2 border-black rounded-lg pl-10 pr-3.5 py-2.5 outline-none focus:bg-white text-black font-medium shadow-[2px_2px_0px_#000] transition-colors"
               />
             </div>
 
@@ -867,9 +869,9 @@ export default function TecnicosDashboardPage() {
           </div>
 
           {/* Tabla de Resultados */}
-          <div className="overflow-x-auto border border-zinc-200 rounded-lg">
+          <div className="overflow-x-auto border-2 border-black rounded-lg shadow-[2px_2px_0px_#000]">
             <table className="w-full text-left text-sm">
-              <thead className="bg-zinc-50 text-zinc-600 uppercase tracking-wide border-b border-zinc-200 font-mono text-xs">
+              <thead className="bg-black text-[#FFD23F] uppercase tracking-wider border-b-2 border-black font-mono text-xs">
                 <tr>
                   <th className="py-3.5 px-4 font-bold">Reg. Interno</th>
                   <th className="py-3.5 px-4 font-bold">Cliente &amp; Canal</th>
@@ -880,29 +882,29 @@ export default function TecnicosDashboardPage() {
                   <th className="py-3.5 px-4 font-bold text-right">ACCIONES</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 text-zinc-900">
+              <tbody className="divide-y divide-black/10 text-black">
                 {filteredMontajes.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="text-center py-10 text-zinc-500 text-sm">
+                    <td colSpan={7} className="text-center py-10 text-neutral-600 font-mono text-sm">
                       No se encontraron órdenes con los filtros aplicados.
                     </td>
                   </tr>
                 ) : (
                   filteredMontajes.map((order) => (
-                    <tr key={order.id} className="hover:bg-zinc-50/75 transition-colors">
+                    <tr key={order.id} className="hover:bg-[#FAF6EE] transition-colors border-b border-black/10">
                       
                       {/* Nro. Registro / Interno */}
                       <td className="py-4 px-4 font-mono whitespace-nowrap">
-                        <div className="font-extrabold text-zinc-900 text-sm">
+                        <div className="font-extrabold text-black text-sm">
                           Reg: {order.nro_reg}
                         </div>
                         {order.prioridad === "URGENTE" && (
-                          <span className="inline-block mt-1 text-xs text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded font-bold uppercase">
+                          <span className="inline-block mt-1 text-xs text-white bg-[#E76F51] border border-black px-2 py-0.5 rounded-full font-mono font-bold uppercase shadow-[1px_1px_0px_#000]">
                             Urgente
                           </span>
                         )}
                         {order.prioridad === "EXPRESS" && (
-                          <span className="inline-block mt-1 text-xs text-sky-700 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded font-bold uppercase">
+                          <span className="inline-block mt-1 text-xs text-black bg-[#FFD23F] border border-black px-2 py-0.5 rounded-full font-mono font-bold uppercase shadow-[1px_1px_0px_#000]">
                             Express
                           </span>
                         )}
@@ -910,13 +912,13 @@ export default function TecnicosDashboardPage() {
 
                       {/* Cliente, Vendedor y Canal */}
                       <td className="py-4 px-4">
-                        <div className="font-bold text-zinc-900 text-sm">{order.cliente}</div>
+                        <div className="font-heading font-bold text-black text-sm">{order.cliente}</div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-xs font-mono text-zinc-700">
-                            <ShoppingBag className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FAF6EE] border border-black text-xs font-mono font-bold text-black shadow-[1px_1px_0px_#000]">
+                            <ShoppingBag className="w-3 h-3 text-black" />
                             {order.vendedor}
                           </span>
-                          <span className="text-xs text-zinc-500 font-mono">
+                          <span className="text-xs text-neutral-700 font-mono font-semibold">
                             {order.canal}
                           </span>
                         </div>
@@ -926,30 +928,30 @@ export default function TecnicosDashboardPage() {
                       <td className="py-4 px-4 whitespace-nowrap">
                         {order.tipo_servicio === "Montaje" ? (
                           <div className="space-y-1">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-sky-50 text-sky-800 border border-sky-200 rounded-lg font-mono text-xs font-bold">
-                              <Cpu className="w-3.5 h-3.5" />
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#FFD23F] text-black border border-black rounded-full font-mono text-xs font-bold shadow-[1px_1px_0px_#000]">
+                              <Cpu className="w-3.5 h-3.5 text-black" />
                               Montaje PC
                             </span>
                             {order.cantidadEquipos > 1 && (
-                              <span className="block text-xs text-sky-900 font-extrabold font-mono">
+                              <span className="block text-xs text-black font-extrabold font-mono">
                                 2 Equipos en lote
                               </span>
                             )}
                           </div>
                         ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-purple-50 text-purple-800 border border-purple-200 rounded-lg font-mono text-xs font-bold">
-                            <Laptop className="w-3.5 h-3.5" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#2A9D8F] text-white border border-black rounded-full font-mono text-xs font-bold shadow-[1px_1px_0px_#000]">
+                            <Laptop className="w-3.5 h-3.5 text-white" />
                             Expansión Notebook
                           </span>
                         )}
                       </td>
 
                       {/* Hardware Verificado */}
-                      <td className="py-4 px-4 text-zinc-700 max-w-sm">
-                        <div className="line-clamp-2 text-xs sm:text-sm leading-relaxed" title={getHardwareSummary(order)}>
+                      <td className="py-4 px-4 text-neutral-800 max-w-sm">
+                        <div className="line-clamp-2 text-xs sm:text-sm leading-relaxed font-medium" title={getHardwareSummary(order)}>
                           {getHardwareSummary(order)}
                         </div>
-                        <span className="text-xs text-zinc-500 font-mono mt-1 inline-block">
+                        <span className="text-xs text-neutral-600 font-mono font-semibold mt-1 inline-block">
                           {order.componentes.length} piezas verificadas
                         </span>
                       </td>
@@ -959,11 +961,11 @@ export default function TecnicosDashboardPage() {
                         {order.tecnico && order.tecnico !== "Sin Asignar" ? (
                           <div className="flex items-center gap-2">
                             <div>
-                              <div className="font-bold text-zinc-900 flex items-center gap-1.5 text-sm">
-                                <UserCheck className="w-4 h-4 text-emerald-700" />
+                              <div className="font-bold text-black flex items-center gap-1.5 text-sm font-heading">
+                                <UserCheck className="w-4 h-4 text-[#2A9D8F]" />
                                 <span>{order.tecnico}</span>
                               </div>
-                              <span className="text-xs text-zinc-500 font-mono">Técnico Asignado</span>
+                              <span className="text-xs text-neutral-700 font-mono font-semibold">Técnico Asignado</span>
                             </div>
                             <CleanSelect
                               value={order.tecnico}
@@ -977,12 +979,12 @@ export default function TecnicosDashboardPage() {
                               size="sm"
                               dropdownWidth="w-48"
                               align="right"
-                              className="text-xs py-1 px-2.5 border-zinc-200 hover:border-zinc-400"
+                              className="text-xs py-1 px-2.5"
                             />
                           </div>
                         ) : (
                           <div className="space-y-1">
-                            <span className="inline-block text-xs font-mono text-zinc-500 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded">
+                            <span className="inline-block text-xs font-mono font-bold text-neutral-800 bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               Sin Asignar (Histórico)
                             </span>
                             <div>
@@ -998,7 +1000,7 @@ export default function TecnicosDashboardPage() {
                                 }))}
                                 size="sm"
                                 dropdownWidth="w-48"
-                                className="bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400 text-xs py-1 px-2.5"
+                                className="text-xs py-1 px-2.5"
                               />
                             </div>
                           </div>
@@ -1007,13 +1009,13 @@ export default function TecnicosDashboardPage() {
 
                       {/* Progreso */}
                       <td className="py-4 px-4 w-32">
-                        <div className="flex items-center justify-between text-xs font-mono font-bold mb-1.5 tabular-nums">
+                        <div className="flex items-center justify-between text-xs font-mono font-extrabold mb-1.5 tabular-nums text-black">
                           <span>{order.progreso}%</span>
                         </div>
-                        <div className="w-full bg-zinc-200 rounded-full h-2 overflow-hidden">
+                        <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-2.5 overflow-hidden shadow-[1px_1px_0px_#000]">
                           <div
                             className={`h-full rounded-full transition-all ${
-                              order.progreso === 100 ? "bg-emerald-600" : "bg-zinc-900"
+                              order.progreso === 100 ? "bg-[#2A9D8F]" : "bg-black"
                             }`}
                             style={{ width: `${order.progreso}%` }}
                           />
@@ -1025,7 +1027,7 @@ export default function TecnicosDashboardPage() {
                         <div className="inline-flex items-center gap-2">
                           <button
                             onClick={() => setSelectedOrderForDetail(order)}
-                            className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200"
+                            className="p-2 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all flex items-center justify-center cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             title="Ver Detalle Completo"
                           >
                             <Eye className="w-4 h-4" />
@@ -1033,20 +1035,20 @@ export default function TecnicosDashboardPage() {
                           
                           <button
                             onClick={() => setSelectedOrderForCert(order)}
-                            className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-zinc-200"
-                            title="Imprimir Sticker 80mm"
+                            className="p-2 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all flex items-center justify-center cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                            title="Imprimir Sticker Térmico"
                           >
                             <Printer className="w-4 h-4" />
                           </button>
 
                           {order.estado.toLowerCase() === "entregado" || order.estado.toLowerCase() === "entregada" ? (
-                            <span className="px-3 py-1 bg-zinc-100 text-zinc-600 rounded-lg font-mono text-xs font-bold">
+                            <span className="px-3 py-1 bg-neutral-200 text-black border-2 border-black rounded-lg font-mono text-xs font-bold">
                               Entregado
                             </span>
                           ) : (
                             <button
                               onClick={() => handleEntregar(order.id)}
-                              className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white rounded-lg font-bold text-xs transition-colors shadow-sm cursor-pointer"
+                              className="px-3 py-1.5 bg-[#FFD23F] hover:bg-yellow-400 text-black border-2 border-black rounded-lg font-heading font-extrabold text-xs transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
                             >
                               Entregar
                             </button>
@@ -1063,102 +1065,103 @@ export default function TecnicosDashboardPage() {
         </section>
 
         {/* Modal de Detalle Completo de Orden de Montaje */}
+        {/* Modal de Detalle Completo de la Orden (Neo-Brutalismo Retro) */}
         {selectedOrderForDetail && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl space-y-4 border border-zinc-200 max-h-[90vh] overflow-y-auto">
+            <div className="bg-[#FFFDF9] rounded-xl max-w-xl w-full p-5 sm:p-6 shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[90vh] overflow-y-auto">
               
-              <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+              <div className="flex items-center justify-between border-b-2 border-black pb-3">
                 <div>
-                  <span className="text-[11px] font-mono text-zinc-500 uppercase font-semibold">
+                  <span className="text-[11px] font-mono text-neutral-700 uppercase font-bold tracking-wider">
                     DETALLE DE ORDEN DE MONTAJE &amp; TALLER
                   </span>
-                  <h3 className="text-lg font-bold text-zinc-900">
+                  <h3 className="text-lg font-heading font-extrabold text-black">
                     Orden #{selectedOrderForDetail.id} · {selectedOrderForDetail.cliente}
                   </h3>
                 </div>
                 <button
                   onClick={() => setSelectedOrderForDetail(null)}
-                  className="text-zinc-400 hover:text-zinc-900 text-xl font-bold p-1 cursor-pointer transition-colors"
+                  className="text-neutral-500 hover:text-black text-xl font-bold p-1 cursor-pointer transition-colors"
                 >
                   ✕
                 </button>
               </div>
 
               {/* Ficha Resumen */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs bg-zinc-50 p-3.5 rounded-xl border border-zinc-200">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs bg-[#FAF6EE] p-3.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Nº Registro Interno:</span>
-                  <strong className="text-zinc-900 font-mono">{selectedOrderForDetail.nro_reg}</strong>
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Nº Registro Interno:</span>
+                  <strong className="text-black font-mono text-sm">{selectedOrderForDetail.nro_reg}</strong>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Vendedor:</span>
-                  <span className="text-zinc-900 font-semibold truncate block">{selectedOrderForDetail.vendedor}</span>
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Vendedor:</span>
+                  <span className="text-black font-bold truncate block">{selectedOrderForDetail.vendedor}</span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Canal:</span>
-                  <span className="text-zinc-700 font-mono text-[11px]">{selectedOrderForDetail.canal}</span>
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Canal:</span>
+                  <span className="text-neutral-800 font-mono text-[11px] font-semibold">{selectedOrderForDetail.canal}</span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Modalidad:</span>
-                  <span className="font-semibold text-zinc-900">
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Modalidad:</span>
+                  <span className="font-bold text-black">
                     {selectedOrderForDetail.tipo_servicio === "Montaje" ? "Montaje de PC" : "Expansión Notebook"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Técnico Asignado:</span>
-                  <strong className="text-zinc-900 font-semibold">{selectedOrderForDetail.tecnico}</strong>
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Técnico Asignado:</span>
+                  <strong className="text-black font-bold">{selectedOrderForDetail.tecnico}</strong>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Prioridad:</span>
-                  <span className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Prioridad:</span>
+                  <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full font-mono border border-black shadow-[1px_1px_0px_#000] ${
                     selectedOrderForDetail.prioridad === "URGENTE"
-                      ? "bg-rose-100 text-rose-800"
+                      ? "bg-[#E76F51] text-white"
                       : selectedOrderForDetail.prioridad === "EXPRESS"
-                      ? "bg-sky-100 text-sky-800"
-                      : "bg-zinc-200 text-zinc-800"
+                      ? "bg-[#FFD23F] text-black"
+                      : "bg-[#FFFDF9] text-black"
                   }`}>
                     {selectedOrderForDetail.prioridad}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Fecha de Montaje:</span>
-                  <span className="text-zinc-700 font-mono">{selectedOrderForDetail.fecha_montaje}</span>
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Fecha de Montaje:</span>
+                  <span className="text-black font-mono font-semibold">{selectedOrderForDetail.fecha_montaje}</span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Estado:</span>
-                  <span className={`inline-block text-[10px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Estado:</span>
+                  <span className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded-full font-mono border border-black shadow-[1px_1px_0px_#000] ${
                     selectedOrderForDetail.estado === "Entregado"
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-amber-100 text-amber-800"
+                      ? "bg-[#2A9D8F] text-white"
+                      : "bg-[#FFD23F] text-black"
                   }`}>
                     {selectedOrderForDetail.estado}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block font-mono text-[10px] uppercase">Progreso QA:</span>
-                  <strong className="text-zinc-900 font-mono">{selectedOrderForDetail.progreso}%</strong>
+                  <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Progreso QA:</span>
+                  <strong className="text-black font-mono font-extrabold">{selectedOrderForDetail.progreso}%</strong>
                 </div>
               </div>
 
               {/* Componentes Verificados */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-zinc-900">
+                  <span className="text-xs font-heading font-extrabold text-black">
                     Componentes de Hardware ({selectedOrderForDetail.componentes.length} ítems):
                   </span>
                 </div>
-                <div className="max-h-48 overflow-y-auto divide-y divide-zinc-100 border border-zinc-200 rounded-xl p-2 bg-zinc-50/50 space-y-1">
+                <div className="max-h-48 overflow-y-auto divide-y divide-black/10 border-2 border-black rounded-lg p-2.5 bg-[#FAF6EE] shadow-[2px_2px_0px_#000] space-y-1">
                   {selectedOrderForDetail.componentes.map((c, i) => (
                     <div key={i} className="text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-1 pt-1.5">
                       <div className="truncate pr-2">
-                        <span className="inline-block text-[10px] font-mono font-semibold px-1.5 py-0.2 rounded bg-zinc-200 text-zinc-700 mr-1.5">
+                        <span className="inline-block text-[10px] font-mono font-bold px-1.5 py-0.2 rounded bg-[#FFD23F] text-black border border-black mr-1.5 shadow-[1px_1px_0px_#000]">
                           {c.categoria}
                         </span>
-                        <span className="font-semibold text-zinc-900" title={c.descripcion}>
+                        <span className="font-bold text-black" title={c.descripcion}>
                           {formatearNombreComponenteBasico(c.descripcion, c.categoria)}
                         </span>
                       </div>
-                      <div className="font-mono text-[11px] text-zinc-500 shrink-0">
+                      <div className="font-mono text-[11px] text-neutral-700 shrink-0 font-semibold">
                         SKU: {c.sku} {c.seriales ? `· S/N: ${c.seriales}` : ""}
                       </div>
                     </div>
@@ -1168,21 +1171,21 @@ export default function TecnicosDashboardPage() {
 
               {/* Observaciones */}
               {detailObservaciones && (
-                <div className="text-xs space-y-1 bg-amber-50/70 border border-amber-200/80 p-2.5 rounded-xl">
-                  <span className="font-bold text-amber-900 block font-mono text-[10px] uppercase">
+                <div className="text-xs space-y-1 bg-[#FFD23F]/20 border-2 border-black p-2.5 rounded-lg shadow-[2px_2px_0px_#000]">
+                  <span className="font-heading font-extrabold text-black block text-[10px] uppercase">
                     Instrucciones &amp; Observaciones:
                   </span>
-                  <p className="text-amber-950 text-[11px] leading-relaxed">
+                  <p className="text-neutral-900 text-[11px] leading-relaxed font-medium">
                     {detailObservaciones}
                   </p>
                 </div>
               )}
 
               {/* Botones de acción */}
-              <div className="pt-3 border-t border-zinc-200 flex flex-col sm:flex-row items-center justify-between gap-2">
+              <div className="pt-3 border-t-2 border-black flex flex-col sm:flex-row items-center justify-between gap-2">
                 <button
                   onClick={() => setSelectedOrderForDetail(null)}
-                  className="w-full sm:w-auto px-4 py-2 border border-zinc-200 rounded-xl text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50 cursor-pointer transition-colors"
+                  className="w-full sm:w-auto px-4 py-2 border-2 border-black rounded-lg text-xs font-heading font-extrabold text-black bg-[#FFFDF9] hover:bg-neutral-200 shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
                 >
                   Cerrar
                 </button>
@@ -1192,10 +1195,10 @@ export default function TecnicosDashboardPage() {
                     type="button"
                     disabled={isSendingWhatsApp}
                     onClick={() => void handleSendOrderToWhatsApp(selectedOrderForDetail)}
-                    className="px-3.5 py-2 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 disabled:opacity-50 text-emerald-800 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                    className="px-3.5 py-2 border-2 border-black bg-[#2A9D8F] hover:bg-[#238276] disabled:opacity-50 text-white text-xs font-heading font-extrabold rounded-lg flex items-center gap-1.5 shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
                     title={`Enviar resumen al grupo ${MONTAJES_WHATSAPP_GROUP_ID}`}
                   >
-                    <Send className="w-3.5 h-3.5 text-emerald-600" />
+                    <Send className="w-3.5 h-3.5 text-white" />
                     <span>{isSendingWhatsApp ? "Enviando..." : "Enviar a WhatsApp"}</span>
                   </button>
 
@@ -1205,9 +1208,9 @@ export default function TecnicosDashboardPage() {
                       setSelectedOrderForDetail(null);
                       setSelectedOrderForCert(ord);
                     }}
-                    className="px-3.5 py-2 border border-zinc-200 bg-white hover:bg-zinc-50 text-zinc-800 text-xs font-semibold rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                    className="px-3.5 py-2 border-2 border-black bg-[#FFD23F] hover:bg-yellow-400 text-black text-xs font-heading font-extrabold rounded-lg flex items-center gap-1.5 shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
                   >
-                    <Printer className="w-3.5 h-3.5 text-zinc-600" />
+                    <Printer className="w-3.5 h-3.5 text-black" />
                     <span>Imprimir Sticker</span>
                   </button>
 
@@ -1217,7 +1220,7 @@ export default function TecnicosDashboardPage() {
                         onClick={() => {
                           handleEntregar(selectedOrderForDetail.id);
                         }}
-                        className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-xl shadow-sm cursor-pointer transition-colors"
+                        className="px-4 py-2 bg-black hover:bg-neutral-800 text-[#FFD23F] text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
                       >
                         Entregar al Cliente
                       </button>
@@ -1295,16 +1298,16 @@ export default function TecnicosDashboardPage() {
             }
           `}</style>
 
-          <div className="bg-white rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
+          <div className="bg-[#FFFDF9] rounded-xl w-full max-w-lg p-5 shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
 
             {/* Cabecera del modal (oculta al imprimir) */}
-            <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-3 print:hidden">
+            <div className="flex items-start justify-between gap-2 border-b-2 border-black pb-3 print:hidden">
               <div className="min-w-0">
-                <h2 className="text-base font-black text-zinc-900 flex items-center gap-2">
-                  <Printer className="w-4 h-4 text-zinc-700" />
+                <h2 className="text-base font-heading font-extrabold text-black flex items-center gap-2">
+                  <Printer className="w-4 h-4 text-black" />
                   <span>Sticker: {stickerHeaderTitle} · {activeThermalMeta.pageWidthMm}mm</span>
                 </h2>
-                <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                <p className="text-[11px] text-neutral-700 font-mono font-semibold mt-0.5">
                   {activeThermalMeta.shortLabel} ({activeThermalContentMm}mm útil) · {thermalSettings.scalePct}% · {thermalSettings.highContrast ? "Negro Intenso ON" : "Estándar"}
                 </p>
               </div>
@@ -1312,10 +1315,10 @@ export default function TecnicosDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setShowThermalConfig((prev) => !prev)}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer ${
                     showThermalConfig
-                      ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
-                      : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-300"
+                      ? "bg-black text-[#FFD23F]"
+                      : "bg-[#FFD23F] text-black hover:bg-yellow-400"
                   }`}
                   title="Calibrar papel, márgenes, escala y oscuridad de tinta"
                 >
@@ -1325,7 +1328,7 @@ export default function TecnicosDashboardPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedOrderForCert(null)}
-                  className="text-zinc-400 hover:text-zinc-900 p-1.5 rounded-xl hover:bg-zinc-100 cursor-pointer transition-colors"
+                  className="text-neutral-500 hover:text-black p-1.5 rounded-lg hover:bg-neutral-200 cursor-pointer transition-colors"
                   title="Cerrar vista previa"
                 >
                   <X className="w-5 h-5" />
@@ -1335,10 +1338,10 @@ export default function TecnicosDashboardPage() {
 
             {/* Panel Colapsable de Calibración de Impresora Térmica */}
             {showThermalConfig && (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 space-y-3 text-xs print:hidden">
-                <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-                  <span className="font-extrabold text-zinc-900 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-700" />
+              <div className="rounded-xl border-2 border-black bg-[#FAF6EE] p-3.5 space-y-3 text-xs shadow-[2px_2px_0px_#000] print:hidden">
+                <div className="flex items-center justify-between border-b-2 border-black pb-2">
+                  <span className="font-heading font-extrabold text-black text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-black" />
                     Calibración de Impresora Térmica
                   </span>
                   <button
@@ -1718,24 +1721,29 @@ export default function TecnicosDashboardPage() {
                     || {effectiveIsFinalizado ? "ETIQUETA DE MONTAJE Y ENTREGA" : "ETIQUETA DE INGRESO A TALLER"} ||
                   </span>
                 </div>
+
+                {/* Línea de corte térmico */}
+                <div className="pt-2 text-center text-[9px] font-mono font-bold text-black border-t-2 border-dashed border-black">
+                  - - - - - ✂ CORTAR AQUÍ ✂ - - - - -
+                </div>
               </div>
             </div>
 
             {/* Botones de acción inferiores (ocultos al imprimir) */}
-            <div className="pt-3 border-t border-zinc-200 flex justify-between items-center print:hidden">
+            <div className="pt-3 border-t-2 border-black flex justify-between items-center print:hidden">
               <button
                 type="button"
                 onClick={() => setSelectedOrderForCert(null)}
-                className="px-4 py-2 border border-zinc-200 hover:border-zinc-400 rounded-xl text-xs font-semibold text-zinc-600 cursor-pointer transition-colors"
+                className="px-4 py-2 border-2 border-black rounded-lg text-xs font-heading font-extrabold text-black bg-[#FFFDF9] hover:bg-neutral-200 shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
               >
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="px-5 py-2.5 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer hover:shadow-lg active:scale-98"
+                className="px-5 py-2.5 bg-[#FFD23F] hover:bg-yellow-400 text-black border-2 border-black rounded-lg text-xs font-heading font-extrabold flex items-center gap-2 shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
               >
-                <Printer className="w-4 h-4" />
+                <Printer className="w-4 h-4 text-black" />
                 <span>Imprimir Sticker ({activeThermalMeta.pageWidthMm}mm)</span>
               </button>
             </div>

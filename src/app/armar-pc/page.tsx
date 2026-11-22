@@ -3773,40 +3773,40 @@ export default function ArmarPcPresupuestadorPage() {
 
   return (
     <>
-      {/* Modal Obligatorio al Iniciar o Recargar la Página: Cotización del Dólar */}
+      {/* Modal Obligatorio al Iniciar o Recargar la Página: Cotización del Dólar (Neo-Brutalismo Retro) */}
       {isTipoCambioModalOpen && (
         <div
           role="dialog"
           aria-modal="true"
-          className="fixed inset-0 z-[100] bg-black/65 backdrop-blur-xs flex items-center justify-center p-3.5 sm:p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-xs flex items-center justify-center p-3.5 sm:p-4 animate-in fade-in duration-200"
         >
-          <div className="w-full max-w-md bg-white border border-zinc-200 rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="w-full max-w-md bg-[#FFFDF9] border-3 border-black rounded-xl shadow-[6px_6px_0px_#000000] overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Cabecera del Modal */}
-            <div className="p-5 sm:p-6 bg-gradient-to-b from-emerald-50/70 via-emerald-50/20 to-white border-b border-zinc-100 flex items-start gap-3.5">
-              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-600/25">
-                <DollarSign className="w-6 h-6 stroke-[2.5]" />
+            <div className="p-5 sm:p-6 bg-[#FFD23F] border-b-3 border-black flex items-start gap-3.5">
+              <div className="w-12 h-12 rounded-lg bg-black text-[#FFD23F] border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center shrink-0">
+                <DollarSign className="w-6 h-6 stroke-[3]" />
               </div>
               <div className="min-w-0">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-2 py-0.5 rounded-md inline-block mb-1">
+                <span className="text-[10px] font-mono font-extrabold uppercase tracking-wider text-black bg-[#FAF6EE] border border-black px-2 py-0.5 rounded-full inline-block mb-1 shadow-[1px_1px_0px_#000]">
                   Requerido antes de continuar
                 </span>
-                <h2 className="text-base sm:text-lg font-black text-zinc-900 tracking-tight">
+                <h2 className="text-base sm:text-lg font-heading font-extrabold text-black tracking-tight">
                   Cotización del Dólar del Día
                 </h2>
-                <p className="text-xs text-zinc-600 mt-1 leading-relaxed">
-                  Ingresá la cotización oficial de caja en Guaraníes para calcular y presupuestar todos los componentes del ensamble.
+                <p className="text-xs text-neutral-900 font-medium mt-1 leading-relaxed">
+                  Ingresá la cotización oficial de caja en Guaraníes para presupuestar los componentes de PC.
                 </p>
               </div>
             </div>
 
             {/* Cuerpo del Formulario */}
-            <div className="p-5 sm:p-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-4 bg-[#FFFDF9]">
               <div>
-                <label className="text-xs font-bold text-zinc-800 block mb-1.5">
+                <label className="text-xs font-heading font-extrabold text-black block mb-1.5 uppercase">
                   Cotización Actual (Gs por cada 1 USD):
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-black text-zinc-400 select-none">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-base font-black font-mono text-black select-none">
                     ₲
                   </span>
                   <input
@@ -3831,23 +3831,23 @@ export default function ArmarPcPresupuestadorPage() {
                       }
                     }}
                     placeholder="Ej: 6.800"
-                    className="w-full pl-9 pr-24 py-3 bg-zinc-50 border-2 border-zinc-300 focus:border-zinc-900 focus:bg-white rounded-xl text-xl font-mono font-black text-zinc-900 outline-none transition-all shadow-inner"
+                    className="w-full pl-9 pr-24 py-3 bg-[#FAF6EE] border-2 border-black focus:bg-white rounded-lg text-2xl font-mono font-black text-black outline-none transition-all shadow-[2px_2px_0px_#000]"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono font-bold text-zinc-600 bg-zinc-200/80 px-2 py-1 rounded-md select-none">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-mono font-extrabold text-white bg-black px-2 py-1 rounded border border-black select-none">
                     Gs / USD
                   </span>
                 </div>
                 {modalTipoCambioError && (
-                  <p className="text-[11px] font-semibold text-rose-600 mt-1.5 animate-in fade-in">
+                  <p className="text-[11px] font-bold text-[#E76F51] mt-1.5 animate-in fade-in">
                     ⚠️ {modalTipoCambioError}
                   </p>
                 )}
               </div>
 
-              {/* Botones de Selección Rápida en Rango Bancario (6mil a 7mil) */}
+              {/* Botones de Selección Rápida en Rango Bancario (Píldoras Retro) */}
               <div>
-                <span className="text-[10px] font-mono font-semibold text-zinc-500 uppercase block mb-1.5">
-                  Cotizaciones Bancarias y Casas de Cambio (un toque):
+                <span className="text-[10px] font-mono font-bold text-neutral-600 uppercase block mb-1.5">
+                  Cotizaciones comerciales rápidas (un toque):
                 </span>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {[6000, 6200, 6300, 6500, 6700, 6800, 7000].map((val) => {
@@ -3861,10 +3861,10 @@ export default function ArmarPcPresupuestadorPage() {
                           setModalTipoCambioInput(str);
                           setModalTipoCambioError(null);
                         }}
-                        className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+                        className={`px-3 py-1 rounded-full text-xs font-mono font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                           isSelected
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 hover:bg-zinc-200 text-zinc-700 border border-zinc-200"
+                            ? "bg-[#FFD23F] text-black"
+                            : "bg-[#FAF6EE] hover:bg-neutral-200 text-black"
                         }`}
                       >
                         ₲ {str}
@@ -3878,31 +3878,31 @@ export default function ArmarPcPresupuestadorPage() {
               <button
                 type="button"
                 onClick={handleConfirmTipoCambio}
-                className="w-full py-3 px-4 rounded-xl bg-zinc-900 hover:bg-black text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-[0.99]"
+                className="w-full py-3.5 px-4 rounded-lg bg-[#FFD23F] hover:bg-[#FACC15] text-black font-heading font-extrabold text-sm border-2 border-black shadow-[4px_4px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                <Check className="w-4 h-4 text-black stroke-[3]" />
                 <span>Confirmar Cotización y Continuar</span>
-                <ArrowRight className="w-4 h-4 text-zinc-400" />
+                <ArrowRight className="w-4 h-4 text-black" />
               </button>
             </div>
           </div>
         </div>
       )}
 
-    <main className={`min-h-dvh bg-[#fbf9f9] text-zinc-900 flex flex-col font-sans relative ${isThermalPrintModalOpen ? "print:hidden" : ""}`}>
-      {/* Alertas Secuenciales de 8 Segundos al Ingresar (1: Stock, 2: Tiempo de Montaje 24/48Hs) */}
+    <main className={`min-h-dvh bg-[#FAF6EE] text-[#111111] flex flex-col font-sans relative ${isThermalPrintModalOpen ? "print:hidden" : ""}`}>
+      {/* Alertas Secuenciales de 8 Segundos al Ingresar */}
       {warningStage && (
         <div
           key={warningStage}
           className="fixed top-14 sm:top-16 left-1/2 -translate-x-1/2 z-50 w-[calc(100vw-1.25rem)] sm:w-[92vw] max-w-xl 3xl:max-w-2xl animate-in fade-in slide-in-from-top-3 duration-200"
         >
-          <div className="bg-white text-zinc-900 border border-zinc-200 rounded-2xl shadow-xl overflow-hidden">
+          <div className="bg-[#FFFDF9] text-black border-2 border-black rounded-xl shadow-[4px_4px_0px_#000] overflow-hidden">
             <div className="p-3.5 sm:p-5 flex items-start gap-3 sm:gap-3.5">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-zinc-900 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-9 h-9 rounded-lg bg-[#FFD23F] border-2 border-black text-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#000]">
                 {warningStage === "STOCK" ? (
-                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <AlertTriangle className="w-5 h-5 text-black" />
                 ) : (
-                  <Clock className="w-4 h-4 text-emerald-400" />
+                  <Clock className="w-5 h-5 text-black" />
                 )}
               </div>
 
@@ -3990,17 +3990,17 @@ export default function ArmarPcPresupuestadorPage() {
           </div>
         </div>
       )}
-      {/* Barra Superior con Navegación y Estado de Conexión a https://nissei.com/py/ */}
-      <header className="border-b border-zinc-200 bg-white sticky top-0 z-30 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-xs">
+      {/* Barra Superior con Navegación y Estilo Neo-Brutalista Retro */}
+      <header className="border-b-2 border-black bg-[#FFFDF9] sticky top-0 z-30 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 shadow-[0px_2px_0px_#000]">
         <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto flex flex-wrap items-center justify-between gap-2.5">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <span className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-zinc-900 text-white flex items-center justify-center font-bold shrink-0">
-                  <Wrench className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                <span className="w-7 h-7 rounded-lg bg-[#FFD23F] border-2 border-black text-black flex items-center justify-center font-bold shrink-0 shadow-[2px_2px_0px_#000]">
+                  <Wrench className="w-4 h-4 text-black" />
                 </span>
-                <h1 className="text-xs xs:text-sm sm:text-base font-extrabold text-zinc-900 tracking-tight truncate">
-                  Configurador &amp; Presupuestador de PC
+                <h1 className="text-sm sm:text-base font-heading font-extrabold text-black tracking-tight truncate">
+                  Configurador &amp; Presupuestador de PC · NISSEI CDE
                 </h1>
               </div>
             </div>
@@ -4012,24 +4012,24 @@ export default function ArmarPcPresupuestadorPage() {
               type="button"
               onClick={() => syncWithNisseiWeb(true)}
               disabled={isLoadingWeb}
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-zinc-50 hover:bg-zinc-100 border border-zinc-200 text-zinc-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50 min-h-[38px] sm:min-h-[42px]"
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-black text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer disabled:opacity-50 min-h-[38px] sm:min-h-[40px]"
               title="Refrescar precios y disponibilidad ahora mismo"
             >
-              <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${isLoadingWeb ? "animate-spin text-emerald-600" : ""}`} />
-              <span className="hidden md:inline">
+              <RefreshCw className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${isLoadingWeb ? "animate-spin text-[#2A9D8F]" : ""}`} />
+              <span className="hidden md:inline font-mono font-bold">
                 {isLoadingWeb ? "Sincronizando..." : "Actualizar Web"}
               </span>
             </button>
 
             {/* Selector de Moneda */}
-            <div className="flex items-center bg-zinc-100 rounded-xl p-1 border border-zinc-200 text-xs sm:text-sm font-mono min-h-[38px] sm:min-h-[42px]">
+            <div className="flex items-center bg-[#FAF6EE] rounded-lg p-0.5 border-2 border-black text-xs sm:text-sm font-mono shadow-[2px_2px_0px_#000] min-h-[38px] sm:min-h-[40px]">
               <button
                 type="button"
                 onClick={() => setMoneda("PYG")}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 rounded-md transition-colors cursor-pointer ${
                   moneda === "PYG"
-                    ? "bg-white text-zinc-900 font-bold shadow-xs"
-                    : "text-zinc-600 hover:text-zinc-900"
+                    ? "bg-[#FFD23F] text-black font-extrabold border border-black shadow-[1px_1px_0px_#000]"
+                    : "text-neutral-700 hover:text-black font-bold"
                 }`}
               >
                 PYG ₲
@@ -4037,10 +4037,10 @@ export default function ArmarPcPresupuestadorPage() {
               <button
                 type="button"
                 onClick={() => setMoneda("USD")}
-                className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg transition-colors cursor-pointer ${
+                className={`px-2.5 sm:px-3 py-1 rounded-md transition-colors cursor-pointer ${
                   moneda === "USD"
-                    ? "bg-white text-zinc-900 font-bold shadow-xs"
-                    : "text-zinc-600 hover:text-zinc-900"
+                    ? "bg-[#FFD23F] text-black font-extrabold border border-black shadow-[1px_1px_0px_#000]"
+                    : "text-neutral-700 hover:text-black font-bold"
                 }`}
               >
                 USD $
@@ -4051,13 +4051,13 @@ export default function ArmarPcPresupuestadorPage() {
               type="button"
               onClick={handleCopyPresupuesto}
               disabled={selectedComponents.length === 0}
-              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center gap-2 cursor-pointer shadow-xs min-h-[38px] sm:min-h-[42px] ${
+              className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-heading font-extrabold transition-all flex items-center gap-2 cursor-pointer border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none min-h-[38px] sm:min-h-[40px] ${
                 copiedSuccess
-                  ? "bg-emerald-600 text-white"
-                  : "bg-zinc-900 hover:bg-black text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                  ? "bg-[#2A9D8F] text-white"
+                  : "bg-[#FFD23F] hover:bg-[#FACC15] text-black disabled:opacity-40 disabled:cursor-not-allowed"
               }`}
             >
-              {copiedSuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+              {copiedSuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4 text-black" />}
               <span className="hidden xs:inline">
                 {copiedSuccess ? "¡Copiado!" : "Copiar Presupuesto"}
               </span>
@@ -4067,24 +4067,24 @@ export default function ArmarPcPresupuestadorPage() {
               type="button"
               onClick={() => setIsThermalPrintModalOpen(true)}
               disabled={selectedComponents.length === 0}
-              className="p-2 sm:px-3.5 sm:py-2 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-700 hover:text-zinc-900 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs min-h-[38px] sm:min-h-[42px]"
+              className="p-2 sm:px-3.5 sm:py-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-black font-heading font-extrabold text-xs sm:text-sm flex items-center gap-1.5 transition-all disabled:opacity-40 cursor-pointer shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none min-h-[38px] sm:min-h-[40px]"
               title="Imprimir ticket térmico con detalle del presupuesto"
             >
-              <Printer className="w-4 h-4" />
-              <span className="hidden sm:inline">Imprimir</span>
+              <Printer className="w-4 h-4 text-black" />
+              <span className="hidden sm:inline">Imprimir Ticket</span>
             </button>
           </div>
         </div>
       </header>
 
-      {/* Contenedor Principal: 2 Columnas Adaptables desde 320px hasta 4K TVs */}
+      {/* Contenedor Principal: 2 Columnas Adaptables */}
       <div className="flex-1 w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto p-2.5 xs:p-3.5 sm:p-5 lg:p-7 2xl:p-8 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5 lg:gap-6 2xl:gap-8 min-w-0">
         {/* Columna Izquierda: Configurador y Catálogo de Componentes (7 cols) */}
         <section className="lg:col-span-7 3xl:col-span-8 space-y-4 min-w-0">
           {/* Barra de Cotización del Dólar */}
           <div className="flex items-center justify-end">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-zinc-200 text-xs font-mono shadow-2xs">
-              <span className="text-zinc-600 font-semibold">TC Dólar:</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#FFFDF9] border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000]">
+              <span className="text-black font-bold uppercase">TC Dólar del Día:</span>
               <button
                 type="button"
                 onClick={() => {
@@ -4092,12 +4092,12 @@ export default function ArmarPcPresupuestadorPage() {
                   setModalTipoCambioError(null);
                   setIsTipoCambioModalOpen(true);
                 }}
-                className="px-2.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg text-xs font-black text-emerald-950 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs group"
+                className="px-2.5 py-0.5 bg-[#FFD23F] hover:bg-[#FACC15] border border-black rounded text-xs font-mono font-black text-black transition-all cursor-pointer flex items-center gap-1 shadow-[1px_1px_0px_#000] group"
                 title="Hacé clic para cambiar la cotización del dólar"
               >
-                <DollarSign className="w-3.5 h-3.5 text-emerald-700 group-hover:scale-110 transition-transform" />
+                <DollarSign className="w-3.5 h-3.5 text-black group-hover:scale-110 transition-transform" />
                 <span>₲ {tipoCambioInput}</span>
-                <span className="text-[10px] text-emerald-600 font-normal">✎</span>
+                <span className="text-[10px] text-black font-bold">✎</span>
               </button>
             </div>
           </div>
@@ -4169,15 +4169,15 @@ export default function ArmarPcPresupuestadorPage() {
                   <span>Presets Inteligentes (100% Compatibles &amp; En Stock):</span>
                 </span>
 
-                {/* Sub-Pestañas: Por Entorno vs Por Presupuesto */}
-                <div className="inline-flex p-1 bg-zinc-100 rounded-xl border border-zinc-200 text-xs font-bold shrink-0">
+                {/* Sub-Pestañas: Por Entorno vs Por Presupuesto (Stickers Retro) */}
+                <div className="inline-flex p-1 bg-[#FAF6EE] rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] shrink-0">
                   <button
                     type="button"
                     onClick={() => setPresetTabMode("ENTORNO")}
-                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                       presetTabMode === "ENTORNO"
-                        ? "bg-white text-zinc-900 shadow-2xs font-extrabold"
-                        : "text-zinc-600 hover:text-zinc-900"
+                        ? "bg-[#FFD23F] text-black font-extrabold border border-black shadow-[1px_1px_0px_#000]"
+                        : "text-neutral-700 hover:text-black font-bold"
                     }`}
                   >
                     <span>🎯 Por Entorno de Trabajo</span>
@@ -4185,10 +4185,10 @@ export default function ArmarPcPresupuestadorPage() {
                   <button
                     type="button"
                     onClick={() => setPresetTabMode("PRESUPUESTO")}
-                    className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                    className={`px-3 py-1.5 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                       presetTabMode === "PRESUPUESTO"
-                        ? "bg-white text-emerald-800 shadow-2xs font-extrabold"
-                        : "text-zinc-600 hover:text-zinc-900"
+                        ? "bg-[#FFD23F] text-black font-extrabold border border-black shadow-[1px_1px_0px_#000]"
+                        : "text-neutral-700 hover:text-black font-bold"
                     }`}
                   >
                     <span>💰 Por Presupuesto en Guaraníes</span>
@@ -4196,7 +4196,7 @@ export default function ArmarPcPresupuestadorPage() {
                 </div>
               </div>
 
-              {/* Modo 1: Por Entorno de Trabajo */}
+              {/* Modo 1: Por Entorno de Trabajo (Tarjetas Neo-Brutalistas Retro) */}
               {presetTabMode === "ENTORNO" && (
                 <div className="space-y-3 animate-in fade-in duration-150">
                   <div className="grid grid-cols-[repeat(auto-fit,minmax(175px,1fr))] gap-2.5">
@@ -4215,24 +4215,24 @@ export default function ArmarPcPresupuestadorPage() {
                             setPresetCpuAlert(null);
                             setPresetSuccessBanner(null);
                           }}
-                          className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between ${
+                          className={`p-3 sm:p-3.5 rounded-lg border-2 border-black text-left transition-all group cursor-pointer shadow-[3px_3px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50 flex flex-col justify-between ${
                             isMenuOpen
-                              ? "bg-zinc-900/5 border-zinc-900 ring-2 ring-zinc-900/15"
+                              ? "bg-[#FFD23F] text-black"
                               : isBuilt
-                              ? "bg-emerald-50/50 border-emerald-400"
-                              : "bg-zinc-50 hover:bg-zinc-100/90 border-zinc-200 hover:border-zinc-300"
+                              ? "bg-[#2A9D8F]/20 text-black border-2 border-black"
+                              : "bg-[#FFFDF9] hover:bg-[#FAF6EE] text-black"
                           }`}
                         >
                           <div>
                             <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                              <span className="text-lg shrink-0">{p.icono}</span>
+                              <span className="text-xl shrink-0">{p.icono}</span>
                               <span
-                                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded transition-colors whitespace-nowrap shrink-0 ${
+                                className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border border-black transition-colors whitespace-nowrap shrink-0 ${
                                   isMenuOpen
-                                    ? "bg-zinc-900 text-white"
+                                    ? "bg-black text-[#FFD23F]"
                                     : isBuilt
-                                    ? "bg-emerald-600 text-white"
-                                    : "bg-zinc-200/80 text-zinc-700 group-hover:bg-zinc-900 group-hover:text-white"
+                                    ? "bg-black text-white"
+                                    : "bg-[#FAF6EE] text-black group-hover:bg-black group-hover:text-white"
                                 }`}
                               >
                                 {isMenuOpen
@@ -4242,14 +4242,14 @@ export default function ArmarPcPresupuestadorPage() {
                                   : "Elegir Perfil"}
                               </span>
                             </div>
-                            <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
+                            <span className="text-xs sm:text-sm font-heading font-extrabold text-black block leading-tight">
                               {p.nombre}
                             </span>
-                            <span className="text-[11px] text-zinc-500 block leading-snug mt-1">
+                            <span className="text-[11px] text-neutral-700 block leading-snug mt-1 font-medium">
                               {p.entorno}
                             </span>
                           </div>
-                          <span className="text-[10px] sm:text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200 block line-clamp-2 leading-tight mt-2.5 font-semibold">
+                          <span className="text-[10px] sm:text-[11px] font-mono text-white bg-[#2A9D8F] px-2 py-1 rounded-md border border-black block line-clamp-2 leading-tight mt-2.5 font-bold shadow-[1px_1px_0px_#000]">
                             {p.tag}
                           </span>
                         </button>
@@ -6693,28 +6693,22 @@ export default function ArmarPcPresupuestadorPage() {
               </div>
             )}
 
-            {/* Checklist Inteligente de Completitud para Venta Segura */}
-            <div className="p-3 bg-zinc-50 border border-zinc-200/80 rounded-xl space-y-2">
+            {/* Checklist Inteligente de Completitud para Venta Segura (Stickers Retro) */}
+            <div className="p-3.5 bg-[#FFFDF9] border-2 border-black rounded-xl space-y-2.5 shadow-[3px_3px_0px_#000]">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-zinc-800 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="font-heading font-extrabold text-black flex items-center gap-1.5 uppercase">
+                  <CheckCircle2 className="w-4 h-4 text-black" />
                   Checklist del Ensamble ({resultadoCompatibilidad.porcentajeCompletitud}%)
                 </span>
-                <span className="text-[11px] font-mono font-semibold text-zinc-500">
+                <span className="text-[11px] font-mono font-bold text-black border border-black bg-[#FAF6EE] px-2 py-0.5 rounded-full shadow-[1px_1px_0px_#000]">
                   {Object.values(resultadoCompatibilidad.checklist).filter(Boolean).length} de 8 partes
                 </span>
               </div>
               
-              {/* Barra de Progreso */}
-              <div className="w-full h-1.5 bg-zinc-200 rounded-full overflow-hidden">
+              {/* Barra de Progreso Retro */}
+              <div className="w-full h-3 bg-[#FAF6EE] border-2 border-black rounded-full overflow-hidden">
                 <div
-                  className={`h-full transition-all duration-300 ${
-                    resultadoCompatibilidad.porcentajeCompletitud === 100
-                      ? "bg-emerald-500"
-                      : resultadoCompatibilidad.porcentajeCompletitud >= 50
-                      ? "bg-sky-500"
-                      : "bg-amber-500"
-                  }`}
+                  className="h-full bg-[#FFD23F] border-r-2 border-black transition-all duration-300"
                   style={{ width: `${resultadoCompatibilidad.porcentajeCompletitud}%` }}
                 />
               </div>
@@ -6740,10 +6734,10 @@ export default function ArmarPcPresupuestadorPage() {
                       if (el) el.scrollIntoView({ behavior: "smooth" });
                     }}
                     title={item.ready ? `${item.label} ya seleccionado ✓` : `Click para cotizar ${item.label} compatible`}
-                    className={`px-1.5 py-1.5 rounded-lg font-medium flex items-center justify-center gap-1 transition-all cursor-pointer truncate ${
+                    className={`px-1.5 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center justify-center gap-1 transition-all cursor-pointer truncate ${
                       item.ready
-                        ? "bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold"
-                        : "bg-white border border-dashed border-zinc-300 text-zinc-500 hover:border-zinc-800 hover:text-zinc-900"
+                        ? "bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000]"
+                        : "bg-[#FAF6EE] border-2 border-dashed border-black text-neutral-700 hover:bg-white hover:border-solid hover:text-black shadow-[1px_1px_0px_#000]"
                     }`}
                   >
                     <span>{item.ready ? "✓" : "+"}</span>
@@ -7012,19 +7006,19 @@ export default function ArmarPcPresupuestadorPage() {
                 />
               </div>
 
-              {/* Resumen Total Estricto con https://nissei.com/py/ */}
-              <div className="p-4 sm:p-5 bg-zinc-900 text-white rounded-2xl space-y-1.5 shadow-sm">
+              {/* Resumen Total Estricto con https://nissei.com/py/ (Neo-Brutalismo Bloque Amarillo Mostaza) */}
+              <div className="p-4 sm:p-5 bg-[#FFD23F] text-black border-3 border-black rounded-xl space-y-1.5 shadow-[4px_4px_0px_#000]">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm uppercase font-bold text-zinc-400">
+                  <span className="text-xs uppercase font-mono font-bold text-neutral-900">
                     Total Oficial Web (Gs.):
                   </span>
-                  <span className="text-2xl sm:text-3xl font-black font-mono text-white">
+                  <span className="text-2xl sm:text-3xl font-heading font-extrabold text-black">
                     ₲ {totalPresupuestoPyg.toLocaleString("es-PY")}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs sm:text-sm pt-1.5 border-t border-zinc-800">
-                  <span className="text-zinc-400 font-mono">Equivalente en Dólares:</span>
-                  <span className="font-mono font-bold text-zinc-200 text-sm sm:text-base">
+                <div className="flex items-center justify-between text-xs sm:text-sm pt-1.5 border-t-2 border-black">
+                  <span className="text-neutral-800 font-mono font-bold">Equivalente en Dólares:</span>
+                  <span className="font-mono font-extrabold text-black text-sm sm:text-base">
                     US${" "}
                     {totalPresupuestoUsd.toLocaleString("es-PY", {
                       minimumFractionDigits: 2,
@@ -7032,7 +7026,7 @@ export default function ArmarPcPresupuestadorPage() {
                     })}
                   </span>
                 </div>
-                <span className="text-xs text-emerald-400 block pt-1 font-mono font-medium">
+                <span className="text-xs text-black block pt-1 font-mono font-extrabold">
                   ✓ Garantía 3 meses · IVA 10% Incluido
                 </span>
               </div>
@@ -7043,10 +7037,10 @@ export default function ArmarPcPresupuestadorPage() {
                   type="button"
                   onClick={handleCopyPresupuesto}
                   disabled={selectedComponents.length === 0}
-                  className={`py-3 px-3.5 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs min-h-[46px] ${
+                  className={`py-3 px-3.5 rounded-lg text-xs sm:text-sm font-heading font-extrabold transition-all flex items-center justify-center gap-2 cursor-pointer border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none min-h-[46px] ${
                     copiedSuccess
-                      ? "bg-emerald-600 text-white"
-                      : "bg-zinc-900 hover:bg-black text-white disabled:opacity-40 disabled:cursor-not-allowed"
+                      ? "bg-[#2A9D8F] text-white"
+                      : "bg-black text-[#FFD23F] hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed"
                   }`}
                 >
                   {copiedSuccess ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
@@ -7057,10 +7051,10 @@ export default function ArmarPcPresupuestadorPage() {
                   type="button"
                   onClick={() => handleGuardedAction("PRINT")}
                   disabled={selectedComponents.length === 0}
-                  className="py-3 px-3.5 rounded-xl bg-white hover:bg-zinc-50 border border-zinc-200 text-zinc-800 hover:text-zinc-900 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors disabled:opacity-40 cursor-pointer shadow-2xs min-h-[46px]"
+                  className="py-3 px-3.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-black text-xs sm:text-sm font-heading font-extrabold flex items-center justify-center gap-2 transition-all disabled:opacity-40 cursor-pointer shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none min-h-[46px]"
                 >
-                  <Printer className="w-4 h-4" />
-                  <span>Imprimir Ticket Térmico</span>
+                  <Printer className="w-4 h-4 text-black" />
+                  <span>Imprimir Ticket</span>
                 </button>
               </div>
 
@@ -7069,10 +7063,10 @@ export default function ArmarPcPresupuestadorPage() {
                   type="button"
                   onClick={handleCrearOrdenMontaje}
                   disabled={selectedComponents.length === 0}
-                  className="w-full py-2.5 rounded-xl bg-zinc-900 hover:bg-black disabled:opacity-40 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 rounded-lg bg-[#2A9D8F] hover:bg-[#208376] disabled:opacity-40 text-white font-heading font-extrabold text-xs border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <span>Generar Orden de Montaje Oficial</span>
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="w-4 h-4 text-white" />
                 </button>
               )}
             </div>

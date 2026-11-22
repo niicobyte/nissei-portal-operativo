@@ -394,19 +394,19 @@ function LoginForm() {
   };
 
   return (
-    <main className="min-h-dvh bg-[#fbf9f9] py-6 sm:py-10 2xl:py-16 px-3 sm:px-6 lg:px-8 flex items-center justify-center">
+    <main className="min-h-dvh bg-[#FAF6EE] py-6 sm:py-10 2xl:py-16 px-3 sm:px-6 lg:px-8 flex items-center justify-center">
       <div className="max-w-5xl 2xl:max-w-6xl 3xl:max-w-7xl w-full space-y-6 sm:space-y-8">
         
-        {/* Cabecera NISSEI */}
+        {/* Cabecera NISSEI Retro */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-zinc-100 border border-zinc-200 rounded-lg text-xs sm:text-sm font-medium text-zinc-700">
-            <Terminal className="w-4 h-4 text-zinc-900" />
-            <span>NISSEI S.A. · Control de acceso operativo</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#FFD23F] border-2 border-black rounded-full text-xs sm:text-sm font-heading font-extrabold text-black shadow-[2px_2px_0px_#000]">
+            <Terminal className="w-4 h-4 text-black" />
+            <span>NISSEI S.A. · CONTROL DE ACCESO OPERATIVO CDE</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl 2xl:text-5xl font-extrabold text-zinc-900 tracking-tight">
+          <h1 className="text-3xl sm:text-4xl 2xl:text-5xl font-heading font-extrabold text-black tracking-tight">
             Identificación de Operador y Sector
           </h1>
-          <p className="text-sm sm:text-base text-zinc-600 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-base text-neutral-800 font-medium max-w-2xl mx-auto">
             Seleccione el sector operativo correspondiente: Taller de Montajes de PC o Recepción Post-Venta.
           </p>
         </div>
@@ -414,46 +414,55 @@ function LoginForm() {
         {/* Banner de Actualización / Sesión Expirada por Seguridad o Inactividad */}
         {reasonBanner && (
           <div
-            className={`p-4 sm:p-5 rounded-xl border flex items-start gap-3.5 text-xs sm:text-sm shadow-xs animate-in fade-in duration-300 ${
+            className={`p-4 sm:p-5 rounded-xl border-2 border-black flex items-start gap-3.5 text-xs sm:text-sm shadow-[4px_4px_0px_#000] animate-in fade-in duration-300 ${
               reasonBanner.tone === "indigo"
-                ? "bg-indigo-50 border-indigo-300 text-indigo-950"
-                : "bg-amber-50 border-amber-300 text-amber-950"
+                ? "bg-[#2A9D8F]/15 border-black text-black"
+                : "bg-[#FFD23F]/30 border-black text-black"
             }`}
           >
             {reasonBanner.tone === "indigo" ? (
-              <RefreshCw className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
+              <RefreshCw className="w-5 h-5 text-black shrink-0 mt-0.5" />
             ) : (
-              <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <Clock className="w-5 h-5 text-black shrink-0 mt-0.5" />
             )}
             <div>
-              <strong
-                className={`block text-sm font-bold ${
-                  reasonBanner.tone === "indigo" ? "text-indigo-900" : "text-amber-900"
-                }`}
-              >
+              <strong className="block text-sm font-heading font-extrabold text-black">
                 {reasonBanner.title}
               </strong>
-              <p
-                className={`text-xs sm:text-sm mt-0.5 ${
-                  reasonBanner.tone === "indigo" ? "text-indigo-800" : "text-amber-800"
-                }`}
-              >
+              <p className="text-xs sm:text-sm mt-0.5 text-neutral-900 font-medium">
                 {reasonBanner.desc}
               </p>
             </div>
           </div>
         )}
 
-        {/* Tarjeta de Autenticación Principal */}
-        <div className="bg-white rounded-2xl border border-zinc-200 shadow-sm overflow-hidden grid grid-cols-1 lg:grid-cols-12">
+        {/* Tarjeta de Autenticación Principal - Ventana Retro Neo-Brutalista */}
+        <div className="bg-[#FFFDF9] rounded-xl border-3 border-black shadow-[6px_6px_0px_#000] overflow-hidden">
           
-          {/* Columna Izquierda: Los 3 Sectores Principales (7 cols) */}
-          <div className="lg:col-span-7 p-6 sm:p-8 space-y-4 border-b lg:border-b-0 lg:border-r border-zinc-200">
-            <div>
-              <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wide">
-                1. Seleccione sector operativo
-              </h2>
+          {/* Barra Superior Estilo Ventana Retro */}
+          <div className="bg-[#FFD23F] border-b-3 border-black px-4 py-2.5 flex items-center justify-between select-none">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#E76F51] border-2 border-black inline-block"></span>
+              <span className="w-3.5 h-3.5 rounded-full bg-[#FFFDF9] border-2 border-black inline-block"></span>
+              <span className="w-3.5 h-3.5 rounded-full bg-[#2A9D8F] border-2 border-black inline-block"></span>
+              <span className="ml-2 font-mono text-xs font-black uppercase text-black tracking-wider">
+                PORTAL-OPERATIVO // AUTH-WINDOW
+              </span>
             </div>
+            <div className="hidden sm:flex items-center gap-1.5 font-mono text-[11px] font-bold text-black border-2 border-black px-2 py-0.5 rounded bg-[#FFFDF9]">
+              <span className="w-2 h-2 rounded-full bg-[#2A9D8F] animate-pulse"></span>
+              <span>SATI EN LÍNEA</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12">
+            {/* Columna Izquierda: Los 3 Sectores Principales (7 cols) */}
+            <div className="lg:col-span-7 p-6 sm:p-8 space-y-4 border-b lg:border-b-0 lg:border-r-3 border-black bg-[#FAF6EE]">
+              <div>
+                <h2 className="text-xs font-mono font-bold text-black uppercase tracking-wider bg-[#FFD23F] inline-block px-2 py-0.5 border border-black rounded shadow-[1px_1px_0px_#000]">
+                  1. Seleccione sector operativo
+                </h2>
+              </div>
 
             {/* Los 3 Sectores Operativos con Telemetría en Vivo */}
             <div className="space-y-3">
@@ -462,94 +471,82 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => handleSelectSector("RECEPCION")}
-                className={`w-full p-4 sm:p-5 rounded-xl border text-left transition-all cursor-pointer ${
+                className={`w-full p-4 sm:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
                   activeSector === "RECEPCION"
-                    ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
+                    ? "bg-black text-[#FFD23F] shadow-[4px_4px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black shadow-[3px_3px_0px_#000] hover:bg-[#FAF6EE] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 ${activeSector === "RECEPCION" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
+                    <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-black ${activeSector === "RECEPCION" ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]" : "bg-white text-black shadow-[1px_1px_0px_#000]"}`}>
                       <AnimatedReceptionBox
                         className="w-5 h-5 sm:w-6 sm:h-6"
-                        beamColor={activeSector === "RECEPCION" ? "bg-emerald-300" : "bg-emerald-500"}
-                        pingColor={activeSector === "RECEPCION" ? "bg-emerald-300" : "bg-emerald-500"}
+                        beamColor={activeSector === "RECEPCION" ? "bg-black" : "bg-emerald-500"}
+                        pingColor={activeSector === "RECEPCION" ? "bg-black" : "bg-emerald-500"}
                       />
                     </span>
                     <div className="min-w-0">
-                      <strong className="block text-base sm:text-lg font-bold truncate">Recepción Post-Venta</strong>
-                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-semibold ${activeSector === "RECEPCION" ? "text-emerald-400" : "text-emerald-600"}`}>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+                      <strong className="block text-base sm:text-lg font-heading font-extrabold truncate">Recepción Post-Venta</strong>
+                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "RECEPCION" ? "text-[#FFD23F]" : "text-[#2A9D8F]"}`}>
+                        <span className="w-2 h-2 rounded-full bg-[#2A9D8F] animate-pulse shrink-0"></span>
                         Telemetría en Vivo
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className={`w-5 h-5 shrink-0 transition-transform ${activeSector === "RECEPCION" ? "text-white translate-x-1" : "text-zinc-400"}`} />
+                  <ChevronRight className={`w-5 h-5 shrink-0 transition-transform ${activeSector === "RECEPCION" ? "text-[#FFD23F] translate-x-1" : "text-black"}`} />
                 </div>
 
                 {/* Telemetría 3 métricas */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "RECEPCION"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "RECEPCION" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Ingresos Hoy</span>
-                      <PackageOpen className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <PackageOpen className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.recepcion.ingresosHoy}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "RECEPCION" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
                       {telemetry.recepcion.ingresosSub}
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "RECEPCION"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "RECEPCION" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Notificadas</span>
-                      <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.recepcion.notificaciones}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "RECEPCION" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
                       {telemetry.recepcion.notificacionesSub}
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "RECEPCION"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "RECEPCION" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Listos Retiro</span>
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.recepcion.listosEntrega}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "RECEPCION" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
-                      Balcón ASU
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
+                      Balcón CDE
                     </span>
                   </div>
                 </div>
@@ -559,92 +556,80 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => handleSelectSector("DEPOSITO")}
-                className={`w-full p-4 sm:p-5 rounded-xl border text-left transition-all cursor-pointer ${
+                className={`w-full p-4 sm:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
                   activeSector === "DEPOSITO"
-                    ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
+                    ? "bg-black text-[#FFD23F] shadow-[4px_4px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black shadow-[3px_3px_0px_#000] hover:bg-[#FAF6EE] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 ${activeSector === "DEPOSITO" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
+                    <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-black ${activeSector === "DEPOSITO" ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]" : "bg-white text-black shadow-[1px_1px_0px_#000]"}`}>
                       <SpeedTruck
                         className="w-5 h-5 sm:w-6 sm:h-6"
-                        smokeColor={activeSector === "DEPOSITO" ? "bg-amber-400" : "bg-amber-500/80"}
+                        smokeColor={activeSector === "DEPOSITO" ? "bg-black" : "bg-amber-500/80"}
                       />
                     </span>
                     <div className="min-w-0">
-                      <strong className="block text-base sm:text-lg font-bold truncate">SATI ASU - CDE</strong>
-                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-semibold ${activeSector === "DEPOSITO" ? "text-amber-400" : "text-amber-600"}`}>
-                        <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+                      <strong className="block text-base sm:text-lg font-heading font-extrabold truncate">SATI ASU - CDE</strong>
+                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "DEPOSITO" ? "text-[#FFD23F]" : "text-[#E76F51]"}`}>
+                        <span className="w-2 h-2 rounded-full bg-[#E76F51] animate-pulse shrink-0"></span>
                         Monitoreo Logístico
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className={`w-5 h-5 shrink-0 transition-transform ${activeSector === "DEPOSITO" ? "text-white translate-x-1" : "text-zinc-400"}`} />
+                  <ChevronRight className={`w-5 h-5 shrink-0 transition-transform ${activeSector === "DEPOSITO" ? "text-[#FFD23F] translate-x-1" : "text-black"}`} />
                 </div>
 
                 {/* Telemetría 3 métricas */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "DEPOSITO"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "DEPOSITO" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">En Camino</span>
-                      <Truck className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <Truck className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.deposito.enCamino}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "DEPOSITO" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
                       Transportadora
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "DEPOSITO"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "DEPOSITO" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">En CDE</span>
-                      <Building2 className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <Building2 className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.deposito.enCde}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "DEPOSITO" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
                       Taller Matriz
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "DEPOSITO"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "DEPOSITO" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Recibidos ASU</span>
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.deposito.recibidosAsu}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "DEPOSITO" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
                       Depósito Danesa
                     </span>
                   </div>
@@ -655,93 +640,81 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => handleSelectSector("MONTAJES")}
-                className={`w-full p-4 sm:p-5 rounded-xl border text-left transition-all cursor-pointer ${
+                className={`w-full p-4 sm:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
                   activeSector === "MONTAJES"
-                    ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                    : "border-zinc-200 bg-zinc-50/50 text-zinc-900 hover:border-zinc-300 hover:bg-white"
+                    ? "bg-black text-[#FFD23F] shadow-[4px_4px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black shadow-[3px_3px_0px_#000] hover:bg-[#FAF6EE] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3.5 min-w-0">
-                    <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 ${activeSector === "MONTAJES" ? "bg-white/10 text-white" : "bg-white border border-zinc-200 text-zinc-800"}`}>
+                    <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-black ${activeSector === "MONTAJES" ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]" : "bg-white text-black shadow-[1px_1px_0px_#000]"}`}>
                       <AnimatedCpu
                         className="w-5 h-5 sm:w-6 sm:h-6"
-                        coreColor={activeSector === "MONTAJES" ? "bg-cyan-300" : "bg-cyan-500"}
-                        auraColor={activeSector === "MONTAJES" ? "bg-cyan-400/25" : "bg-cyan-500/15"}
+                        coreColor={activeSector === "MONTAJES" ? "bg-black" : "bg-cyan-500"}
+                        auraColor={activeSector === "MONTAJES" ? "bg-black/25" : "bg-cyan-500/15"}
                       />
                     </span>
                     <div className="min-w-0">
-                      <strong className="block text-base sm:text-lg font-bold truncate">Taller de Montajes de PC</strong>
-                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-semibold ${activeSector === "MONTAJES" ? "text-cyan-400" : "text-cyan-600"}`}>
-                        <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse shrink-0"></span>
+                      <strong className="block text-base sm:text-lg font-heading font-extrabold truncate">Taller de Montajes de PC</strong>
+                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "MONTAJES" ? "text-[#FFD23F]" : "text-[#2A9D8F]"}`}>
+                        <span className="w-2 h-2 rounded-full bg-[#2A9D8F] animate-pulse shrink-0"></span>
                         Ensambles &amp; Hardware
                       </span>
                     </div>
                   </div>
-                  <ChevronRight className={`w-5 h-5 shrink-0 transition-transform ${activeSector === "MONTAJES" ? "text-white translate-x-1" : "text-zinc-400"}`} />
+                  <ChevronRight className={`w-5 h-5 shrink-0 transition-transform ${activeSector === "MONTAJES" ? "text-[#FFD23F] translate-x-1" : "text-black"}`} />
                 </div>
 
                 {/* Telemetría 3 métricas */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "MONTAJES"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "MONTAJES" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">En Cola</span>
-                      <Layers className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <Layers className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.montajes.enCola}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "MONTAJES" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
                       {telemetry.montajes.enColaSub}
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "MONTAJES"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "MONTAJES" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">En Banco</span>
-                      <Cpu className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <Cpu className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.montajes.enBanco}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "MONTAJES" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
                       Bench 01 - 04
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border flex flex-col justify-between ${
+                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
                     activeSector === "MONTAJES"
-                      ? "bg-white/10 border-white/10 text-white"
-                      : "bg-white border-zinc-200/90 text-zinc-900 shadow-2xs"
+                      ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
+                      : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className={`text-xs font-bold uppercase tracking-wider flex items-center justify-between gap-1 ${
-                      activeSector === "MONTAJES" ? "text-zinc-300" : "text-zinc-600"
-                    }`}>
+                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Finalizados</span>
-                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-70" />
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
                     <span className="text-xl sm:text-2xl font-black font-mono mt-1">
                       {telemetry.montajes.finalizados}
                     </span>
-                    <span className={`text-xs mt-0.5 truncate ${
-                      activeSector === "MONTAJES" ? "text-zinc-400" : "text-zinc-500"
-                    }`}>
+                    <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
                       Entregados
                     </span>
                   </div>
@@ -752,40 +725,40 @@ function LoginForm() {
           </div>
 
           {/* Columna Derecha: Formulario de Contraseña del Perfil Seleccionado (5 cols) */}
-          <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between bg-zinc-50/60">
+          <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between bg-[#FFFDF9]">
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
-                <h2 className="text-sm font-bold text-zinc-700 uppercase tracking-wide">
+                <h2 className="text-xs font-mono font-bold text-black uppercase tracking-wider bg-[#FFD23F] inline-block px-2 py-0.5 border border-black rounded shadow-[1px_1px_0px_#000]">
                   2. Credencial de acceso
                 </h2>
-                <p className="text-xs sm:text-sm text-zinc-600 mt-1">
-                  Ingrese la clave de seguridad para {selectedProfile.nombre}.
+                <p className="text-xs sm:text-sm text-neutral-800 font-medium mt-1.5">
+                  Ingrese la clave de seguridad autorizada para <strong>{selectedProfile.nombre}</strong>.
                 </p>
               </div>
 
               {/* Ficha Resumen del Perfil */}
-              <div className="p-4 sm:p-5 bg-white rounded-xl border border-zinc-200 space-y-2.5 shadow-sm">
+              <div className="p-4 sm:p-5 bg-[#FAF6EE] rounded-xl border-2 border-black space-y-2.5 shadow-[3px_3px_0px_#000]">
                 <div className="flex items-center gap-3.5">
-                  <span className="w-12 h-12 rounded-xl bg-zinc-900 text-white font-mono text-base font-bold flex items-center justify-center shrink-0">
+                  <span className="w-12 h-12 rounded-xl bg-black text-[#FFD23F] font-mono text-base font-bold flex items-center justify-center shrink-0 border-2 border-black shadow-[2px_2px_0px_#000]">
                     {selectedProfile.avatar}
                   </span>
                   <div>
-                    <h3 className="text-base font-bold text-zinc-900">
+                    <h3 className="text-base font-heading font-extrabold text-black">
                       {selectedProfile.nombre}
                     </h3>
-                    <span className="text-xs font-semibold text-zinc-500 block">
+                    <span className="text-xs font-mono font-bold text-neutral-700 block">
                       {selectedProfile.badge}
                     </span>
                   </div>
                 </div>
-                <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed pt-2.5 border-t border-zinc-100">
+                <p className="text-xs sm:text-sm text-neutral-800 leading-relaxed pt-2.5 border-t-2 border-dashed border-black font-medium">
                   {selectedProfile.descripcion}
                 </p>
               </div>
 
               {/* Campo de Contraseña */}
               <div className="space-y-2">
-                <label className="text-xs sm:text-sm text-zinc-700 font-bold block">
+                <label className="text-xs sm:text-sm text-black font-heading font-extrabold block">
                   Contraseña de seguridad
                 </label>
                 <div className="relative">
@@ -800,64 +773,64 @@ function LoginForm() {
                       attemptAutoLogin(val);
                     }}
                     placeholder={`Clave de ${selectedProfile.nombre}...`}
-                    className="w-full text-base bg-white border border-zinc-300 rounded-xl px-4 py-3 pr-12 focus:border-zinc-900 outline-none transition-colors shadow-2xs font-mono"
+                    className="w-full text-base bg-white border-2 border-black rounded-lg px-4 py-3 pr-12 focus:outline-none focus:bg-[#FAF6EE] transition-colors shadow-[2px_2px_0px_#000] font-mono text-black font-bold"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3.5 top-3.5 text-zinc-400 hover:text-zinc-700 transition-colors p-1"
+                    className="absolute right-3.5 top-3.5 text-black hover:text-neutral-700 transition-colors p-1 cursor-pointer"
                     title={showPassword ? "Ocultar" : "Mostrar"}
                   >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    {showPassword ? <EyeOff className="w-5 h-5 text-black" /> : <Eye className="w-5 h-5 text-black" />}
                   </button>
                 </div>
               </div>
 
               {/* Mensajes de Estado */}
               {error && (
-                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2.5">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-rose-600" />
-                  <span>{error}</span>
+                <div className="p-3.5 rounded-lg bg-[#E76F51]/15 border-2 border-black text-black text-xs sm:text-sm flex items-center gap-2.5 shadow-[2px_2px_0px_#000]">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-[#E76F51]" />
+                  <span className="font-bold">{error}</span>
                 </div>
               )}
 
               {success && (
-                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-600" />
-                  <span>{success}</span>
+                <div className="p-3.5 rounded-lg bg-[#2A9D8F]/15 border-2 border-black text-black text-xs sm:text-sm flex items-center gap-2.5 shadow-[2px_2px_0px_#000]">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#2A9D8F]" />
+                  <span className="font-bold">{success}</span>
                 </div>
               )}
 
               {/* Botón Ingresar */}
               <button
                 type="submit"
-                className="w-full py-3.5 bg-zinc-900 hover:bg-black text-white text-sm sm:text-base font-bold rounded-xl shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 bg-[#FFD23F] hover:bg-[#FACC15] text-black text-sm sm:text-base font-heading font-extrabold rounded-lg border-2 border-black shadow-[4px_4px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Acceder a {selectedProfile.nombre}</span>
-                <ArrowRight className="w-5 h-5" />
+                <ArrowRight className="w-5 h-5 text-black" />
               </button>
             </form>
 
             {/* Pie de Página + Acceso a Base de Datos MySQL */}
-            <div className="pt-6 border-t border-zinc-200 text-center space-y-2.5">
-              <span className="text-xs text-zinc-400 block font-mono">
-                Sistema de Asistencia Técnica Integrada
+            <div className="pt-6 border-t-2 border-black text-center space-y-2.5">
+              <span className="text-xs text-neutral-600 block font-mono font-bold">
+                Sistema de Asistencia Técnica Integrada · CDE
               </span>
 
               <button
                 type="button"
                 onClick={handleToggleDbAccess}
-                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200/60 border border-transparent hover:border-zinc-200 transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold text-black bg-[#FAF6EE] hover:bg-[#FFD23F] border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
               >
-                <Database className="w-3.5 h-3.5" />
-                <span>Base de Datos</span>
-                <Lock className="w-3 h-3 opacity-70" />
+                <Database className="w-3.5 h-3.5 text-black" />
+                <span>Base de Datos MySQL</span>
+                <Lock className="w-3 h-3 text-black" />
               </button>
 
               {showDbAuthBox && (
-                <form onSubmit={handleDbAuthSubmit} className="mt-2 p-3.5 bg-zinc-100 rounded-xl border border-zinc-300 space-y-2 text-left">
-                  <div className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-zinc-600" />
+                <form onSubmit={handleDbAuthSubmit} className="mt-2 p-3.5 bg-[#FAF6EE] rounded-xl border-2 border-black space-y-2 text-left shadow-[3px_3px_0px_#000]">
+                  <div className="text-xs font-heading font-extrabold text-black flex items-center gap-1.5">
+                    <Lock className="w-3.5 h-3.5 text-black" />
                     <span>Clave de Administrador</span>
                   </div>
                   <div className="relative">
@@ -870,22 +843,22 @@ function LoginForm() {
                         setDbPassword(val);
                       }}
                       placeholder="Ingrese contraseña de admin..."
-                      className="w-full text-sm bg-white border border-zinc-300 rounded-lg px-3 py-2 pr-10 focus:border-zinc-900 outline-none"
+                      className="w-full text-sm bg-white border-2 border-black rounded-lg px-3 py-2 pr-10 focus:outline-none font-mono text-black"
                     />
                     <button
                       type="button"
                       onClick={() => setShowDbPassword(!showDbPassword)}
-                      className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-700"
+                      className="absolute right-2.5 top-2.5 text-black hover:text-neutral-700"
                     >
-                      {showDbPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showDbPassword ? <EyeOff className="w-4 h-4 text-black" /> : <Eye className="w-4 h-4 text-black" />}
                     </button>
                   </div>
                   {dbError && (
-                    <div className="text-xs text-rose-700 font-semibold">{dbError}</div>
+                    <div className="text-xs text-[#E76F51] font-bold">{dbError}</div>
                   )}
                   <button
                     type="submit"
-                    className="w-full py-2 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    className="w-full py-2 bg-black text-[#FFD23F] hover:bg-neutral-800 text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                   >
                     Abrir Visor MySQL
                   </button>
@@ -903,6 +876,7 @@ function LoginForm() {
           onClose={() => setIsDbModalOpen(false)}
         />
       )}
+      </div>
     </main>
   );
 }

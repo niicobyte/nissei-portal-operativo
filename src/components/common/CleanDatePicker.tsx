@@ -254,32 +254,32 @@ export function CleanDatePicker({
       ref={containerRef}
       className={`relative text-left ${fullWidth ? "w-full block" : "inline-block"}`}
     >
-      {/* Botón Disparador estilizado al estilo CleanSelect */}
+      {/* Botón Disparador estilizado Neo-Brutalismo */}
       <button
         type="button"
         onClick={() => {
           if (!isOpen) updatePopoverPosition();
           setIsOpen((prev) => !prev);
         }}
-        className={`inline-flex items-center justify-between gap-2 px-3 py-2 text-xs sm:text-sm font-semibold rounded-xl border transition-all duration-150 cursor-pointer shadow-sm select-none ${
+        className={`inline-flex items-center justify-between gap-2 px-3 py-2 text-xs sm:text-sm font-bold rounded-lg border-2 border-black transition-all duration-150 cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none select-none ${
           fullWidth ? "w-full" : ""
         } ${
           isOpen
-            ? "border-zinc-900 ring-2 ring-zinc-900/10 bg-white text-zinc-900"
-            : "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-800 hover:border-zinc-300"
+            ? "border-black bg-[#FFFDF9] text-black"
+            : "bg-[#FFFDF9] hover:bg-[#FAF6EE] border-black text-black"
         } ${className}`}
       >
-        <span className={`font-mono ${displayLabel ? "text-zinc-900 font-bold" : "text-zinc-400 font-normal"}`}>
+        <span className={`font-mono ${displayLabel ? "text-black font-bold" : "text-neutral-500 font-normal"}`}>
           {displayLabel || placeholder}
         </span>
         <CalendarIcon
           className={`w-4 h-4 shrink-0 transition-colors ${
-            isOpen ? "text-zinc-900" : "text-zinc-400 hover:text-zinc-600"
+            isOpen ? "text-black" : "text-neutral-700 hover:text-black"
           }`}
         />
       </button>
 
-      {/* Popover Flotante de Calendario estilo CleanSelect / Hallmark */}
+      {/* Popover Flotante de Calendario estilo Neo-Brutalismo Retro */}
       {isOpen && (
         <div
           style={
@@ -289,21 +289,21 @@ export function CleanDatePicker({
           }
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
-          } mt-2 w-[min(20rem,calc(100vw-1.5rem))] bg-white rounded-2xl border border-zinc-200 shadow-2xl p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 select-none`}
+          } mt-2 w-[min(20rem,calc(100vw-1.5rem))] bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] p-3.5 z-50 animate-in fade-in zoom-in-95 duration-150 select-none`}
         >
           {/* Cabecera: Flechas y Mes/Año */}
-          <div className="flex items-center justify-between pb-2.5 mb-2 border-b border-zinc-100">
+          <div className="flex items-center justify-between pb-2.5 mb-2 border-b-2 border-black">
             <button
               type="button"
               onClick={handlePrevMonth}
-              className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+              className="p-1.5 rounded-lg border-2 border-black bg-[#FAF6EE] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000] transition-colors cursor-pointer"
               title="Mes anterior"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 text-black" />
             </button>
 
-            <div className="flex items-center gap-1.5 bg-zinc-100/80 px-3 py-1 rounded-lg border border-zinc-200/80">
-              <span className="text-xs font-bold text-zinc-900 capitalize">
+            <div className="flex items-center gap-1.5 bg-[#FAF6EE] px-3 py-1 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
+              <span className="text-xs font-heading font-extrabold text-black capitalize">
                 {MONTH_NAMES[viewMonth]} de {viewYear}
               </span>
             </div>
@@ -311,10 +311,10 @@ export function CleanDatePicker({
             <button
               type="button"
               onClick={handleNextMonth}
-              className="p-1.5 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 transition-colors"
+              className="p-1.5 rounded-lg border-2 border-black bg-[#FAF6EE] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000] transition-colors cursor-pointer"
               title="Mes siguiente"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 text-black" />
             </button>
           </div>
 
@@ -324,7 +324,7 @@ export function CleanDatePicker({
               <span
                 key={name}
                 className={`text-[11px] font-mono font-bold uppercase ${
-                  idx === 0 || idx === 6 ? "text-rose-500/80" : "text-zinc-400"
+                  idx === 0 || idx === 6 ? "text-[#E76F51]" : "text-black"
                 }`}
               >
                 {name}
@@ -342,16 +342,16 @@ export function CleanDatePicker({
                   key={`${cell.year}-${cell.month}-${cell.day}-${idx}`}
                   type="button"
                   onClick={() => handleSelectDay(cell)}
-                  className={`h-8 sm:h-9 w-full flex items-center justify-center text-xs font-semibold rounded-lg transition-all ${
+                  className={`h-8 sm:h-9 w-full flex items-center justify-center text-xs font-mono font-bold rounded-lg transition-all cursor-pointer ${
                     cell.isSelected
-                      ? "bg-zinc-900 text-white font-bold shadow-sm ring-2 ring-zinc-900/15"
+                      ? "bg-[#FFD23F] text-black font-extrabold border-2 border-black shadow-[2px_2px_0px_#000]"
                       : cell.isToday
-                      ? "bg-zinc-100 border border-zinc-300 text-zinc-900 font-bold hover:bg-zinc-200"
+                      ? "bg-[#FAF6EE] border-2 border-dashed border-black text-black font-extrabold"
                       : cell.isCurrentMonth
                       ? isWeekend
-                        ? "text-rose-600/90 hover:bg-rose-50/60"
-                        : "text-zinc-800 hover:bg-zinc-100"
-                      : "text-zinc-300 hover:text-zinc-400 hover:bg-zinc-50"
+                        ? "text-[#E76F51] hover:bg-[#FFD23F]/20 hover:border hover:border-black"
+                        : "text-black hover:bg-[#FAF6EE] hover:border hover:border-black"
+                      : "text-neutral-300 hover:text-neutral-500"
                   }`}
                 >
                   {cell.day}
@@ -361,11 +361,11 @@ export function CleanDatePicker({
           </div>
 
           {/* Barra Inferior: Limpiar y Hoy */}
-          <div className="flex items-center justify-between pt-3 mt-3 border-t border-zinc-100 text-xs">
+          <div className="flex items-center justify-between pt-3 mt-3 border-t-2 border-black text-xs">
             <button
               type="button"
               onClick={handleClear}
-              className="px-2.5 py-1 text-zinc-600 hover:text-rose-600 hover:bg-rose-50 rounded-lg border border-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1"
+              className="px-2.5 py-1 text-black hover:bg-[#E76F51] hover:text-white rounded-lg border-2 border-black text-xs font-bold shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
               <span>Limpiar</span>
@@ -374,9 +374,9 @@ export function CleanDatePicker({
             <button
               type="button"
               onClick={handleSelectToday}
-              className="px-2.5 py-1 bg-zinc-900 hover:bg-black text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 shadow-sm"
+              className="px-2.5 py-1 bg-black text-[#FFD23F] hover:bg-neutral-800 rounded-lg text-xs font-bold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-1 cursor-pointer"
             >
-              <RotateCcw className="w-3 h-3 text-emerald-400" />
+              <RotateCcw className="w-3 h-3 text-[#FFD23F]" />
               <span>Hoy</span>
             </button>
           </div>

@@ -1283,14 +1283,14 @@ export default function RecepcionCdeDashboardPage() {
           (isFechaValida(ticket.fechaRecibidoDeposito) ? ticket.fechaRecibidoDeposito : "");
 
       return (
-        <div className="inline-flex flex-col items-center gap-0.5">
-          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+        <div className="inline-flex flex-col items-center gap-1">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#2A9D8F] text-white border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
+            <CheckCircle2 className="w-3.5 h-3.5 text-white" />
             <span>Entregada</span>
           </span>
           {fechaEntregaMostrar && (
             <span
-              className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
+              className="text-[10px] font-mono font-bold text-black bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] block"
               title={`Fecha de entrega al cliente: ${fechaEntregaMostrar}`}
             >
               {fechaEntregaMostrar}
@@ -1302,8 +1302,8 @@ export default function RecepcionCdeDashboardPage() {
 
     if (lower === "reparada") {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800 border border-sky-200">
-          <CheckCircle2 className="w-3 h-3 text-sky-600" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#2A9D8F] text-white border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
+          <CheckCircle2 className="w-3.5 h-3.5 text-white" />
           <span>Reparada</span>
         </span>
       );
@@ -1311,8 +1311,8 @@ export default function RecepcionCdeDashboardPage() {
 
     if (lower.includes("tránsito") || lower.includes("transito")) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-900 border border-amber-300">
-          <SpeedTruck className="w-3 h-3 text-amber-700" smokeColor="bg-amber-400" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFD23F] text-black border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
+          <SpeedTruck className="w-3.5 h-3.5 text-black" smokeColor="bg-black" />
           <span>En Tránsito (Transportadora)</span>
         </span>
       );
@@ -1320,8 +1320,8 @@ export default function RecepcionCdeDashboardPage() {
 
     if (lower.includes("sin reparo")) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-rose-100 text-rose-800 border border-rose-200">
-          <AlertCircle className="w-3 h-3 text-rose-600" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#E76F51] text-white border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
+          <AlertCircle className="w-3.5 h-3.5 text-white" />
           <span>{displayStatus}</span>
         </span>
       );
@@ -1329,8 +1329,8 @@ export default function RecepcionCdeDashboardPage() {
 
     if (lower.includes("qc") || lower.includes("control de calidad")) {
       return (
-        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
-          <ShieldCheck className="w-3 h-3 text-purple-600" />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFFDF9] text-black border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
+          <ShieldCheck className="w-3.5 h-3.5 text-black" />
           <span>Control de Calidad (QC)</span>
         </span>
       );
@@ -1338,8 +1338,8 @@ export default function RecepcionCdeDashboardPage() {
 
     // Estado real de la orden de ASU (ej. "En Asignación", "En Diagnóstico", "En Recepción", etc.)
     return (
-      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-zinc-100 text-zinc-700 border border-zinc-200">
-        <Clock className="w-3 h-3 text-zinc-500" />
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FAF6EE] text-black border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
+        <Clock className="w-3.5 h-3.5 text-black" />
         <span>{displayStatus}</span>
       </span>
     );
@@ -1358,25 +1358,28 @@ export default function RecepcionCdeDashboardPage() {
 
   return (
     <AuthGuard requiredModule="deposito.danesa">
-      <main className="min-h-dvh bg-[#fbf9f9] text-[#121212] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10 font-sans">
+      <main className="min-h-dvh bg-[#FAF6EE] text-[#111111] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10 font-sans">
       <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 min-w-0">
 
         {/* Notificación Toast Flotante */}
         {notification && (
-          <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg border border-zinc-700 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 bg-[#FFD23F] text-black px-4 py-2.5 rounded-lg text-xs font-heading font-extrabold shadow-[4px_4px_0px_#000] border-2 border-black flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
             <span>{notification}</span>
           </div>
         )}
 
-        {/* Cabecera limpia y simple, idéntica a Recepción */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-200">
+        {/* Cabecera unificada Neo-Brutalista Retro */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b-2 border-black">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 tracking-tight">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000] mb-2">
+              <span>SATI · CASA MATRIZ CDE ↔ SUCURSAL ASU</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-[#111111] tracking-tight">
               SATI ASU - CDE
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-600 mt-1 max-w-3xl">
-              Monitoreo de envíos por transportadora, tiempos de retorno de laboratorio SATI y confirmación de recepción en sucursal.
+            <p className="text-xs sm:text-sm text-neutral-800 mt-1 max-w-3xl font-medium">
+              Monitoreo de envíos por transportadora, tiempos de retorno de laboratorio SATI y confirmación de recepción en sucursal con código de barras CODE128.
             </p>
           </div>
 
@@ -1391,7 +1394,7 @@ export default function RecepcionCdeDashboardPage() {
               className="hidden"
             />
 
-            {/* Botón idéntico al de Recepción con icono verde y dos líneas de texto (soporta 1 o varios archivos a la vez) */}
+            {/* Botón idéntico al de Recepción con estilo Neo-Brutalista */}
             <button
               type="button"
               onClick={() => fileInputRef.current?.click()}
@@ -1403,17 +1406,17 @@ export default function RecepcionCdeDashboardPage() {
                 }
               }}
               disabled={isUploadingCSV}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
               title="Subir uno o varios archivos CSV o Excel (.xlsx) a la vez (ASU y/o CDE)"
             >
-              <span className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center">
+              <span className="w-6 h-6 rounded bg-black text-[#FFD23F] flex items-center justify-center font-bold border border-black">
                 <Upload className="w-3.5 h-3.5" />
               </span>
               <div className="text-left leading-tight">
-                <strong className="block text-xs font-bold text-zinc-900">
+                <strong className="block text-xs font-heading font-extrabold text-black">
                   {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV / Excel"}
                 </strong>
-                <span className="text-[11px] text-zinc-500 font-normal">
+                <span className="text-[10px] text-neutral-700 font-mono font-semibold">
                   {isUploadingCSV ? "Sincronizando online" : "Uno o varios (ASU / CDE)"}
                 </span>
               </div>
@@ -1429,21 +1432,22 @@ export default function RecepcionCdeDashboardPage() {
         </div>
 
         {/* Panel de Notificación y Recuento de Actualización por CSV */}
+        {/* Panel de Notificación y Recuento de Actualización por CSV (Neo-Brutalismo Retro) */}
         {csvReport && (
           <section
-            className={`rounded-xl border p-4 sm:p-5 shadow-sm space-y-4 ${
+            className={`rounded-xl border-2 border-black p-4 sm:p-5 shadow-[4px_4px_0px_#000] space-y-4 ${
               csvReport.cambios.length > 0
-                ? "bg-emerald-50/70 border-emerald-200"
-                : "bg-zinc-100/80 border-zinc-300"
+                ? "bg-[#FFD23F]/25"
+                : "bg-[#FFFDF9]"
             }`}
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-start gap-3">
                 <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                  className={`w-9 h-9 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center shrink-0 ${
                     csvReport.cambios.length > 0
-                      ? "bg-emerald-600 text-white"
-                      : "bg-zinc-800 text-white"
+                      ? "bg-black text-[#FFD23F]"
+                      : "bg-black text-white"
                   }`}
                 >
                   {csvReport.cambios.length > 0 ? (
@@ -1454,16 +1458,16 @@ export default function RecepcionCdeDashboardPage() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm sm:text-base font-extrabold text-zinc-900">
+                    <h3 className="text-sm sm:text-base font-heading font-extrabold text-black">
                       {csvReport.cambios.length > 0
                         ? `¡Actualización completada! Se detectaron ${csvReport.cambios.length} cambio(s) en el CSV de ${csvReport.origenLabel || "Casa Matriz CDE"}`
                         : "Archivo CSV verificado: No se detectaron cambios de estado"}
                     </h3>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-white border border-zinc-200 text-zinc-600">
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFFDF9] border border-black text-black shadow-[1px_1px_0px_#000]">
                       {csvReport.fileName} · {csvReport.timestamp}
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-600 mt-0.5">
+                  <p className="text-xs text-neutral-800 mt-0.5 font-medium">
                     {csvReport.cambios.length > 0
                       ? `Se actualizaron ${csvReport.totalActualizadas} estado(s)${
                           csvReport.totalEnTransitoNuevos > 0
@@ -1478,7 +1482,7 @@ export default function RecepcionCdeDashboardPage() {
               <button
                 type="button"
                 onClick={() => setCsvReport(null)}
-                className="self-end sm:self-center px-2.5 py-1 rounded-lg bg-white border border-zinc-200 hover:bg-zinc-100 text-xs font-semibold text-zinc-600 flex items-center gap-1 cursor-pointer"
+                className="self-end sm:self-center px-3 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-1 cursor-pointer transition-all"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Cerrar resumen</span>
@@ -1487,28 +1491,28 @@ export default function RecepcionCdeDashboardPage() {
 
             {/* Tarjetas de Recuento de la Carga CSV */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="bg-white p-3 rounded-lg border border-zinc-200">
-                <span className="text-[11px] text-zinc-500 block">Órdenes leídas en CSV</span>
-                <strong className="text-lg font-extrabold text-zinc-900 font-mono">
+              <div className="bg-[#FFFDF9] p-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 block uppercase">Órdenes leídas en CSV</span>
+                <strong className="text-lg font-mono font-extrabold text-black">
                   {csvReport.totalFilasLeidas.toLocaleString()}
                 </strong>
               </div>
-              <div className="bg-white p-3 rounded-lg border border-zinc-200">
-                <span className="text-[11px] text-zinc-500 block">Estados actualizados</span>
-                <strong className="text-lg font-extrabold text-emerald-700 font-mono">
+              <div className="bg-[#FFFDF9] p-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 block uppercase">Estados actualizados</span>
+                <strong className="text-lg font-mono font-extrabold text-[#2A9D8F]">
                   {csvReport.totalActualizadas.toLocaleString()}
                 </strong>
               </div>
-              <div className="bg-white p-3 rounded-lg border border-zinc-200">
-                <span className="text-[11px] text-zinc-500 block">En Tránsito (Transportadora)</span>
-                <strong className="text-lg font-extrabold text-amber-700 font-mono flex items-center gap-1.5">
-                  <SpeedTruck className="w-4 h-4 text-amber-600" smokeColor="bg-amber-400" />
+              <div className="bg-[#FFFDF9] p-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 block uppercase">En Tránsito (Transportadora)</span>
+                <strong className="text-lg font-mono font-extrabold text-black flex items-center gap-1.5">
+                  <SpeedTruck className="w-4 h-4 text-black" smokeColor="bg-black" />
                   <span>{csvReport.totalEnTransitoNuevos.toLocaleString()}</span>
                 </strong>
               </div>
-              <div className="bg-white p-3 rounded-lg border border-zinc-200">
-                <span className="text-[11px] text-zinc-500 block">Órdenes sin cambios</span>
-                <strong className="text-lg font-extrabold text-zinc-600 font-mono">
+              <div className="bg-[#FFFDF9] p-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 block uppercase">Órdenes sin cambios</span>
+                <strong className="text-lg font-mono font-extrabold text-neutral-700">
                   {csvReport.totalSinCambios.toLocaleString()}
                 </strong>
               </div>
@@ -1518,47 +1522,47 @@ export default function RecepcionCdeDashboardPage() {
 
             {/* Tabla detallada de las órdenes que cambiaron de estado */}
             {csvReport.cambios.length > 0 && (
-              <div className="bg-white rounded-lg border border-zinc-200 overflow-hidden">
-                <div className="px-3.5 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-zinc-800">
+              <div className="bg-[#FFFDF9] rounded-lg border-2 border-black overflow-hidden shadow-[2px_2px_0px_#000]">
+                <div className="px-3.5 py-2 bg-[#FAF6EE] border-b-2 border-black flex items-center justify-between">
+                  <span className="text-xs font-heading font-extrabold text-black">
                     Detalle de órdenes con cambios ({csvReport.cambios.length})
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-500">
+                  <span className="text-[11px] font-mono font-bold text-neutral-700">
                     Haz clic en una orden para buscarla en la tabla
                   </span>
                 </div>
-                <div className="max-h-56 overflow-y-auto divide-y divide-zinc-100">
+                <div className="max-h-56 overflow-y-auto divide-y divide-black/10">
                   {csvReport.cambios.map((c, idx) => (
                     <div
                       key={`${c.idOrden}-${idx}`}
                       onClick={() => setSearchTerm(c.idOrden)}
-                      className="px-3.5 py-2 text-xs flex items-center justify-between hover:bg-zinc-50 cursor-pointer transition-colors"
+                      className="px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#FAF6EE] cursor-pointer transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="font-mono font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                        <span className="font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
                           #{c.idOrden}
                         </span>
                         <div>
-                          <strong className="text-zinc-900">{c.cliente}</strong>
+                          <strong className="text-black font-bold">{c.cliente}</strong>
                           {c.esDanesa && (
-                            <span className="ml-1.5 text-[10px] font-bold text-amber-800 bg-amber-100 px-1 rounded">
+                            <span className="ml-1.5 text-[10px] font-bold text-black bg-[#FFD23F] px-1 rounded border border-black">
                               Danesa SA
                             </span>
                           )}
-                          <span className="text-zinc-500 font-mono block text-[11px]">
+                          <span className="text-neutral-700 font-mono block text-[11px]">
                             {c.equipo}
                           </span>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[11px] bg-zinc-100 text-zinc-600 line-through">
+                        <span className="px-2 py-0.5 rounded text-[11px] bg-neutral-200 text-neutral-700 line-through font-mono">
                           {c.estadoAnterior}
                         </span>
-                        <ArrowRight className="w-3 h-3 text-zinc-400" />
+                        <ArrowRight className="w-3 h-3 text-black" />
                         {c.enTransito ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
-                            <SpeedTruck className="w-3 h-3 text-amber-700" smokeColor="bg-amber-400" />
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
+                            <SpeedTruck className="w-3 h-3 text-black" smokeColor="bg-black" />
                             <span>En Tránsito (Transportadora)</span>
                           </span>
                         ) : (
@@ -1567,7 +1571,7 @@ export default function RecepcionCdeDashboardPage() {
                           </span>
                         )}
                         {c.fechaEntregada && (
-                          <span className="text-[10px] font-mono text-zinc-400">
+                          <span className="text-[10px] font-mono font-semibold text-neutral-700">
                             {c.fechaEntregada}
                           </span>
                         )}
@@ -1580,10 +1584,10 @@ export default function RecepcionCdeDashboardPage() {
           </section>
         )}
 
-        {/* Tarjetas KPI de Rendimiento (según el ámbito seleccionado) */}
+        {/* Tarjetas KPI de Rendimiento (Neo-Brutalismo Retro) */}
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+          <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
+            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
               {viewScope === "DANESA"
                 ? "Envíos Danesa SA"
                 : viewScope === "CLIENTES_ASU"
@@ -1593,140 +1597,140 @@ export default function RecepcionCdeDashboardPage() {
                 : "Total Registros"}
             </span>
             <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-zinc-900">
+              <strong className="text-2xl font-mono font-extrabold text-black">
                 {metrics.totalScope.toLocaleString()}
               </strong>
-              <span className="text-[11px] font-semibold text-zinc-500">
-                de {metrics.totalUniversal.toLocaleString()} tot.
+              <span className="text-[11px] font-mono font-bold text-neutral-600">
+                de {metrics.totalUniversal.toLocaleString()}
               </span>
             </div>
-            <p className="text-[11px] text-zinc-500 leading-tight">
-              Órdenes del ámbito registradas en el portal
+            <p className="text-[11px] text-neutral-700 leading-tight font-medium">
+              Órdenes del ámbito registradas
             </p>
           </div>
 
           {viewScope === "DANESA" ? (
             <>
-              <div className="p-4 bg-white rounded-2xl border border-amber-200 bg-amber-50/20 shadow-xs space-y-1">
-                <span className="text-[11px] font-mono font-bold text-amber-800 uppercase tracking-wider block">
+              <div className="p-4 bg-[#FFD23F]/20 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
+                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block">
                   En Transportadora
                 </span>
                 <div className="flex items-baseline justify-between">
-                  <strong className="text-2xl font-black text-amber-700">
+                  <strong className="text-2xl font-mono font-extrabold text-black">
                     {metrics.danesaEnTransito}
                   </strong>
-                  <span className="text-[11px] font-semibold text-amber-800">
+                  <span className="text-[11px] font-mono font-bold text-black">
                     En camino
                   </span>
                 </div>
-                <p className="text-[11px] text-amber-900/80 leading-tight">
-                  Despachadas por CDE, pendientes de entrega final en ASU
+                <p className="text-[11px] text-neutral-800 leading-tight font-medium">
+                  Despachadas por CDE, pendientes ASU
                 </p>
               </div>
-              <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
-                <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
+              <div className="p-4 bg-[#2A9D8F]/15 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
+                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block">
                   Recibidos en Depósito
                 </span>
                 <div className="flex items-baseline justify-between">
-                  <strong className="text-2xl font-black text-emerald-700">
+                  <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F]">
                     {metrics.danesaRecibidos}
                   </strong>
-                  <span className="text-[11px] font-semibold text-emerald-700">
+                  <span className="text-[11px] font-mono font-bold text-[#2A9D8F]">
                     Verificados
                   </span>
                 </div>
-                <p className="text-[11px] text-emerald-900/80 leading-tight">
+                <p className="text-[11px] text-neutral-800 leading-tight font-medium">
                   Cajas físicas recibidas en ASU
                 </p>
               </div>
             </>
           ) : (
             <>
-              <div className="p-4 bg-white rounded-2xl border border-emerald-200 bg-emerald-50/20 shadow-xs space-y-1">
-                <span className="text-[11px] font-mono font-bold text-emerald-800 uppercase tracking-wider block">
+              <div className="p-4 bg-[#2A9D8F]/15 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
+                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block">
                   Entregadas
                 </span>
                 <div className="flex items-baseline justify-between">
-                  <strong className="text-2xl font-black text-emerald-700">
+                  <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F]">
                     {metrics.scopeEntregadas}
                   </strong>
-                  <span className="text-[11px] font-semibold text-emerald-700">
+                  <span className="text-[11px] font-mono font-bold text-[#2A9D8F]">
                     Cerradas
                   </span>
                 </div>
-                <p className="text-[11px] text-emerald-900/80 leading-tight">
+                <p className="text-[11px] text-neutral-800 leading-tight font-medium">
                   Órdenes cerradas y entregadas
                 </p>
               </div>
-              <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-                <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+              <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
                   Envíos Danesa SA
                 </span>
                 <div className="flex items-baseline justify-between">
-                  <strong className="text-2xl font-black text-zinc-900">
+                  <strong className="text-2xl font-mono font-extrabold text-black">
                     {metrics.totalDanesa}
                   </strong>
-                  <span className="text-[11px] font-semibold text-zinc-500">
-                    Nuestra sucursal
+                  <span className="text-[11px] font-mono font-bold text-neutral-600">
+                    Sucursal
                   </span>
                 </div>
-                <p className="text-[11px] text-zinc-500 leading-tight">
-                  Para comparar contra los clientes
+                <p className="text-[11px] text-neutral-700 leading-tight font-medium">
+                  Para comparar contra clientes
                 </p>
               </div>
             </>
           )}
 
-          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+          <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
+            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
               Tiempo Prom. Retorno
             </span>
             <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-zinc-900">
-                {metrics.avgDiasScope} <span className="text-sm font-normal text-zinc-500">días</span>
+              <strong className="text-2xl font-mono font-extrabold text-black">
+                {metrics.avgDiasScope} <span className="text-sm font-normal text-neutral-600">días</span>
               </strong>
-              <span className="text-[11px] font-semibold text-zinc-500">
-                Total: {metrics.avgDiasTotal}d
+              <span className="text-[11px] font-mono font-bold text-neutral-600">
+                Tot: {metrics.avgDiasTotal}d
               </span>
             </div>
-            <p className="text-[11px] text-zinc-500 leading-tight">
-              Lapso entre ingreso y fecha de entrega
+            <p className="text-[11px] text-neutral-700 leading-tight font-medium">
+              Lapso entre ingreso y entrega
             </p>
           </div>
-          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+          <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
+            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
               En Laboratorio
             </span>
             <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-zinc-900">
+              <strong className="text-2xl font-mono font-extrabold text-black">
                 {metrics.scopeEnLaboratorio}
               </strong>
-              <span className="text-[11px] font-semibold text-zinc-500">
+              <span className="text-[11px] font-mono font-bold text-neutral-600">
                 En proceso
               </span>
             </div>
-            <p className="text-[11px] text-zinc-500 leading-tight">
-              Equipos aún en diagnóstico o reparación
+            <p className="text-[11px] text-neutral-700 leading-tight font-medium">
+              Equipos en diagnóstico o reparación
             </p>
           </div>
-          <div className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-1">
-            <span className="text-[11px] font-mono font-bold text-zinc-500 uppercase tracking-wider block">
+          <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
+            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
               Resolución
             </span>
             <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-black text-emerald-600">{metrics.reparados}</strong>
-              <span className="text-[11px] font-semibold text-rose-600">{metrics.sinReparo} Sin Rep.</span>
+              <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F]">{metrics.reparados}</strong>
+              <span className="text-[11px] font-mono font-bold text-[#E76F51]">{metrics.sinReparo} Sin Rep.</span>
             </div>
-            <p className="text-[11px] text-zinc-500 leading-tight">Reparados / Nuevos vs Sin Reparo / RMA</p>
+            <p className="text-[11px] text-neutral-700 leading-tight font-medium">Reparados vs Sin Reparo / RMA</p>
           </div>
         </section>
 
         {/* Barra de Filtros, Selector de Ámbito Reestructurado y Búsqueda */}
-        <section className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+        <section className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
 
-            {/* Selector de Ámbito con las 4 pestañas solicitadas */}
-            <div className="w-full lg:w-auto flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 flex-wrap">
+            {/* Selector de Ámbito con estilo Neo-Brutalista Retro */}
+            <div className="w-full lg:w-auto flex items-center gap-1.5 p-1.5 bg-[#FAF6EE] rounded-xl border-2 border-black shadow-[2px_2px_0px_#000] flex-wrap">
               {(
                 [
                   {
@@ -1767,15 +1771,17 @@ export default function RecepcionCdeDashboardPage() {
                     setSelectedCategories([]);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                    viewScope === s.key ? "bg-zinc-900 text-white shadow-xs" : "text-zinc-600 hover:text-zinc-900"
+                  className={`px-3 py-1.5 rounded-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                    viewScope === s.key
+                      ? "bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000]"
+                      : "text-neutral-800 hover:bg-neutral-200 border-2 border-transparent"
                   }`}
                 >
                   {s.icon}
                   <span>{s.label}</span>
                   <span
-                    className={`px-1.5 rounded text-[10px] font-mono font-normal ${
-                      viewScope === s.key ? "bg-white/20 text-white" : "bg-zinc-200 text-zinc-700"
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold border border-black ${
+                      viewScope === s.key ? "bg-black text-[#FFD23F]" : "bg-white text-black"
                     }`}
                   >
                     {s.count.toLocaleString()}
@@ -2031,7 +2037,7 @@ export default function RecepcionCdeDashboardPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-zinc-50 text-zinc-600 font-mono uppercase text-xs border-b border-zinc-200">
+              <thead className="bg-black text-[#FFD23F] font-mono uppercase text-xs tracking-wider border-b-2 border-black">
                 <tr>
                   <th className="py-3.5 px-4 font-bold">Nº Orden</th>
                   <th className="py-3.5 px-3.5 font-bold">Cliente</th>
@@ -2049,7 +2055,7 @@ export default function RecepcionCdeDashboardPage() {
                   <th className="py-3.5 px-4 text-right font-bold">Acción</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100">
+              <tbody className="divide-y divide-black/10">
                 {paginatedTickets.length === 0 ? (
                   <tr>
                     <td
@@ -2315,10 +2321,10 @@ export default function RecepcionCdeDashboardPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleToggleCheckin(ticket)}
-                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-2xs cursor-pointer ${
+                                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-extrabold transition-all border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer ${
                                       isRecibido
-                                        ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                                        : "bg-amber-100 text-amber-900 hover:bg-amber-200 border border-amber-300"
+                                        ? "bg-[#2A9D8F] text-white hover:bg-[#238276]"
+                                        : "bg-[#FFD23F] text-black hover:bg-yellow-400"
                                     }`}
                                     title={
                                       isRecibido
@@ -2340,7 +2346,7 @@ export default function RecepcionCdeDashboardPage() {
                                   </button>
                                   {isRecibido && fechaMostrar && (
                                     <span
-                                      className="text-xs font-mono font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 block"
+                                      className="text-xs font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] block"
                                       title={`Fecha de entrega / despacho para seguimiento: ${fechaMostrar}`}
                                     >
                                       {fechaMostrar}
@@ -2354,11 +2360,11 @@ export default function RecepcionCdeDashboardPage() {
 
                         {/* Acción / Ver Detalle e Imprimir Comprobante */}
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-1.5">
+                          <div className="inline-flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => handleOpenTicketModal(ticket)}
-                              className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer border border-transparent hover:border-zinc-300"
+                              className="p-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
                               title="Ver detalles completos de la orden SATI"
                             >
                               <Eye className="w-4 h-4" />
@@ -2369,8 +2375,8 @@ export default function RecepcionCdeDashboardPage() {
                                 setAutoPrintTicket(e.shiftKey);
                                 setShowPrintModal(ticket);
                               }}
-                              className="p-2 rounded-lg text-zinc-500 hover:text-zinc-900 hover:bg-zinc-200 transition-colors cursor-pointer border border-transparent hover:border-zinc-300"
-                              title="Imprimir Comprobante SATI (Shift+Clic para imprimir directo)"
+                              className="p-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
+                              title="Imprimir Comprobante SATI con código de barras CODE128 (Shift+Clic para imprimir directo)"
                             >
                               <Printer className="w-4 h-4" />
                             </button>
@@ -2385,44 +2391,44 @@ export default function RecepcionCdeDashboardPage() {
           </div>
 
           {/* Barra de Paginación */}
-          <div className="p-4 border-t border-zinc-200 bg-zinc-50/50 flex flex-col sm:flex-row items-center justify-between gap-3">
-            <span className="text-xs text-zinc-600">
+          <div className="p-4 border-t-2 border-black bg-[#FAF6EE] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs font-mono text-black font-semibold">
               Mostrando{" "}
-              <strong className="text-zinc-900">
+              <strong className="text-black font-bold">
                 {filteredTickets.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}
               </strong>{" "}
               a{" "}
-              <strong className="text-zinc-900">
+              <strong className="text-black font-bold">
                 {Math.min(currentPage * ITEMS_PER_PAGE, filteredTickets.length)}
               </strong>{" "}
-              de <strong className="text-zinc-900">{filteredTickets.length.toLocaleString()}</strong> órdenes
+              de <strong className="text-black font-bold">{filteredTickets.length.toLocaleString()}</strong> órdenes
             </span>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage(1)}
-                className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
                 « Primera
               </button>
               <button
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="p-1 text-xs font-semibold rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
                 title="Página Anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <span className="px-3 py-1 text-xs font-mono font-bold bg-white border border-zinc-200 rounded-lg">
+              <span className="px-3.5 py-1.5 text-xs font-mono font-extrabold bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] rounded-lg">
                 {currentPage} / {totalPages}
               </span>
 
               <button
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1 text-xs font-semibold rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
                 title="Página Siguiente"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -2430,7 +2436,7 @@ export default function RecepcionCdeDashboardPage() {
               <button
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage(totalPages)}
-                className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
                 Última »
               </button>
@@ -2796,32 +2802,32 @@ export default function RecepcionCdeDashboardPage() {
               })()}
             </div>
 
-            <div className="pt-3 border-t border-zinc-200 flex items-center justify-between">
+            <div className="pt-3 border-t-2 border-black flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {!isEditingModal && (
                   <button
                     type="button"
                     onClick={() => setIsEditingModal(true)}
-                    className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-zinc-200"
+                    className="px-3 py-1.5 bg-[#FFD23F] hover:bg-yellow-400 text-black rounded-lg text-xs font-heading font-extrabold transition-all cursor-pointer flex items-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-zinc-600" />
+                    <Edit3 className="w-3.5 h-3.5 text-black" />
                     <span>Editar Fechas y Órdenes</span>
                   </button>
                 )}
                 <button
                   type="button"
                   onClick={() => setShowPrintModal(selectedTicket)}
-                  className="px-3 py-1.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5 border border-zinc-200"
-                  title="Imprimir Comprobante térmico calibrable de esta orden"
+                  className="px-3.5 py-1.5 bg-[#FFD23F] hover:bg-yellow-400 text-black rounded-lg text-xs font-heading font-extrabold transition-all cursor-pointer flex items-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                  title="Imprimir Comprobante térmico con código de barras CODE128"
                 >
-                  <Printer className="w-3.5 h-3.5 text-zinc-700" />
+                  <Printer className="w-3.5 h-3.5 text-black" />
                   <span>Imprimir Comprobante</span>
                 </button>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedTicket(null)}
-                className="px-4 py-2 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                className="px-4 py-2 bg-[#FFFDF9] hover:bg-neutral-200 text-black rounded-lg text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
               >
                 Cerrar
               </button>
@@ -2832,45 +2838,45 @@ export default function RecepcionCdeDashboardPage() {
 
       {/* Modal de Vinculación SATI Rápida (ASU ↔ CDE) */}
       {linkingTicket && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-zinc-200 space-y-4 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-[#FFFDF9] rounded-xl max-w-md w-full p-6 shadow-[6px_6px_0px_#000] border-2 border-black space-y-4 animate-in fade-in">
+            <div className="flex items-center justify-between pb-3 border-b-2 border-black">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-700">
+                <div className="w-8 h-8 rounded-lg bg-[#FFD23F] border border-black flex items-center justify-center text-black shadow-[1px_1px_0px_#000]">
                   <Link2 className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-sm text-zinc-900">
+                  <h3 className="font-heading font-extrabold text-sm text-black">
                     Vincular Cruce SATI (ASU ↔ CDE)
                   </h3>
-                  <p className="text-[11px] text-zinc-500">
-                    Sincronización bidireccional en MySQL de la nube
+                  <p className="text-[11px] text-neutral-700 font-mono font-bold">
+                    Sincronización bidireccional en MySQL
                   </p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setLinkingTicket(null)}
-                className="p-1 rounded-lg hover:bg-zinc-100 text-zinc-400 hover:text-zinc-700 cursor-pointer"
+                className="p-1 rounded-lg hover:bg-neutral-200 text-neutral-600 hover:text-black cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {/* Ficha de la Orden Actual */}
-            <div className="p-3 bg-zinc-50 rounded-xl border border-zinc-200 text-xs space-y-1.5">
+            <div className="p-3 bg-[#FAF6EE] rounded-lg border-2 border-black text-xs space-y-1.5 shadow-[2px_2px_0px_#000]">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-zinc-900 font-mono text-sm">
+                <span className="font-extrabold text-black font-mono text-sm">
                   Orden #{linkingTicket.idOrden} ({linkingTicket.origen || "ASU"})
                 </span>
-                <span className="text-[10px] px-2 py-0.5 rounded bg-zinc-200 text-zinc-700 font-bold uppercase truncate max-w-[140px]">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#FFD23F] text-black font-mono font-bold uppercase border border-black truncate max-w-[140px]">
                   {linkingTicket.cliente}
                 </span>
               </div>
-              <p className="text-zinc-600 font-medium truncate">
-                Equipo: <strong className="text-zinc-900">{linkingTicket.marca} {linkingTicket.modelo}</strong>
+              <p className="text-black font-medium truncate">
+                Equipo: <strong className="text-black">{linkingTicket.marca} {linkingTicket.modelo}</strong>
               </p>
-              <div className="flex items-center justify-between text-[11px] text-zinc-500 font-mono">
+              <div className="flex items-center justify-between text-[11px] text-neutral-700 font-mono font-semibold">
                 <span>Serial: {linkingTicket.serial || "SIN SERIAL"}</span>
                 <span>Ingreso: {linkingTicket.fechaIngreso || "-"}</span>
               </div>
@@ -2878,7 +2884,7 @@ export default function RecepcionCdeDashboardPage() {
 
             {/* Input para la orden complementaria */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-zinc-800">
+              <label className="block text-xs font-heading font-bold text-black">
                 {linkingTicket.origen === "ASU" || linkingTicket.esDanesa || parseInt(linkingTicket.idOrden, 10) < 100000
                   ? "Ingrese el N° de Orden CDE (#100000+):"
                   : "Ingrese el N° de Orden ASU (#20000+):"}
@@ -2898,7 +2904,7 @@ export default function RecepcionCdeDashboardPage() {
                     ? "Ej: 125662"
                     : "Ej: 29405"
                 }
-                className="w-full px-3 py-2 text-sm font-mono font-bold bg-white border border-zinc-300 focus:border-indigo-600 focus:ring-2 focus:ring-indigo-100 rounded-xl outline-none"
+                className="w-full px-3 py-2 text-sm font-mono font-bold bg-[#FAF6EE] border-2 border-black focus:bg-white rounded-lg shadow-[2px_2px_0px_#000] outline-none"
               />
             </div>
 

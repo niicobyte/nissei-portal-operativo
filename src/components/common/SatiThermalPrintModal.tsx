@@ -7,6 +7,7 @@ import {
   X,
   Info,
 } from "lucide-react";
+import { ThermalBarcode128 } from "@/components/common/ThermalBarcode128";
 import {
   ThermalPrintSettings,
   ThermalPaperProfile,
@@ -305,28 +306,30 @@ export function SatiThermalPrintModal({
 
       <div
         id="sati-thermal-modal-card"
-        className="bg-white rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none"
+        className="bg-[#FFFDF9] rounded-xl w-full max-w-lg p-5 border-3 border-black shadow-[6px_6px_0px_#000000] space-y-4 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none print:bg-white"
       >
         
         {/* Cabecera del modal (oculta al imprimir) */}
-        <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-3 print:hidden">
+        <div className="flex items-start justify-between gap-2 border-b-2 border-black pb-3 print:hidden">
           <div className="min-w-0">
-            <h2 className="text-base font-black text-zinc-900 flex items-center gap-2">
-              <Printer className="w-4 h-4 text-zinc-700" />
-              <span>Imprimir Comprobante SATI</span>
+            <h2 className="text-base font-heading font-extrabold text-black flex items-center gap-2">
+              <span className="p-1.5 bg-[#FFD23F] border border-black rounded shadow-[2px_2px_0px_#000]">
+                <Printer className="w-4 h-4 text-black" />
+              </span>
+              <span>COMPROBANTE TÉRMICO SATI</span>
             </h2>
-            <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
-              {activeThermalMeta.shortLabel} ({activeThermalContentMm}mm útil) · {thermalSettings.scalePct}% · {isUltraBlack ? "Negro Intenso ON" : "Estándar"}
+            <p className="text-[11px] text-zinc-700 font-mono mt-1 font-bold">
+              {activeThermalMeta.shortLabel} ({activeThermalContentMm}mm útil) · Escala {thermalSettings.scalePct}% · Barcode CODE128
             </p>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setShowThermalConfig((prev) => !prev)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-black shadow-[2px_2px_0px_#000] transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer ${
                 showThermalConfig
-                  ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
-                  : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-300"
+                  ? "bg-black text-white"
+                  : "bg-[#FFFDF9] hover:bg-[#FAF6EE] text-black"
               }`}
               title="Calibrar papel, márgenes, escala y oscuridad de tinta"
             >
@@ -336,10 +339,10 @@ export function SatiThermalPrintModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-zinc-400 hover:text-zinc-900 p-1.5 rounded-xl hover:bg-zinc-100 cursor-pointer transition-colors"
+              className="text-black hover:bg-black hover:text-white p-1.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer transition-colors"
               title="Cerrar modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -576,13 +579,18 @@ export function SatiThermalPrintModal({
               zoom: thermalSettings.scalePct / 100,
             }}
           >
-            {/* Encabezado */}
-            <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1 print:pt-0 print:mt-0`}>
-              <h1 className={`text-lg uppercase tracking-tight text-black thermal-ultra-black-title print:pt-0 print:mt-0 print:leading-none ${isUltraBlack ? "text-xl font-black" : "font-black"}`}>
-                Nissei Post-Venta
-              </h1>
-              <div className="mt-1 inline-block px-2.5 py-0.5 font-mono text-[10.5px] uppercase text-black font-black border border-black bg-white">
-                {data.subtitulo || "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI"}
+            {/* CÓDIGO DE BARRAS REAL CODE128 SUPERIOR (Exclusivo Recepción) */}
+            <div className="text-center pt-0.5 pb-2 border-b-2 border-black bg-white print:border-b-2 print:border-black">
+              <ThermalBarcode128 value={data.idOrden} height={40} width={1.8} fontSize={12} />
+            </div>
+
+            {/* Encabezado Franja Invertida Neo-Brutalista */}
+            <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1.5 print:pt-1`}>
+              <div className="bg-black text-white px-2 py-1 font-heading text-[13px] font-extrabold uppercase tracking-wider block w-full print:bg-black print:text-white">
+                NISSEI · POST-VENTA CDE
+              </div>
+              <div className="mt-1 inline-block px-2 py-0.5 font-mono text-[10px] uppercase text-black font-black border border-black bg-white">
+                {data.subtitulo || "ORDEN DE SERVICIO TÉCNICO SATI"}
               </div>
             </div>
 
@@ -746,24 +754,29 @@ export function SatiThermalPrintModal({
               </div>
             )}
 
+            {/* Línea de corte retro neo-brutalista */}
+            <div className="pt-2 text-center font-mono text-[9px] tracking-widest text-black border-t-2 border-dashed border-black">
+              - - - - - ✂ CORTAR AQUÍ ✂ - - - - -
+            </div>
+
           </div>
         </div>
 
         {/* Botones de acción inferiores (ocultos al imprimir) */}
-        <div className="pt-3 border-t border-zinc-200 flex justify-between items-center print:hidden">
+        <div className="pt-3 border-t-2 border-black flex justify-between items-center print:hidden">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-zinc-200 hover:border-zinc-400 rounded-xl text-xs font-semibold text-zinc-600 cursor-pointer transition-colors"
+            className="px-4 py-2 border-2 border-black rounded-lg text-xs font-bold text-black bg-[#FAF6EE] hover:bg-[#F4EFE6] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
           >
             Cancelar
           </button>
           <button
             type="button"
             onClick={() => window.print()}
-            className="px-5 py-2.5 bg-zinc-900 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-md transition-all cursor-pointer hover:shadow-lg active:scale-98"
+            className="px-5 py-2.5 bg-[#FFD23F] hover:bg-[#FACC15] text-black border-2 border-black rounded-lg text-xs font-heading font-extrabold flex items-center gap-2 shadow-[4px_4px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4 text-black" />
             <span>Imprimir Comprobante ({activeThermalMeta.pageWidthMm}mm)</span>
           </button>
         </div>

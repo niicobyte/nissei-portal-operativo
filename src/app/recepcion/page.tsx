@@ -2241,13 +2241,13 @@ ${dictamen.accText}`;
 
     if (visual.isDelivered) {
       return (
-        <div className="inline-flex flex-col items-start gap-0.5">
-          <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${visual.badgeClass}`}>
+        <div className="inline-flex flex-col items-start gap-1">
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-[#2A9D8F] text-white border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
             {label}
           </span>
           {fechaEntrega && (
             <span
-              className="text-[10px] font-mono font-medium text-emerald-800 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200 block"
+              className="text-[10px] font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] block"
               title={`Fecha de entrega al cliente: ${fechaEntrega}`}
             >
               {fechaEntrega}
@@ -2258,8 +2258,14 @@ ${dictamen.accText}`;
     }
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium border ${visual.badgeClass}`}>
-        {visual.isDanger && <ShieldAlert className="w-3 h-3 text-rose-600" />}
+      <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border-2 border-black shadow-[1.5px_1.5px_0px_#000] ${
+        visual.isDanger
+          ? "bg-[#E76F51] text-white"
+          : visual.readyForPickup
+          ? "bg-[#FFD23F] text-black"
+          : "bg-[#FFFDF9] text-black"
+      }`}>
+        {visual.isDanger && <ShieldAlert className="w-3.5 h-3.5 text-white" />}
         <span>{label}</span>
       </span>
     );
@@ -2267,29 +2273,32 @@ ${dictamen.accText}`;
 
   return (
     <AuthGuard requiredModule="recepcion">
-      <main className="min-h-dvh bg-[#fbf9f9] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10">
+      <main className="min-h-dvh bg-[#FAF6EE] text-[#111111] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10">
       <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 min-w-0">
         
         {/* Notificación Toast Flotante */}
         {notification && (
-          <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 bg-zinc-900 text-white px-4 py-2.5 rounded-lg text-xs font-semibold shadow-lg border border-zinc-700 flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-            {notification}
+          <div className="fixed top-4 left-3 right-3 sm:left-auto sm:right-5 sm:max-w-md z-50 bg-[#FFD23F] text-black px-4 py-2.5 rounded-lg text-xs font-heading font-extrabold shadow-[4px_4px_0px_#000] border-2 border-black flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-black shrink-0" />
+            <span>{notification}</span>
           </div>
         )}
 
-        {/* Cabecera unificada */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b border-zinc-200">
+        {/* Cabecera unificada Neo-Brutalista Retro */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b-2 border-black">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 tracking-tight">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000] mb-2">
+              <span>SATI · TALLER CDE &amp; ASU</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-[#111111] tracking-tight">
               Recepción Post-Venta &amp; Retornos
             </h1>
-            <p className="text-xs sm:text-sm text-zinc-600 mt-1 max-w-3xl">
-              Monitoreo y trazabilidad de retornos de laboratorio técnico, garantías SATI y entregas a clientes NISSEI Ciudad del Este.
+            <p className="text-xs sm:text-sm text-neutral-800 mt-1 max-w-3xl font-medium">
+              Monitoreo y trazabilidad de retornos de laboratorio técnico, garantías SATI y comprobantes con código de barras CODE128.
             </p>
           </div>
 
-          {/* Al lado del cuadrito Recepción Post-Venta: Apartado para subir CSV / Excel y actualizar estados */}
+          {/* Subir CSV / Excel y sincronización */}
           <div className="flex items-center gap-2.5 flex-wrap">
             <input
               ref={fileInputRef}
@@ -2310,17 +2319,17 @@ ${dictamen.accText}`;
                 }
               }}
               disabled={isUploadingCSV}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white border border-zinc-200 hover:border-zinc-900 text-xs font-semibold text-zinc-900 shadow-sm transition-colors cursor-pointer"
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
               title="Subir uno o varios archivos CSV o Excel (.xlsx) a la vez (ASU y/o CDE)"
             >
-              <span className="w-6 h-6 rounded bg-emerald-700 text-white flex items-center justify-center">
+              <span className="w-6 h-6 rounded bg-black text-[#FFD23F] flex items-center justify-center font-bold border border-black">
                 <Upload className="w-3.5 h-3.5" />
               </span>
               <div className="text-left leading-tight">
-                <strong className="block text-xs font-bold text-zinc-900">
+                <strong className="block text-xs font-heading font-extrabold text-black">
                   {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV / Excel"}
                 </strong>
-                <span className="text-[11px] text-zinc-500 font-normal">
+                <span className="text-[10px] text-neutral-700 font-mono font-semibold">
                   {isUploadingCSV ? "Sincronizando online" : "Uno o varios (ASU / CDE)"}
                 </span>
               </div>
@@ -3058,20 +3067,20 @@ ${dictamen.accText}`;
             />
           </div>
 
-          {/* Filtros Secundarios con Flujo de Tránsito y CleanSelect */}
-          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
+          {/* Filtros Secundarios con Flujo de Tránsito y CleanSelect (Neo-Brutalismo Retro) */}
+          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t-2 border-black">
             {/* Filtro de Flujo: Todos los servicios / En camino / Ingresada en CDE / Falta ingresar / Recibidos */}
-            <div className="flex items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs flex-wrap">
+            <div className="flex items-center gap-1.5 bg-[#FAF6EE] p-1.5 rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] flex-wrap">
               <button
                 type="button"
                 onClick={() => {
                   setTransitFilter("TODOS");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold transition-all cursor-pointer border border-black ${
                   transitFilter === "TODOS"
-                    ? "bg-white font-bold text-zinc-900 shadow-xs"
-                    : "text-zinc-500 hover:text-zinc-900"
+                    ? "bg-[#FFD23F] text-black shadow-[1px_1px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
                 }`}
               >
                 Todos los servicios
@@ -3083,16 +3092,16 @@ ${dictamen.accText}`;
                   setTransitFilter("EN_CAMINO");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
                   transitFilter === "EN_CAMINO"
-                    ? "bg-amber-500 text-white font-bold shadow-xs"
-                    : "text-amber-700 hover:bg-amber-100/60"
+                    ? "bg-[#FFD23F] text-black shadow-[1px_1px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
                 }`}
                 title="Órdenes con cruce inteligente en CDE con fecha de despacho confirmada, en tránsito de retorno hacia ASU"
               >
                 <SpeedTruck
-                  className={`w-3.5 h-3.5 ${transitFilter === "EN_CAMINO" ? "text-white" : "text-amber-700"}`}
-                  smokeColor={transitFilter === "EN_CAMINO" ? "bg-white/80" : "bg-amber-400"}
+                  className={`w-3.5 h-3.5 ${transitFilter === "EN_CAMINO" ? "text-black" : "text-black"}`}
+                  smokeColor={transitFilter === "EN_CAMINO" ? "bg-black" : "bg-amber-500"}
                 />
                 <span>En camino ({scopeEnCamino})</span>
               </button>
@@ -3103,10 +3112,10 @@ ${dictamen.accText}`;
                   setTransitFilter("INGRESADO_CDE");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
                   transitFilter === "INGRESADO_CDE"
-                    ? "bg-indigo-600 text-white font-bold shadow-xs"
-                    : "text-indigo-700 hover:bg-indigo-100/60"
+                    ? "bg-[#2A9D8F] text-white shadow-[1px_1px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
                 }`}
                 title="Órdenes que ya ingresaron a laboratorio CDE pero aún no tienen fecha de despacho"
               >
@@ -3120,14 +3129,14 @@ ${dictamen.accText}`;
                   setTransitFilter("FALTA_INGRESAR");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
                   transitFilter === "FALTA_INGRESAR"
-                    ? "bg-purple-600 text-white font-bold shadow-xs"
-                    : "text-purple-700 hover:bg-purple-100/60"
+                    ? "bg-[#E76F51] text-white shadow-[1px_1px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
                 }`}
                 title="Equipos reparados o QC con informe técnico escrito pero pendientes de recibir físicamente"
               >
-                <Inbox className="w-3 h-3" />
+                <Inbox className="w-3.5 h-3.5" />
                 <span>Falta ingresar ({scopeFaltaIngresar})</span>
               </button>
 
@@ -3137,13 +3146,13 @@ ${dictamen.accText}`;
                   setTransitFilter("RECIBIDOS");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
                   transitFilter === "RECIBIDOS"
-                    ? "bg-emerald-600 text-white font-bold shadow-xs"
-                    : "text-emerald-700 hover:bg-emerald-100/60"
+                    ? "bg-[#2A9D8F] text-white shadow-[1px_1px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
                 }`}
               >
-                <Check className="w-3 h-3" />
+                <Check className="w-3.5 h-3.5" />
                 <span>Recibidos ({scopeRecibidosCount})</span>
               </button>
 
@@ -3154,10 +3163,10 @@ ${dictamen.accText}`;
                     setTransitFilter("A_DEPOSITO");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
                     transitFilter === "A_DEPOSITO"
-                      ? "bg-rose-600 text-white font-bold shadow-xs"
-                      : "text-rose-700 hover:bg-rose-100/60"
+                      ? "bg-[#E76F51] text-white shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
                   }`}
                   title="Equipos de clientes con más de 90 días en sucursal que deben remitirse al depósito central"
                 >
@@ -3306,18 +3315,18 @@ ${dictamen.accText}`;
           </div>
         </section>
 
-        {/* Tabla de Tickets de Recepción */}
-        <section className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm">
-          <div className="p-4 border-b border-zinc-200 flex flex-wrap items-center justify-between gap-3">
+        {/* Tabla de Tickets de Recepción (Neo-Brutalismo Retro) */}
+        <section className="bg-[#FFFDF9] rounded-xl border-2 border-black overflow-hidden shadow-[4px_4px_0px_#000]">
+          <div className="p-4 border-b-2 border-black bg-[#FAF6EE] flex flex-wrap items-center justify-between gap-3">
             <div>
-              <h3 className="text-base font-bold text-zinc-900">
+              <h3 className="text-base font-heading font-extrabold text-black">
                 {viewScope === "DANESA"
                   ? `Envíos Danesa SA (Nuestra Sucursal ASU) (${filteredTickets.length})`
                   : viewScope === "CLIENTES_ASU"
                   ? `Órdenes de Clientes ASU (${filteredTickets.length})`
                   : `Tickets de Recepción & Retornos Post-Venta (${filteredTickets.length})`}
               </h3>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-neutral-800 font-medium">
                 {viewScope === "DANESA"
                   ? "Envíos directos de Danesa SA a laboratorio técnico y retornos"
                   : viewScope === "CLIENTES_ASU"
@@ -3326,7 +3335,7 @@ ${dictamen.accText}`;
               </p>
             </div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-mono text-zinc-600 bg-zinc-100 px-2.5 py-1.5 rounded-lg border border-zinc-200 tabular-nums">
+              <span className="text-xs font-mono font-bold text-black bg-[#FFFDF9] px-2.5 py-1.5 rounded-lg border-2 border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 Página {currentPage} de {totalPages} ({filteredTickets.length} resultados)
               </span>
             </div>
@@ -3334,7 +3343,7 @@ ${dictamen.accText}`;
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-zinc-50 text-zinc-600 uppercase tracking-wide border-b border-zinc-200 font-mono text-xs">
+              <thead className="bg-black text-[#FFD23F] uppercase tracking-wider border-b-2 border-black font-mono text-xs">
                 <tr>
                   <th className="py-3.5 px-4 font-bold">Nº Orden</th>
                   <th className="py-3.5 px-4 font-bold">Cliente</th>
@@ -3346,87 +3355,87 @@ ${dictamen.accText}`;
                   <th className="py-3.5 px-4 font-bold min-w-[160px] text-right">Acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 text-zinc-900">
+              <tbody className="divide-y divide-black/10 text-[#111111]">
                 {paginatedTickets.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-zinc-500 text-sm">
+                    <td colSpan={8} className="py-12 text-center text-neutral-600 font-mono text-sm">
                       No se encontraron órdenes que coincidan con los criterios de búsqueda.
                     </td>
                   </tr>
                 ) : (
                   paginatedTickets.map((ticket) => (
-                    <tr key={ticket.idOrden} className="hover:bg-zinc-50/75 transition-colors">
+                    <tr key={ticket.idOrden} className="hover:bg-[#FAF6EE] transition-colors border-b border-black/10">
                       {/* Nº Orden */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-extrabold text-zinc-900 font-mono text-sm tabular-nums">#{ticket.idOrden}</span>
+                          <span className="font-extrabold text-black font-mono text-sm tabular-nums">#{ticket.idOrden}</span>
                           {isTicketRecibido(ticket) ? (
                             <span
-                              className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#2A9D8F] text-white border border-black shadow-[1px_1px_0px_#000]"
                               title={`Recibido en depósito: ${ticket.fechaRecibidoDeposito || ''}`}
                             >
                               ✓ RECIBIDO · LISTO RETIRO
                             </span>
                           ) : isTicketEnCamino(ticket) ? (
                             <span
-                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-50 text-amber-800 border border-amber-200"
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]"
                               title={`En camino por transportadora desde CDE (Despachado: ${ticket.fechaDespachoCde || 'En tránsito'}${ticket.idOrdenCde ? ` · CDE #${ticket.idOrdenCde}` : ''})`}
                             >
-                              <SpeedTruck className="w-3.5 h-3.5 text-amber-600" smokeColor="bg-amber-400" />
+                              <SpeedTruck className="w-3.5 h-3.5 text-black" smokeColor="bg-black" />
                               <span>EN CAMINO</span>
                             </span>
                           ) : isTicketIngresadoEnCde(ticket) ? (
                             <span
-                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200"
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#FFFDF9] text-black border border-black shadow-[1px_1px_0px_#000]"
                               title={`Ingresada en laboratorio técnico CDE: ${ticket.fechaIngresoCde || 'En taller CDE'}${ticket.idOrdenCde ? ` · CDE #${ticket.idOrdenCde}` : ''}`}
                             >
-                              <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                              <Building2 className="w-3.5 h-3.5 text-black" />
                               <span>INGRESADA EN CDE</span>
                             </span>
                           ) : isTicketFaltaIngresar(ticket) ? (
                             <span
-                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-bold bg-purple-50 text-purple-700 border border-purple-200"
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#FAF6EE] text-black border border-black shadow-[1px_1px_0px_#000]"
                               title="Equipo con informe técnico listo pero pendiente de ingreso físico en recepción"
                             >
-                              <Inbox className="w-3.5 h-3.5 text-purple-600" />
+                              <Inbox className="w-3.5 h-3.5 text-black" />
                               <span>FALTA INGRESAR</span>
                             </span>
                           ) : null}
                           {isTicketNuevoIngreso(ticket) && (
-                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                               NUEVO INGRESO
                             </span>
                           )}
                           {isTicketEntregadoReciente(ticket) ? (
-                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#2A9D8F] text-white border border-black shadow-[1px_1px_0px_#000]">
                               RECIÉN ENTREGADO
                             </span>
                           ) : (
                             isTicketEstadoCambiadoReciente(ticket) && (
-                              <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                              <span className="px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                                 ESTADO CAMBIADO
                               </span>
                             )
                           )}
                           {isTicketVencidoDeposito(ticket) && (
                             <span
-                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-mono font-bold bg-rose-50 text-rose-700 border border-rose-300"
+                              className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#E76F51] text-white border border-black shadow-[1px_1px_0px_#000]"
                               title="Plazo de guarda de 90 días cumplido en sucursal. Remitir al depósito central para liberar espacio."
                             >
-                              <Package className="w-3.5 h-3.5 text-rose-600" />
+                              <Package className="w-3.5 h-3.5 text-white" />
                               <span>LLEVAR A DEPÓSITO (+90D)</span>
                             </span>
                           )}
                         </div>
                         <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="text-xs text-zinc-500 font-mono tabular-nums">Cód: {ticket.codigoProducto || "N/A"}</span>
+                          <span className="text-xs text-neutral-600 font-mono font-semibold tabular-nums">Cód: {ticket.codigoProducto || "N/A"}</span>
                           {ticket.idOrdenCde && (
-                            <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-indigo-800 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
+                            <span className="inline-flex items-center gap-1 text-xs font-mono font-bold text-black bg-[#FFFDF9] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
                               <span>CDE #{ticket.idOrdenCde}</span>
                               {ticket.fechaDespachoCde ? (
-                                <span className="text-amber-800 font-semibold">· Despacho: {ticket.fechaDespachoCde}</span>
+                                <span className="text-black font-semibold">· Despacho: {ticket.fechaDespachoCde}</span>
                               ) : ticket.fechaIngresoCde ? (
-                                <span className="text-zinc-600 font-normal">· Ingreso CDE: {ticket.fechaIngresoCde}</span>
+                                <span className="text-neutral-700 font-normal">· Ingreso CDE: {ticket.fechaIngresoCde}</span>
                               ) : null}
                             </span>
                           )}
@@ -3435,10 +3444,10 @@ ${dictamen.accText}`;
 
                       {/* Cliente */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-zinc-900 text-sm">{ticket.cliente || "Cliente Particular"}</div>
+                        <div className="font-heading font-bold text-black text-sm">{ticket.cliente || "Cliente Particular"}</div>
                         {isTicketDanesa(ticket.cliente) && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200 mt-1">
-                            <Package className="w-3.5 h-3.5 text-amber-700" />
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-mono font-bold bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000] mt-1">
+                            <Package className="w-3.5 h-3.5 text-black" />
                             <span>Danesa SA</span>
                           </span>
                         )}
@@ -3446,11 +3455,11 @@ ${dictamen.accText}`;
 
                       {/* Equipo & Categoría */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-zinc-900 truncate max-w-[220px] text-sm" title={`${ticket.marca} ${ticket.modelo}`}>
+                        <div className="font-heading font-bold text-black truncate max-w-[220px] text-sm" title={`${ticket.marca} ${ticket.modelo}`}>
                           <span className="font-extrabold">{ticket.marca}</span> {ticket.modelo}
                         </div>
                         <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                          <span className="inline-block px-2 py-0.5 rounded text-xs bg-zinc-100 text-zinc-700 font-mono font-medium">
+                          <span className="inline-block px-2 py-0.5 rounded text-xs bg-[#FAF6EE] text-black font-mono font-bold border border-black">
                             {ticket.tipoComponente || "GENERAL"}
                           </span>
                           {(() => {
@@ -3458,10 +3467,10 @@ ${dictamen.accText}`;
                             if (!ub) return null;
                             return (
                               <span
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 font-mono font-bold"
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-[#FFD23F] text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]"
                                 title={`Ubicación física: ${ub}`}
                               >
-                                <MapPin className="w-3 h-3 text-indigo-600 shrink-0" />
+                                <MapPin className="w-3 h-3 text-black shrink-0" />
                                 <span>{ub}</span>
                               </span>
                             );
@@ -3470,7 +3479,7 @@ ${dictamen.accText}`;
                       </td>
 
                       {/* Nº Serie */}
-                      <td className="py-3.5 px-4 font-mono text-xs text-zinc-700 font-medium whitespace-nowrap">
+                      <td className="py-3.5 px-4 font-mono text-xs text-neutral-800 font-bold whitespace-nowrap">
                         {ticket.serial || "S/N"}
                       </td>
 
@@ -3478,7 +3487,7 @@ ${dictamen.accText}`;
                       {(() => {
                         const formattedMensaje = formatSatiSentenceCase(ticket.mensaje);
                         return (
-                          <td className="py-3.5 px-4 text-zinc-700 max-w-xs truncate text-xs sm:text-sm" title={formattedMensaje}>
+                          <td className="py-3.5 px-4 text-neutral-800 max-w-xs truncate text-xs sm:text-sm font-medium" title={formattedMensaje}>
                             {formattedMensaje || "Sin observaciones técnicas registradas."}
                           </td>
                         );
@@ -3486,9 +3495,9 @@ ${dictamen.accText}`;
 
                       {/* Fechas */}
                       <td className="py-3.5 px-4 font-mono text-xs whitespace-nowrap tabular-nums">
-                        <div className="text-zinc-900 font-semibold">Ingreso: {ticket.fechaIngreso || "N/A"}</div>
+                        <div className="text-black font-bold">Ing: {ticket.fechaIngreso || "N/A"}</div>
                         {ticket.fechaEntregada && (
-                          <div className="text-xs text-zinc-500 mt-0.5">Entrega: {ticket.fechaEntregada}</div>
+                          <div className="text-xs text-neutral-700 mt-0.5 font-semibold">Ent: {ticket.fechaEntregada}</div>
                         )}
                       </td>
 
@@ -3504,17 +3513,17 @@ ${dictamen.accText}`;
                             <button
                               type="button"
                               onClick={() => handleAbrirParaNotificar(ticket)}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors shadow-2xs whitespace-nowrap cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-bold bg-[#2A9D8F] text-white border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all whitespace-nowrap cursor-pointer"
                               title={`Recibido · Listo para que retire el cliente (${ticket.fechaRecibidoDeposito || ''}). Click para ver detalle o re-notificar.`}
                             >
-                              <CheckCircle2 className="w-4 h-4 text-emerald-600 stroke-[2.5]" />
+                              <CheckCircle2 className="w-4 h-4 text-white stroke-[2.5]" />
                               <span>Listo retiro</span>
                             </button>
                           ) : (
                             <button
                               type="button"
                               onClick={() => handleAbrirParaNotificar(ticket)}
-                              className="p-2 text-zinc-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors flex items-center justify-center cursor-pointer border border-transparent hover:border-emerald-200"
+                              className="p-2 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all flex items-center justify-center cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                               title="Completar informe técnico para recibir y notificar al grupo"
                             >
                               <MessageSquare className="w-4 h-4" />
@@ -3523,7 +3532,7 @@ ${dictamen.accText}`;
 
                           <button
                             onClick={() => setSelectedTicket(ticket)}
-                            className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center border border-transparent hover:border-zinc-200"
+                            className="p-2 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all flex items-center justify-center cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             title="Ver Detalle Completo"
                           >
                             <Eye className="w-4 h-4" />
@@ -3534,20 +3543,20 @@ ${dictamen.accText}`;
                               setAutoPrintTicket(e.shiftKey);
                               setShowPrintModal(ticket);
                             }}
-                            className="p-2 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors flex items-center justify-center border border-transparent hover:border-zinc-200"
+                            className="p-2 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all flex items-center justify-center cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             title="Imprimir Boleta SATI (Shift+Clic para imprimir directo)"
                           >
                             <Printer className="w-4 h-4" />
                           </button>
 
                           {ticket.estado.toLowerCase() === "entregada" ? (
-                            <span className="px-2.5 py-1 bg-zinc-100 text-zinc-600 rounded-lg font-mono text-xs font-semibold">
+                            <span className="px-2.5 py-1.5 bg-neutral-200 text-black border-2 border-black rounded-lg font-mono text-xs font-bold">
                               Entregado
                             </span>
                           ) : (
                             <button
                               onClick={() => handleCambiarEstado(ticket.idOrden, "Entregada")}
-                              className="px-3 py-1.5 bg-zinc-900 hover:bg-black text-white rounded-lg font-semibold text-xs transition-colors shadow-sm cursor-pointer"
+                              className="px-3 py-1.5 bg-[#FFD23F] hover:bg-yellow-400 text-black border-2 border-black rounded-lg font-heading font-extrabold text-xs transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
                             >
                               Entregar
                             </button>
@@ -3562,44 +3571,44 @@ ${dictamen.accText}`;
           </div>
 
           {/* Barra de Paginación */}
-          <div className="p-4 border-t border-[#e5e5e5] bg-[#fcfbfb] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <span className="text-xs text-[#666666]">
+          <div className="p-4 border-t-2 border-black bg-[#FAF6EE] flex flex-col sm:flex-row items-center justify-between gap-3">
+            <span className="text-xs font-mono text-black font-semibold">
               Mostrando{" "}
-              <strong className="text-[#121212]">
+              <strong className="text-black font-bold">
                 {filteredTickets.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}
               </strong>{" "}
               a{" "}
-              <strong className="text-[#121212]">
+              <strong className="text-black font-bold">
                 {Math.min(currentPage * ITEMS_PER_PAGE, filteredTickets.length)}
               </strong>{" "}
-              de <strong className="text-[#121212]">{filteredTickets.length.toLocaleString()}</strong> tickets
+              de <strong className="text-black font-bold">{filteredTickets.length.toLocaleString()}</strong> tickets
             </span>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               <button
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage(1)}
-                className="px-2 py-1 text-xs font-semibold rounded border border-[#e5e5e5] bg-white text-[#555555] hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
                 « Primera
               </button>
               <button
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="p-1 text-xs font-semibold rounded border border-[#e5e5e5] bg-white text-[#555555] hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
                 title="Página Anterior"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <span className="px-3 py-1 text-xs font-mono font-semibold bg-white border border-[#e5e5e5] rounded">
+              <span className="px-3.5 py-1.5 text-xs font-mono font-extrabold bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] rounded-lg">
                 {currentPage} / {totalPages}
               </span>
 
               <button
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="p-1 text-xs font-semibold rounded border border-[#e5e5e5] bg-white text-[#555555] hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="p-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
                 title="Página Siguiente"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -3607,7 +3616,7 @@ ${dictamen.accText}`;
               <button
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage(totalPages)}
-                className="px-2 py-1 text-xs font-semibold rounded border border-[#e5e5e5] bg-white text-[#555555] hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
                 Última »
               </button>
@@ -3616,26 +3625,26 @@ ${dictamen.accText}`;
         </section>
 
         {/* Sección: Depósito Danesa · Monitoreo de Transportadora & Rendimiento Casa Matriz CDE */}
-        <section className="bg-white rounded-xl p-5 sm:p-6 shadow-sm border border-zinc-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <section className="bg-[#FFFDF9] rounded-xl p-5 sm:p-6 shadow-[4px_4px_0px_#000] border-2 border-black flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start gap-3.5 max-w-2xl">
-            <div className="w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-200 flex items-center justify-center shrink-0 mt-0.5">
-              <SpeedTruck className="w-5 h-5 text-zinc-800" smokeColor="bg-zinc-400" />
+            <div className="w-10 h-10 rounded-lg bg-[#FFD23F] border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center shrink-0 mt-0.5">
+              <SpeedTruck className="w-5 h-5 text-black" smokeColor="bg-black" />
             </div>
             <div className="space-y-1">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-zinc-100 border border-zinc-200 text-[10px] font-mono uppercase font-bold text-zinc-700 tracking-wider">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#FAF6EE] border-2 border-black text-[10px] font-mono uppercase font-bold text-black tracking-wider shadow-[1px_1px_0px_#000]">
                   Módulo Depósito Danesa
                 </span>
-                <span className="text-[11px] font-mono text-zinc-400">
+                <span className="text-[11px] font-mono font-bold text-neutral-700">
                   Casa Matriz CDE ↔ Sucursal ASU
                 </span>
               </div>
-              <h2 className="text-base font-bold tracking-tight text-zinc-900">
+              <h2 className="text-base font-heading font-extrabold tracking-tight text-black">
                 Monitoreo de Transportadora &amp; Rendimiento Taller Central CDE
               </h2>
-              <p className="text-xs text-zinc-500 leading-relaxed">
+              <p className="text-xs text-neutral-800 leading-relaxed font-medium">
                 Consulte el estado de los equipos enviados a Casa Matriz CDE (
-                <code className="px-1.5 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-700 font-mono text-[11px]">
+                <code className="px-1.5 py-0.5 rounded bg-[#FAF6EE] border border-black text-black font-mono text-[11px] font-bold">
                   recepcion-cde.csv
                 </code>
                 ), tiempos de resolución de laboratorio, veredictos técnicos y confirmación de llegada de cajas físicas al día siguiente en depósito.
@@ -3647,11 +3656,11 @@ ${dictamen.accText}`;
             <button
               type="button"
               onClick={handleOpenDeposito}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl shadow-xs transition-all cursor-pointer whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#FFD23F] hover:bg-yellow-400 text-black text-xs font-heading font-extrabold rounded-lg shadow-[3px_3px_0px_#000] border-2 border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer whitespace-nowrap"
             >
-              <Box className="w-4 h-4 text-zinc-300" />
+              <Box className="w-4 h-4 text-black" />
               <span>Acceder a SATI ASU - CDE</span>
-              <ArrowRight className="w-3.5 h-3.5 text-zinc-300" />
+              <ArrowRight className="w-3.5 h-3.5 text-black" />
             </button>
           </div>
         </section>
@@ -3659,32 +3668,32 @@ ${dictamen.accText}`;
         {/* Modal de Autenticación de SATI ASU - CDE */}
         {showDepositoAuthModal && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 border border-zinc-200">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <div className="bg-[#FFFDF9] rounded-xl max-w-sm w-full p-6 shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black">
+              <div className="flex items-center justify-between border-b-2 border-black pb-3">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 rounded-lg bg-amber-100 text-amber-900">
-                    <SpeedTruck className="w-4 h-4 text-amber-900" smokeColor="bg-amber-400" />
+                  <div className="p-2 rounded-lg bg-[#FFD23F] border border-black text-black shadow-[1px_1px_0px_#000]">
+                    <SpeedTruck className="w-4 h-4 text-black" smokeColor="bg-black" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-zinc-900">SATI ASU - CDE</h3>
-                    <span className="text-[10px] text-zinc-500 font-mono">Control Casa Matriz CDE &amp; Transporte</span>
+                    <h3 className="text-sm font-heading font-extrabold text-black">SATI ASU - CDE</h3>
+                    <span className="text-[10px] text-neutral-700 font-mono font-bold">Control Casa Matriz CDE &amp; Transporte</span>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowDepositoAuthModal(false)}
-                  className="text-zinc-400 hover:text-zinc-900 text-lg font-bold p-1 cursor-pointer"
+                  className="text-neutral-500 hover:text-black text-lg font-bold p-1 cursor-pointer"
                 >
                   ✕
                 </button>
               </div>
 
               <form onSubmit={handleVerifyDeposito} className="space-y-3.5">
-                <p className="text-xs text-zinc-600 leading-relaxed">
+                <p className="text-xs text-neutral-800 leading-relaxed font-medium">
                   Ingrese la clave de seguridad para acceder al panel SATI ASU - CDE de Casa Matriz y seguimiento de retornos por transportadora.
                 </p>
 
                 <div className="space-y-1">
-                  <label className="text-[11px] font-bold text-zinc-700 block">
+                  <label className="text-[11px] font-heading font-bold text-black block">
                     Contraseña de SATI ASU - CDE
                   </label>
                   <div className="relative">
@@ -3707,12 +3716,12 @@ ${dictamen.accText}`;
                       }}
                       placeholder="Ingrese contraseña de acceso..."
                       autoFocus
-                      className="w-full text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2 pr-8 focus:border-zinc-900 focus:bg-white outline-none"
+                      className="w-full text-xs bg-[#FAF6EE] border-2 border-black rounded-lg px-3 py-2 pr-8 focus:bg-white outline-none font-mono font-bold shadow-[2px_2px_0px_#000]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowDepPass(!showDepPass)}
-                      className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-700"
+                      className="absolute right-2.5 top-2.5 text-neutral-600 hover:text-black"
                     >
                       {showDepPass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     </button>
@@ -3720,7 +3729,7 @@ ${dictamen.accText}`;
                 </div>
 
                 {depositoAuthError && (
-                  <p className="text-xs text-rose-600 font-medium">
+                  <p className="text-xs text-[#E76F51] font-bold font-mono">
                     {depositoAuthError}
                   </p>
                 )}
@@ -3729,13 +3738,13 @@ ${dictamen.accText}`;
                   <button
                     type="button"
                     onClick={() => setShowDepositoAuthModal(false)}
-                    className="px-3 py-1.5 text-xs text-zinc-600 hover:text-zinc-900 rounded-lg"
+                    className="px-3 py-1.5 text-xs text-black font-bold hover:bg-neutral-200 rounded-lg border-2 border-transparent"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-zinc-900 hover:bg-black text-white text-xs font-bold rounded-lg shadow-sm transition-colors"
+                    className="px-4 py-2 bg-[#FFD23F] hover:bg-yellow-400 text-black text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                   >
                     Ingresar al Dashboard
                   </button>
@@ -3748,38 +3757,38 @@ ${dictamen.accText}`;
         {/* Modal de Detalle Completo de la Orden (Diseño Horizontal Panorámico Sin Scroll) */}
         {selectedTicket && (
           <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4 animate-in fade-in">
-            <div className="bg-white rounded-2xl max-w-6xl 2xl:max-w-7xl w-full p-4 sm:p-5 shadow-2xl space-y-3 border border-[#e5e5e5] max-h-[95dvh] overflow-y-auto overscroll-contain">
+            <div className="bg-[#FFFDF9] rounded-xl max-w-6xl 2xl:max-w-7xl w-full p-4 sm:p-5 shadow-[6px_6px_0px_#000] space-y-3 border-2 border-black max-h-[95dvh] overflow-y-auto overscroll-contain">
               {/* Cabecera Horizontal Compacta */}
-              <div className="flex items-center justify-between border-b border-[#e5e5e5] pb-2.5 gap-3 flex-wrap">
+              <div className="flex items-center justify-between border-b-2 border-black pb-2.5 gap-3 flex-wrap">
                 <div className="flex items-center gap-3 flex-wrap min-w-0">
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-mono text-[#888888] uppercase tracking-wider">
+                      <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-wider font-bold">
                         DETALLE DE ORDEN SATI
                       </span>
-                      <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-zinc-100 text-zinc-800 border border-zinc-200">
+                      <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                         {selectedTicket.tipoComponente}
                       </span>
-                      <span className="text-[11px] font-mono text-zinc-500">
-                        S/N: <strong className="text-zinc-800">{selectedTicket.serial || "N/A"}</strong>
+                      <span className="text-[11px] font-mono text-neutral-700">
+                        S/N: <strong className="text-black">{selectedTicket.serial || "N/A"}</strong>
                       </span>
                     </div>
-                    <h3 className="text-base sm:text-lg 2xl:text-xl font-extrabold text-[#121212] truncate">
+                    <h3 className="text-base sm:text-lg 2xl:text-xl font-heading font-extrabold text-black truncate">
                       Orden #{selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
                     </h3>
                   </div>
 
                   {selectedTicket.idOrdenCde && (
-                    <div className="px-2.5 py-1.5 bg-indigo-50/90 border border-indigo-200 rounded-xl flex items-center gap-2 text-xs text-indigo-950 flex-wrap">
-                      <span className="px-2 py-0.5 rounded bg-indigo-600 text-white font-mono text-[11px] font-bold">
+                    <div className="px-2.5 py-1.5 bg-[#FAF6EE] border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] flex items-center gap-2 text-xs text-black flex-wrap">
+                      <span className="px-2 py-0.5 rounded bg-black text-[#FFD23F] font-mono text-[11px] font-bold">
                         ASU #{selectedTicket.idOrden} ↔ CDE #{selectedTicket.idOrdenCde}
                       </span>
-                      <span className="font-medium text-[11px]">
+                      <span className="font-bold text-[11px]">
                         {selectedTicket.matchReason || "Match: Cliente & Equipo"}
                       </span>
                       {selectedTicket.estadoCde && (
-                        <span className="text-zinc-600 text-[11px] border-l border-indigo-200 pl-2">
-                          CDE: <strong className="text-zinc-900 font-bold">{selectedTicket.estadoCde}</strong>
+                        <span className="text-neutral-700 text-[11px] border-l-2 border-black pl-2">
+                          CDE: <strong className="text-black font-extrabold">{selectedTicket.estadoCde}</strong>
                         </span>
                       )}
                     </div>
@@ -3790,7 +3799,7 @@ ${dictamen.accText}`;
                   {getStatusBadge(selectedTicket.estado)}
                   <button
                     onClick={() => setSelectedTicket(null)}
-                    className="text-[#888888] hover:text-[#121212] text-lg font-bold px-2 py-1 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer"
+                    className="text-black hover:bg-neutral-200 text-lg font-bold px-2 py-1 rounded-lg border-2 border-transparent hover:border-black transition-colors cursor-pointer"
                     title="Cerrar ventana"
                   >
                     ✕
@@ -3799,77 +3808,77 @@ ${dictamen.accText}`;
               </div>
 
               {isTicketVencidoDeposito(selectedTicket) && (
-                <div className="bg-rose-50 border border-rose-300 px-3 py-2 rounded-xl flex items-center gap-2.5 text-rose-900 text-xs">
-                  <Package className="w-4 h-4 text-rose-600 shrink-0" />
+                <div className="bg-[#E76F51]/10 border-2 border-[#E76F51] px-3 py-2 rounded-lg flex items-center gap-2.5 text-black text-xs font-medium">
+                  <Package className="w-4 h-4 text-[#E76F51] shrink-0" />
                   <div>
-                    <strong className="font-bold">Equipo para remisión a depósito (+90 días): </strong>
+                    <strong className="font-extrabold">Equipo para remisión a depósito (+90 días): </strong>
                     <span>Cumplió el plazo máximo de 90 días de permanencia en sucursal ASU. Remitir al depósito central.</span>
                   </div>
                 </div>
               )}
 
               {/* Barra Horizontal de Metadatos del Cliente y Fechas (100% Alineada y Nombre Completo) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 bg-[#f9f9f9] px-3.5 py-2.5 rounded-xl border border-[#f0f0f0] text-xs items-start">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 bg-[#FAF6EE] px-3.5 py-2.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] text-xs items-start">
                 <div className="min-w-0">
-                  <span className="text-zinc-500 block text-[11px] font-semibold">Cliente</span>
-                  <strong className="text-zinc-900 text-xs sm:text-sm break-words leading-snug block">
+                  <span className="text-neutral-700 block text-[11px] font-bold">Cliente</span>
+                  <strong className="text-black text-xs sm:text-sm break-words leading-snug block font-heading">
                     {selectedTicket.cliente}
                   </strong>
                 </div>
                 <div className="min-w-0">
-                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Código Producto</span>
-                  <strong className="text-zinc-900 font-mono text-xs sm:text-sm truncate block">
+                  <span className="text-neutral-700 block text-[11px] font-bold truncate">Código Producto</span>
+                  <strong className="text-black font-mono text-xs sm:text-sm truncate block font-bold">
                     {selectedTicket.codigoProducto || "N/A"}
                   </strong>
                 </div>
                 <div className="min-w-0">
-                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Ingreso ASU / Venta</span>
-                  <strong className="text-zinc-900 font-mono text-xs truncate block" title={`Ingreso ASU: ${selectedTicket.fechaIngreso || "N/A"}`}>
+                  <span className="text-neutral-700 block text-[11px] font-bold truncate">Ingreso ASU / Venta</span>
+                  <strong className="text-black font-mono text-xs truncate block font-bold" title={`Ingreso ASU: ${selectedTicket.fechaIngreso || "N/A"}`}>
                     Ing: {selectedTicket.fechaIngreso || "N/A"}
                   </strong>
                   {selectedTicket.fechaVenta && (
-                    <span className="text-zinc-500 font-mono text-[11px] truncate block">
+                    <span className="text-neutral-700 font-mono text-[11px] truncate block font-semibold">
                       Vta: {selectedTicket.fechaVenta}
                     </span>
                   )}
                 </div>
                 <div className="min-w-0">
-                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Laboratorio CDE</span>
+                  <span className="text-neutral-700 block text-[11px] font-bold truncate">Laboratorio CDE</span>
                   {selectedTicket.fechaDespachoCde ? (
-                    <strong className="text-amber-800 font-mono text-xs flex items-center gap-1 font-bold truncate" title={`Despacho CDE: ${selectedTicket.fechaDespachoCde}`}>
+                    <strong className="text-black font-mono text-xs flex items-center gap-1 font-bold truncate" title={`Despacho CDE: ${selectedTicket.fechaDespachoCde}`}>
                       <span className="shrink-0">🚚</span>
                       <span className="truncate">{selectedTicket.fechaDespachoCde}</span>
                     </strong>
                   ) : selectedTicket.fechaIngresoCde ? (
-                    <strong className="text-zinc-900 font-mono text-xs truncate block" title={`Ingreso CDE: ${selectedTicket.fechaIngresoCde}`}>
+                    <strong className="text-black font-mono text-xs truncate block font-bold" title={`Ingreso CDE: ${selectedTicket.fechaIngresoCde}`}>
                       Ing CDE: {selectedTicket.fechaIngresoCde}
                     </strong>
                   ) : (
-                    <span className="text-zinc-400 text-xs italic block truncate">Local ASU</span>
+                    <span className="text-neutral-600 text-xs italic block truncate">Local ASU</span>
                   )}
                 </div>
                 <div className="min-w-0">
-                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Recepción Sucursal</span>
+                  <span className="text-neutral-700 block text-[11px] font-bold truncate">Recepción Sucursal</span>
                   {selectedTicket.recibidoEnDeposito ? (
-                    <strong className="text-emerald-700 font-bold flex items-center gap-1 font-sans text-xs truncate">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <strong className="text-[#2A9D8F] font-bold flex items-center gap-1 font-sans text-xs truncate">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#2A9D8F] shrink-0" />
                       <span className="truncate">{selectedTicket.fechaRecibidoDeposito || "Listo retiro"}</span>
                     </strong>
                   ) : (
-                    <strong className="text-zinc-400 font-sans text-xs italic block truncate">
+                    <strong className="text-neutral-600 font-sans text-xs italic block truncate">
                       Pendiente físico
                     </strong>
                   )}
                 </div>
                 <div className="min-w-0">
-                  <span className="text-zinc-500 block text-[11px] font-semibold truncate">Entrega / Taller</span>
+                  <span className="text-neutral-700 block text-[11px] font-bold truncate">Entrega / Taller</span>
                   {(selectedTicket.estado || "").toLowerCase().includes("entregada") && selectedTicket.fechaEntregada ? (
-                    <strong className="text-zinc-900 font-mono text-xs block truncate">{selectedTicket.fechaEntregada}</strong>
+                    <strong className="text-black font-mono text-xs block truncate font-bold">{selectedTicket.fechaEntregada}</strong>
                   ) : (
-                    <strong className="text-zinc-400 font-sans text-xs italic block truncate">Pendiente de retiro</strong>
+                    <strong className="text-neutral-600 font-sans text-xs italic block truncate">Pendiente de retiro</strong>
                   )}
                   {selectedTicket.diasResolucion !== null && selectedTicket.diasResolucion !== undefined && (
-                    <span className="text-zinc-700 font-mono text-[11px] font-bold block truncate">
+                    <span className="text-black font-mono text-[11px] font-bold block truncate">
                       {selectedTicket.diasResolucion} días en taller
                     </span>
                   )}
@@ -4221,19 +4230,19 @@ ${dictamen.accText}`;
               </div>
 
               {/* Pie de Acciones Horizontal Compacto */}
-              <div className="pt-2.5 border-t border-[#e5e5e5] flex justify-between items-center gap-2 flex-wrap">
+              <div className="pt-2.5 border-t-2 border-black flex justify-between items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
                   {isTicketDanesa(selectedTicket.cliente) ? (
                     <button
                       type="button"
                       onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                      className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-colors ${
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-heading font-extrabold shadow-[2px_2px_0px_#000] border-2 border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all ${
                         selectedTicket.recibidoEnDeposito
-                          ? "bg-zinc-800 hover:bg-zinc-900"
-                          : "bg-emerald-600 hover:bg-emerald-700"
+                          ? "bg-black text-[#FFD23F]"
+                          : "bg-[#2A9D8F] text-white"
                       }`}
                     >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                      <CheckCircle2 className="w-4 h-4 text-white" />
                       <span>
                         {selectedTicket.recibidoEnDeposito
                           ? "Recibido en Sucursal (Actualizar)"
@@ -4244,20 +4253,20 @@ ${dictamen.accText}`;
                     <button
                       type="button"
                       onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                      className={`inline-flex items-center gap-2 px-4 py-2 text-white rounded-xl text-xs sm:text-sm font-bold shadow-sm cursor-pointer transition-colors ${
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-heading font-extrabold shadow-[2px_2px_0px_#000] border-2 border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all ${
                         selectedTicket.recibidoEnDeposito
-                          ? "bg-emerald-700 hover:bg-emerald-800"
-                          : "bg-emerald-600 hover:bg-emerald-700"
+                          ? "bg-[#2A9D8F] text-white"
+                          : "bg-[#FFD23F] text-black"
                       }`}
                     >
                       {selectedTicket.recibidoEnDeposito ? (
                         <>
-                          <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                          <CheckCircle2 className="w-4 h-4 text-white" />
                           <span>Recibido · Listo para retiro (Re-notificar)</span>
                         </>
                       ) : (
                         <>
-                          <MessageSquare className="w-4 h-4" />
+                          <MessageSquare className="w-4 h-4 text-black" />
                           <span>Notificar por WhatsApp &amp; Marcar Recibido</span>
                         </>
                       )}
@@ -4270,17 +4279,17 @@ ${dictamen.accText}`;
                       setAutoPrintTicket(e.shiftKey);
                       setShowPrintModal(selectedTicket);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 rounded-xl text-xs sm:text-sm font-bold border border-zinc-200 transition-colors cursor-pointer"
-                    title="Imprimir comprobante térmico (Shift+Clic para imprimir directo)"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#FFD23F] hover:bg-yellow-400 text-black rounded-lg text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+                    title="Imprimir comprobante térmico con código de barras CODE128 (Shift+Clic para imprimir directo)"
                   >
-                    <Printer className="w-4 h-4 text-zinc-700" />
-                    <span>Imprimir Comprobante</span>
+                    <Printer className="w-4 h-4 text-black" />
+                    <span>Imprimir Boleta Térmica</span>
                   </button>
                 </div>
 
                 <button
                   onClick={() => setSelectedTicket(null)}
-                  className="px-5 py-2 bg-[#1c1c1e] hover:bg-black text-white rounded-xl text-xs sm:text-sm font-bold transition-colors cursor-pointer"
+                  className="px-5 py-2 bg-[#FFFDF9] hover:bg-neutral-200 text-black rounded-lg text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                 >
                   Cerrar
                 </button>

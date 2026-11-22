@@ -27,28 +27,30 @@ export function HeaderActions({
   extraActions,
 }: HeaderActionsProps) {
   return (
-    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-6 border-b border-zinc-200">
-      <div className="space-y-1">
+    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-6 border-b-2 border-black">
+      <div className="space-y-1.5">
         {!hideBadge && (
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/login"
-              className="inline-flex items-center px-2 py-0.5 rounded bg-zinc-900 text-white text-xs font-mono font-medium hover:bg-black transition-colors"
+              className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] transition-transform"
             >
               NISSEI OPS
             </Link>
-            <span className="text-xs text-zinc-500 font-mono">CDE · Sucursal Central</span>
+            <span className="text-xs text-black font-mono font-bold px-2 py-0.5 rounded-full bg-[#FFFDF9] border-2 border-black shadow-[2px_2px_0px_#000]">
+              CDE · Sucursal Central
+            </span>
             {activeModule && (
-              <span className="text-xs font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 border border-zinc-200">
+              <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#2A9D8F] text-white border-2 border-black shadow-[2px_2px_0px_#000]">
                 {activeModule === "recepcion" ? "Módulo Post-Venta" : "Módulo Montajes"}
               </span>
             )}
           </div>
         )}
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-zinc-900">
+        <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-[#111111]">
           {title}
         </h1>
-        <p className="text-xs sm:text-sm text-zinc-600 max-w-3xl">
+        <p className="text-xs sm:text-sm text-neutral-800 font-medium max-w-3xl">
           {subtitle}
         </p>
       </div>
@@ -64,7 +66,7 @@ export function HeaderActions({
         {newActionLabel && newActionHref && (
           <Link
             href={newActionHref}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-zinc-900 hover:bg-black text-white text-xs sm:text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs sm:text-sm font-heading font-extrabold px-4 py-2 rounded-lg border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
           >
             <span>{newActionLabel}</span>
           </Link>

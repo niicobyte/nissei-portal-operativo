@@ -1,31 +1,118 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: 'Roboto Mono', monospace;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'Space Mono', monospace;
+  --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --breakpoint-xs: 24rem;
   --breakpoint-3xl: 120rem;
   --breakpoint-4xl: 155rem;
 }
 
 :root {
-  /* Hallmark Anti-AI-Slop Token System */
-  --bg-main: #f8f9fa;
-  --bg-surface: #ffffff;
-  --bg-surface-subtle: #f1f3f5;
-  --bg-surface-dim: #e9ecef;
+  /* Neo-Brutalismo Retro (70s Palette & Hard Token System) */
+  --bg-main: #FAF6EE;
+  --bg-surface: #FFFDF9;
+  --bg-surface-subtle: #F4EFE6;
+  --bg-surface-dim: #EADFCF;
 
-  --border-light: #e5e7eb;
-  --border-subtle: #f3f4f6;
-  --border-active: #111827;
+  --retro-mustard: #FFD23F;
+  --retro-forest: #2A9D8F;
+  --retro-coral: #E76F51;
+  --retro-black: #111111;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --text-light: #94a3b8;
+  --border-light: #111111;
+  --border-subtle: #000000;
+  --border-active: #000000;
 
-  --font-roboto: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-roboto-mono: 'Roboto Mono', monospace;
+  --text-primary: #111111;
+  --text-secondary: #262626;
+  --text-muted: #4b5563;
+  --text-light: #6b7280;
+
+  --font-space-grotesk: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-space-mono: 'Space Mono', monospace;
+  --font-jakarta: 'Plus Jakarta Sans', sans-serif;
+}
+
+/* Headings default to Space Grotesk */
+h1, h2, h3, .font-heading {
+  font-family: var(--font-space-grotesk);
+}
+
+/* Neo-Brutalism Design Utilities */
+.neo-border {
+  border: 2px solid #000000;
+}
+.neo-border-3 {
+  border: 3px solid #000000;
+}
+.neo-shadow {
+  box-shadow: 4px 4px 0px #000000;
+}
+.neo-shadow-sm {
+  box-shadow: 2px 2px 0px #000000;
+}
+.neo-shadow-lg {
+  box-shadow: 6px 6px 0px #000000;
+}
+.neo-card {
+  background-color: #FFFDF9;
+  border: 2px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  border-radius: 8px;
+}
+.neo-card-modal {
+  background-color: #FFFDF9;
+  border: 3px solid #000000;
+  box-shadow: 6px 6px 0px #000000;
+  border-radius: 10px;
+}
+.neo-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+  border-radius: 8px;
+  font-weight: 700;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  cursor: pointer;
+}
+.neo-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 5px 5px 0px #000000;
+}
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #000000;
+}
+.neo-btn-primary {
+  background-color: #FFD23F;
+  color: #000000;
+}
+.neo-btn-secondary {
+  background-color: #2A9D8F;
+  color: #FFFFFF;
+}
+.neo-btn-coral {
+  background-color: #E76F51;
+  color: #FFFFFF;
+}
+.neo-pill {
+  border-radius: 9999px;
+  border: 2px solid #000000;
+}
+.neo-interactive {
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.neo-interactive:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0px #000000;
+}
+.neo-interactive:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #000000;
 }
 
 /* Escalado fluido multi-resolución y multi-DPI (solo pantalla; impresión térmica aislada abajo) */
@@ -438,11 +525,23 @@ samp {
     height: auto !important;
     background: #ffffff !important;
     color: #000000 !important;
+    box-shadow: none !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+
+  @page {
+    margin: 2mm;
+    size: auto;
+  }
+
+  /* Eliminar toda sombra en impresión para evitar manchas en papel térmico */
+  body.thermal-80mm-print * {
+    box-shadow: none !important;
+    text-shadow: none !important;
   }
 
   /* Si está activo el modo térmico, ocultar el flujo de la aplicación para no generar hojas extra */

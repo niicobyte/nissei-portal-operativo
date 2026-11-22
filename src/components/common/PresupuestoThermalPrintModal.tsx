@@ -268,27 +268,29 @@ export function PresupuestoThermalPrintModal({
 
       <div
         id="thermal-print-modal-card"
-        className="bg-white rounded-2xl w-full max-w-lg p-5 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-full print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none print:bg-transparent print:static print:block print:min-h-0 print:h-auto"
+        className="bg-[#FFFDF9] rounded-xl w-full max-w-lg p-5 border-3 border-black shadow-[6px_6px_0px_#000000] space-y-4 max-h-[92dvh] overflow-y-auto overscroll-contain print:w-full print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none print:bg-transparent print:static print:block print:min-h-0 print:h-auto"
       >
         {/* Cabecera del modal (oculta al imprimir) */}
-        <div className="flex items-start justify-between gap-2 border-b border-zinc-200 pb-3 print:hidden">
+        <div className="flex items-start justify-between gap-2 border-b-2 border-black pb-3 print:hidden">
           <div className="min-w-0">
-            <h2 className="text-base font-black text-zinc-900 flex items-center gap-2">
-              <Printer className="w-4 h-4 text-zinc-700" />
-              <span>Imprimir Ticket de Presupuesto</span>
+            <h2 className="text-base font-heading font-extrabold text-black flex items-center gap-2">
+              <span className="p-1.5 bg-[#FFD23F] border border-black rounded shadow-[2px_2px_0px_#000]">
+                <Printer className="w-4 h-4 text-black" />
+              </span>
+              <span>TICKET DE PRESUPUESTO PC</span>
             </h2>
-            <p className="text-[11px] text-zinc-500 font-mono mt-0.5">
-              Formato Térmico {activeThermalMeta.shortLabel} ({activeThermalContentMm}mm) · {thermalSettings.scalePct}%
+            <p className="text-[11px] text-zinc-700 font-mono mt-1 font-bold">
+              Formato Térmico {activeThermalMeta.shortLabel} ({activeThermalContentMm}mm) · Escala {thermalSettings.scalePct}%
             </p>
           </div>
-          <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setShowThermalConfig((prev) => !prev)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-colors cursor-pointer ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border-2 border-black shadow-[2px_2px_0px_#000] transition-transform active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer ${
                 showThermalConfig
-                  ? "bg-zinc-900 text-white border-zinc-900 shadow-sm"
-                  : "bg-zinc-100 hover:bg-zinc-200 text-zinc-800 border-zinc-300"
+                  ? "bg-black text-white"
+                  : "bg-[#FFFDF9] hover:bg-[#FAF6EE] text-black"
               }`}
               title="Calibrar papel, márgenes, escala y oscuridad de tinta"
             >
@@ -298,10 +300,10 @@ export function PresupuestoThermalPrintModal({
             <button
               type="button"
               onClick={onClose}
-              className="text-zinc-400 hover:text-zinc-900 p-1.5 rounded-xl hover:bg-zinc-100 cursor-pointer transition-colors"
+              className="text-black hover:bg-black hover:text-white p-1.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer transition-colors"
               title="Cerrar modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -554,14 +556,14 @@ export function PresupuestoThermalPrintModal({
               zoom: thermalSettings.scalePct / 100,
             }}
           >
-            {/* Encabezado NISSEI */}
-            <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1`}>
-              <h1 className="text-xl uppercase tracking-wider font-black text-black">
-                NISSEI
-              </h1>
-              <p className="text-[10px] font-mono tracking-tight font-bold text-black uppercase">
-                PRESUPUESTO DE MONTAJE
-              </p>
+            {/* Encabezado Franja Invertida Neo-Brutalista (SIN CÓDIGO DE BARRAS) */}
+            <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1.5`}>
+              <div className="bg-black text-white px-2 py-1 font-heading text-[13px] font-extrabold uppercase tracking-wider block w-full print:bg-black print:text-white">
+                NISSEI · TALLER & POST-VENTA CDE
+              </div>
+              <div className="mt-1 inline-block px-2 py-0.5 font-mono text-[10px] uppercase text-black font-black border border-black bg-white">
+                PRESUPUESTO DE ENSAMBLE DE PC
+              </div>
             </div>
 
             {/* Metadatos: Vendedor, Cliente, Fecha */}
@@ -640,58 +642,65 @@ export function PresupuestoThermalPrintModal({
               </div>
             </div>
 
-            {/* Totales */}
+            {/* Bloque Destacado de Totales Neo-Brutalista con Doble Borde */}
             <div className="pt-2 border-t-2 border-black space-y-1 font-mono">
-              <div className="flex justify-between items-center text-[13px] font-black">
-                <span>TOTAL (GS):</span>
-                <span className="text-[15px] font-black">
-                  ₲ {data.totalPyg.toLocaleString("es-PY")}
-                </span>
+              <div className="border-4 border-double border-black p-2 bg-white space-y-1">
+                <div className="flex justify-between items-center text-[13px] font-black font-heading">
+                  <span>TOTAL OFICIAL WEB (GS):</span>
+                  <span className="text-[16px] font-black font-mono">
+                    ₲ {data.totalPyg.toLocaleString("es-PY")}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-[11px] font-bold">
+                  <span>EQUIVALENTE EN USD:</span>
+                  <span className="font-black">
+                    US${" "}
+                    {data.totalUsd.toLocaleString("es-PY", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                </div>
               </div>
-              <div className="flex justify-between items-center text-[11px] font-bold">
-                <span>EQUIVALENTE EN USD:</span>
-                <span className="font-black">
-                  US${" "}
-                  {data.totalUsd.toLocaleString("es-PY", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </span>
-              </div>
-              <div className="text-[9.5px] font-bold text-black/80 pt-0.5">
-                (T.C. Referencial: ₲ {data.tipoCambio.toLocaleString("es-PY")} · IVA Incluido)
+              <div className="text-[9.5px] font-bold text-black/90 pt-0.5 text-center">
+                (TC Dólar del Día: ₲ {data.tipoCambio.toLocaleString("es-PY")} · IVA 10% Incluido)
               </div>
             </div>
 
             {/* Pie Legal Obligatorio */}
-            <div className="pt-3 border-t border-black text-center space-y-1 font-mono">
-              <div className="border border-black p-1.5 bg-white">
-                <p className="text-[10.5px] font-black uppercase leading-tight text-black">
+            <div className="pt-2 border-t border-black text-center space-y-1 font-mono">
+              <div className="border border-black p-1 bg-white">
+                <p className="text-[10px] font-black uppercase leading-tight text-black">
                   *** PRESUPUESTO SUJETO A VARIACIÓN SEGÚN COTIZACIÓN ***
                 </p>
               </div>
-              <p className="text-[9px] font-bold text-black/80 pt-1 leading-tight uppercase">
-                Garantía oficial de 3 meses en componentes
+              <p className="text-[9px] font-bold text-black/80 leading-tight uppercase">
+                Garantía oficial 3 meses en componentes · www.nissei.com
               </p>
+            </div>
+
+            {/* Línea de corte retro */}
+            <div className="pt-2 text-center font-mono text-[9px] tracking-widest text-black border-t-2 border-dashed border-black">
+              - - - - - ✂ CORTAR AQUÍ ✂ - - - - -
             </div>
           </div>
         </div>
 
         {/* Botones de Acción del Modal */}
-        <div className="pt-3 border-t border-zinc-200 flex items-center justify-end gap-2.5 print:hidden">
+        <div className="pt-3 border-t-2 border-black flex items-center justify-end gap-2.5 print:hidden">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-zinc-100 hover:bg-zinc-200 text-zinc-700 transition-colors cursor-pointer"
+            className="px-4 py-2 border-2 border-black rounded-lg text-xs font-bold text-black bg-[#FAF6EE] hover:bg-[#F4EFE6] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
           >
             Cerrar
           </button>
           <button
             type="button"
             onClick={handlePrint}
-            className="px-5 py-2.5 rounded-xl text-xs font-bold bg-zinc-900 hover:bg-black text-white flex items-center gap-2 shadow-sm transition-all cursor-pointer"
+            className="px-5 py-2.5 bg-[#FFD23F] hover:bg-[#FACC15] text-black border-2 border-black rounded-lg text-xs font-heading font-extrabold flex items-center gap-2 shadow-[4px_4px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
           >
-            <Printer className="w-4 h-4" />
+            <Printer className="w-4 h-4 text-black" />
             <span>Imprimir Ticket Térmico</span>
           </button>
         </div>

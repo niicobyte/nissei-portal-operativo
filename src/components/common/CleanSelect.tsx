@@ -133,18 +133,18 @@ export function CleanSelect({
           if (!isOpen) updatePopoverPosition();
           setIsOpen((prev) => !prev);
         }}
-        className={`inline-flex items-center justify-between gap-2 ${pxClass} ${pyClass} ${textClass} font-semibold rounded-xl border transition-all duration-150 cursor-pointer shadow-sm select-none ${
+        className={`inline-flex items-center justify-between gap-2 ${pxClass} ${pyClass} ${textClass} font-bold rounded-lg border-2 border-black transition-all duration-150 cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none select-none ${
           isFull ? "w-full" : ""
         } ${
           isOpen
-            ? "border-zinc-900 ring-2 ring-zinc-900/10 bg-white text-zinc-900"
+            ? "border-black bg-[#FFFDF9] text-black"
             : selectedOption && selectedOption.value !== "TODOS" && selectedOption.value !== "NINGUNO" && activeClassName
             ? activeClassName
-            : "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-800 hover:border-zinc-300"
+            : "bg-[#FFFDF9] hover:bg-[#FAF6EE] border-black text-black"
         } ${className}`}
       >
         <div className="flex items-center gap-1.5 truncate">
-          {icon && <span className="shrink-0 text-zinc-500">{icon}</span>}
+          {icon && <span className="shrink-0 text-black">{icon}</span>}
           {selectedOption?.icon && (
             <span className="shrink-0">{selectedOption.icon}</span>
           )}
@@ -153,8 +153,8 @@ export function CleanSelect({
           </span>
           {selectedOption?.badge !== undefined && (
             <span
-              className={`ml-1 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full ${
-                selectedOption.badgeColor || "bg-zinc-100 text-zinc-700 border border-zinc-200"
+              className={`ml-1 text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-full border border-black ${
+                selectedOption.badgeColor || "bg-[#FFD23F] text-black"
               }`}
             >
               {selectedOption.badge}
@@ -162,8 +162,8 @@ export function CleanSelect({
           )}
         </div>
         <ChevronDown
-          className={`w-3.5 h-3.5 text-zinc-400 shrink-0 transition-transform duration-200 ${
-            isOpen ? "rotate-180 text-zinc-800" : ""
+          className={`w-3.5 h-3.5 text-black shrink-0 transition-transform duration-200 ${
+            isOpen ? "rotate-180" : ""
           }`}
         />
       </button>
@@ -183,12 +183,12 @@ export function CleanSelect({
           }
           className={`absolute ${
             align === "right" ? "right-0" : "left-0"
-          } mt-1.5 ${dropdownWidth || (isFull ? "w-full" : "w-64")} min-w-[180px] max-w-[calc(100vw-1.5rem)] max-h-[min(18rem,55dvh)] overflow-y-auto overscroll-contain bg-white rounded-xl border border-zinc-200 shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-150`}
+          } mt-1.5 ${dropdownWidth || (isFull ? "w-full" : "w-64")} min-w-[180px] max-w-[calc(100vw-1.5rem)] max-h-[min(18rem,55dvh)] overflow-y-auto overscroll-contain bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] p-1.5 z-50 animate-in fade-in zoom-in-95 duration-150`}
         >
           {searchable && (
-            <div className="p-1 border-b border-zinc-100 mb-1 sticky top-0 bg-white/95 backdrop-blur-xs z-10">
+            <div className="p-1 border-b-2 border-black mb-1 sticky top-0 bg-[#FFFDF9] z-10">
               <div className="relative flex items-center">
-                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 pointer-events-none" />
+                <Search className="w-3.5 h-3.5 text-neutral-600 absolute left-2.5 pointer-events-none" />
                 <input
                   ref={searchInputRef}
                   type="text"
@@ -202,7 +202,7 @@ export function CleanSelect({
                     e.stopPropagation();
                   }}
                   placeholder={searchPlaceholder}
-                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-900 focus:bg-white transition-all"
+                  className="w-full pl-8 pr-7 py-1.5 text-xs bg-[#FAF6EE] border-2 border-black rounded-lg text-black placeholder-neutral-500 font-medium focus:outline-none focus:bg-white transition-all"
                 />
                 {searchQuery && (
                   <button
@@ -212,7 +212,7 @@ export function CleanSelect({
                       setSearchQuery("");
                       searchInputRef.current?.focus();
                     }}
-                    className="absolute right-2 text-zinc-400 hover:text-zinc-600 p-0.5"
+                    className="absolute right-2 text-black hover:text-neutral-700 p-0.5 cursor-pointer"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -223,7 +223,7 @@ export function CleanSelect({
 
           <div className="space-y-0.5">
             {filteredOptions.length === 0 ? (
-              <div className="py-4 px-2 text-center text-xs text-zinc-400 font-medium">
+              <div className="py-4 px-2 text-center text-xs text-neutral-500 font-medium">
                 No se encontraron opciones
               </div>
             ) : (
@@ -238,10 +238,10 @@ export function CleanSelect({
                       setSearchQuery("");
                       setIsOpen(false);
                     }}
-                    className={`flex items-center justify-between w-full px-2.5 py-2 text-xs font-semibold rounded-lg text-left transition-colors cursor-pointer ${
+                    className={`flex items-center justify-between w-full px-2.5 py-2 text-xs font-bold rounded-lg text-left transition-colors cursor-pointer ${
                       isSelected
-                        ? "bg-zinc-900 text-white shadow-sm font-bold"
-                        : "text-zinc-700 hover:bg-zinc-100 hover:text-zinc-900"
+                        ? "bg-black text-[#FFD23F] border border-black shadow-[2px_2px_0px_#000]"
+                        : "text-black hover:bg-[#FAF6EE] hover:border hover:border-black"
                     }`}
                   >
                     <div className="flex items-center gap-2 truncate">

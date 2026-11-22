@@ -27,11 +27,11 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Roboto+Mono:wght@300;400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap"
           rel="stylesheet"
         />
       </head>
-      <body className="font-sans min-h-dvh bg-[#fbf9f9] text-[#121212] antialiased selection:bg-[#e2e2e2] selection:text-[#121212]">
+      <body className="font-sans min-h-dvh bg-[#FAF6EE] text-[#111111] antialiased selection:bg-[#FFD23F] selection:text-[#000000]">
         {children}
       </body>
     </html>
