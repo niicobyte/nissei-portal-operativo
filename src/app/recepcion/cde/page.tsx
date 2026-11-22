@@ -2449,13 +2449,13 @@ export default function RecepcionCdeDashboardPage() {
       {/* Modal de Detalle y Edición de Orden SATI */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2.5 sm:p-4 animate-in fade-in">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-4 sm:p-6 shadow-2xl space-y-4 border border-zinc-200 max-h-[92dvh] overflow-y-auto overscroll-contain">
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+          <div className="bg-[#FFFDF9] rounded-xl max-w-xl w-full p-4 sm:p-6 shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[92dvh] overflow-y-auto overscroll-contain">
+            <div className="flex items-center justify-between border-b-2 border-black pb-3">
               <div>
-                <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
+                <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider font-bold">
                   DETALLE DE ORDEN SATI · MONITOREO SUCURSAL
                 </span>
-                <h3 className="text-lg font-black text-zinc-900">
+                <h3 className="text-lg font-heading font-extrabold text-black">
                   {selectedTicket.origen === "CDE" || parseInt(selectedTicket.idOrden, 10) >= 125000
                     ? `Orden CDE #${selectedTicket.idOrdenCde || selectedTicket.idOrden}`
                     : `Orden ASU #${selectedTicket.idOrdenAsu || selectedTicket.idOrden}`
@@ -2467,24 +2467,24 @@ export default function RecepcionCdeDashboardPage() {
                   <button
                     type="button"
                     onClick={() => setIsEditingModal(true)}
-                    className="px-2.5 py-1 rounded-lg text-xs font-bold bg-zinc-100 hover:bg-zinc-200 text-zinc-800 transition-colors cursor-pointer border border-zinc-200 flex items-center gap-1.5"
+                    className="px-3 py-1.5 rounded-lg text-xs font-heading font-extrabold bg-[#FFD23F] hover:bg-yellow-400 text-black transition-all cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-1.5"
                     title="Editar fechas y números de orden"
                   >
-                    <Edit3 className="w-3.5 h-3.5 text-zinc-600" />
+                    <Edit3 className="w-3.5 h-3.5 text-black" />
                     <span>Editar</span>
                   </button>
                 ) : (
                   <button
                     type="button"
                     onClick={() => setIsEditingModal(false)}
-                    className="px-2.5 py-1 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200 text-zinc-600 transition-colors cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg text-xs font-heading font-extrabold bg-[#FAF6EE] hover:bg-neutral-200 text-black transition-all cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                   >
                     Ver Detalle
                   </button>
                 )}
                 <button
                   onClick={() => setSelectedTicket(null)}
-                  className="text-zinc-400 hover:text-zinc-900 text-lg font-bold p-1 cursor-pointer"
+                  className="w-8 h-8 rounded-lg bg-[#FAF6EE] hover:bg-[#E76F51] hover:text-white text-black font-extrabold flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                 >
                   ✕
                 </button>
@@ -2493,20 +2493,20 @@ export default function RecepcionCdeDashboardPage() {
 
             {/* Formulario de Edición Manual */}
             {isEditingModal ? (
-              <div className="p-4 bg-zinc-50 border border-zinc-200 rounded-xl space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-zinc-200">
-                  <span className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
-                    <Edit3 className="w-4 h-4 text-zinc-700" />
+              <div className="p-4 bg-[#FAF6EE] border-2 border-black rounded-xl space-y-3 shadow-[2px_2px_0px_#000]">
+                <div className="flex items-center justify-between pb-2 border-b-2 border-black">
+                  <span className="text-xs font-heading font-extrabold text-black flex items-center gap-1.5">
+                    <Edit3 className="w-4 h-4 text-black" />
                     <span>Edición Manual de Fechas y Números de Orden SATI</span>
                   </span>
-                  <span className="text-[10px] text-zinc-500 font-mono">
+                  <span className="text-[10px] text-neutral-600 font-mono font-bold">
                     Guardado directo en MySQL
                   </span>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                    <label className="block text-[11px] font-heading font-bold text-black mb-1">
                       Nº Orden ASU:
                     </label>
                     <input
@@ -2514,12 +2514,12 @@ export default function RecepcionCdeDashboardPage() {
                       value={editForm.idOrdenAsu}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, idOrdenAsu: e.target.value }))}
                       placeholder="Ej: 29409"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono font-bold focus:border-zinc-900 outline-none"
+                      className="w-full px-2.5 py-1.5 rounded-lg border-2 border-black bg-white text-xs font-mono font-bold focus:outline-none shadow-[1px_1px_0px_#000] text-black"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                    <label className="block text-[11px] font-heading font-bold text-black mb-1">
                       Nº Orden CDE (Casa Matriz):
                     </label>
                     <input
@@ -2527,12 +2527,12 @@ export default function RecepcionCdeDashboardPage() {
                       value={editForm.idOrdenCde}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, idOrdenCde: e.target.value }))}
                       placeholder="Ej: 125683 (dejar vacío si está pendiente)"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono font-bold focus:border-zinc-900 outline-none"
+                      className="w-full px-2.5 py-1.5 rounded-lg border-2 border-black bg-white text-xs font-mono font-bold focus:outline-none shadow-[1px_1px_0px_#000] text-black"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                    <label className="block text-[11px] font-heading font-bold text-black mb-1">
                       Fecha de Ingreso ASU:
                     </label>
                     <input
@@ -2540,12 +2540,12 @@ export default function RecepcionCdeDashboardPage() {
                       value={editForm.fechaIngresoAsu}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, fechaIngresoAsu: e.target.value }))}
                       placeholder="DD/MM/AAAA o DD/MM/AAAA HH:mm"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                      className="w-full px-2.5 py-1.5 rounded-lg border-2 border-black bg-white text-xs font-mono font-bold focus:outline-none shadow-[1px_1px_0px_#000] text-black"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                    <label className="block text-[11px] font-heading font-bold text-black mb-1">
                       Fecha de Ingreso CDE:
                     </label>
                     <input
@@ -2553,12 +2553,12 @@ export default function RecepcionCdeDashboardPage() {
                       value={editForm.fechaIngresoCde}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, fechaIngresoCde: e.target.value }))}
                       placeholder="DD/MM/AAAA o DD/MM/AAAA HH:mm"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                      className="w-full px-2.5 py-1.5 rounded-lg border-2 border-black bg-white text-xs font-mono font-bold focus:outline-none shadow-[1px_1px_0px_#000] text-black"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                    <label className="block text-[11px] font-heading font-bold text-black mb-1">
                       Fecha de Despacho CDE (Transportadora):
                     </label>
                     <input
@@ -2566,13 +2566,13 @@ export default function RecepcionCdeDashboardPage() {
                       value={editForm.fechaDespachoCde}
                       onChange={(e) => setEditForm((prev) => ({ ...prev, fechaDespachoCde: e.target.value }))}
                       placeholder="DD/MM/AAAA HH:mm (vacío si sigue en taller CDE)"
-                      className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                      className="w-full px-2.5 py-1.5 rounded-lg border-2 border-black bg-white text-xs font-mono font-bold focus:outline-none shadow-[1px_1px_0px_#000] text-black"
                     />
                   </div>
 
                   {!isTicketClienteCde(selectedTicket) && (
                     <div>
-                      <label className="block text-[11px] font-bold text-zinc-700 mb-1">
+                      <label className="block text-[11px] font-heading font-bold text-black mb-1">
                         Fecha de Recibido en ASU (Sucursal):
                       </label>
                       <input
@@ -2580,17 +2580,17 @@ export default function RecepcionCdeDashboardPage() {
                         value={editForm.fechaRecibidoAsu}
                         onChange={(e) => setEditForm((prev) => ({ ...prev, fechaRecibidoAsu: e.target.value }))}
                         placeholder="DD/MM/AAAA o DD/MM/AAAA HH:mm"
-                        className="w-full px-2.5 py-1.5 rounded-lg border border-zinc-300 bg-white text-xs font-mono focus:border-zinc-900 outline-none"
+                        className="w-full px-2.5 py-1.5 rounded-lg border-2 border-black bg-white text-xs font-mono font-bold focus:outline-none shadow-[1px_1px_0px_#000] text-black"
                       />
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-200">
+                <div className="flex items-center justify-end gap-2 pt-2 border-t-2 border-black">
                   <button
                     type="button"
                     onClick={() => setIsEditingModal(false)}
-                    className="px-3 py-1.5 rounded-lg border border-zinc-200 text-zinc-700 hover:bg-zinc-100 text-xs font-medium cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-lg border-2 border-black bg-white hover:bg-neutral-100 text-black text-xs font-heading font-extrabold cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                   >
                     Cancelar
                   </button>
@@ -2598,7 +2598,7 @@ export default function RecepcionCdeDashboardPage() {
                     type="button"
                     onClick={handleSaveTicketEdits}
                     disabled={isSavingEdits}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    className="px-3.5 py-1.5 rounded-lg bg-[#2A9D8F] hover:bg-emerald-600 text-white text-xs font-heading font-extrabold border-2 border-black transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                     <span>{isSavingEdits ? "Guardando en MySQL..." : "Guardar Cambios"}</span>
@@ -2610,28 +2610,28 @@ export default function RecepcionCdeDashboardPage() {
             <div className="space-y-4 text-xs">
               {/* Cruce Inteligente de Órdenes */}
               {(selectedTicket.idOrdenAsu || selectedTicket.idOrdenCde) && (
-                <div className="p-3.5 bg-indigo-50/70 border border-indigo-200 rounded-xl space-y-2">
+                <div className="p-3.5 bg-[#FAF6EE] border-2 border-black rounded-xl space-y-2 shadow-[2px_2px_0px_#000]">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono font-bold text-indigo-900 flex items-center gap-1.5">
-                      <Link2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                    <span className="text-xs font-mono font-extrabold text-black flex items-center gap-1.5">
+                      <Link2 className="w-4 h-4 text-black shrink-0" />
                       CRUCE DE DATOS SATI: ASU ↔ CDE
                     </span>
-                    <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-indigo-200/60 text-indigo-800">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                       Match: {selectedTicket.matchReason || "Serial Físico"}
                     </span>
                   </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-white p-2.5 rounded-lg border border-indigo-100">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs bg-[#FFFDF9] p-2.5 rounded-lg border-2 border-black shadow-[1px_1px_0px_#000]">
                     <div>
-                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Orden ASU:</span>
-                      <strong className="text-zinc-900 truncate block">
+                      <span className="text-neutral-600 text-[10px] block uppercase font-mono font-bold">Orden ASU:</span>
+                      <strong className="text-black font-mono truncate block">
                         {selectedTicket.idOrdenAsu || (selectedTicket.origen === "ASU" || parseInt(selectedTicket.idOrden, 10) < 125000 ? selectedTicket.idOrden : null)
                           ? `#${selectedTicket.idOrdenAsu || selectedTicket.idOrden}`
                           : "Pendiente"}
                       </strong>
                     </div>
                     <div>
-                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Orden CDE:</span>
-                      <strong className="text-indigo-700 truncate block">
+                      <span className="text-neutral-600 text-[10px] block uppercase font-mono font-bold">Orden CDE:</span>
+                      <strong className="text-black font-mono truncate block font-extrabold">
                         {selectedTicket.idOrdenCde && parseInt(selectedTicket.idOrdenCde, 10) >= 125000
                           ? `#${selectedTicket.idOrdenCde}`
                           : selectedTicket.origen === "CDE" && parseInt(selectedTicket.idOrden, 10) >= 125000
@@ -2640,49 +2640,49 @@ export default function RecepcionCdeDashboardPage() {
                       </strong>
                     </div>
                     <div>
-                      <span className="text-zinc-500 text-[10px] block uppercase font-mono">Estado en ASU:</span>
-                      <span className="font-mono font-bold text-zinc-800">{selectedTicket.estadoAsu || selectedTicket.estado}</span>
+                      <span className="text-neutral-600 text-[10px] block uppercase font-mono font-bold">Estado en ASU:</span>
+                      <span className="font-mono font-bold text-black">{selectedTicket.estadoAsu || selectedTicket.estado}</span>
                     </div>
                   </div>
                 </div>
               )}
 
               {/* Cuadrícula de Datos Principales */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-zinc-50 p-4 rounded-xl border border-zinc-200">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-[#FAF6EE] p-4 rounded-xl border-2 border-black shadow-[2px_2px_0px_#000]">
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Cliente</span>
-                  <strong className="text-zinc-900 text-sm">{selectedTicket.cliente}</strong>
+                  <span className="text-neutral-600 block text-[11px] font-bold">Cliente</span>
+                  <strong className="text-black font-heading text-sm">{selectedTicket.cliente}</strong>
                   {selectedTicket.esDanesa && (
-                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded mt-1 inline-block">
+                    <span className="text-[10px] font-bold text-black bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] mt-1 inline-block">
                       Envío de Nuestra Sucursal
                     </span>
                   )}
                 </div>
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Código de Producto</span>
-                  <strong className="text-zinc-900 font-mono text-sm">{selectedTicket.codigoProducto || "N/A"}</strong>
+                  <span className="text-neutral-600 block text-[11px] font-bold">Código de Producto</span>
+                  <strong className="text-black font-mono text-sm">{selectedTicket.codigoProducto || "N/A"}</strong>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Fecha de Ingreso ASU</span>
-                  <span className="text-zinc-800 font-mono font-semibold">
+                  <span className="text-neutral-600 block text-[11px] font-bold">Fecha de Ingreso ASU</span>
+                  <span className="text-black font-mono font-semibold">
                     {selectedTicket.fechaIngresoAsu || (selectedTicket.origen === "ASU" ? selectedTicket.fechaIngreso : "-") || "-"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Fecha de Ingreso CDE</span>
-                  <span className="text-zinc-800 font-mono font-semibold">
+                  <span className="text-neutral-600 block text-[11px] font-bold">Fecha de Ingreso CDE</span>
+                  <span className="text-black font-mono font-semibold">
                     {selectedTicket.fechaIngresoCde || (selectedTicket.origen === "CDE" ? selectedTicket.fechaIngreso : "") || "Pendiente CDE"}
                   </span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Fecha de Despacho CDE</span>
-                  <span className="text-zinc-800 font-mono font-semibold">
+                  <span className="text-neutral-600 block text-[11px] font-bold">Fecha de Despacho CDE</span>
+                  <span className="text-black font-mono font-semibold">
                     {selectedTicket.fechaEntregada || "Pendiente de cierre en CDE"}
                   </span>
                 </div>
                 {!isTicketClienteCde(selectedTicket) && (
                   <div>
-                    <span className="text-zinc-500 block text-[11px]">Fecha de Recibido ASU</span>
+                    <span className="text-neutral-600 block text-[11px] font-bold">Fecha de Recibido ASU</span>
                     {(() => {
                       const esRecib = isTicketRecibido(selectedTicket);
                       const fechaRec =
@@ -2690,14 +2690,14 @@ export default function RecepcionCdeDashboardPage() {
                         (esRecib ? selectedTicket.fechaEntregada : null);
                       if (fechaRec) {
                         return (
-                          <span className="text-emerald-700 font-mono font-bold flex items-center gap-1">
-                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                          <span className="text-[#2A9D8F] font-mono font-bold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#2A9D8F] shrink-0" />
                             <span>{fechaRec}</span>
                           </span>
                         );
                       }
                       return (
-                        <span className="text-zinc-400 font-mono text-[11px] italic">
+                        <span className="text-neutral-500 font-mono text-[11px] italic">
                           Pendiente de recepción
                         </span>
                       );
@@ -2705,12 +2705,12 @@ export default function RecepcionCdeDashboardPage() {
                   </div>
                 )}
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Fecha de Venta</span>
-                  <span className="text-zinc-800 font-mono">{selectedTicket.fechaVenta || "No registrada"}</span>
+                  <span className="text-neutral-600 block text-[11px] font-bold">Fecha de Venta</span>
+                  <span className="text-black font-mono">{selectedTicket.fechaVenta || "No registrada"}</span>
                 </div>
                 <div>
-                  <span className="text-zinc-500 block text-[11px]">Días en Taller</span>
-                  <span className="text-zinc-900 font-mono font-bold">
+                  <span className="text-neutral-600 block text-[11px] font-bold">Días en Taller</span>
+                  <span className="text-black font-mono font-bold">
                     {selectedTicket.diasResolucion !== null && selectedTicket.diasResolucion !== undefined
                       ? `${selectedTicket.diasResolucion} días`
                       : "En proceso"}
@@ -2719,23 +2719,23 @@ export default function RecepcionCdeDashboardPage() {
               </div>
 
               {/* Hardware */}
-              <div className="p-3 bg-white border border-zinc-200 rounded-xl space-y-1">
-                <span className="text-zinc-500 block text-[11px]">Hardware &amp; Identificación</span>
-                <div className="font-bold text-sm text-zinc-900">
+              <div className="p-3 bg-[#FAF6EE] border-2 border-black rounded-xl space-y-1 shadow-[2px_2px_0px_#000]">
+                <span className="text-neutral-600 block text-[11px] font-bold">Hardware &amp; Identificación</span>
+                <div className="font-heading font-extrabold text-sm text-black">
                   {selectedTicket.marca} {selectedTicket.modelo}
                 </div>
-                <div className="text-[11px] text-zinc-600 font-mono flex items-center justify-between">
-                  <span>Categoría: {selectedTicket.tipoComponente}</span>
+                <div className="text-[11px] text-black font-mono flex items-center justify-between">
+                  <span>Categoría: <strong>{selectedTicket.tipoComponente}</strong></span>
                   <span>Serial: <strong>{selectedTicket.serial || "SIN SERIAL"}</strong></span>
                 </div>
               </div>
 
               {/* Dictamen / Informe Técnico */}
               <div>
-                <span className="text-zinc-500 font-bold text-[11px] uppercase tracking-wider block mb-1">
+                <span className="text-black font-heading font-extrabold text-[11px] uppercase tracking-wider block mb-1">
                   Dictamen Técnico &amp; Mensaje de Servicio
                 </span>
-                <div className="p-3.5 bg-zinc-50 border border-zinc-200 rounded-xl text-zinc-800 text-xs font-sans leading-relaxed whitespace-pre-wrap">
+                <div className="p-3.5 bg-[#FAF6EE] border-2 border-black rounded-xl text-black text-xs font-sans leading-relaxed whitespace-pre-wrap shadow-[2px_2px_0px_#000]">
                   {formatSatiSentenceCase(selectedTicket.mensaje) || "Sin observaciones técnicas cargadas."}
                 </div>
               </div>
@@ -2746,25 +2746,25 @@ export default function RecepcionCdeDashboardPage() {
                 const fechaModalMostrar = selectedTicket.fechaEntregada || selectedTicket.fechaRecibidoDeposito || "";
                 return (
                   <div
-                    className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 ${
+                    className={`p-3.5 rounded-xl border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-between gap-3 ${
                       isRecibidoModal
-                        ? "bg-emerald-50 border-emerald-200"
-                        : "bg-amber-50/50 border-amber-200"
+                        ? "bg-[#2A9D8F]/20"
+                        : "bg-[#FFD23F]/25"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
                       {isRecibidoModal ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                        <CheckCircle2 className="w-5 h-5 text-[#2A9D8F] shrink-0" />
                       ) : (
-                        <SpeedTruck className="w-5 h-5 text-amber-600 shrink-0" smokeColor="bg-amber-400" />
+                        <SpeedTruck className="w-5 h-5 text-black shrink-0" smokeColor="bg-amber-400" />
                       )}
                       <div>
-                        <strong className="block text-zinc-900 text-xs font-bold">
+                        <strong className="block text-black text-xs font-heading font-extrabold">
                           {isRecibidoModal
                             ? "Equipo Físico Recibido en Sucursal ASU"
                             : "Pendiente de Recepción Física en Sucursal"}
                         </strong>
-                        <span className="text-[11px] text-zinc-600 block">
+                        <span className="text-[11px] text-neutral-800 block font-medium">
                           {isRecibidoModal
                             ? `Confirmado en sucursal${
                                 fechaModalMostrar
@@ -2779,10 +2779,10 @@ export default function RecepcionCdeDashboardPage() {
                     <button
                       type="button"
                       onClick={() => handleToggleCheckin(selectedTicket)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-heading font-extrabold transition-all border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer shrink-0 flex items-center gap-1.5 ${
                         isRecibidoModal
-                          ? "bg-emerald-600 text-white hover:bg-emerald-700"
-                          : "bg-zinc-900 text-white hover:bg-black"
+                          ? "bg-[#2A9D8F] text-white hover:bg-emerald-600"
+                          : "bg-black text-[#FFD23F] hover:bg-neutral-800"
                       }`}
                     >
                       {isRecibidoModal ? (

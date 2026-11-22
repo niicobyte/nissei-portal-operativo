@@ -135,9 +135,9 @@ interface EstadoVisualConfig {
 }
 
 const DEFAULT_ESTADO_VISUAL: EstadoVisualConfig = {
-  badgeClass: "bg-zinc-100 text-zinc-700 border-zinc-200",
-  inactiveBtnClass: "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100 hover:border-zinc-400",
-  activeBtnClass: "bg-zinc-900 text-white border-zinc-900 shadow-xs ring-2 ring-zinc-300",
+  badgeClass: "bg-[#FFFDF9] text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+  inactiveBtnClass: "bg-[#FFFDF9] text-black border-2 border-black hover:bg-[#FFD23F] font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+  activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   readyForPickup: false,
   whatsappHeader: "Actualización del estado en taller",
   whatsappBody: "El equipo se encuentra bajo gestión del sector de Post-Venta.",
@@ -152,9 +152,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
 
   if (norm === "entregada") {
     return {
-      badgeClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      inactiveBtnClass: "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100",
-      activeBtnClass: "bg-emerald-700 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-200",
+      badgeClass: "bg-[#2A9D8F]/25 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-[#2A9D8F]/25 text-black border-2 border-black hover:bg-[#2A9D8F]/45 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       isDelivered: true,
       readyForPickup: true,
       whatsappHeader: "✅ *ENTREGADA*",
@@ -163,9 +163,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm.includes("cambio") && norm.includes("nuevo")) {
     return {
-      badgeClass: "bg-emerald-50 text-emerald-800 border-emerald-300 font-bold",
-      inactiveBtnClass: "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100",
-      activeBtnClass: "bg-emerald-700 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-200",
+      badgeClass: "bg-[#2A9D8F]/30 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-[#2A9D8F]/25 text-black border-2 border-black hover:bg-[#2A9D8F]/45 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: true,
       whatsappHeader: "✨ *APROBADO CAMBIO POR NUEVO (GARANTÍA)*",
       whatsappBody: "El proveedor autorizó la garantía oficial y se realizó el cambio por un equipo nuevo. La nueva unidad se encuentra lista para su entrega o retiro.",
@@ -173,9 +173,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm.includes("nota de credito") || norm.includes("nota de credito")) {
     return {
-      badgeClass: "bg-indigo-50 text-indigo-800 border-indigo-300 font-bold",
-      inactiveBtnClass: "bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100",
-      activeBtnClass: "bg-indigo-700 text-white border-indigo-700 shadow-xs ring-2 ring-indigo-200",
+      badgeClass: "bg-indigo-200 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-indigo-100 text-black border-2 border-black hover:bg-indigo-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: true,
       whatsappHeader: "💳 *NOTA DE CRÉDITO COMERCIAL (PROVEEDOR)*",
       whatsappBody: "El proveedor aprobó la emisión de Nota de Crédito comercial por el valor del producto para su aplicación en el salón comercial.",
@@ -183,9 +183,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm === "reparada") {
     return {
-      badgeClass: "bg-sky-50 text-sky-700 border-sky-200",
-      inactiveBtnClass: "bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100",
-      activeBtnClass: "bg-sky-700 text-white border-sky-700 shadow-xs ring-2 ring-sky-200",
+      badgeClass: "bg-sky-200 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-sky-100 text-black border-2 border-black hover:bg-sky-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: true,
       whatsappHeader: "✅ *REPARADO CON ÉXITO*",
       whatsappBody: "El equipo fue reparado satisfactoriamente, superó las pruebas técnicas y está listo para ser retirado.",
@@ -193,9 +193,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm === "qc" || norm.includes("control de calidad")) {
     return {
-      badgeClass: "bg-purple-50 text-purple-700 border-purple-200",
-      inactiveBtnClass: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
-      activeBtnClass: "bg-purple-700 text-white border-purple-700 shadow-xs ring-2 ring-purple-200",
+      badgeClass: "bg-purple-200 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-purple-100 text-black border-2 border-black hover:bg-purple-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: true,
       whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
       whatsappBody: "El equipo se encuentra en etapa final de pruebas y control de calidad en Post-Venta.",
@@ -203,9 +203,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm.includes("pendiente") && norm.includes("repuesto")) {
     return {
-      badgeClass: "bg-orange-50 text-orange-800 border-orange-200",
-      inactiveBtnClass: "bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100",
-      activeBtnClass: "bg-orange-600 text-white border-orange-600 shadow-xs ring-2 ring-orange-200",
+      badgeClass: "bg-[#FFD23F]/40 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-[#FFD23F]/30 text-black border-2 border-black hover:bg-[#FFD23F]/55 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: "⏳ *PENDIENTE POR REPUESTO*",
       whatsappBody: "El equipo se encuentra en espera de llegada/disponibilidad de repuesto para completar su reparación.",
@@ -213,9 +213,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm.includes("reparacion")) {
     return {
-      badgeClass: "bg-amber-50 text-amber-800 border-amber-200",
-      inactiveBtnClass: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
-      activeBtnClass: "bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200",
+      badgeClass: "bg-[#FFD23F]/50 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-[#FFD23F]/35 text-black border-2 border-black hover:bg-[#FFD23F]/60 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: "🔧 *EN REPARACIÓN*",
       whatsappBody: "El equipo se encuentra en proceso de diagnóstico e intervención técnica en taller.",
@@ -223,9 +223,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm === "asignada") {
     return {
-      badgeClass: "bg-indigo-50 text-indigo-700 border-indigo-200",
-      inactiveBtnClass: "bg-indigo-50 text-indigo-800 border-indigo-200 hover:bg-indigo-100",
-      activeBtnClass: "bg-indigo-700 text-white border-indigo-700 shadow-xs ring-2 ring-indigo-200",
+      badgeClass: "bg-indigo-200 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-indigo-100 text-black border-2 border-black hover:bg-indigo-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: "👨‍🔧 *ASIGNADA A TÉCNICO*",
       whatsappBody: "La orden ya fue asignada a un técnico especialista para su revisión.",
@@ -233,9 +233,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm.includes("en asignacion")) {
     return {
-      badgeClass: "bg-slate-100 text-slate-700 border-slate-200",
-      inactiveBtnClass: "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100",
-      activeBtnClass: "bg-slate-700 text-white border-slate-700 shadow-xs ring-2 ring-slate-300",
+      badgeClass: "bg-[#FFFDF9] text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-[#FFFDF9] text-black border-2 border-black hover:bg-neutral-100 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: "📋 *EN ASIGNACIÓN*",
       whatsappBody: "La orden fue registrada y aguarda asignación al equipo técnico.",
@@ -243,9 +243,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm.includes("sin reparo") || norm.includes("liquidacion") || norm.includes("rechaz")) {
     return {
-      badgeClass: "bg-rose-50 text-rose-700 border-rose-200",
-      inactiveBtnClass: "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100",
-      activeBtnClass: "bg-rose-700 text-white border-rose-700 shadow-xs ring-2 ring-rose-200",
+      badgeClass: "bg-[#E76F51]/30 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-[#E76F51]/20 text-black border-2 border-black hover:bg-[#E76F51]/40 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       isDanger: norm.includes("sin reparo"),
       readyForPickup: norm.includes("sin reparo"),
       whatsappHeader: `⚠️ *${(estado || "SIN REPARO").toUpperCase()}*`,
@@ -254,9 +254,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm.includes("presupuest")) {
     return {
-      badgeClass: "bg-cyan-50 text-cyan-800 border-cyan-200",
-      inactiveBtnClass: "bg-cyan-50 text-cyan-800 border-cyan-200 hover:bg-cyan-100",
-      activeBtnClass: "bg-cyan-700 text-white border-cyan-700 shadow-xs ring-2 ring-cyan-200",
+      badgeClass: "bg-cyan-200 text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-cyan-100 text-black border-2 border-black hover:bg-cyan-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: `💰 *${(estado || "PRESUPUESTADA").toUpperCase()}*`,
       whatsappBody: "Se emitió el presupuesto correspondiente y aguarda confirmación del cliente.",
@@ -264,9 +264,9 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
   }
   if (norm.includes("stock")) {
     return {
-      badgeClass: "bg-zinc-100 text-zinc-700 border-zinc-300",
-      inactiveBtnClass: "bg-zinc-100 text-zinc-700 border-zinc-300 hover:bg-zinc-200",
-      activeBtnClass: "bg-zinc-800 text-white border-zinc-800 shadow-xs ring-2 ring-zinc-300",
+      badgeClass: "bg-[#FAF6EE] text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]",
+      inactiveBtnClass: "bg-[#FAF6EE] text-black border-2 border-black hover:bg-neutral-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+      activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: `📦 *${(estado || "ENVIADO STOCK").toUpperCase()}*`,
       whatsappBody: "El equipo fue derivado internamente a Stock.",
@@ -336,8 +336,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappHeader: "",
     whatsappBody: "",
     readyForPickup: false,
-    chipInactive: "bg-zinc-50 text-zinc-700 border-zinc-200 hover:bg-zinc-100",
-    chipActive: "bg-zinc-900 text-white border-zinc-900 shadow-xs ring-2 ring-zinc-300",
+    chipInactive: "bg-[#FFFDF9] text-black border-2 border-black hover:bg-neutral-100 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   // 1. Familia Verde / Esmeralda / Teal (Orden alfabético)
   {
@@ -347,8 +347,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El proveedor autorizó la garantía oficial y se realizó el cambio por un equipo nuevo. La nueva unidad se encuentra lista para su entrega o retiro.",
     readyForPickup: true,
-    chipInactive: "bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100",
-    chipActive: "bg-emerald-700 text-white border-emerald-700 shadow-xs ring-2 ring-emerald-200",
+    chipInactive: "bg-[#2A9D8F]/25 text-black border-2 border-black hover:bg-[#2A9D8F]/45 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   {
     id: "PRESUPUESTO_PENDIENTE",
@@ -357,8 +357,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "La reparación se encuentra fuera de garantía y se emitió presupuesto técnico aguardando aprobación del cliente.",
     readyForPickup: false,
-    chipInactive: "bg-teal-50 text-teal-800 border-teal-200 hover:bg-teal-100",
-    chipActive: "bg-teal-700 text-white border-teal-700 shadow-xs ring-2 ring-teal-200",
+    chipInactive: "bg-teal-100 text-black border-2 border-black hover:bg-teal-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   // 2. Familia Azul / Celeste (Orden alfabético)
   {
@@ -368,8 +368,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El equipo fue reparado satisfactoriamente, superó las pruebas técnicas y está listo para ser retirado.",
     readyForPickup: true,
-    chipInactive: "bg-sky-50 text-sky-800 border-sky-200 hover:bg-sky-100",
-    chipActive: "bg-sky-700 text-white border-sky-700 shadow-xs ring-2 ring-sky-200",
+    chipInactive: "bg-sky-100 text-black border-2 border-black hover:bg-sky-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   {
     id: "SIN_DEFECTO",
@@ -378,8 +378,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El equipo funciona dentro de los parámetros normales de fábrica y no reprodujo la falla reportada. Conserva su garantía vigente.",
     readyForPickup: true,
-    chipInactive: "bg-cyan-50 text-cyan-800 border-cyan-200 hover:bg-cyan-100",
-    chipActive: "bg-cyan-700 text-white border-cyan-700 shadow-xs ring-2 ring-cyan-200",
+    chipInactive: "bg-cyan-100 text-black border-2 border-black hover:bg-cyan-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   // 3. Familia Púrpura
   {
@@ -389,8 +389,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El equipo se encuentra en fase final de pruebas de verificación y control de calidad.",
     readyForPickup: true,
-    chipInactive: "bg-purple-50 text-purple-800 border-purple-200 hover:bg-purple-100",
-    chipActive: "bg-purple-700 text-white border-purple-700 shadow-xs ring-2 ring-purple-200",
+    chipInactive: "bg-purple-100 text-black border-2 border-black hover:bg-purple-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   // 4. Familia Ámbar / Amarillo / Naranja (Orden alfabético)
   {
@@ -400,8 +400,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El equipo fue derivado a gestión de garantía con fabricante/importador para cambio o emisión de nota de crédito comercial.",
     readyForPickup: true,
-    chipInactive: "bg-amber-50 text-amber-800 border-amber-200 hover:bg-amber-100",
-    chipActive: "bg-amber-600 text-white border-amber-600 shadow-xs ring-2 ring-amber-200",
+    chipInactive: "bg-amber-100 text-black border-2 border-black hover:bg-amber-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   {
     id: "DESGASTE_NATURAL",
@@ -410,8 +410,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "La incidencia corresponde a desgaste normal de uso o componente consumible fuera de cobertura de garantía.",
     readyForPickup: true,
-    chipInactive: "bg-yellow-50 text-yellow-800 border-yellow-200 hover:bg-yellow-100",
-    chipActive: "bg-yellow-600 text-white border-yellow-600 shadow-xs ring-2 ring-yellow-200",
+    chipInactive: "bg-[#FFD23F]/40 text-black border-2 border-black hover:bg-[#FFD23F]/65 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   {
     id: "SIN_REPARO_REPUESTO",
@@ -420,8 +420,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "No fue posible completar la reparación por falta de disponibilidad del repuesto requerido. Corresponde gestión de cambio / nota de crédito o retiro.",
     readyForPickup: true,
-    chipInactive: "bg-orange-50 text-orange-800 border-orange-200 hover:bg-orange-100",
-    chipActive: "bg-orange-600 text-white border-orange-600 shadow-xs ring-2 ring-orange-200",
+    chipInactive: "bg-orange-100 text-black border-2 border-black hover:bg-orange-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   // 5. Familia Rojo / Rosa (Orden alfabético)
   {
@@ -431,8 +431,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "Se constató daño físico, golpe, humedad o manipulación indebida por parte del cliente, por lo que no aplica cobertura de garantía de fábrica.",
     readyForPickup: true,
-    chipInactive: "bg-red-50 text-red-800 border-red-200 hover:bg-red-100",
-    chipActive: "bg-red-700 text-white border-red-700 shadow-xs ring-2 ring-red-200",
+    chipInactive: "bg-[#E76F51]/25 text-black border-2 border-black hover:bg-[#E76F51]/45 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   {
     id: "SIN_REPARO_IRREPARABLE",
@@ -441,8 +441,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El diagnóstico técnico determinó que el daño no es reparable. Se deriva a gestión de garantía, cambio comercial o retiro.",
     readyForPickup: true,
-    chipInactive: "bg-rose-50 text-rose-800 border-rose-200 hover:bg-rose-100",
-    chipActive: "bg-rose-700 text-white border-rose-700 shadow-xs ring-2 ring-rose-200",
+    chipInactive: "bg-[#E76F51]/25 text-black border-2 border-black hover:bg-[#E76F51]/45 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   // 6. Familia Gris / Neutro (Orden alfabético)
   {
@@ -452,8 +452,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El equipo superó el período de garantía oficial vigente; disponible servicio particular bajo presupuesto o retiro.",
     readyForPickup: true,
-    chipInactive: "bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200",
-    chipActive: "bg-slate-700 text-white border-slate-700 shadow-xs ring-2 ring-slate-300",
+    chipInactive: "bg-neutral-100 text-black border-2 border-black hover:bg-neutral-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
   {
     id: "PRESUPUESTO_RECHAZADO",
@@ -462,8 +462,8 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El presupuesto informado no fue aprobado; el equipo se encuentra disponible para retiro sin reparar.",
     readyForPickup: true,
-    chipInactive: "bg-stone-100 text-stone-800 border-stone-300 hover:bg-stone-200",
-    chipActive: "bg-stone-700 text-white border-stone-700 shadow-xs ring-2 ring-stone-300",
+    chipInactive: "bg-[#E76F51]/15 text-black border-2 border-black hover:bg-[#E76F51]/35 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
 ];
 
@@ -3799,7 +3799,7 @@ ${dictamen.accText}`;
                   {getStatusBadge(selectedTicket.estado)}
                   <button
                     onClick={() => setSelectedTicket(null)}
-                    className="text-black hover:bg-neutral-200 text-lg font-bold px-2 py-1 rounded-lg border-2 border-transparent hover:border-black transition-colors cursor-pointer"
+                    className="w-8 h-8 rounded-lg bg-[#FAF6EE] hover:bg-[#E76F51] hover:text-white text-black font-extrabold flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                     title="Cerrar ventana"
                   >
                     ✕
@@ -3893,12 +3893,12 @@ ${dictamen.accText}`;
                   <div>
                     <div className="h-7 flex items-center justify-between mb-1.5 gap-2 flex-nowrap">
                       <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider truncate">
+                        <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider truncate">
                           Informe Técnico / Mensaje de Servicio
                         </span>
                         {selectedTicket.idOrdenCde && selectedTicket.mensaje && (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1 shrink-0">
-                            <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#2A9D8F]/25 text-black border border-black inline-flex items-center gap-1 shrink-0 shadow-[1px_1px_0px_#000]">
+                            <CheckCircle2 className="w-3 h-3 text-[#2A9D8F] shrink-0" />
                             <span>CDE #{selectedTicket.idOrdenCde}</span>
                           </span>
                         )}
@@ -3907,13 +3907,13 @@ ${dictamen.accText}`;
                         type="button"
                         disabled={isSavingDetails}
                         onClick={handleGuardarMensaje}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg border border-emerald-200 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                        className="inline-flex items-center gap-1.5 text-xs font-heading font-extrabold text-white bg-[#2A9D8F] hover:bg-emerald-600 px-3 py-1 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer disabled:opacity-50 shrink-0"
                         title="Guardar observaciones, ubicación y accesorios"
                       >
                         {isSavingDetails ? (
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                         ) : (
-                          <Save className="w-3.5 h-3.5" />
+                          <Save className="w-3.5 h-3.5 text-white" />
                         )}
                         <span>{isSavingDetails ? "Guardando..." : "Guardar cambios"}</span>
                       </button>
@@ -3924,43 +3924,43 @@ ${dictamen.accText}`;
                       onChange={(e) => setModalMensaje(e.target.value)}
                       placeholder="Añada o modifique aquí el informe técnico, observaciones del laboratorio, pruebas ejecutadas..."
                       rows={3}
-                      className="w-full p-2.5 bg-white border border-slate-300 focus:border-zinc-900 rounded-xl text-xs sm:text-sm text-zinc-900 leading-relaxed outline-none transition-all placeholder:text-zinc-400 font-sans shadow-2xs"
+                      className="w-full p-2.5 bg-white border-2 border-black rounded-xl text-xs sm:text-sm text-black leading-relaxed outline-none transition-all placeholder:text-neutral-500 font-sans shadow-[2px_2px_0px_#000] focus:ring-0"
                     />
                   </div>
 
                   {/* 2. Sección de Accesorios Incluidos / Devueltos con el Equipo */}
                   <div>
                     <div className="h-6 flex items-center justify-between mb-1.5">
-                      <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-zinc-600" />
+                      <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-black" />
                         Accesorios Incluidos / Devueltos con el Equipo
                       </span>
                       {modalAccessoriesList.length > 0 && (
                         <button
                           type="button"
                           onClick={handleClearModalAccessories}
-                          className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                          className="text-xs font-heading font-bold text-[#E76F51] hover:underline cursor-pointer"
                         >
                           Limpiar todos
                         </button>
                       )}
                     </div>
 
-                    <div className="p-2.5 bg-white border border-slate-300 rounded-xl space-y-2 shadow-2xs">
+                    <div className="p-3 bg-[#FAF6EE] border-2 border-black rounded-xl space-y-2.5 shadow-[2px_2px_0px_#000]">
                       {/* Chips de accesorios actuales */}
                       <div className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
                         {modalAccessoriesList.length > 0 ? (
                           modalAccessoriesList.map((acc, idx) => (
                             <span
                               key={idx}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-zinc-100 hover:bg-zinc-200 text-zinc-900 rounded-lg text-xs font-medium border border-zinc-200 transition-colors"
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#FFD23F] text-black rounded-full text-xs font-mono font-bold border-2 border-black shadow-[1px_1px_0px_#000]"
                             >
-                              <Tag className="w-3 h-3 text-zinc-500" />
+                              <Tag className="w-3 h-3 text-black" />
                               <span>{acc}</span>
                               <button
                                 type="button"
                                 onClick={() => handleRemoveModalAccessory(idx)}
-                                className="ml-1 text-zinc-400 hover:text-rose-600 font-bold leading-none cursor-pointer"
+                                className="ml-1 text-black hover:text-[#E76F51] font-bold leading-none cursor-pointer"
                                 title="Quitar accesorio de esta orden"
                               >
                                 ×
@@ -3968,7 +3968,7 @@ ${dictamen.accText}`;
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-zinc-400 italic">
+                          <span className="text-xs font-mono text-neutral-600 italic">
                             Sin accesorios registrados (se notificará &quot;Sin accesorios adicionales&quot;)
                           </span>
                         )}
@@ -3987,12 +3987,12 @@ ${dictamen.accText}`;
                             }
                           }}
                           placeholder="Escriba un accesorio y presione Enter o + Agregar (se guardará en accesos directos)"
-                          className="flex-1 px-2.5 py-1 text-xs bg-zinc-50 border border-slate-200 focus:border-zinc-900 rounded-lg outline-none transition-colors placeholder:text-zinc-400 font-sans"
+                          className="flex-1 px-3 py-1.5 text-xs bg-white border-2 border-black focus:outline-none rounded-lg transition-colors placeholder:text-neutral-500 font-sans text-black shadow-[1px_1px_0px_#000]"
                         />
                         <button
                           type="button"
                           onClick={() => handleAddModalAccessory(modalNewAccessory)}
-                          className="px-2.5 py-1 bg-zinc-900 hover:bg-black text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-[#FFD23F] text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                           title="Agregar accesorio y guardar como acceso directo"
                         >
                           + Agregar
@@ -4000,8 +4000,8 @@ ${dictamen.accText}`;
                       </div>
 
                       {/* Accesos directos personalizados guardados por el usuario */}
-                      <div className="flex flex-wrap items-center gap-1.5 pt-1.5 border-t border-dashed border-zinc-200 text-[11px]">
-                        <span className="text-zinc-400 mr-0.5 font-mono text-[10px] uppercase">
+                      <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t-2 border-dashed border-black text-[11px]">
+                        <span className="text-neutral-700 mr-0.5 font-mono text-[10px] uppercase font-bold">
                           ACCESOS DIRECTOS:
                         </span>
 
@@ -4010,16 +4010,16 @@ ${dictamen.accText}`;
                           return (
                             <span
                               key={sug}
-                              className={`inline-flex items-center rounded-md border text-[11px] font-medium transition-colors ${
+                              className={`inline-flex items-center rounded-full border-2 border-black text-[11px] font-mono font-bold transition-all shadow-[1px_1px_0px_#000] ${
                                 isAdded
-                                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                                  : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200 border-zinc-200"
+                                  ? "bg-[#2A9D8F] text-white"
+                                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
                               }`}
                             >
                               <button
                                 type="button"
                                 onClick={() => handleAddModalAccessory(sug)}
-                                className="px-2 py-0.5 cursor-pointer"
+                                className="px-2.5 py-0.5 cursor-pointer"
                                 title={`Agregar "${sug}" a la orden`}
                               >
                                 + {sug}
@@ -4027,7 +4027,7 @@ ${dictamen.accText}`;
                               <button
                                 type="button"
                                 onClick={() => removeQuickAccessoryShortcut(sug)}
-                                className="pr-1.5 pl-0.5 text-zinc-400 hover:text-rose-600 font-bold leading-none cursor-pointer"
+                                className="pr-2 pl-0.5 text-neutral-500 hover:text-[#E76F51] font-bold leading-none cursor-pointer"
                                 title={`Quitar "${sug}" de los accesos directos`}
                               >
                                 ×
@@ -4059,7 +4059,7 @@ ${dictamen.accText}`;
                                 }
                               }}
                               placeholder="Nombre del acceso directo..."
-                              className="px-2 py-0.5 text-[11px] bg-white border border-zinc-400 focus:border-zinc-900 rounded-md outline-none w-40"
+                              className="px-2 py-0.5 text-[11px] bg-white border-2 border-black rounded-lg outline-none w-40 font-mono text-black"
                             />
                             <button
                               type="button"
@@ -4072,7 +4072,7 @@ ${dictamen.accText}`;
                                 setNewQuickShortcutText("");
                                 setIsAddingQuickShortcut(false);
                               }}
-                              className="px-2 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md text-[11px] font-bold cursor-pointer"
+                              className="px-2 py-0.5 bg-[#2A9D8F] hover:bg-emerald-600 text-white rounded-lg text-[11px] font-heading font-extrabold border-2 border-black shadow-[1px_1px_0px_#000] cursor-pointer"
                             >
                               Guardar
                             </button>
@@ -4082,7 +4082,7 @@ ${dictamen.accText}`;
                                 setNewQuickShortcutText("");
                                 setIsAddingQuickShortcut(false);
                               }}
-                              className="px-1.5 py-0.5 text-zinc-500 hover:text-zinc-800 text-[11px] cursor-pointer"
+                              className="px-1.5 py-0.5 text-neutral-600 hover:text-black font-bold text-[11px] cursor-pointer"
                             >
                               ✕
                             </button>
@@ -4091,10 +4091,10 @@ ${dictamen.accText}`;
                           <button
                             type="button"
                             onClick={() => setIsAddingQuickShortcut(true)}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-dashed border-indigo-300 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-dashed border-black transition-all cursor-pointer shadow-[1px_1px_0px_#000]"
                             title="Crear y guardar un nuevo acceso directo de accesorio"
                           >
-                            <Plus className="w-3 h-3" />
+                            <Plus className="w-3 h-3 text-black" />
                             <span>Agregar acceso directo</span>
                           </button>
                         )}
@@ -4116,14 +4116,14 @@ ${dictamen.accText}`;
                   {/* 1. Acciones de cambio de estado en el modal (Ordenado por color y nombre alfabético) */}
                   <div>
                     <div className="h-7 flex items-center justify-between mb-1.5 gap-2">
-                      <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider">
+                      <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider">
                         Cambiar Estado de la Orden
                       </span>
-                      <span className="text-[11px] text-zinc-400">
+                      <span className="text-[11px] font-mono font-bold text-neutral-600">
                         Ordenado por color y nombre
                       </span>
                     </div>
-                    <div className="p-3 bg-white border border-slate-300 rounded-xl shadow-2xs">
+                    <div className="p-3 bg-[#FAF6EE] border-2 border-black rounded-xl shadow-[2px_2px_0px_#000]">
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                         {modalStatusOptions.map((st) => {
                           const isActive =
@@ -4136,11 +4136,11 @@ ${dictamen.accText}`;
                               type="button"
                               onClick={() => handleCambiarEstado(selectedTicket.idOrden, st)}
                               title={st}
-                              className={`min-h-[32px] w-full inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer text-center leading-tight ${
+                              className={`min-h-[34px] w-full inline-flex items-center justify-center gap-1 px-2 py-1 text-[11px] font-heading font-extrabold rounded-lg border-2 transition-all cursor-pointer text-center leading-tight active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                                 isActive ? visual.activeBtnClass : visual.inactiveBtnClass
                               }`}
                             >
-                              {isActive && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
+                              {isActive && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
                               <span>{st}</span>
                             </button>
                           );
@@ -4164,17 +4164,17 @@ ${dictamen.accText}`;
                     return (
                       <div className="flex-1 flex flex-col">
                         <div className="h-6 flex items-center justify-between mb-1.5 gap-2 flex-nowrap">
-                          <span className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider font-mono truncate">
+                          <span className="text-xs font-heading font-extrabold text-black uppercase tracking-wider truncate">
                             {isTicketDanesa(selectedTicket.cliente)
                               ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
                               : "Dictamen Técnico · Resolución QC (WhatsApp)"}
                           </span>
-                          <span className="text-[11px] font-mono font-bold text-emerald-900 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-300 shadow-2xs shrink-0">
+                          <span className="text-[11px] font-mono font-extrabold text-black bg-[#FFD23F] px-2.5 py-0.5 rounded-full border-2 border-black shadow-[1px_1px_0px_#000] shrink-0">
                             {preview.sourceLabel}
                           </span>
                         </div>
 
-                        <div className="flex-1 p-3.5 bg-emerald-50/70 border-2 border-emerald-300 rounded-xl space-y-2.5 shadow-2xs flex flex-col justify-between">
+                        <div className="flex-1 p-3.5 bg-[#FAF6EE] border-2 border-black rounded-xl space-y-2.5 shadow-[2px_2px_0px_#000] flex flex-col justify-between">
                           {/* Selector rápido de resoluciones QC ordenado por color y nombre */}
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                             {DICTAMEN_QC_OPTIONS.map((opt, idx) => {
@@ -4186,7 +4186,7 @@ ${dictamen.accText}`;
                                   type="button"
                                   onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
                                   title={opt.label}
-                                  className={`min-h-[32px] w-full inline-flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] font-bold rounded-lg border-2 transition-all cursor-pointer shadow-2xs text-center leading-tight ${
+                                  className={`min-h-[34px] w-full inline-flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] font-heading font-extrabold rounded-lg border-2 transition-all cursor-pointer text-center leading-tight active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                                     isFirstAuto ? "sm:col-span-3" : ""
                                   } ${selected ? opt.chipActive : opt.chipInactive}`}
                                 >
@@ -4198,25 +4198,25 @@ ${dictamen.accText}`;
                           </div>
 
                           {isTicketDanesa(selectedTicket.cliente) ? (
-                            <div className="text-xs text-amber-900 bg-amber-50/90 p-2.5 rounded-lg border border-amber-200 flex items-start gap-2">
-                              <Building2 className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                            <div className="text-xs text-black bg-[#FFD23F]/20 p-2.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] flex items-start gap-2">
+                              <Building2 className="w-4 h-4 text-black shrink-0 mt-0.5" />
                               <div>
-                                <div className="font-bold text-amber-950">Mercadería de Stock Propio (Danesa S.A.)</div>
-                                <p className="text-amber-800 text-[11px] leading-relaxed mt-0.5">
+                                <div className="font-heading font-extrabold text-black">Mercadería de Stock Propio (Danesa S.A.)</div>
+                                <p className="text-neutral-800 text-[11px] font-medium leading-relaxed mt-0.5">
                                   Este equipo pertenece a la sucursal. Al tocar <strong>Marcar como Recibido</strong> se registrará la recepción interna en el sistema sin enviar notificaciones al grupo de WhatsApp.
                                 </p>
                               </div>
                             </div>
                           ) : (
-                            <div className="text-xs text-zinc-800 space-y-1 bg-white/95 p-2.5 rounded-lg border border-emerald-200">
-                              <div className="font-bold text-zinc-900">{preview.headerPlain}</div>
-                              <p className="text-zinc-600 leading-snug text-[11px]">{preview.body}</p>
+                            <div className="text-xs text-black space-y-1 bg-[#FFFDF9] p-2.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
+                              <div className="font-heading font-extrabold text-black">{preview.headerPlain}</div>
+                              <p className="text-neutral-800 font-medium leading-snug text-[11px]">{preview.body}</p>
                               {preview.detalleTexto ? (
-                                <p className="text-zinc-700 pt-1 border-t border-dashed border-zinc-200 text-[11px] truncate" title={preview.detalleTexto}>
-                                  <span className="font-semibold">Detalle:</span> {preview.detalleTexto}
+                                <p className="text-neutral-900 font-mono pt-1 border-t-2 border-dashed border-black text-[11px] truncate" title={preview.detalleTexto}>
+                                  <span className="font-bold">Detalle:</span> {preview.detalleTexto}
                                 </p>
                               ) : (
-                                <p className="text-zinc-400 italic pt-1 border-t border-dashed border-zinc-200 text-[11px]">
+                                <p className="text-neutral-500 italic pt-1 border-t-2 border-dashed border-black text-[11px]">
                                   Complete &quot;Informe Técnico / Mensaje de Servicio&quot; para incluir el detalle.
                                 </p>
                               )}

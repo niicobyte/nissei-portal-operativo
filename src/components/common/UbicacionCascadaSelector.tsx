@@ -146,28 +146,28 @@ export function UbicacionCascadaSelector({
   return (
     <div>
       <div className="flex items-center justify-between mb-1.5 flex-wrap gap-2">
-        <span className="text-zinc-500 font-bold text-xs uppercase tracking-wider flex items-center gap-1.5">
-          <MapPin className="w-4 h-4 text-zinc-600" />
+        <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5">
+          <MapPin className="w-4 h-4 text-black" />
           Ubicación del Producto (Estantes / Muebles)
         </span>
         <div className="flex items-center gap-2">
           {parsed.formatted ? (
             <>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg text-xs font-mono font-bold bg-indigo-50 text-indigo-900 border border-indigo-200 shadow-2xs">
-                <MapPin className="w-3 h-3 text-indigo-600 shrink-0" />
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-extrabold bg-[#FFD23F] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
+                <MapPin className="w-3 h-3 text-black shrink-0" />
                 <span>{parsed.formatted}</span>
               </span>
               <button
                 type="button"
                 disabled={disabled}
                 onClick={handleClear}
-                className="text-xs font-semibold text-rose-600 hover:text-rose-700 transition-colors cursor-pointer"
+                className="text-xs font-heading font-bold text-[#E76F51] hover:underline cursor-pointer"
               >
                 Quitar ubicación
               </button>
             </>
           ) : (
-            <span className="text-[11px] text-zinc-400 italic">
+            <span className="text-[11px] font-mono text-neutral-600 font-semibold italic">
               Sin ubicación asignada (pase el cursor o toque para desplegar)
             </span>
           )}
@@ -175,7 +175,7 @@ export function UbicacionCascadaSelector({
       </div>
 
       <div
-        className="p-3.5 bg-white border border-slate-300 rounded-xl shadow-sm"
+        className="p-3.5 bg-[#FAF6EE] border-2 border-black rounded-xl shadow-[2px_2px_0px_#000]"
         onMouseLeave={() => {
           if (parsed.main) {
             setActiveMain(parsed.main);
@@ -188,7 +188,7 @@ export function UbicacionCascadaSelector({
           {/* NIVEL 1: OPCIONES PRINCIPALES (Estantes / Muebles) */}
           <div className="sm:col-span-4 flex flex-col">
             <div className="h-5 flex items-center mb-1.5 px-1">
-              <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 truncate whitespace-nowrap">
+              <span className="block text-xs font-mono font-bold uppercase tracking-wider text-black truncate whitespace-nowrap">
                 1. Sector Principal
               </span>
             </div>
@@ -215,12 +215,12 @@ export function UbicacionCascadaSelector({
                       : "A"
                   );
                 }}
-                className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                   activeMain === "ESTANTE"
-                    ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
+                    ? "bg-black text-[#FFD23F]"
                     : parsed.main === "ESTANTE"
-                    ? "bg-indigo-50 text-indigo-900 border-indigo-300"
-                    : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
+                    ? "bg-[#2A9D8F] text-white"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
                 }`}
               >
                 <span className="flex items-center gap-2 truncate">
@@ -229,7 +229,7 @@ export function UbicacionCascadaSelector({
                 </span>
                 <ChevronRight
                   className={`w-3.5 h-3.5 shrink-0 transition-transform ${
-                    activeMain === "ESTANTE" ? "translate-x-0.5 text-white" : "text-zinc-400"
+                    activeMain === "ESTANTE" ? "translate-x-0.5 text-[#FFD23F]" : "text-black"
                   }`}
                 />
               </button>
@@ -256,12 +256,12 @@ export function UbicacionCascadaSelector({
                       : "1"
                   );
                 }}
-                className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                   activeMain === "MUEBLE"
-                    ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
+                    ? "bg-black text-[#FFD23F]"
                     : parsed.main === "MUEBLE"
-                    ? "bg-indigo-50 text-indigo-900 border-indigo-300"
-                    : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
+                    ? "bg-[#2A9D8F] text-white"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
                 }`}
               >
                 <span className="flex items-center gap-2 truncate">
@@ -270,7 +270,7 @@ export function UbicacionCascadaSelector({
                 </span>
                 <ChevronRight
                   className={`w-3.5 h-3.5 shrink-0 transition-transform ${
-                    activeMain === "MUEBLE" ? "translate-x-0.5 text-white" : "text-zinc-400"
+                    activeMain === "MUEBLE" ? "translate-x-0.5 text-[#FFD23F]" : "text-black"
                   }`}
                 />
               </button>
@@ -278,9 +278,9 @@ export function UbicacionCascadaSelector({
           </div>
 
           {/* NIVEL 2: SUB-OPCIONES EN CASCADA */}
-          <div className="sm:col-span-4 flex flex-col sm:border-l sm:border-zinc-200 sm:pl-3">
+          <div className="sm:col-span-4 flex flex-col sm:border-l-2 sm:border-black sm:pl-3">
             <div className="h-5 flex items-center mb-1.5 px-1">
-              <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 truncate whitespace-nowrap">
+              <span className="block text-xs font-mono font-bold uppercase tracking-wider text-black truncate whitespace-nowrap">
                 {activeMain === "ESTANTE"
                   ? "2. Columna / Sección"
                   : activeMain === "MUEBLE"
@@ -290,8 +290,8 @@ export function UbicacionCascadaSelector({
             </div>
 
             {!activeMain ? (
-              <div className="h-[78px] flex items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-3 text-center">
-                <span className="text-[11px] text-zinc-400">
+              <div className="h-[78px] flex items-center justify-center rounded-lg border-2 border-dashed border-black bg-[#FFFDF9] px-3 text-center">
+                <span className="text-xs font-mono font-bold text-neutral-700">
                   Pase sobre <strong>Estantes</strong> o <strong>Muebles</strong>
                 </span>
               </div>
@@ -307,12 +307,12 @@ export function UbicacionCascadaSelector({
                       disabled={disabled}
                       onMouseEnter={() => !disabled && setActiveSub(col)}
                       onClick={() => !disabled && setActiveSub(col)}
-                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                         isHoveredOrActive
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
+                          ? "bg-black text-[#FFD23F]"
                           : isSavedCol
-                          ? "bg-indigo-50 text-indigo-900 border-indigo-300"
-                          : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
+                          ? "bg-[#2A9D8F] text-white"
+                          : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
                       }`}
                     >
                       <span className="truncate">Estante {col}</span>
@@ -335,12 +335,12 @@ export function UbicacionCascadaSelector({
                       disabled={disabled}
                       onMouseEnter={() => !disabled && setActiveSub("SIN_REPARO")}
                       onClick={handleSelectEstanteSinReparo}
-                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                         isSelected
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs"
+                          ? "bg-[#2A9D8F] text-white"
                           : isHovered
-                          ? "bg-zinc-800 text-white border-zinc-800"
-                          : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
+                          ? "bg-black text-[#FFD23F]"
+                          : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
                       }`}
                     >
                       <span className="truncate">Sin reparo</span>
@@ -368,12 +368,12 @@ export function UbicacionCascadaSelector({
                       disabled={disabled}
                       onMouseEnter={() => !disabled && setActiveSub(num)}
                       onClick={() => !disabled && setActiveSub(num)}
-                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer ${
+                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                         isHoveredOrActive
-                          ? "bg-indigo-600 text-white border-indigo-600 shadow-2xs"
+                          ? "bg-black text-[#FFD23F]"
                           : isSavedMueble
-                          ? "bg-indigo-50 text-indigo-900 border-indigo-300"
-                          : "bg-zinc-50 hover:bg-zinc-100 text-zinc-800 border-zinc-200"
+                          ? "bg-[#2A9D8F] text-white"
+                          : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
                       }`}
                     >
                       <span className="truncate">Mueble {num}</span>
@@ -386,9 +386,9 @@ export function UbicacionCascadaSelector({
           </div>
 
           {/* NIVEL 3: DESPLIEGUE FINAL DE UBICACIÓN */}
-          <div className="sm:col-span-4 flex flex-col sm:border-l sm:border-zinc-200 sm:pl-3">
+          <div className="sm:col-span-4 flex flex-col sm:border-l-2 sm:border-black sm:pl-3">
             <div className="h-5 flex items-center mb-1.5 px-1">
-              <span className="block text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 truncate whitespace-nowrap">
+              <span className="block text-xs font-mono font-bold uppercase tracking-wider text-black truncate whitespace-nowrap">
                 {activeMain === "ESTANTE" && (activeSub === "A" || activeSub === "B")
                   ? `3. Nivel Estante ${activeSub}`
                   : activeMain === "MUEBLE" && activeSub
@@ -413,10 +413,10 @@ export function UbicacionCascadaSelector({
                         onClick={() =>
                           handleSelectEstanteLeaf(activeSub as "A" | "B", num)
                         }
-                        className={`h-9 px-2 rounded-lg text-xs font-mono font-extrabold border transition-all cursor-pointer flex items-center justify-center gap-0.5 ${
+                        className={`h-9 px-2 rounded-lg text-xs font-mono font-extrabold border-2 border-black transition-all cursor-pointer flex items-center justify-center gap-0.5 shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                           isSelected
-                            ? "bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-200"
-                            : "bg-zinc-50 hover:bg-indigo-50 hover:text-indigo-900 hover:border-indigo-300 text-zinc-800 border-zinc-200"
+                            ? "bg-[#2A9D8F] text-white"
+                            : "bg-[#FFFDF9] hover:bg-[#FFD23F] text-black"
                         }`}
                         title={`Asignar Estante ${activeSub}${num}`}
                       >
@@ -431,11 +431,11 @@ export function UbicacionCascadaSelector({
                 )}
               </div>
             ) : activeMain === "ESTANTE" && activeSub === "SIN_REPARO" ? (
-              <div className="h-[78px] flex flex-col items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50/50 px-3 text-center">
-                <span className="text-xs font-bold text-emerald-900">
+              <div className="h-[78px] flex flex-col items-center justify-center rounded-lg border-2 border-black bg-[#2A9D8F]/15 px-3 text-center shadow-[2px_2px_0px_#000]">
+                <span className="text-xs font-heading font-extrabold text-black">
                   Estante · Sin reparo
                 </span>
-                <span className="text-[10px] text-emerald-700">
+                <span className="text-[10px] font-mono font-bold text-neutral-800">
                   Sin numeración adicional (clic en &quot;Sin reparo&quot; para asignar)
                 </span>
               </div>
@@ -455,10 +455,10 @@ export function UbicacionCascadaSelector({
                       onClick={() =>
                         handleSelectMuebleLeaf(activeSub as "1" | "2" | "3", opt)
                       }
-                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-bold border transition-all cursor-pointer text-left ${
+                      className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer text-left shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                         isSelected
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-2xs ring-2 ring-emerald-200"
-                          : "bg-zinc-50 hover:bg-indigo-50 hover:text-indigo-900 hover:border-indigo-300 text-zinc-800 border-zinc-200"
+                          ? "bg-[#2A9D8F] text-white"
+                          : "bg-[#FFFDF9] hover:bg-[#FFD23F] text-black"
                       }`}
                     >
                       <span className="truncate">{opt}</span>
@@ -470,8 +470,8 @@ export function UbicacionCascadaSelector({
                 })}
               </div>
             ) : (
-              <div className="h-[78px] flex items-center justify-center rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-3 text-center">
-                <span className="text-[11px] text-zinc-400">
+              <div className="h-[78px] flex items-center justify-center rounded-lg border-2 border-dashed border-black bg-[#FFFDF9] px-3 text-center">
+                <span className="text-xs font-mono font-bold text-neutral-700">
                   Seleccione una opción del paso 2
                 </span>
               </div>
