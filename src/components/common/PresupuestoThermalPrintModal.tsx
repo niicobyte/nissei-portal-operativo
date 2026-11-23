@@ -563,7 +563,7 @@ export function PresupuestoThermalPrintModal({
             {/* Encabezado Térmico Limpio (Fondo Blanco, Borde Negro 2px - Previene Sobrecalentamiento Térmico) */}
             <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1.5 space-y-1`}>
               <div className="border-2 border-black bg-white text-black px-2 py-1 font-heading text-[13px] font-black uppercase tracking-wider block w-full print:border-2 print:border-black print:bg-white print:text-black">
-                NISSEI · TALLER & POST-VENTA CDE
+                NISSEI · TIENDA ASUNCION
               </div>
               <div className="inline-block px-2 py-0.5 font-mono text-[10px] uppercase text-black font-black border border-black bg-white">
                 PRESUPUESTO DE ENSAMBLE DE PC
@@ -679,7 +679,7 @@ export function PresupuestoThermalPrintModal({
                 </p>
               </div>
               <p className="text-[9px] font-bold text-black/80 leading-tight uppercase">
-                Garantía oficial 3 meses en componentes · www.nissei.com
+                Garantía oficial 3 meses en componentes
               </p>
             </div>
 

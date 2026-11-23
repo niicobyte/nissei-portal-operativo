@@ -4003,7 +4003,7 @@ export default function ArmarPcPresupuestadorPage() {
                   <Wrench className="w-4 h-4 text-black" />
                 </span>
                 <h1 className="text-sm sm:text-base font-heading font-extrabold text-black tracking-tight truncate">
-                  Configurador &amp; Presupuestador de PC · NISSEI CDE
+                  Configurador &amp; Presupuestador de PC
                 </h1>
               </div>
             </div>

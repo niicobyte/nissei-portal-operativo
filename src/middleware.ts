@@ -76,7 +76,7 @@ export function isSellerOnlyDomain(req: NextRequest): boolean {
     return false;
   }
 
-  const explicitSellerHosts = (process.env.SELLER_ONLY_HOSTS || "")
+  const explicitSellerHosts = (process.env.SELLER_ONLY_HOSTS || "tienda-ventas.up.railway.app")
     .split(",")
     .map((h) => h.trim().toLowerCase())
     .filter(Boolean);
@@ -134,20 +134,33 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 0.1. BLOQUEO KIOSCO PARA VENDEDORES EN EL DOMINIO PRINCIPAL:
-  // Si un vendedor sin sesión entró por /armar-pc, se le marca con cookie de kiosco.
-  // Si intenta borrar '/armar-pc' y escribir '/' o '/login' en la barra de direcciones, se lo devuelve a /armar-pc.
-  if (pathname === "/armar-pc") {
-    const res = NextResponse.next();
-    if (!user) {
-      res.cookies.set(KIOSK_SELLER_COOKIE, "1", {
-        path: "/",
-        httpOnly: true,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 30, // 30 días
-      });
+  // 0.1. EXCLUSIVIDAD DE /armar-pc EN EL DOMINIO DE TIENDA:
+  // /armar-pc SOLO debe existir y ser visible en https://tienda-ventas.up.railway.app/armar-pc.
+  // Si alguien ingresa a /armar-pc desde el dominio de operadores (system-integrated.up.railway.app),
+  // se le redirige inmediatamente al dominio exclusivo de ventas de PC.
+  if (pathname === "/armar-pc" && !sellerDomain) {
+    const rawHost = (
+      req.headers.get("x-forwarded-host") ||
+      req.headers.get("host") ||
+      req.nextUrl.hostname ||
+      ""
+    )
+      .split(",")[0]
+      .trim()
+      .toLowerCase()
+      .replace(/:\d+$/, "");
+
+    const isLocal = !rawHost || rawHost === "localhost" || rawHost === "127.0.0.1";
+    if (!isLocal) {
+      const sellerTarget = new URL(
+        "/armar-pc",
+        process.env.TIENDA_VENTAS_URL || "https://tienda-ventas.up.railway.app"
+      );
+      searchParams.forEach((val, key) => sellerTarget.searchParams.set(key, val));
+      return NextResponse.redirect(sellerTarget, 307);
     }
-    return res;
+
+    return NextResponse.next();
   }
 
   if (pathname === "/" || pathname === "/login") {
