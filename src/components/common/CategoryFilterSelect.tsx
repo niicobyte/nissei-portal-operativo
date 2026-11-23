@@ -550,10 +550,10 @@ export default function CategoryFilterSelect({
             >
               {filteredGroups.length === 0 ? (
                 <div className="py-10 px-4 text-center">
-                  <p className="text-xs font-semibold text-slate-700">
+                  <p className="text-xs font-heading font-extrabold text-black">
                     Sin coincidencias para &ldquo;{mainSearch}&rdquo;
                   </p>
-                  <p className="mt-1 text-[11px] text-slate-400">
+                  <p className="mt-1 text-[11px] text-neutral-600 font-medium">
                     Probá con otro término como Monitor, SSD, Cafetera, Celular o Mouse.
                   </p>
                 </div>
@@ -572,10 +572,10 @@ export default function CategoryFilterSelect({
                   return (
                     <div
                       key={group.family.id}
-                      className={`rounded-xl border transition-colors ${
+                      className={`rounded-lg border-2 transition-all mb-1.5 ${
                         isThisFamilySelected || checkedInThisGroup > 0
-                          ? "border-slate-300 bg-slate-50/80"
-                          : "border-transparent hover:border-slate-100"
+                          ? "border-black bg-[#FFFDF9] shadow-[2px_2px_0px_#000]"
+                          : "border-black/20 hover:border-black bg-white hover:bg-[#FAF6EE]"
                       }`}
                     >
                       {/* Cabecera del Rubro */}
@@ -583,28 +583,28 @@ export default function CategoryFilterSelect({
                         <button
                           type="button"
                           onClick={() => toggleFamilyExpand(group.family.id)}
-                          className="flex flex-1 items-center gap-2 text-left min-w-0 rounded-lg px-1 py-0.5 hover:bg-slate-100/80 transition-colors"
+                          className="flex flex-1 items-center gap-2 text-left min-w-0 rounded-md px-1 py-1 hover:bg-[#FAF6EE] transition-colors"
                         >
                           {isExpanded ? (
-                            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-500" />
+                            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-black stroke-[2.5]" />
                           ) : (
-                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-black stroke-[2.5]" />
                           )}
-                          <span className="shrink-0 rounded bg-slate-200/80 px-1.5 py-0.5 font-mono text-[9px] font-bold text-slate-700">
+                          <span className="shrink-0 rounded bg-black text-[#FFD23F] px-1.5 py-0.5 font-mono text-[9px] font-extrabold border border-black shadow-[1px_1px_0px_#000]">
                             {group.family.icon}
                           </span>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="truncate text-xs font-bold text-slate-900">
+                              <span className="truncate text-xs font-heading font-extrabold text-black">
                                 {group.family.name}
                               </span>
                               {checkedInThisGroup > 0 && (
-                                <span className="shrink-0 rounded-full bg-emerald-100 px-1.5 py-0.2 font-mono text-[9px] font-bold text-emerald-700">
+                                <span className="shrink-0 rounded-full bg-[#2A9D8F] text-white px-1.5 py-0.2 font-mono text-[9px] font-bold border border-black">
                                   {checkedInThisGroup} sel.
                                 </span>
                               )}
                             </div>
-                            <p className="truncate text-[10px] text-slate-400">
+                            <p className="truncate text-[10px] text-neutral-600 font-medium">
                               {group.items.length}{" "}
                               {group.items.length === 1 ? "categoría" : "categorías"} ·{" "}
                               {group.family.description}
@@ -617,10 +617,10 @@ export default function CategoryFilterSelect({
                           type="button"
                           onClick={() => handleSelectEntireFamily(group.family.id)}
                           title={`Ver todas las órdenes de ${group.family.name}`}
-                          className={`shrink-0 rounded-lg px-2 py-1 text-[10px] font-bold transition-colors ${
+                          className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-mono font-bold border-2 border-black transition-all cursor-pointer ${
                             isThisFamilySelected
-                              ? "bg-slate-900 text-white"
-                              : "bg-slate-100 text-slate-700 hover:bg-slate-900 hover:text-white"
+                              ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                              : "bg-[#FFFDF9] text-black shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                           }`}
                         >
                           Todo ({group.totalCount})
@@ -629,7 +629,7 @@ export default function CategoryFilterSelect({
 
                       {/* Subdesplegable interno con las subcategorías del Rubro */}
                       {isExpanded && (
-                        <div className="ml-5 mr-2 mb-2 pl-2.5 border-l border-slate-200 space-y-0.5">
+                        <div className="ml-4 mr-1.5 mb-2 pl-2.5 border-l-2 border-black border-dashed space-y-1">
                           {visibleItems.map((item) => {
                             const isChecked = normalizedSelectedSet.has(
                               item.normalized
@@ -637,10 +637,10 @@ export default function CategoryFilterSelect({
                             return (
                               <div
                                 key={item.normalized}
-                                className={`flex items-center justify-between gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors ${
+                                className={`flex items-center justify-between gap-2 rounded-md px-2 py-1 text-xs border transition-all ${
                                   isChecked
-                                    ? "bg-emerald-50 text-emerald-950 font-semibold"
-                                    : "text-slate-700 hover:bg-slate-100"
+                                    ? "bg-[#2A9D8F]/15 border-black text-black font-bold shadow-[1px_1px_0px_#000]"
+                                    : "border-transparent text-neutral-800 hover:border-black/40 hover:bg-[#FAF6EE] font-medium"
                                 }`}
                               >
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -655,10 +655,10 @@ export default function CategoryFilterSelect({
                                       )
                                     }
                                     title="Marcar/desmarcar para selección múltiple"
-                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                                    className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 border-black transition-all cursor-pointer ${
                                       isChecked
-                                        ? "border-emerald-600 bg-emerald-600 text-white"
-                                        : "border-slate-300 bg-white hover:border-slate-500"
+                                        ? "bg-[#2A9D8F] text-white shadow-[1px_1px_0px_#000]"
+                                        : "bg-white hover:bg-[#FAF6EE]"
                                     }`}
                                   >
                                     {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
@@ -671,17 +671,17 @@ export default function CategoryFilterSelect({
                                         item.normalized
                                       )
                                     }
-                                    className="truncate text-left flex-1 hover:underline"
+                                    className="truncate text-left flex-1 hover:underline cursor-pointer"
                                     title={`Filtrar solo ${item.label}`}
                                   >
                                     {item.label}
                                   </button>
                                 </div>
                                 <span
-                                  className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold ${
+                                  className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-bold border border-black ${
                                     isChecked
-                                      ? "bg-emerald-100 text-emerald-800"
-                                      : "bg-slate-100 text-slate-500"
+                                      ? "bg-[#2A9D8F] text-white"
+                                      : "bg-[#FAF6EE] text-black"
                                   }`}
                                 >
                                   {item.count}
@@ -699,18 +699,18 @@ export default function CategoryFilterSelect({
 
             {/* Pie contextual cuando hay filtros activos */}
             {isFiltering && (
-              <div className="flex items-center justify-between gap-2 border-t border-slate-100 bg-slate-50 px-3 py-2 text-[11px]">
+              <div className="flex items-center justify-between gap-2 border-t-2 border-black bg-[#FAF6EE] px-3 py-2 text-[11px]">
                 <button
                   type="button"
                   onClick={() => handleClearAll()}
-                  className="font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+                  className="font-mono font-bold text-black hover:text-[#E76F51] underline decoration-2 cursor-pointer transition-colors"
                 >
                   Limpiar selección
                 </button>
                 <button
                   type="button"
                   onClick={() => setMainOpen(false)}
-                  className="rounded-lg bg-slate-900 px-3 py-1 font-semibold text-white hover:bg-slate-800 transition-colors"
+                  className="rounded-lg bg-[#FFD23F] hover:bg-[#FACC15] px-3 py-1 font-heading font-extrabold text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                 >
                   Aplicar ({normalizedSelectedSet.size > 0 ? normalizedSelectedSet.size : "Rubro"})
                 </button>
@@ -853,7 +853,7 @@ export default function CategoryFilterSelect({
                 )}
 
                 {filteredSubItems.length === 0 ? (
-                  <p className="py-6 text-center text-xs text-slate-400">
+                  <p className="py-6 text-center text-xs text-neutral-600 font-medium">
                     Sin subcategorías que coincidan con &ldquo;{subSearch}&rdquo;
                   </p>
                 ) : (
@@ -862,10 +862,10 @@ export default function CategoryFilterSelect({
                     return (
                       <div
                         key={item.normalized}
-                        className={`flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs transition-colors ${
+                        className={`flex items-center justify-between gap-2 rounded-md px-2 py-1 text-xs border transition-all ${
                           isChecked
-                            ? "bg-emerald-50 text-emerald-950 font-semibold"
-                            : "text-slate-700 hover:bg-slate-100"
+                            ? "bg-[#2A9D8F]/15 border-black text-black font-bold shadow-[1px_1px_0px_#000]"
+                            : "border-transparent text-neutral-800 hover:border-black/40 hover:bg-[#FAF6EE] font-medium"
                         }`}
                       >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -874,10 +874,10 @@ export default function CategoryFilterSelect({
                             role="checkbox"
                             aria-checked={isChecked}
                             onClick={() => handleToggleCheckboxSub(item.normalized)}
-                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                            className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border-2 border-black transition-all cursor-pointer ${
                               isChecked
-                                ? "border-emerald-600 bg-emerald-600 text-white"
-                                : "border-slate-300 bg-white hover:border-slate-500"
+                                ? "bg-[#2A9D8F] text-white shadow-[1px_1px_0px_#000]"
+                                : "bg-white hover:bg-[#FAF6EE]"
                             }`}
                           >
                             {isChecked && <Check className="h-3 w-3 stroke-[3]" />}
@@ -890,16 +890,16 @@ export default function CategoryFilterSelect({
                                 item.normalized
                               )
                             }
-                            className="truncate text-left flex-1 hover:underline"
+                            className="truncate text-left flex-1 hover:underline cursor-pointer"
                           >
                             {item.label}
                           </button>
                         </div>
                         <span
-                          className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-semibold ${
+                          className={`shrink-0 rounded-full px-1.5 py-0.5 font-mono text-[10px] font-bold border border-black ${
                             isChecked
-                              ? "bg-emerald-100 text-emerald-800"
-                              : "bg-slate-100 text-slate-500"
+                              ? "bg-[#2A9D8F] text-white"
+                              : "bg-[#FAF6EE] text-black"
                           }`}
                         >
                           {item.count}
@@ -911,15 +911,15 @@ export default function CategoryFilterSelect({
               </div>
 
               {selectedInActiveFamilyCount > 0 && (
-                <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-3 py-2 text-[11px]">
-                  <span className="font-medium text-slate-500">
+                <div className="flex items-center justify-between border-t-2 border-black bg-[#FAF6EE] px-3 py-2 text-[11px]">
+                  <span className="font-mono font-bold text-neutral-800">
                     {selectedInActiveFamilyCount}{" "}
                     {selectedInActiveFamilyCount === 1 ? "seleccionada" : "seleccionadas"}
                   </span>
                   <button
                     type="button"
                     onClick={() => setSubOpen(false)}
-                    className="rounded-lg bg-slate-900 px-3 py-1 font-semibold text-white hover:bg-slate-800"
+                    className="rounded-lg bg-[#FFD23F] hover:bg-[#FACC15] px-3 py-1 font-heading font-extrabold text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                   >
                     Listo
                   </button>

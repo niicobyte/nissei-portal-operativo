@@ -1373,7 +1373,7 @@ export default function RecepcionCdeDashboardPage() {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b-2 border-black">
           <div>
             <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000] mb-2">
-              <span>SATI · CASA MATRIZ CDE ↔ SUCURSAL ASU</span>
+              <span>SATI · DATOS CRUZADOS ASU CDE</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-[#111111] tracking-tight">
               SATI ASU - CDE
