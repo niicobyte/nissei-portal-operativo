@@ -584,12 +584,12 @@ export function SatiThermalPrintModal({
               <ThermalBarcode128 value={data.idOrden} height={40} width={1.8} fontSize={12} />
             </div>
 
-            {/* Encabezado Franja Invertida Neo-Brutalista */}
-            <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1.5 print:pt-1`}>
-              <div className="bg-black text-white px-2 py-1 font-heading text-[13px] font-extrabold uppercase tracking-wider block w-full print:bg-black print:text-white">
+            {/* Encabezado Térmico Limpio (Fondo Blanco, Borde Negro 2px - Previene Sobrecalentamiento Térmico) */}
+            <div className={`text-center ${isUltraBlack ? "border-b-[3px]" : "border-b-2"} border-black pb-2 print:pb-1.5 print:pt-1 space-y-1`}>
+              <div className="border-2 border-black bg-white text-black px-2 py-1 font-heading text-[13px] font-black uppercase tracking-wider block w-full print:border-2 print:border-black print:bg-white print:text-black">
                 NISSEI · POST-VENTA CDE
               </div>
-              <div className="mt-1 inline-block px-2 py-0.5 font-mono text-[10px] uppercase text-black font-black border border-black bg-white">
+              <div className="inline-block px-2 py-0.5 font-mono text-[10px] uppercase text-black font-black border border-black bg-white">
                 {data.subtitulo || "ORDEN DE SERVICIO TÉCNICO SATI"}
               </div>
             </div>

@@ -26,13 +26,13 @@ export function OrderSearchInput({
     <>
       <div className="flex items-center gap-1.5 w-full lg:w-[27rem] xl:w-[29rem] min-w-0">
         <div className="relative flex-1 min-w-0">
-          <Search className="w-4 h-4 absolute left-3 top-2.5 text-zinc-400 pointer-events-none" />
+          <Search className="w-4 h-4 absolute left-3 top-2.5 text-black pointer-events-none" />
           <input
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full min-w-0 pl-9 pr-8 py-2 bg-zinc-50 hover:bg-zinc-100/70 focus:bg-white border border-zinc-200 focus:border-zinc-900 rounded-xl text-xs text-zinc-900 outline-none transition-all placeholder:text-zinc-400"
+            className="w-full min-w-0 pl-9 pr-8 py-2 bg-white border-2 border-black rounded-lg text-xs font-mono font-bold text-black outline-none transition-all placeholder:text-neutral-500 shadow-[2px_2px_0px_#000]"
           />
           {value && (
             <button

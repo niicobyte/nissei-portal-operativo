@@ -2476,10 +2476,10 @@ ${dictamen.accText}`;
           </section>
         )}
 
-        {/* 5 KPIs Principales con datos reales */}
+        {/* 5 KPIs Principales con datos reales (Neo-Brutalismo Retro) */}
         <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 2xl:gap-6">
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block">
+          <div className="bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">
               {viewScope === "DANESA"
                 ? "Envíos Danesa SA"
                 : viewScope === "CLIENTES_ASU"
@@ -2487,14 +2487,14 @@ ${dictamen.accText}`;
                 : "Total Órdenes SATI"}
             </span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-zinc-900 tabular-nums">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-black tabular-nums">
                 {metrics.total.toLocaleString()}
               </span>
-              <span className="text-xs text-emerald-600 font-medium">
+              <span className="text-xs font-mono font-bold text-black bg-[#2A9D8F]/25 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
                 {viewScope === "TODOS" ? "100% Real" : `de ${totalUniversal.toLocaleString()} tot.`}
               </span>
             </div>
-            <span className="text-xs text-zinc-400 block mt-1">
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">
               {viewScope === "DANESA"
                 ? "Nuestra Sucursal ASU"
                 : viewScope === "CLIENTES_ASU"
@@ -2503,115 +2503,115 @@ ${dictamen.accText}`;
             </span>
           </div>
 
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block">Entregadas al Cliente</span>
+          <div className="bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">Entregadas al Cliente</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-emerald-700 tabular-nums">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-[#2A9D8F] tabular-nums">
                 {metrics.entregadas.toLocaleString()}
               </span>
-              <span className="text-xs text-emerald-600 font-medium tabular-nums">
+              <span className="text-xs font-mono font-bold text-black bg-[#2A9D8F]/25 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 {Math.round((metrics.entregadas / metrics.total) * 100)}%
               </span>
             </div>
-            <span className="text-xs text-zinc-400 block mt-1">Completadas con Éxito</span>
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">Completadas con Éxito</span>
           </div>
 
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block">En Reparación en Taller</span>
+          <div className="bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">En Reparación en Taller</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-amber-700 tabular-nums">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-amber-700 tabular-nums">
                 {metrics.enReparacion.toLocaleString()}
               </span>
-              <span className="text-xs text-amber-600 font-medium tabular-nums">
+              <span className="text-xs font-mono font-bold text-black bg-[#FFD23F]/40 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 {Math.round((metrics.enReparacion / metrics.total) * 100)}%
               </span>
             </div>
-            <span className="text-xs text-zinc-400 block mt-1">En Bancos Técnicos</span>
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">En Bancos Técnicos</span>
           </div>
 
-          <div className="bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block">Reparadas / Listas Entrega</span>
+          <div className="bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">Reparadas / Listas Entrega</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-sky-700 tabular-nums">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-sky-700 tabular-nums">
                 {metrics.reparadas.toLocaleString()}
               </span>
-              <span className="text-xs text-sky-600 font-medium tabular-nums">
+              <span className="text-xs font-mono font-bold text-black bg-sky-200 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 {Math.round((metrics.reparadas / metrics.total) * 100)}%
               </span>
             </div>
-            <span className="text-xs text-zinc-400 block mt-1">Listas para Notificar</span>
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">Listas para Notificar</span>
           </div>
 
-          <div className="col-span-2 sm:col-span-1 bg-white p-4 2xl:p-5 rounded-xl border border-zinc-200 shadow-sm">
-            <span className="text-xs text-zinc-500 block">En Control Calidad (QC)</span>
+          <div className="col-span-2 sm:col-span-1 bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">En Control Calidad (QC)</span>
             <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-extrabold text-purple-700 tabular-nums">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-purple-700 tabular-nums">
                 {metrics.qc}
               </span>
-              <span className="text-xs text-purple-600 font-medium tabular-nums">
+              <span className="text-xs font-mono font-bold text-black bg-purple-200 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 {Math.round((metrics.qc / metrics.total) * 100)}%
               </span>
             </div>
-            <span className="text-xs text-zinc-400 block mt-1">Test de Ciclado Activo</span>
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">Test de Ciclado Activo</span>
           </div>
         </section>
 
         {/* Cabecera y Selector de Tableros de Analítica */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-white p-4 sm:p-5 rounded-2xl border border-zinc-200 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#FFFDF9] p-4 sm:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-700 shrink-0">
-              <BarChart3 className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-lg bg-[#FFD23F] border-2 border-black flex items-center justify-center text-black shrink-0 shadow-[2px_2px_0px_#000]">
+              <BarChart3 className="w-5 h-5 text-black" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-lg font-bold text-zinc-900">
+                <h3 className="text-base sm:text-lg font-heading font-extrabold text-black">
                   Tableros de Analítica & Rendimiento Operativo
                 </h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-zinc-100 font-semibold text-zinc-700 font-mono">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FFD23F] font-mono font-bold text-black border border-black shadow-[1px_1px_0px_#000]">
                   {dashboardView === "TODOS" ? "6 Paneles" : "4 Paneles"}
                 </span>
               </div>
-              <p className="text-xs sm:text-sm text-zinc-500">
+              <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                 Métricas en tiempo real: marcas, componentes, dictámenes QC, permanencia y logística SATI.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 text-xs font-semibold self-start md:self-auto flex-wrap">
+          <div className="flex items-center gap-1.5 p-1 bg-[#FAF6EE] rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] self-start md:self-auto flex-wrap">
             <button
               type="button"
               onClick={() => setDashboardView("OPERATIVO")}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                 dashboardView === "OPERATIVO"
-                  ? "bg-white text-zinc-900 shadow-xs font-bold"
-                  : "text-zinc-600 hover:text-zinc-900"
+                  ? "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black border-2 border-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
               }`}
             >
-              <Activity className="w-3.5 h-3.5 text-emerald-600" />
+              <Activity className="w-3.5 h-3.5" />
               <span>Operativo & Calidad (4)</span>
             </button>
             <button
               type="button"
               onClick={() => setDashboardView("LOGISTICA")}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                 dashboardView === "LOGISTICA"
-                  ? "bg-white text-zinc-900 shadow-xs font-bold"
-                  : "text-zinc-600 hover:text-zinc-900"
+                  ? "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black border-2 border-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
               }`}
             >
-              <Truck className="w-3.5 h-3.5 text-blue-600" />
+              <Truck className="w-3.5 h-3.5" />
               <span>Logística & Cuentas (4)</span>
             </button>
             <button
               type="button"
               onClick={() => setDashboardView("TODOS")}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
                 dashboardView === "TODOS"
-                  ? "bg-white text-zinc-900 shadow-xs font-bold"
-                  : "text-zinc-600 hover:text-zinc-900"
+                  ? "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black border-2 border-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
               }`}
             >
-              <Layers className="w-3.5 h-3.5 text-purple-600" />
+              <Layers className="w-3.5 h-3.5" />
               <span>Ver Todos (6 Dashboards)</span>
             </button>
           </div>
@@ -2622,17 +2622,17 @@ ${dictamen.accText}`;
 
           {/* DASHBOARD 1: Top Marcas */}
           {(dashboardView === "OPERATIVO" || dashboardView === "TODOS") && (
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-zinc-900">
+                  <h3 className="text-base sm:text-lg font-heading font-extrabold text-black">
                     Top Marcas de Equipos en Recepción
                   </h3>
-                  <p className="text-xs sm:text-sm text-zinc-500">
+                  <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                     Distribución según marcas con mayor flujo de servicio
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-md text-slate-700 font-mono">
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
                   Sucursal CDE
                 </span>
               </div>
@@ -2642,27 +2642,27 @@ ${dictamen.accText}`;
                   <div
                     key={idx}
                     onClick={() => setSearchTerm(brand.name === searchTerm ? "" : brand.name)}
-                    className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-zinc-50 transition-colors group"
+                    className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-[#FAF6EE] transition-colors group"
                     title={`Hacer clic para filtrar por ${brand.name}`}
                   >
                     <div className="flex justify-between text-xs sm:text-sm font-medium">
-                      <span className="text-zinc-900 font-semibold group-hover:text-blue-600 transition-colors">
+                      <span className="text-black font-heading font-bold group-hover:text-amber-800 transition-colors">
                         {brand.name}
                       </span>
-                      <span className="text-zinc-500 font-mono font-bold">
+                      <span className="text-neutral-800 font-mono font-bold">
                         {brand.count} equipos ({brand.pct}%)
                       </span>
                     </div>
-                    <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                    <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-3 sm:h-3.5 overflow-hidden p-0.5 shadow-[1px_1px_0px_#000]">
                       <div
-                        className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${
+                        className={`h-full rounded-full transition-all duration-500 ${
                           idx === 0
-                            ? "bg-slate-900"
+                            ? "bg-black"
                             : idx === 1
-                            ? "bg-slate-700"
+                            ? "bg-neutral-800"
                             : idx === 2
-                            ? "bg-slate-500"
-                            : "bg-slate-400"
+                            ? "bg-neutral-600"
+                            : "bg-neutral-500"
                         }`}
                         style={{ width: `${Math.min(100, brand.pct * 3.5)}%` }}
                       />
@@ -2671,26 +2671,26 @@ ${dictamen.accText}`;
                 ))}
               </div>
 
-              <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
-                <span>Mayor flujo de garantía: <strong className="text-zinc-800">{metrics.topBrands[0]?.name || "N/A"}</strong></span>
-                <span className="font-mono text-zinc-400">Auditoría SATI Activa</span>
+              <div className="pt-3 text-xs sm:text-sm text-neutral-800 flex justify-between items-center border-t-2 border-black border-dashed font-mono font-bold">
+                <span>Mayor flujo de garantía: <strong className="text-black">{metrics.topBrands[0]?.name || "N/A"}</strong></span>
+                <span className="text-neutral-700">Auditoría SATI Activa</span>
               </div>
             </div>
           )}
 
           {/* DASHBOARD 2: Volumen por Tipo de Componente */}
           {(dashboardView === "OPERATIVO" || dashboardView === "TODOS") && (
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-zinc-900">
+                  <h3 className="text-base sm:text-lg font-heading font-extrabold text-black">
                     Volumen por Tipo de Componente
                   </h3>
-                  <p className="text-xs sm:text-sm text-zinc-500">
+                  <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                     Carga operativa ingresada por familia de producto
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 rounded-md text-slate-700 font-mono">
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
                   Carga Operativa
                 </span>
               </div>
@@ -2700,27 +2700,27 @@ ${dictamen.accText}`;
                   <div
                     key={idx}
                     onClick={() => setCategoryFamily(cat.name === categoryFamily ? "TODOS" : cat.name)}
-                    className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-zinc-50 transition-colors group"
+                    className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-[#FAF6EE] transition-colors group"
                     title={`Hacer clic para filtrar por categoría ${cat.name}`}
                   >
                     <div className="flex justify-between text-xs sm:text-sm font-medium">
-                      <span className="text-zinc-900 font-semibold group-hover:text-emerald-600 transition-colors">
+                      <span className="text-black font-heading font-bold group-hover:text-emerald-800 transition-colors">
                         {cat.name}
                       </span>
-                      <span className="text-zinc-500 font-mono font-bold">
+                      <span className="text-neutral-800 font-mono font-bold">
                         {cat.count} equipos ({cat.pct}%)
                       </span>
                     </div>
-                    <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                    <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-3 sm:h-3.5 overflow-hidden p-0.5 shadow-[1px_1px_0px_#000]">
                       <div
-                        className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${
+                        className={`h-full rounded-full transition-all duration-500 ${
                           idx === 0
-                            ? "bg-emerald-600"
+                            ? "bg-[#2A9D8F]"
                             : idx === 1
                             ? "bg-blue-600"
                             : idx === 2
                             ? "bg-indigo-600"
-                            : "bg-teal-600"
+                            : "bg-[#E76F51]"
                         }`}
                         style={{ width: `${Math.min(100, cat.pct * 4)}%` }}
                       />
@@ -2729,26 +2729,26 @@ ${dictamen.accText}`;
                 ))}
               </div>
 
-              <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
-                <span>Líder en volumen: <strong className="text-zinc-800">{metrics.topCategories[0]?.name || "N/A"}</strong></span>
-                <span className="font-mono text-zinc-400">Tasa de resolución: {metrics.tasaExitoQC}%</span>
+              <div className="pt-3 text-xs sm:text-sm text-neutral-800 flex justify-between items-center border-t-2 border-black border-dashed font-mono font-bold">
+                <span>Líder en volumen: <strong className="text-black">{metrics.topCategories[0]?.name || "N/A"}</strong></span>
+                <span className="text-neutral-700">Tasa de resolución: {metrics.tasaExitoQC}%</span>
               </div>
             </div>
           )}
 
           {/* DASHBOARD 3: Distribución de Resoluciones & Dictamen QC */}
-          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+          <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-1.5">
-                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-1.5">
+                  <ShieldCheck className="w-5 h-5 text-[#2A9D8F]" />
                   Distribución de Resoluciones & Dictamen QC
                 </h3>
-                <p className="text-xs sm:text-sm text-zinc-500">
+                <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                   Efectividad de cierre técnico y dictámenes de garantía
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 rounded-md text-emerald-700 border border-emerald-200 font-mono flex items-center gap-1">
+              <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#2A9D8F] text-white rounded-full border border-black shadow-[1px_1px_0px_#000] flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 QC Efectivo
               </span>
@@ -2758,17 +2758,17 @@ ${dictamen.accText}`;
               {metrics.topResolutions.map((res, idx) => (
                 <div key={idx} className="space-y-1.5 p-1 -mx-1 rounded-lg">
                   <div className="flex justify-between text-xs sm:text-sm font-medium">
-                    <span className="text-zinc-900 font-semibold flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${res.barColor}`} />
+                    <span className="text-black font-heading font-bold flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full border border-black ${res.barColor}`} />
                       {res.name}
                     </span>
-                    <span className="text-zinc-500 font-mono font-bold">
+                    <span className="text-neutral-800 font-mono font-bold">
                       {res.count} equipos ({res.pct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                  <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-3 sm:h-3.5 overflow-hidden p-0.5 shadow-[1px_1px_0px_#000]">
                     <div
-                      className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${res.barColor}`}
+                      className={`h-full rounded-full transition-all duration-500 ${res.barColor}`}
                       style={{ width: `${Math.min(100, res.pct * 2.2)}%` }}
                     />
                   </div>
@@ -2776,25 +2776,25 @@ ${dictamen.accText}`;
               ))}
             </div>
 
-            <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
-              <span>Tasa de resolución positiva: <strong className="text-emerald-700 font-bold">{metrics.tasaExitoQC}%</strong></span>
-              <span className="font-mono text-zinc-400">Garantía SATI Oficial</span>
+            <div className="pt-3 text-xs sm:text-sm text-neutral-800 flex justify-between items-center border-t-2 border-black border-dashed font-mono font-bold">
+              <span>Tasa de resolución positiva: <strong className="text-[#2A9D8F]">{metrics.tasaExitoQC}%</strong></span>
+              <span className="text-neutral-700">Garantía SATI Oficial</span>
             </div>
           </div>
 
           {/* DASHBOARD 4: Tiempos de Permanencia & Control de Plazos */}
-          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+          <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-1.5">
-                  <Timer className="w-5 h-5 text-amber-600" />
+                <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-1.5">
+                  <Timer className="w-5 h-5 text-[#E76F51]" />
                   Tiempos de Permanencia & Control de Plazos
                 </h3>
-                <p className="text-xs sm:text-sm text-zinc-500">
+                <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                   Semáforo de antigüedad de equipos activos en taller / sucursal
                 </p>
               </div>
-              <span className="text-xs font-semibold px-2.5 py-1 bg-amber-50 rounded-md text-amber-700 border border-amber-200 font-mono">
+              <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
                 SLA & Plazos
               </span>
             </div>
@@ -2816,19 +2816,19 @@ ${dictamen.accText}`;
                   title={band.filterKey === "A_DEPOSITO" ? "Hacer clic para filtrar órdenes vencidas de depósito (>90d)" : undefined}
                 >
                   <div className="flex justify-between text-xs sm:text-sm font-medium">
-                    <span className="text-zinc-900 font-semibold flex items-center gap-2">
-                      <span className={`w-2 h-2 rounded-full ${band.barColor}`} />
+                    <span className="text-black font-heading font-bold flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full border border-black ${band.barColor}`} />
                       <span className={band.filterKey === "A_DEPOSITO" ? "group-hover:text-rose-700 transition-colors" : ""}>
                         {band.name}
                       </span>
                     </span>
-                    <span className="text-zinc-500 font-mono font-bold">
+                    <span className="text-neutral-800 font-mono font-bold">
                       {band.count} equipos ({band.pct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                  <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-3 sm:h-3.5 overflow-hidden p-0.5 shadow-[1px_1px_0px_#000]">
                     <div
-                      className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${band.barColor}`}
+                      className={`h-full rounded-full transition-all duration-500 ${band.barColor}`}
                       style={{ width: `${Math.min(100, band.pct * 2.8)}%` }}
                     />
                   </div>
@@ -2836,28 +2836,28 @@ ${dictamen.accText}`;
               ))}
             </div>
 
-            <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
-              <span>Promedio de permanencia: <strong className="text-zinc-800">~{metrics.avgRetentionDays} días</strong></span>
-              <span className="font-mono text-zinc-500">
-                Plazo límite retiro: <strong className="text-rose-600 font-bold">90 días</strong>
+            <div className="pt-3 text-xs sm:text-sm text-neutral-800 flex justify-between items-center border-t-2 border-black border-dashed font-mono font-bold">
+              <span>Promedio de permanencia: <strong className="text-black">~{metrics.avgRetentionDays} días</strong></span>
+              <span className="text-neutral-700">
+                Plazo límite retiro: <strong className="text-[#E76F51] underline decoration-2">90 días</strong>
               </span>
             </div>
           </div>
 
           {/* DASHBOARD 5: Flujo Logístico & Retornos CDE ⇄ ASU */}
           {(dashboardView === "LOGISTICA" || dashboardView === "TODOS") && (
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-1.5">
+                  <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-1.5">
                     <Truck className="w-5 h-5 text-blue-600" />
                     Flujo Logístico & Retornos CDE ⇄ ASU
                   </h3>
-                  <p className="text-xs sm:text-sm text-zinc-500">
+                  <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                     Trazabilidad física de transferencias entre Matriz CDE y Sucursal
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-blue-50 rounded-md text-blue-700 border border-blue-200 font-mono">
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
                   Inter-Sucursal
                 </span>
               </div>
@@ -2872,24 +2872,24 @@ ${dictamen.accText}`;
                       }
                     }}
                     className={`space-y-1.5 p-1.5 -mx-1.5 rounded-lg transition-colors ${
-                      log.filterKey !== "TODOS" ? "cursor-pointer hover:bg-zinc-50 group" : ""
+                      log.filterKey !== "TODOS" ? "cursor-pointer hover:bg-[#FAF6EE] group" : ""
                     }`}
                     title={log.filterKey !== "TODOS" ? `Hacer clic para filtrar por ${log.name}` : undefined}
                   >
                     <div className="flex justify-between text-xs sm:text-sm font-medium">
-                      <span className="text-zinc-900 font-semibold flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${log.barColor}`} />
-                        <span className={log.filterKey !== "TODOS" ? "group-hover:text-blue-600 transition-colors" : ""}>
+                      <span className="text-black font-heading font-bold flex items-center gap-2">
+                        <span className={`w-2.5 h-2.5 rounded-full border border-black ${log.barColor}`} />
+                        <span className={log.filterKey !== "TODOS" ? "group-hover:text-blue-800 transition-colors" : ""}>
                           {log.name}
                         </span>
                       </span>
-                      <span className="text-zinc-500 font-mono font-bold">
+                      <span className="text-neutral-800 font-mono font-bold">
                         {log.count} equipos ({log.pct}%)
                       </span>
                     </div>
-                    <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                    <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-3 sm:h-3.5 overflow-hidden p-0.5 shadow-[1px_1px_0px_#000]">
                       <div
-                        className={`h-2.5 sm:h-3 rounded-full transition-all duration-500 ${log.barColor}`}
+                        className={`h-full rounded-full transition-all duration-500 ${log.barColor}`}
                         style={{ width: `${Math.min(100, log.pct * 3)}%` }}
                       />
                     </div>
@@ -2897,27 +2897,27 @@ ${dictamen.accText}`;
                 ))}
               </div>
 
-              <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
+              <div className="pt-3 text-xs sm:text-sm text-neutral-800 flex justify-between items-center border-t-2 border-black border-dashed font-mono font-bold">
                 <span>En camino activo: <strong className="text-blue-700 font-bold">{metrics.enCaminoCount} equipos</strong></span>
-                <span className="font-mono text-zinc-500">Recibidos en ASU: <strong className="text-emerald-700 font-bold">{metrics.recibidosAsuCount}</strong></span>
+                <span className="text-neutral-700">Recibidos en ASU: <strong className="text-[#2A9D8F] font-bold">{metrics.recibidosAsuCount}</strong></span>
               </div>
             </div>
           )}
 
           {/* DASHBOARD 6: Segmentación de Clientes & Cuentas */}
           {(dashboardView === "LOGISTICA" || dashboardView === "TODOS") && (
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
               <div className="flex justify-between items-center">
                 <div>
-                  <h3 className="text-base sm:text-lg font-bold text-zinc-900 flex items-center gap-1.5">
+                  <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-1.5">
                     <Users className="w-5 h-5 text-indigo-600" />
                     Distribución por Origen & Tipo de Cliente
                   </h3>
-                  <p className="text-xs sm:text-sm text-zinc-500">
+                  <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                     Carga asignada a particulares vs stock interno Danesa S.A.
                   </p>
                 </div>
-                <span className="text-xs font-semibold px-2.5 py-1 bg-indigo-50 rounded-md text-indigo-700 border border-indigo-200 font-mono">
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
                   Cartera SATI
                 </span>
               </div>
@@ -2926,20 +2926,20 @@ ${dictamen.accText}`;
                 {/* Granularidad Principal: Particulares vs Danesa */}
                 <div
                   onClick={() => setViewScope(viewScope === "CLIENTES_ASU" ? "TODOS" : "CLIENTES_ASU")}
-                  className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-zinc-50 transition-colors group"
+                  className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-[#FAF6EE] transition-colors group"
                   title="Hacer clic para filtrar por Clientes Particulares ASU"
                 >
                   <div className="flex justify-between text-xs sm:text-sm font-medium">
-                    <span className="text-zinc-900 font-semibold group-hover:text-blue-600 transition-colors">
+                    <span className="text-black font-heading font-bold group-hover:text-blue-700 transition-colors">
                       Clientes Particulares Asunción
                     </span>
-                    <span className="text-zinc-500 font-mono font-bold">
+                    <span className="text-neutral-800 font-mono font-bold">
                       {metrics.particularesTotal} equipos ({metrics.particularesPct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                  <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-3 sm:h-3.5 overflow-hidden p-0.5 shadow-[1px_1px_0px_#000]">
                     <div
-                      className="h-2.5 sm:h-3 rounded-full transition-all duration-500 bg-blue-600"
+                      className="h-full rounded-full transition-all duration-500 bg-blue-600"
                       style={{ width: `${Math.min(100, metrics.particularesPct)}%` }}
                     />
                   </div>
@@ -2947,28 +2947,28 @@ ${dictamen.accText}`;
 
                 <div
                   onClick={() => setViewScope(viewScope === "DANESA" ? "TODOS" : "DANESA")}
-                  className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-zinc-50 transition-colors group"
+                  className="space-y-1.5 cursor-pointer p-1.5 -mx-1.5 rounded-lg hover:bg-[#FAF6EE] transition-colors group"
                   title="Hacer clic para filtrar por Stock Propio Danesa SA"
                 >
                   <div className="flex justify-between text-xs sm:text-sm font-medium">
-                    <span className="text-zinc-900 font-semibold group-hover:text-amber-600 transition-colors">
+                    <span className="text-black font-heading font-bold group-hover:text-amber-700 transition-colors">
                       Stock Propio (Danesa S.A.)
                     </span>
-                    <span className="text-zinc-500 font-mono font-bold">
+                    <span className="text-neutral-800 font-mono font-bold">
                       {metrics.danesaTotal} equipos ({metrics.danesaPct}%)
                     </span>
                   </div>
-                  <div className="w-full bg-zinc-100 rounded-full h-2.5 sm:h-3 overflow-hidden">
+                  <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-3 sm:h-3.5 overflow-hidden p-0.5 shadow-[1px_1px_0px_#000]">
                     <div
-                      className="h-2.5 sm:h-3 rounded-full transition-all duration-500 bg-amber-500"
+                      className="h-full rounded-full transition-all duration-500 bg-[#FFD23F]"
                       style={{ width: `${Math.min(100, metrics.danesaPct)}%` }}
                     />
                   </div>
                 </div>
 
                 {/* Sub-lista de Top Cuentas */}
-                <div className="pt-2 border-t border-zinc-100">
-                  <span className="text-xs font-bold text-zinc-500 uppercase tracking-wide block mb-2">
+                <div className="pt-2 border-t-2 border-black border-dashed">
+                  <span className="text-xs font-heading font-extrabold text-black uppercase tracking-wide block mb-2">
                     Top Clientes Particulares Frecuentes
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -2976,13 +2976,13 @@ ${dictamen.accText}`;
                       <div
                         key={idx}
                         onClick={() => setSearchTerm(cli.name === searchTerm ? "" : cli.name)}
-                        className="p-2 rounded-lg bg-zinc-50 border border-zinc-100 hover:border-blue-200 hover:bg-blue-50/40 cursor-pointer transition-colors"
+                        className="p-2.5 rounded-lg bg-[#FAF6EE] border-2 border-black shadow-[2px_2px_0px_#000] hover:bg-[#FFD23F] cursor-pointer transition-colors active:translate-x-[1px] active:translate-y-[1px]"
                         title={`Filtrar por ${cli.name}`}
                       >
-                        <div className="text-xs font-semibold text-zinc-900 truncate">
+                        <div className="text-xs font-heading font-bold text-black truncate">
                           {cli.name}
                         </div>
-                        <div className="text-[11px] text-zinc-500 font-mono mt-0.5">
+                        <div className="text-[11px] text-neutral-800 font-mono font-bold mt-0.5">
                           {cli.count} órdenes registradas
                         </div>
                       </div>
@@ -2991,9 +2991,9 @@ ${dictamen.accText}`;
                 </div>
               </div>
 
-              <div className="pt-3 text-xs sm:text-sm text-zinc-500 flex justify-between items-center border-t border-zinc-100 font-medium">
-                <span>Canal predominante: <strong className="text-zinc-800">{metrics.particularesPct >= metrics.danesaPct ? "Particulares" : "Danesa S.A."}</strong></span>
-                <span className="font-mono text-zinc-400">Trazabilidad SATI 100%</span>
+              <div className="pt-3 text-xs sm:text-sm text-neutral-800 flex justify-between items-center border-t-2 border-black border-dashed font-mono font-bold">
+                <span>Canal predominante: <strong className="text-black">{metrics.particularesPct >= metrics.danesaPct ? "Particulares" : "Danesa S.A."}</strong></span>
+                <span className="text-neutral-700">Trazabilidad SATI 100%</span>
               </div>
             </div>
           )}
@@ -3001,11 +3001,11 @@ ${dictamen.accText}`;
         </section>
 
         {/* Barra de Filtros, Selector de Ámbito Reestructurado y Búsqueda */}
-        <section className="p-4 bg-white rounded-2xl border border-zinc-200 shadow-xs space-y-4">
+        <section className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
           <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
 
             {/* Selector de Ámbito con las 3 pestañas solicitadas para Recepción Post-Venta */}
-            <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl border border-zinc-200 flex-wrap">
+            <div className="flex items-center gap-1.5 p-1.5 bg-[#FAF6EE] rounded-lg border-2 border-black flex-wrap shadow-[2px_2px_0px_#000]">
               {(
                 [
                   {
@@ -3040,15 +3040,17 @@ ${dictamen.accText}`;
                     setSelectedCategories([]);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
-                    viewScope === s.key ? "bg-zinc-900 text-white shadow-xs" : "text-zinc-600 hover:text-zinc-900"
+                  className={`px-3 py-1.5 rounded-lg text-xs font-heading transition-all flex items-center gap-2 cursor-pointer ${
+                    viewScope === s.key
+                      ? "bg-black text-[#FFD23F] border-2 border-black font-extrabold shadow-[2px_2px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black border-2 border-black font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                   }`}
                 >
                   {s.icon}
                   <span>{s.label}</span>
                   <span
-                    className={`px-1.5 rounded text-[10px] font-mono font-normal ${
-                      viewScope === s.key ? "bg-white/20 text-white" : "bg-zinc-200 text-zinc-700"
+                    className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold border border-black ${
+                      viewScope === s.key ? "bg-[#FFD23F] text-black" : "bg-[#FAF6EE] text-black"
                     }`}
                   >
                     {s.count.toLocaleString()}
@@ -3077,10 +3079,10 @@ ${dictamen.accText}`;
                   setTransitFilter("TODOS");
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1 rounded-md font-bold transition-all cursor-pointer border border-black ${
+                className={`px-3 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                   transitFilter === "TODOS"
-                    ? "bg-[#FFD23F] text-black shadow-[1px_1px_0px_#000]"
-                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
+                    ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#FAF6EE] shadow-[1px_1px_0px_#000]"
                 }`}
               >
                 Todos los servicios
@@ -3092,10 +3094,10 @@ ${dictamen.accText}`;
                   setTransitFilter("EN_CAMINO");
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
                   transitFilter === "EN_CAMINO"
-                    ? "bg-[#FFD23F] text-black shadow-[1px_1px_0px_#000]"
-                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
+                    ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#FAF6EE] shadow-[1px_1px_0px_#000]"
                 }`}
                 title="Órdenes con cruce inteligente en CDE con fecha de despacho confirmada, en tránsito de retorno hacia ASU"
               >
@@ -3112,10 +3114,10 @@ ${dictamen.accText}`;
                   setTransitFilter("INGRESADO_CDE");
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
                   transitFilter === "INGRESADO_CDE"
-                    ? "bg-[#2A9D8F] text-white shadow-[1px_1px_0px_#000]"
-                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
+                    ? "bg-[#2A9D8F] text-white shadow-[2px_2px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#2A9D8F] hover:text-white shadow-[1px_1px_0px_#000]"
                 }`}
                 title="Órdenes que ya ingresaron a laboratorio CDE pero aún no tienen fecha de despacho"
               >
@@ -3129,10 +3131,10 @@ ${dictamen.accText}`;
                   setTransitFilter("FALTA_INGRESAR");
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
                   transitFilter === "FALTA_INGRESAR"
-                    ? "bg-[#E76F51] text-white shadow-[1px_1px_0px_#000]"
-                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
+                    ? "bg-[#E76F51] text-white shadow-[2px_2px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#E76F51] hover:text-white shadow-[1px_1px_0px_#000]"
                 }`}
                 title="Equipos reparados o QC con informe técnico escrito pero pendientes de recibir físicamente"
               >
@@ -3146,10 +3148,10 @@ ${dictamen.accText}`;
                   setTransitFilter("RECIBIDOS");
                   setCurrentPage(1);
                 }}
-                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
                   transitFilter === "RECIBIDOS"
-                    ? "bg-[#2A9D8F] text-white shadow-[1px_1px_0px_#000]"
-                    : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
+                    ? "bg-[#2A9D8F] text-white shadow-[2px_2px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#2A9D8F] hover:text-white shadow-[1px_1px_0px_#000]"
                 }`}
               >
                 <Check className="w-3.5 h-3.5" />
@@ -3163,10 +3165,10 @@ ${dictamen.accText}`;
                     setTransitFilter("A_DEPOSITO");
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border border-black ${
+                  className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
                     transitFilter === "A_DEPOSITO"
-                      ? "bg-[#E76F51] text-white shadow-[1px_1px_0px_#000]"
-                      : "bg-[#FFFDF9] text-black hover:bg-neutral-100"
+                      ? "bg-[#E76F51] text-white shadow-[2px_2px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#E76F51] hover:text-white shadow-[1px_1px_0px_#000]"
                   }`}
                   title="Equipos de clientes con más de 90 días en sucursal que deben remitirse al depósito central"
                 >
@@ -3178,9 +3180,9 @@ ${dictamen.accText}`;
 
             {/* Filtro de Fecha de Recepción cuando se selecciona Recibidos */}
             {transitFilter === "RECIBIDOS" && (
-              <div className="flex items-center gap-1 bg-emerald-50/80 p-1 rounded-xl border border-emerald-200 text-xs flex-wrap">
-                <span className="text-[11px] font-bold text-emerald-900 px-2 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+              <div className="flex items-center gap-1.5 bg-[#FAF6EE] p-1.5 rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] flex-wrap">
+                <span className="text-[11px] font-bold text-black px-1.5 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-black" />
                   <span>Fecha:</span>
                 </span>
                 <button
@@ -3189,10 +3191,10 @@ ${dictamen.accText}`;
                     setRecibidosDateFilter("TODAS");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "TODAS"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Todas ({countRecibidosTodas})
@@ -3203,10 +3205,10 @@ ${dictamen.accText}`;
                     setRecibidosDateFilter("HOY");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "HOY"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Hoy ({countRecibidosHoy})
@@ -3217,10 +3219,10 @@ ${dictamen.accText}`;
                     setRecibidosDateFilter("AYER");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "AYER"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Ayer ({countRecibidosAyer})
@@ -3231,10 +3233,10 @@ ${dictamen.accText}`;
                     setRecibidosDateFilter("ULTIMOS_7");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "ULTIMOS_7"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Últimos 7 días ({countRecibidos7d})
@@ -3245,10 +3247,10 @@ ${dictamen.accText}`;
                     setRecibidosDateFilter("ESTE_MES");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "ESTE_MES"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Este mes ({countRecibidosMes})

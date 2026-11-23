@@ -1771,17 +1771,17 @@ export default function RecepcionCdeDashboardPage() {
                     setSelectedCategories([]);
                     setCurrentPage(1);
                   }}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 cursor-pointer ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-heading transition-all flex items-center gap-2 cursor-pointer ${
                     viewScope === s.key
-                      ? "bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000]"
-                      : "text-neutral-800 hover:bg-neutral-200 border-2 border-transparent"
+                      ? "bg-black text-[#FFD23F] border-2 border-black font-extrabold shadow-[2px_2px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black border-2 border-black font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                   }`}
                 >
                   {s.icon}
                   <span>{s.label}</span>
                   <span
-                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold border border-black ${
-                      viewScope === s.key ? "bg-black text-[#FFD23F]" : "bg-white text-black"
+                    className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold border border-black ${
+                      viewScope === s.key ? "bg-[#FFD23F] text-black" : "bg-[#FAF6EE] text-black"
                     }`}
                   >
                     {s.count.toLocaleString()}
@@ -1801,19 +1801,19 @@ export default function RecepcionCdeDashboardPage() {
           </div>
 
           {/* Filtros Secundarios con CleanSelect */}
-          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t border-zinc-100">
+          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t-2 border-black">
             {/* Filtro de Tránsito / Recibidos (visible para todos los ámbitos: Danesa, Clientes ASU, Clientes CDE y Todos) */}
-            <div className="flex flex-wrap items-center gap-1 bg-zinc-50 p-1 rounded-xl border border-zinc-200 text-xs max-w-full">
+            <div className="flex flex-wrap items-center gap-1.5 bg-[#FAF6EE] p-1.5 rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] max-w-full">
               <button
                 type="button"
                 onClick={() => {
                   setTransitFilter("TODOS");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                   transitFilter === "TODOS"
-                    ? "bg-white font-bold text-zinc-900 shadow-xs"
-                    : "text-zinc-500 hover:text-zinc-900"
+                    ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#FAF6EE] shadow-[1px_1px_0px_#000]"
                 }`}
               >
                 Todos los envíos
@@ -1824,15 +1824,15 @@ export default function RecepcionCdeDashboardPage() {
                   setTransitFilter("EN_TRANSITO");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
                   transitFilter === "EN_TRANSITO"
-                    ? "bg-amber-500 text-white font-bold shadow-xs"
-                    : "text-amber-700 hover:bg-amber-100/60"
+                    ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#FAF6EE] shadow-[1px_1px_0px_#000]"
                 }`}
               >
                 <SpeedTruck
-                  className={`w-3.5 h-3.5 ${transitFilter === "EN_TRANSITO" ? "text-white" : "text-amber-700"}`}
-                  smokeColor={transitFilter === "EN_TRANSITO" ? "bg-white/80" : "bg-amber-400"}
+                  className={`w-3.5 h-3.5 text-black`}
+                  smokeColor={transitFilter === "EN_TRANSITO" ? "bg-black" : "bg-amber-500"}
                 />
                 <span>En camino ({scopeEnTransito})</span>
               </button>
@@ -1843,13 +1843,13 @@ export default function RecepcionCdeDashboardPage() {
                     setTransitFilter("RECIBIDOS");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
                     transitFilter === "RECIBIDOS"
-                      ? "bg-emerald-600 text-white font-bold shadow-xs"
-                      : "text-emerald-700 hover:bg-emerald-100/60"
+                      ? "bg-[#2A9D8F] text-white shadow-[2px_2px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#2A9D8F] hover:text-white shadow-[1px_1px_0px_#000]"
                   }`}
                 >
-                  <Check className="w-3 h-3" />
+                  <Check className="w-3.5 h-3.5" />
                   <span>Recibidos ({scopeRecibidosCount})</span>
                 </button>
               )}
@@ -1859,22 +1859,22 @@ export default function RecepcionCdeDashboardPage() {
                   setTransitFilter("SIN_CRUCE");
                   setCurrentPage(1);
                 }}
-                className={`px-2.5 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
                   transitFilter === "SIN_CRUCE"
-                    ? "bg-indigo-600 text-white font-bold shadow-xs"
-                    : "text-indigo-700 hover:bg-indigo-100/60"
+                    ? "bg-[#E76F51] text-white shadow-[2px_2px_0px_#000]"
+                    : "bg-[#FFFDF9] text-black hover:bg-[#E76F51] hover:text-white shadow-[1px_1px_0px_#000]"
                 }`}
               >
-                <Link2 className="w-3 h-3" />
+                <Link2 className="w-3.5 h-3.5" />
                 <span>Sin Cruce ({scopeSinCruceCount})</span>
               </button>
             </div>
 
             {/* Filtro de Fecha de Recepción (Hoy / Ayer / etc.) cuando se selecciona Recibidos (solo ASU y Danesa) */}
             {viewScope !== "CLIENTES_CDE" && transitFilter === "RECIBIDOS" && (
-              <div className="flex items-center gap-1 bg-emerald-50/80 p-1 rounded-xl border border-emerald-200 text-xs flex-wrap">
-                <span className="text-[11px] font-bold text-emerald-900 px-2 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-emerald-700" />
+              <div className="flex items-center gap-1.5 bg-[#FAF6EE] p-1.5 rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] flex-wrap">
+                <span className="text-[11px] font-bold text-black px-1.5 flex items-center gap-1">
+                  <Calendar className="w-3.5 h-3.5 text-black" />
                   <span>Fecha:</span>
                 </span>
                 <button
@@ -1883,10 +1883,10 @@ export default function RecepcionCdeDashboardPage() {
                     setRecibidosDateFilter("TODAS");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "TODAS"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Todas ({countRecibidosTodas})
@@ -1897,10 +1897,10 @@ export default function RecepcionCdeDashboardPage() {
                     setRecibidosDateFilter("HOY");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "HOY"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Hoy ({countRecibidosHoy})
@@ -1911,10 +1911,10 @@ export default function RecepcionCdeDashboardPage() {
                     setRecibidosDateFilter("AYER");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "AYER"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Ayer ({countRecibidosAyer})
@@ -1925,10 +1925,10 @@ export default function RecepcionCdeDashboardPage() {
                     setRecibidosDateFilter("ULTIMOS_7");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "ULTIMOS_7"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Últimos 7 días ({countRecibidos7d})
@@ -1939,10 +1939,10 @@ export default function RecepcionCdeDashboardPage() {
                     setRecibidosDateFilter("ESTE_MES");
                     setCurrentPage(1);
                   }}
-                  className={`px-2.5 py-1 rounded-lg font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
                     recibidosDateFilter === "ESTE_MES"
-                      ? "bg-emerald-700 text-white font-bold shadow-xs"
-                      : "text-emerald-800 hover:bg-emerald-100"
+                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
                   }`}
                 >
                   Este mes ({countRecibidosMes})

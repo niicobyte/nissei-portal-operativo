@@ -235,6 +235,15 @@ export function buildThermalPrintCss(settings: ThermalPrintSettings): string {
         break-after: avoid !important;
       }
 
+      /* Evitar que cualquier fondo oscuro o invertido queme el papel en impresoras térmicas */
+      body.thermal-80mm-print #thermal-sticker-80mm *:not(svg):not(path):not(rect):not(line) {
+        background: transparent !important;
+        background-color: transparent !important;
+        color: #000000 !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+      }
+
       body.thermal-80mm-print #thermal-sticker-80mm li {
         page-break-inside: avoid !important;
         break-inside: avoid !important;

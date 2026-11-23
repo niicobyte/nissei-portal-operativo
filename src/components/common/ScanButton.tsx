@@ -30,11 +30,11 @@ export function ScanButton({
       title={title}
       className={
         compact
-          ? "inline-flex items-center justify-center p-1.5 bg-zinc-50 hover:bg-zinc-100 focus-visible:bg-white border border-zinc-200 hover:border-zinc-400 focus-visible:border-zinc-900 rounded-lg text-zinc-600 hover:text-zinc-900 outline-none transition-all cursor-pointer shrink-0"
-          : "inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-zinc-50 hover:bg-zinc-100 focus-visible:bg-white border border-zinc-200 hover:border-zinc-400 focus-visible:border-zinc-900 rounded-xl text-xs font-medium text-zinc-700 hover:text-zinc-900 outline-none transition-all cursor-pointer shrink-0"
+          ? "inline-flex items-center justify-center p-1.5 bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black rounded-lg text-black outline-none transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer shrink-0"
+          : "inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black rounded-lg text-xs font-heading font-extrabold text-black outline-none transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer shrink-0"
       }
     >
-      <IconComponent className={compact ? "w-3.5 h-3.5 text-zinc-500 shrink-0" : "w-4 h-4 text-zinc-500 shrink-0"} />
+      <IconComponent className={compact ? "w-3.5 h-3.5 text-black shrink-0" : "w-4 h-4 text-black shrink-0"} />
       {!compact && <span>{label}</span>}
     </button>
   );
