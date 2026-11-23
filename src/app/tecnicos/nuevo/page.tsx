@@ -2050,7 +2050,7 @@ export default function NuevoIngresoMontajePage() {
                   </span>
                   <span className="text-xs font-mono font-bold text-white bg-[#2A9D8F] border-2 border-black px-2 py-0.5 rounded-lg inline-flex items-center gap-1 shadow-[1px_1px_0px_#000]">
                     <Send className="w-3 h-3 text-white" />
-                    Grupo CDE
+                    Montajes
                   </span>
                 </div>
                 <pre className="p-3 rounded-xl bg-[#FAF6EE] border-2 border-black text-xs font-mono text-black whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed shadow-[2px_2px_0px_#000]">
