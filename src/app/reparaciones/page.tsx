@@ -734,19 +734,19 @@ ${orden.observaciones ? `\n📌 *Observaciones previas:* ${orden.observaciones}`
               </div>
 
               {/* Tabla de Órdenes */}
-              <div className="overflow-x-auto border border-zinc-200 rounded-lg">
+              <div className="overflow-x-auto border-2 border-black rounded-lg shadow-[2px_2px_0px_#000]">
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-zinc-50 text-zinc-500 uppercase tracking-wider border-b border-zinc-200 font-mono">
+                  <thead className="bg-[#FAF6EE] text-black uppercase tracking-wider border-b-2 border-black font-mono text-xs font-black select-none">
                     <tr>
-                      <th className="py-3 px-3.5 font-semibold">Nº Orden</th>
-                      <th className="py-3 px-3.5 font-semibold">Cliente</th>
-                      <th className="py-3 px-3.5 font-semibold">Equipo &amp; Serie</th>
-                      <th className="py-3 px-3.5 font-semibold">Fallas a Asignar</th>
-                      <th className="py-3 px-3.5 font-semibold">Detalle de la Reparación</th>
-                      <th className="py-3 px-3.5 font-semibold">Observaciones</th>
-                      <th className="py-3 px-3.5 font-semibold">Estado / Técnico</th>
-                      <th className="py-3 px-3.5 font-semibold">Asignar al Técnico</th>
-                      <th className="py-3 px-3.5 font-semibold text-right min-w-[140px]">Acciones</th>
+                      <th className="py-3 px-3.5 font-black text-black">Nº Orden</th>
+                      <th className="py-3 px-3.5 font-black text-black">Cliente</th>
+                      <th className="py-3 px-3.5 font-black text-black">Equipo &amp; Serie</th>
+                      <th className="py-3 px-3.5 font-black text-black">Fallas a Asignar</th>
+                      <th className="py-3 px-3.5 font-black text-black">Detalle de la Reparación</th>
+                      <th className="py-3 px-3.5 font-black text-black">Observaciones</th>
+                      <th className="py-3 px-3.5 font-black text-black">Estado / Técnico</th>
+                      <th className="py-3 px-3.5 font-black text-black">Asignar al Técnico</th>
+                      <th className="py-3 px-3.5 font-black text-black text-right min-w-[140px]">Acciones</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-200 text-zinc-900">

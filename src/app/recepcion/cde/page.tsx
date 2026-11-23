@@ -2057,22 +2057,22 @@ export default function RecepcionCdeDashboardPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-black text-[#FFD23F] font-mono uppercase text-xs tracking-wider border-b-2 border-black select-none">
+              <thead className="bg-[#FAF6EE] text-black font-mono uppercase text-xs tracking-wider border-b-2 border-black select-none font-black">
                 <tr>
-                  <th className="py-3.5 px-4 font-black">Nº Orden</th>
-                  <th className="py-3.5 px-3.5 font-black">Cliente</th>
-                  <th className="py-3.5 px-3.5 font-black">Equipo / Hardware</th>
-                  <th className="py-3.5 px-3.5 font-black">Serial</th>
-                  <th className="py-3.5 px-3.5 font-black">Ingreso ASU</th>
-                  <th className="py-3.5 px-3.5 font-black">Ingreso CDE</th>
-                  <th className="py-3.5 px-3.5 font-black">Despacho CDE</th>
-                  <th className="py-3.5 px-3.5 text-center font-black">Días Taller</th>
-                  <th className="py-3.5 px-3.5 font-black">Estado</th>
-                  <th className="py-3.5 px-3.5 font-black">Dictamen / Informe Técnico</th>
+                  <th className="py-3.5 px-4 font-black text-black">Nº Orden</th>
+                  <th className="py-3.5 px-3.5 font-black text-black">Cliente</th>
+                  <th className="py-3.5 px-3.5 font-black text-black">Equipo / Hardware</th>
+                  <th className="py-3.5 px-3.5 font-black text-black">Serial</th>
+                  <th className="py-3.5 px-3.5 font-black text-black">Ingreso ASU</th>
+                  <th className="py-3.5 px-3.5 font-black text-black">Ingreso CDE</th>
+                  <th className="py-3.5 px-3.5 font-black text-black">Despacho CDE</th>
+                  <th className="py-3.5 px-3.5 text-center font-black text-black">Días Taller</th>
+                  <th className="py-3.5 px-3.5 font-black text-black">Estado</th>
+                  <th className="py-3.5 px-3.5 font-black text-black">Dictamen / Informe Técnico</th>
                   {viewScope !== "CLIENTES_CDE" && (
-                    <th className="py-3.5 px-3.5 text-center font-black">Llegada Depósito</th>
+                    <th className="py-3.5 px-3.5 text-center font-black text-black">Llegada Depósito</th>
                   )}
-                  <th className="py-3.5 px-4 text-right font-black">Acción</th>
+                  <th className="py-3.5 px-4 text-right font-black text-black">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/10">

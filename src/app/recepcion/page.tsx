@@ -3442,16 +3442,16 @@ ${dictamen.accText}`;
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-black text-[#FFD23F] uppercase tracking-wider border-b-2 border-black font-mono text-xs select-none">
+              <thead className="bg-[#FAF6EE] text-black uppercase tracking-wider border-b-2 border-black font-mono text-xs select-none font-black">
                 <tr>
-                  <th className="py-3.5 px-4 font-black">Nº Orden</th>
-                  <th className="py-3.5 px-4 font-black">Cliente</th>
-                  <th className="py-3.5 px-4 font-black">Equipo &amp; Categoría</th>
-                  <th className="py-3.5 px-4 font-black">Nº Serie / IMEI</th>
-                  <th className="py-3.5 px-4 font-black">Mensaje / Detalle Técnico</th>
-                  <th className="py-3.5 px-4 font-black">Ingreso / Salida</th>
-                  <th className="py-3.5 px-4 font-black">Estado</th>
-                  <th className="py-3.5 px-4 font-black min-w-[160px] text-right">Acciones</th>
+                  <th className="py-3.5 px-4 font-black text-black">Nº Orden</th>
+                  <th className="py-3.5 px-4 font-black text-black">Cliente</th>
+                  <th className="py-3.5 px-4 font-black text-black">Equipo &amp; Categoría</th>
+                  <th className="py-3.5 px-4 font-black text-black">Nº Serie / IMEI</th>
+                  <th className="py-3.5 px-4 font-black text-black">Mensaje / Detalle Técnico</th>
+                  <th className="py-3.5 px-4 font-black text-black">Ingreso / Salida</th>
+                  <th className="py-3.5 px-4 font-black text-black">Estado</th>
+                  <th className="py-3.5 px-4 font-black text-black min-w-[160px] text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/10 text-[#111111]">

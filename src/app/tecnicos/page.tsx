@@ -863,15 +863,15 @@ export default function TecnicosDashboardPage() {
           {/* Tabla de Resultados */}
           <div className="overflow-x-auto border-2 border-black rounded-lg shadow-[2px_2px_0px_#000]">
             <table className="w-full text-left text-sm">
-              <thead className="bg-black text-[#FFD23F] uppercase tracking-wider border-b-2 border-black font-mono text-xs">
+              <thead className="bg-[#FAF6EE] text-black uppercase tracking-wider border-b-2 border-black font-mono text-xs font-black select-none">
                 <tr>
-                  <th className="py-3.5 px-4 font-bold">Reg. Interno</th>
-                  <th className="py-3.5 px-4 font-bold">Cliente &amp; Canal</th>
-                  <th className="py-3.5 px-4 font-bold">Modalidad &amp; Cantidad</th>
-                  <th className="py-3.5 px-4 font-bold">Hardware Verificado</th>
-                  <th className="py-3.5 px-4 font-bold">Técnico Responsable</th>
-                  <th className="py-3.5 px-4 font-bold">Progreso</th>
-                  <th className="py-3.5 px-4 font-bold text-right">ACCIONES</th>
+                  <th className="py-3.5 px-4 font-black text-black">Reg. Interno</th>
+                  <th className="py-3.5 px-4 font-black text-black">Cliente &amp; Canal</th>
+                  <th className="py-3.5 px-4 font-black text-black">Modalidad &amp; Cantidad</th>
+                  <th className="py-3.5 px-4 font-black text-black">Hardware Verificado</th>
+                  <th className="py-3.5 px-4 font-black text-black">Técnico Responsable</th>
+                  <th className="py-3.5 px-4 font-black text-black">Progreso</th>
+                  <th className="py-3.5 px-4 font-black text-black text-right">ACCIONES</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/10 text-black">

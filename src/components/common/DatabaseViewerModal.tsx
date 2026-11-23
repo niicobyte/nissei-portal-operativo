@@ -796,21 +796,21 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 1. TABLA: taller_reparaciones */}
           {activeTab === "taller_reparaciones" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
+              <thead className="bg-[#FAF6EE] text-black font-mono text-[11px] font-black uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id_orden</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">cliente</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">equipo</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tipo_componente</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">serial</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">estado</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tecnico_asignado</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">falla_reportada</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">detalle_reparacion</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">observaciones</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">dictamen_final</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">fecha_ingreso</th>
-                  <th className="py-2.5 px-3 text-center">acciones</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">id_orden</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">cliente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">equipo</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">tipo_componente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">serial</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">estado</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">tecnico_asignado</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">falla_reportada</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">detalle_reparacion</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">observaciones</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">dictamen_final</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">fecha_ingreso</th>
+                  <th className="py-2.5 px-3 text-center text-black">acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
@@ -889,20 +889,20 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 2. TABLA: recepcion_tickets */}
           {activeTab === "recepcion_tickets" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
+              <thead className="bg-[#FAF6EE] text-black font-mono text-[11px] font-black uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id_orden</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">codigo_producto</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">cliente</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tipo_componente</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">marca</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">modelo</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">serial</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">estado</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">mensaje</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">fecha_ingreso</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">fecha_entregada</th>
-                  <th className="py-2.5 px-3 text-center">acciones</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">id_orden</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">codigo_producto</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">cliente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">tipo_componente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">marca</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">modelo</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">serial</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">estado</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">mensaje</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">fecha_ingreso</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">fecha_entregada</th>
+                  <th className="py-2.5 px-3 text-center text-black">acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
@@ -970,18 +970,18 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 2b. TABLA: recepcion_cde_tickets (Casa Matriz CDE & Retornos Depósito Danesa) */}
           {activeTab === "recepcion_cde_tickets" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
+              <thead className="bg-[#FAF6EE] text-black font-mono text-[11px] font-black uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id_orden</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">cliente</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">equipo / hardware</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">serial</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">ingreso_asu</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">despacho_cde</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">dias_taller</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">estado_cde</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">deposito</th>
-                  <th className="py-2.5 px-3 text-center">acciones</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">id_orden</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">cliente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">equipo / hardware</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">serial</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">ingreso_asu</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">despacho_cde</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">dias_taller</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">estado_cde</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">deposito</th>
+                  <th className="py-2.5 px-3 text-center text-black">acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
@@ -1058,20 +1058,20 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 3. TABLA: ordenes_montaje */}
           {activeTab === "ordenes_montaje" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
+              <thead className="bg-[#FAF6EE] text-black font-mono text-[11px] font-black uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">nro_reg</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">cliente</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tipo_servicio</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tecnico</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">etapa</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">progreso</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">estado</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">vendedor / canal</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">componentes_json</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">fecha_montaje</th>
-                  <th className="py-2.5 px-3 text-center">acciones</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">id</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">nro_reg</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">cliente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">tipo_servicio</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">tecnico</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">etapa</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">progreso</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">estado</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">vendedor / canal</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">componentes_json</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">fecha_montaje</th>
+                  <th className="py-2.5 px-3 text-center text-black">acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
@@ -1139,16 +1139,16 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 4. TABLA: usuarios */}
           {activeTab === "usuarios" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
+              <thead className="bg-[#FAF6EE] text-black font-mono text-[11px] font-black uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">avatar</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">nombre</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">role</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">password</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">default_route</th>
-                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">badge</th>
-                  <th className="py-2.5 px-3">descripcion</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">id</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">avatar</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">nombre</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">role</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">password</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">default_route</th>
+                  <th className="py-2.5 px-3 border-r-2 border-black/15 text-black">badge</th>
+                  <th className="py-2.5 px-3 text-black">descripcion</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
