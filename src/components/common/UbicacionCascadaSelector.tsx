@@ -217,7 +217,7 @@ export function UbicacionCascadaSelector({
                 }}
                 className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                   activeMain === "ESTANTE"
-                    ? "bg-black text-[#FFD23F]"
+                    ? "bg-[#FFD23F] text-black"
                     : parsed.main === "ESTANTE"
                     ? "bg-[#2A9D8F] text-white"
                     : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
@@ -229,7 +229,11 @@ export function UbicacionCascadaSelector({
                 </span>
                 <ChevronRight
                   className={`w-3.5 h-3.5 shrink-0 transition-transform ${
-                    activeMain === "ESTANTE" ? "translate-x-0.5 text-[#FFD23F]" : "text-black"
+                    activeMain === "ESTANTE"
+                      ? "translate-x-0.5 text-black"
+                      : parsed.main === "ESTANTE"
+                      ? "text-white"
+                      : "text-black"
                   }`}
                 />
               </button>
@@ -258,7 +262,7 @@ export function UbicacionCascadaSelector({
                 }}
                 className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                   activeMain === "MUEBLE"
-                    ? "bg-black text-[#FFD23F]"
+                    ? "bg-[#FFD23F] text-black"
                     : parsed.main === "MUEBLE"
                     ? "bg-[#2A9D8F] text-white"
                     : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
@@ -270,7 +274,11 @@ export function UbicacionCascadaSelector({
                 </span>
                 <ChevronRight
                   className={`w-3.5 h-3.5 shrink-0 transition-transform ${
-                    activeMain === "MUEBLE" ? "translate-x-0.5 text-[#FFD23F]" : "text-black"
+                    activeMain === "MUEBLE"
+                      ? "translate-x-0.5 text-black"
+                      : parsed.main === "MUEBLE"
+                      ? "text-white"
+                      : "text-black"
                   }`}
                 />
               </button>
@@ -309,7 +317,7 @@ export function UbicacionCascadaSelector({
                       onClick={() => !disabled && setActiveSub(col)}
                       className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                         isHoveredOrActive
-                          ? "bg-black text-[#FFD23F]"
+                          ? "bg-[#FFD23F] text-black"
                           : isSavedCol
                           ? "bg-[#2A9D8F] text-white"
                           : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
@@ -339,7 +347,7 @@ export function UbicacionCascadaSelector({
                         isSelected
                           ? "bg-[#2A9D8F] text-white"
                           : isHovered
-                          ? "bg-black text-[#FFD23F]"
+                          ? "bg-[#FFD23F] text-black"
                           : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
                       }`}
                     >
@@ -370,7 +378,7 @@ export function UbicacionCascadaSelector({
                       onClick={() => !disabled && setActiveSub(num)}
                       className={`w-full h-9 flex items-center justify-between px-3 rounded-lg text-xs font-heading font-extrabold border-2 border-black transition-all cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                         isHoveredOrActive
-                          ? "bg-black text-[#FFD23F]"
+                          ? "bg-[#FFD23F] text-black"
                           : isSavedMueble
                           ? "bg-[#2A9D8F] text-white"
                           : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
