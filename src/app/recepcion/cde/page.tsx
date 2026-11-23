@@ -1378,7 +1378,7 @@ export default function RecepcionCdeDashboardPage() {
               SATI ASU - CDE
             </h1>
             <p className="text-xs sm:text-sm text-neutral-800 mt-1 max-w-3xl font-medium">
-              Monitoreo de envíos por transportadora, tiempos de retorno de laboratorio SATI y confirmación de recepción en sucursal con código de barras CODE128.
+              Monitoreo de envíos por transportadora, tiempos de retorno de laboratorio SATI y confirmación de recepción en sucursal.
             </p>
           </div>
 

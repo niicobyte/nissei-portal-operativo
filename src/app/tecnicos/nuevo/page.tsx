@@ -18,10 +18,7 @@ import {
   AlertCircle,
   AlertTriangle,
   Laptop,
-  Upload,
-  FileSpreadsheet,
   Send,
-  Database,
   ShieldAlert,
   ShieldCheck,
   Zap,
@@ -53,7 +50,6 @@ import {
   getStoredSkuCatalog,
   fetchSkuCatalogFromMySQL,
   saveSkusToCatalogOnline,
-  parseSkuImportText,
   mergeSkuCatalogItems,
   extractSkusFromOrders,
   isRealSku,
@@ -98,7 +94,6 @@ interface TecnicosNuevoDraft {
 
 export default function NuevoIngresoMontajePage() {
   const router = useRouter();
-  const skuFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Lista dinámica de vendedores, técnicos y catálogo maestro de SKUs sincronizados con MySQL
   const [listaVendedores, setListaVendedores] = useState<string[]>(LISTA_VENDEDORES_REALES);
@@ -170,12 +165,6 @@ export default function NuevoIngresoMontajePage() {
     });
     return items;
   }, [skuCatalog, tipoServicio]);
-
-  // Estados para importador masivo CSV / Lista de SKUs a MySQL
-  const [showSkuImporter, setShowSkuImporter] = useState(false);
-  const [skuImportText, setSkuImportText] = useState("");
-  const [isImportingSkus, setIsImportingSkus] = useState(false);
-  const [skuImportFeedback, setSkuImportFeedback] = useState<string | null>(null);
 
   // Estados para el ingreso de componente (manual con autocompletado por UPC / SKU)
   const [customUpc, setCustomUpc] = useState("");
@@ -611,42 +600,6 @@ export default function NuevoIngresoMontajePage() {
     setCustomSerial("");
     setSkuMatchNotice(learnedNotice);
     return true;
-  };
-
-  // Importar lote de SKUs desde archivo CSV o lista pegada hacia MySQL
-  const handleSaveImportedSkus = async (rawText: string) => {
-    const parsed = parseSkuImportText(rawText);
-    if (parsed.length === 0) {
-      setSkuImportFeedback(
-        "No se detectaron SKUs válidos. Usá formato: SKU, Descripción, Categoría (opcional)."
-      );
-      return;
-    }
-    setIsImportingSkus(true);
-    setSkuImportFeedback(null);
-    const res = await saveSkusToCatalogOnline(parsed);
-    setSkuCatalog(res.items);
-    setIsImportingSkus(false);
-    if (res.ok) {
-      setSkuImportFeedback(
-        `¡Listo! ${res.totalGuardados} SKU(s) guardados en MySQL (catalogo_sku) y disponibles para todo el equipo.`
-      );
-      setSkuImportText("");
-    } else {
-      setSkuImportFeedback(
-        res.error || "Guardado localmente, pero falló la sincronización con MySQL."
-      );
-    }
-  };
-
-  const handleSkuCsvFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const text = await file.text();
-    await handleSaveImportedSkus(text);
-    if (skuFileInputRef.current) {
-      skuFileInputRef.current.value = "";
-    }
   };
 
   // Eliminar componente
@@ -1275,77 +1228,11 @@ export default function NuevoIngresoMontajePage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <input
-                    ref={skuFileInputRef}
-                    type="file"
-                    accept=".csv,.txt,text/csv"
-                    onChange={handleSkuCsvFileChange}
-                    className="hidden"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowSkuImporter((prev) => !prev);
-                      setSkuImportFeedback(null);
-                    }}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer transition-all"
-                    title="Importar lista o CSV de SKUs a MySQL"
-                  >
-                    <Database className="w-3.5 h-3.5 text-black" />
-                    <span>{skuCatalog.length} SKUs en catálogo · Importar CSV</span>
-                  </button>
                   <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-[#FAF6EE] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                     {components.length} {components.length === 1 ? "componente" : "componentes"}
                   </span>
                 </div>
               </div>
-
-              {showSkuImporter && (
-                <div className="bg-[#2A9D8F]/15 border-2 border-black rounded-xl p-4 space-y-3 shadow-[3px_3px_0px_#000]">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div>
-                      <h3 className="text-xs font-heading font-extrabold text-black flex items-center gap-1.5">
-                        <FileSpreadsheet className="w-4 h-4 text-black" />
-                        Importar SKUs al Catálogo Maestro MySQL
-                      </h3>
-                      <p className="text-[11px] text-neutral-700 font-medium">
-                        Subí un archivo CSV o pegá una lista (<code className="font-mono font-bold">SKU, Descripción, Categoría, UPC</code>). Se sincroniza en la nube para cualquier PC.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => skuFileInputRef.current?.click()}
-                      disabled={isImportingSkus}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black rounded-lg text-xs font-heading font-extrabold text-black shadow-[2px_2px_0px_#000] cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-black" />
-                      <span>Subir archivo .CSV</span>
-                    </button>
-                  </div>
-
-                  <textarea
-                    rows={3}
-                    value={skuImportText}
-                    onChange={(e) => setSkuImportText(e.target.value)}
-                    placeholder={"774198, CPU INTEL I5-12400 2.5GHZ LGA1700, PROCESADOR\n879268, MB ASUS PRIME H610M-D D4, PLACA_MADRE"}
-                    className="w-full text-xs font-mono bg-white border-2 border-black rounded-lg p-2.5 outline-none text-black shadow-[1px_1px_0px_#000]"
-                  />
-
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-[11px] text-neutral-800 font-medium">
-                      {skuImportFeedback || "También podés escribir un SKU nuevo directo abajo y se guardará automáticamente al agregarlo."}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={isImportingSkus || !skuImportText.trim()}
-                      onClick={() => void handleSaveImportedSkus(skuImportText)}
-                      className="px-3 py-1.5 bg-[#FFD23F] hover:bg-[#FACC15] disabled:opacity-50 text-black text-xs font-heading font-extrabold border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] cursor-pointer"
-                    >
-                      {isImportingSkus ? "Guardando en MySQL..." : "Guardar Lista en MySQL"}
-                    </button>
-                  </div>
-                </div>
-              )}
 
               {/* Formulario de Ingreso Directo Inteligente (OPCIÓN DEFAULT) */}
               <div className="bg-[#FAF6EE] p-4 rounded-xl border-2 border-black space-y-3 shadow-[3px_3px_0px_#000]">

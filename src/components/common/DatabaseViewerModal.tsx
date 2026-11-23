@@ -539,46 +539,46 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6">
-      <div className={`bg-white w-full max-w-7xl 3xl:max-w-[1800px] h-[92dvh] rounded-2xl border border-zinc-200 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ${isSessionLocked ? "blur-md pointer-events-none select-none opacity-25" : ""}`}>
-        {/* Cabecera del Visor de Base de Datos */}
-        <div className="bg-zinc-900 text-white px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-zinc-800">
+      <div className={`bg-[#FFFDF9] w-full max-w-7xl 3xl:max-w-[1800px] h-[92dvh] rounded-xl border-3 border-black shadow-[8px_8px_0px_#000] flex flex-col overflow-hidden transition-all duration-300 ${isSessionLocked ? "blur-md pointer-events-none select-none opacity-25" : ""}`}>
+        {/* Cabecera del Visor de Base de Datos Neo-Brutalista Retro */}
+        <div className="bg-[#FAF6EE] text-black px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b-2 border-black">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center text-emerald-400">
-              <Database className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-lg bg-[#FFD23F] border-2 border-black flex items-center justify-center text-black shadow-[2px_2px_0px_#000]">
+              <Database className="w-5 h-5 text-black" />
             </div>
             <div>
               <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-base sm:text-lg font-extrabold tracking-tight">
+                <h2 className="text-base sm:text-lg font-heading font-extrabold text-black tracking-tight">
                   Visor de Base de Datos MySQL
                 </h2>
-                <span className="px-2 py-0.5 text-[11px] font-mono bg-zinc-800 border border-zinc-700 rounded text-zinc-300">
+                <span className="px-2 py-0.5 text-[11px] font-mono font-bold bg-[#FFFDF9] border-2 border-black rounded text-black shadow-[1px_1px_0px_#000]">
                   DB: {displayDb}
                 </span>
                 {mysqlConnected ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                    <CheckCircle2 className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#2A9D8F]/20 text-black border-2 border-black shadow-[1px_1px_0px_#000]">
+                    <CheckCircle2 className="w-3 h-3 text-black" />
                     {isCloudRailway ? "MySQL Cloud Activo (Railway)" : `MySQL Activo (${displayHost})`}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                    <HardDrive className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFD23F] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
+                    <HardDrive className="w-3 h-3 text-black" />
                     MySQL en la Nube (Conectando...)
                   </span>
                 )}
                 {/* Temporizador de Seguridad de 30 Segundos */}
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border-2 border-black shadow-[1px_1px_0px_#000] transition-colors ${
                     secondsRemaining <= 10
-                      ? "bg-rose-500/25 text-rose-300 border-rose-500/50 animate-pulse"
-                      : "bg-amber-500/15 text-amber-300 border-amber-500/30"
+                      ? "bg-[#E76F51] text-white animate-pulse"
+                      : "bg-[#FFFDF9] text-black"
                   }`}
                   title="Sesión protegida en MySQL: Expira automáticamente a los 30 segundos y requiere re-autenticación"
                 >
-                  <Clock className="w-3 h-3 text-amber-400" />
+                  <Clock className={`w-3 h-3 ${secondsRemaining <= 10 ? "text-white" : "text-black"}`} />
                   <span>Sesión: {secondsRemaining}s</span>
                 </span>
               </div>
-              <p className="text-xs text-zinc-400 mt-0.5 font-mono">
+              <p className="text-xs text-neutral-800 mt-0.5 font-mono font-medium">
                 Host: {displayHost} · Motor: InnoDB utf8mb4 · Última lectura: {lastSyncTime || "--:--"}
               </p>
             </div>
@@ -589,7 +589,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
               type="button"
               onClick={loadAllData}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors flex items-center gap-1.5"
+              className="px-3 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
               <span>Recargar</span>
@@ -598,7 +598,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
               <button
                 type="button"
                 onClick={handleExportJSON}
-                className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 transition-colors flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Exportar JSON</span>
@@ -607,7 +607,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg bg-zinc-800 hover:bg-rose-600 text-zinc-300 hover:text-white transition-colors"
+              className="p-2 rounded-lg bg-[#FFFDF9] hover:bg-[#E76F51] hover:text-white text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
               title="Cerrar visor de base de datos"
             >
               <X className="w-4 h-4" />
@@ -615,21 +615,21 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           </div>
         </div>
 
-        {/* Pestañas de Tablas de la Base de Datos */}
-        <div className="bg-zinc-100 px-5 pt-3 border-b border-zinc-200 flex items-center justify-between flex-wrap gap-2">
+        {/* Pestañas de Tablas de la Base de Datos Neo-Brutalista Retro */}
+        <div className="bg-[#FAF6EE] px-5 pt-3 border-b-2 border-black flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0">
             <button
               type="button"
               onClick={() => { setActiveTab("taller_reparaciones"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "taller_reparaciones"
-                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
-                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+                  ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <Wrench className="w-3.5 h-3.5 text-zinc-700" />
+              <Wrench className="w-3.5 h-3.5" />
               <span className="font-mono">taller_reparaciones</span>
-              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+              <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "taller_reparaciones" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {reparaciones.length}
               </span>
             </button>
@@ -637,15 +637,15 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("recepcion_tickets"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "recepcion_tickets"
-                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
-                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+                  ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <AnimatedReceptionBox className="w-3.5 h-3.5 text-zinc-700" beamColor="bg-emerald-500" pingColor="bg-emerald-500" />
+              <AnimatedReceptionBox className="w-3.5 h-3.5" beamColor="bg-emerald-500" pingColor="bg-emerald-500" />
               <span className="font-mono">recepcion_tickets</span>
-              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+              <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "recepcion_tickets" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {recepcion.length}
               </span>
             </button>
@@ -653,15 +653,15 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("recepcion_cde_tickets"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "recepcion_cde_tickets"
-                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
-                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+                  ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <SpeedTruck className="w-3.5 h-3.5 text-zinc-700" smokeColor="bg-amber-400" />
+              <SpeedTruck className="w-3.5 h-3.5" smokeColor="bg-amber-400" />
               <span className="font-mono">recepcion_cde_tickets</span>
-              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+              <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "recepcion_cde_tickets" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {cde.length}
               </span>
             </button>
@@ -669,15 +669,15 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("ordenes_montaje"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "ordenes_montaje"
-                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
-                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+                  ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <AnimatedCpu className="w-3.5 h-3.5 text-zinc-700" coreColor="bg-cyan-500" />
+              <AnimatedCpu className="w-3.5 h-3.5" coreColor="bg-cyan-500" />
               <span className="font-mono">ordenes_montaje</span>
-              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+              <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "ordenes_montaje" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {montajes.length}
               </span>
             </button>
@@ -685,15 +685,15 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("usuarios"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "usuarios"
-                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
-                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+                  ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <Users className="w-3.5 h-3.5 text-zinc-700" />
+              <Users className="w-3.5 h-3.5" />
               <span className="font-mono">usuarios</span>
-              <span className="px-1.5 py-0.5 text-[10px] rounded bg-zinc-900 text-white font-mono">
+              <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "usuarios" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {usuarios.length}
               </span>
             </button>
@@ -701,30 +701,30 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("sql_schema"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-xl text-xs font-bold transition-colors flex items-center gap-2 border-t border-x ${
+              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "sql_schema"
-                  ? "bg-white text-zinc-900 border-zinc-200 shadow-2xs"
-                  : "bg-transparent text-zinc-600 border-transparent hover:bg-zinc-200/60"
+                  ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
+                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <Code2 className="w-3.5 h-3.5 text-zinc-700" />
+              <Code2 className="w-3.5 h-3.5" />
               <span>Estructura SQL</span>
             </button>
           </div>
         </div>
 
-        {/* Barra de Filtros y Búsqueda */}
+        {/* Barra de Filtros y Búsqueda Neo-Brutalista Retro */}
         {activeTab !== "sql_schema" && (
-          <div className="px-5 py-3 bg-white border-b border-zinc-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          <div className="px-5 py-3 bg-[#FAF6EE] border-b-2 border-black flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2 flex-1 max-w-xl">
               <div className="relative flex-1">
-                <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-2.5" />
+                <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder={`Buscar en tabla ${activeTab} (orden, cliente, serie, técnico, fallo...)`}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-zinc-50 border border-zinc-200 rounded-lg focus:border-zinc-900 focus:bg-white outline-none"
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-white text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] focus:bg-[#FFFDF9] outline-none font-mono font-medium"
                 />
               </div>
 
@@ -732,7 +732,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-zinc-700 font-medium outline-none"
+                  className="text-xs bg-white text-black border-2 border-black rounded-lg px-2.5 py-1.5 font-heading font-extrabold shadow-[2px_2px_0px_#000] outline-none cursor-pointer"
                 >
                   <option value="ALL">Todos los estados</option>
                   <option value="SIN_ASIGNAR">SIN_ASIGNAR</option>
@@ -745,7 +745,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-xs bg-zinc-50 border border-zinc-200 rounded-lg px-2.5 py-1.5 text-zinc-700 font-medium outline-none"
+                  className="text-xs bg-white text-black border-2 border-black rounded-lg px-2.5 py-1.5 font-heading font-extrabold shadow-[2px_2px_0px_#000] outline-none cursor-pointer"
                 >
                   <option value="ALL">Todas las etapas</option>
                   <option value="PENDIENTE_PIEZAS">PENDIENTE_PIEZAS</option>
@@ -757,8 +757,8 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             </div>
 
             {/* Paginación */}
-            <div className="flex items-center justify-between sm:justify-end gap-3 text-xs text-zinc-600">
-              <span className="font-mono">
+            <div className="flex items-center justify-between sm:justify-end gap-3 text-xs text-black font-mono">
+              <span>
                 Mostrando{" "}
                 <strong>
                   {currentListLength === 0 ? 0 : startIndex + 1}-
@@ -771,18 +771,18 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   type="button"
                   disabled={page <= 1}
                   onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="p-1.5 rounded border border-zinc-200 disabled:opacity-40 hover:bg-zinc-100"
+                  className="p-1.5 rounded-lg border-2 border-black bg-white hover:bg-[#FFD23F] disabled:opacity-40 shadow-[1px_1px_0px_#000] cursor-pointer transition-all"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
-                <span className="px-2 font-mono text-xs">
+                <span className="px-2 font-mono text-xs font-bold">
                   Pág. {page}/{totalPages}
                 </span>
                 <button
                   type="button"
                   disabled={page >= totalPages}
                   onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  className="p-1.5 rounded border border-zinc-200 disabled:opacity-40 hover:bg-zinc-100"
+                  className="p-1.5 rounded-lg border-2 border-black bg-white hover:bg-[#FFD23F] disabled:opacity-40 shadow-[1px_1px_0px_#000] cursor-pointer transition-all"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
                 </button>
@@ -791,77 +791,77 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           </div>
         )}
 
-        {/* Contenido Principal de la Tabla Seleccionada */}
-        <div className="flex-1 overflow-auto bg-zinc-50/50">
+        {/* Contenido Principal de la Tabla Seleccionada Neo-Brutalista Retro */}
+        <div className="flex-1 overflow-auto bg-[#FAF6EE]/50">
           {/* 1. TABLA: taller_reparaciones */}
           {activeTab === "taller_reparaciones" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">id_orden</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">cliente</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">equipo</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">tipo_componente</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">serial</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">estado</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">tecnico_asignado</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">falla_reportada</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">detalle_reparacion</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">observaciones</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">dictamen_final</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">fecha_ingreso</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id_orden</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">cliente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">equipo</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tipo_componente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">serial</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">estado</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tecnico_asignado</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">falla_reportada</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">detalle_reparacion</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">observaciones</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">dictamen_final</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">fecha_ingreso</th>
                   <th className="py-2.5 px-3 text-center">acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white">
+              <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
                 {filteredReparaciones
                   .slice(startIndex, startIndex + PAGE_SIZE)
                   .map((r) => (
-                    <tr key={r.idOrden} className="hover:bg-zinc-50 transition-colors">
-                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                    <tr key={r.idOrden} className="hover:bg-[#FAF6EE] transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-black border-r-2 border-black/10 whitespace-nowrap">
                         #{r.idOrden}
                       </td>
-                      <td className="py-2 px-3 font-medium text-zinc-800 border-r border-zinc-100">
+                      <td className="py-2 px-3 font-heading font-bold text-black border-r-2 border-black/10">
                         {r.cliente}
                       </td>
-                      <td className="py-2 px-3 text-zinc-700 border-r border-zinc-100">
+                      <td className="py-2 px-3 text-neutral-800 font-medium border-r-2 border-black/10">
                         {r.equipo}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-700 border-r-2 border-black/10 whitespace-nowrap">
                         {r.tipoComponente}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-700 border-r-2 border-black/10 whitespace-nowrap">
                         {r.serial}
                       </td>
-                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 border-r-2 border-black/10 whitespace-nowrap">
                         <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-extrabold border-2 border-black shadow-[1px_1px_0px_#000] ${
                             r.estado === "FINALIZADA"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              ? "bg-[#2A9D8F] text-white"
                               : r.estado === "EN_REPARACION"
-                              ? "bg-amber-50 text-amber-700 border border-amber-200"
-                              : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                              ? "bg-[#FFD23F] text-black"
+                              : "bg-[#FAF6EE] text-black"
                           }`}
                         >
                           {r.estado}
                         </span>
                       </td>
-                      <td className="py-2 px-3 font-semibold text-zinc-800 border-r border-zinc-100 whitespace-nowrap">
-                        {r.tecnicoAsignado || <span className="text-zinc-400 font-mono">NULL</span>}
+                      <td className="py-2 px-3 font-bold text-black border-r-2 border-black/10 whitespace-nowrap">
+                        {r.tecnicoAsignado || <span className="text-neutral-400 font-mono">NULL</span>}
                       </td>
-                      <td className="py-2 px-3 text-zinc-700 border-r border-zinc-100 max-w-xs truncate" title={r.fallaReportada}>
-                        {r.fallaReportada || <span className="text-zinc-300 font-mono">-</span>}
+                      <td className="py-2 px-3 text-neutral-800 border-r-2 border-black/10 max-w-xs truncate font-medium" title={r.fallaReportada}>
+                        {r.fallaReportada || <span className="text-neutral-400 font-mono">-</span>}
                       </td>
-                      <td className="py-2 px-3 text-emerald-800 border-r border-zinc-100 max-w-xs truncate" title={r.detalleReparacion}>
-                        {r.detalleReparacion || <span className="text-zinc-300 font-mono">-</span>}
+                      <td className="py-2 px-3 text-[#2A9D8F] font-bold border-r-2 border-black/10 max-w-xs truncate" title={r.detalleReparacion}>
+                        {r.detalleReparacion || <span className="text-neutral-400 font-mono">-</span>}
                       </td>
-                      <td className="py-2 px-3 text-amber-800 border-r border-zinc-100 max-w-xs truncate" title={r.observaciones}>
-                        {r.observaciones || <span className="text-zinc-300 font-mono">-</span>}
+                      <td className="py-2 px-3 text-amber-800 font-medium border-r-2 border-black/10 max-w-xs truncate" title={r.observaciones}>
+                        {r.observaciones || <span className="text-neutral-400 font-mono">-</span>}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] border-r border-zinc-100 whitespace-nowrap">
-                        {r.dictamenFinal || <span className="text-zinc-400">NULL</span>}
+                      <td className="py-2 px-3 font-mono text-[11px] font-bold border-r-2 border-black/10 whitespace-nowrap">
+                        {r.dictamenFinal || <span className="text-neutral-400">NULL</span>}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-600 border-r-2 border-black/10 whitespace-nowrap">
                         {r.fechaIngreso}
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
@@ -874,7 +874,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                               label: `Orden #${r.idOrden} · ${r.cliente}`,
                             })
                           }
-                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          className="p-1 rounded-lg border-2 border-black bg-white hover:bg-[#E76F51] hover:text-white text-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                           title={`Eliminar orden #${r.idOrden} de la base de datos`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -889,61 +889,61 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 2. TABLA: recepcion_tickets */}
           {activeTab === "recepcion_tickets" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">id_orden</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">codigo_producto</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">cliente</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">tipo_componente</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">marca</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">modelo</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">serial</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">estado</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">mensaje</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">fecha_ingreso</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">fecha_entregada</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id_orden</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">codigo_producto</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">cliente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tipo_componente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">marca</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">modelo</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">serial</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">estado</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">mensaje</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">fecha_ingreso</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">fecha_entregada</th>
                   <th className="py-2.5 px-3 text-center">acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white">
+              <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
                 {filteredRecepcion
                   .slice(startIndex, startIndex + PAGE_SIZE)
                   .map((t) => (
-                    <tr key={t.idOrden} className="hover:bg-zinc-50 transition-colors">
-                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                    <tr key={t.idOrden} className="hover:bg-[#FAF6EE] transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-black border-r-2 border-black/10 whitespace-nowrap">
                         #{t.idOrden}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-600 border-r-2 border-black/10 whitespace-nowrap">
                         {t.codigoProducto || "-"}
                       </td>
-                      <td className="py-2 px-3 font-medium text-zinc-800 border-r border-zinc-100">
+                      <td className="py-2 px-3 font-heading font-bold text-black border-r-2 border-black/10">
                         {t.cliente}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-700 border-r-2 border-black/10 whitespace-nowrap">
                         {t.tipoComponente}
                       </td>
-                      <td className="py-2 px-3 text-zinc-700 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 text-neutral-800 font-medium border-r-2 border-black/10 whitespace-nowrap">
                         {t.marca}
                       </td>
-                      <td className="py-2 px-3 text-zinc-700 border-r border-zinc-100">
+                      <td className="py-2 px-3 text-neutral-800 font-medium border-r-2 border-black/10">
                         {t.modelo}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-700 border-r-2 border-black/10 whitespace-nowrap">
                         {t.serial}
                       </td>
-                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+                      <td className="py-2 px-3 border-r-2 border-black/10 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#FAF6EE] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                           {t.estado}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-zinc-600 border-r border-zinc-100 max-w-xs truncate" title={t.mensaje}>
+                      <td className="py-2 px-3 text-neutral-700 border-r-2 border-black/10 max-w-xs truncate" title={t.mensaje}>
                         {t.mensaje || "-"}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-600 border-r-2 border-black/10 whitespace-nowrap">
                         {t.fechaIngreso}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
-                        {t.fechaEntregada || <span className="text-zinc-400">NULL</span>}
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-600 border-r-2 border-black/10 whitespace-nowrap">
+                        {t.fechaEntregada || <span className="text-neutral-400">NULL</span>}
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
                         <button
@@ -955,7 +955,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                               label: `Orden #${t.idOrden} · ${t.cliente}`,
                             })
                           }
-                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          className="p-1 rounded-lg border-2 border-black bg-white hover:bg-[#E76F51] hover:text-white text-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                           title={`Eliminar orden #${t.idOrden} de la base de datos`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -970,65 +970,65 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 2b. TABLA: recepcion_cde_tickets (Casa Matriz CDE & Retornos Depósito Danesa) */}
           {activeTab === "recepcion_cde_tickets" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">id_orden</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">cliente</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">equipo / hardware</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">serial</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">ingreso_asu</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">despacho_cde</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">dias_taller</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">estado_cde</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">deposito</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id_orden</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">cliente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">equipo / hardware</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">serial</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">ingreso_asu</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">despacho_cde</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">dias_taller</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">estado_cde</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">deposito</th>
                   <th className="py-2.5 px-3 text-center">acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white">
+              <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
                 {filteredCde
                   .slice(startIndex, startIndex + PAGE_SIZE)
                   .map((cItem) => (
-                    <tr key={cItem.idOrden} className="hover:bg-zinc-50 transition-colors">
-                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                    <tr key={cItem.idOrden} className="hover:bg-[#FAF6EE] transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-black border-r-2 border-black/10 whitespace-nowrap">
                         #{cItem.idOrden}
                       </td>
-                      <td className="py-2 px-3 font-medium text-zinc-800 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-heading font-bold text-black border-r-2 border-black/10 whitespace-nowrap">
                         <span className="flex items-center gap-1.5">
                           {cItem.cliente}
                           {cItem.esDanesa && (
-                            <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-extrabold bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                               DANESA
                             </span>
                           )}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-zinc-800 border-r border-zinc-100">
+                      <td className="py-2 px-3 text-neutral-800 font-medium border-r-2 border-black/10">
                         {cItem.marca} {cItem.modelo} ({cItem.tipoComponente})
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-700 border-r-2 border-black/10 whitespace-nowrap">
                         {cItem.serial}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-600 border-r-2 border-black/10 whitespace-nowrap">
                         {cItem.fechaIngreso}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
-                        {cItem.fechaEntregada || <span className="text-zinc-300">-</span>}
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-600 border-r-2 border-black/10 whitespace-nowrap">
+                        {cItem.fechaEntregada || <span className="text-neutral-400">-</span>}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] font-bold text-amber-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] font-bold text-amber-600 border-r-2 border-black/10 whitespace-nowrap">
                         {cItem.diasResolucion !== null && cItem.diasResolucion !== undefined ? `${cItem.diasResolucion} d` : "-"}
                       </td>
-                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <td className="py-2 px-3 border-r-2 border-black/10 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#2A9D8F]/20 text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                           {cItem.estado}
                         </span>
                       </td>
-                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 border-r-2 border-black/10 whitespace-nowrap">
                         {cItem.recibidoEnDeposito ? (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#2A9D8F] text-white border-2 border-black shadow-[1px_1px_0px_#000]">
                             Recibido
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#FFD23F] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                             En tránsito
                           </span>
                         )}
@@ -1043,7 +1043,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                               label: `Orden CDE #${cItem.idOrden} · ${cItem.cliente}`,
                             })
                           }
-                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          className="p-1 rounded-lg border-2 border-black bg-white hover:bg-[#E76F51] hover:text-white text-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                           title={`Eliminar orden #${cItem.idOrden} de la base de datos`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1058,60 +1058,60 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 3. TABLA: ordenes_montaje */}
           {activeTab === "ordenes_montaje" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">id</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">nro_reg</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">cliente</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">tipo_servicio</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">tecnico</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">etapa</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">progreso</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">estado</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">vendedor / canal</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">componentes_json</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">fecha_montaje</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">nro_reg</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">cliente</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tipo_servicio</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">tecnico</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">etapa</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">progreso</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">estado</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">vendedor / canal</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">componentes_json</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">fecha_montaje</th>
                   <th className="py-2.5 px-3 text-center">acciones</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white">
+              <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
                 {filteredMontajes
                   .slice(startIndex, startIndex + PAGE_SIZE)
                   .map((m) => (
-                    <tr key={m.id} className="hover:bg-zinc-50 transition-colors">
-                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                    <tr key={m.id} className="hover:bg-[#FAF6EE] transition-colors">
+                      <td className="py-2 px-3 font-mono font-bold text-black border-r-2 border-black/10 whitespace-nowrap">
                         {m.id}
                       </td>
-                      <td className="py-2 px-3 font-mono text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-neutral-600 border-r-2 border-black/10 whitespace-nowrap">
                         {m.nro_reg}
                       </td>
-                      <td className="py-2 px-3 font-medium text-zinc-800 border-r border-zinc-100">
+                      <td className="py-2 px-3 font-heading font-bold text-black border-r-2 border-black/10">
                         {m.cliente}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-700 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-700 border-r-2 border-black/10 whitespace-nowrap">
                         {m.tipo_servicio} ({m.cantidadEquipos} eq.)
                       </td>
-                      <td className="py-2 px-3 font-semibold text-zinc-800 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-bold text-black border-r-2 border-black/10 whitespace-nowrap">
                         {m.tecnico}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-700 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-700 border-r-2 border-black/10 whitespace-nowrap">
                         {m.etapa}
                       </td>
-                      <td className="py-2 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono font-bold text-black border-r-2 border-black/10 whitespace-nowrap">
                         {m.progreso}%
                       </td>
-                      <td className="py-2 px-3 border-r border-zinc-100 whitespace-nowrap">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+                      <td className="py-2 px-3 border-r-2 border-black/10 whitespace-nowrap">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-[#FAF6EE] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                           {m.estado}
                         </span>
                       </td>
-                      <td className="py-2 px-3 text-zinc-600 border-r border-zinc-100 whitespace-nowrap">
-                        {m.vendedor} · <span className="text-zinc-400">{m.canal}</span>
+                      <td className="py-2 px-3 text-neutral-700 border-r-2 border-black/10 whitespace-nowrap font-medium">
+                        {m.vendedor} · <span className="text-neutral-500">{m.canal}</span>
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-600 border-r border-zinc-100 max-w-xs truncate" title={JSON.stringify(m.componentes)}>
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-700 border-r-2 border-black/10 max-w-xs truncate" title={JSON.stringify(m.componentes)}>
                         [{m.componentes?.length || 0} piezas] {m.observaciones}
                       </td>
-                      <td className="py-2 px-3 font-mono text-[11px] text-zinc-500 border-r border-zinc-100 whitespace-nowrap">
+                      <td className="py-2 px-3 font-mono text-[11px] text-neutral-600 border-r-2 border-black/10 whitespace-nowrap">
                         {m.fecha_montaje}
                       </td>
                       <td className="py-2 px-3 text-center whitespace-nowrap">
@@ -1124,7 +1124,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                               label: `Montaje ${m.id} · ${m.cliente}`,
                             })
                           }
-                          className="p-1 rounded text-zinc-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                          className="p-1 rounded-lg border-2 border-black bg-white hover:bg-[#E76F51] hover:text-white text-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                           title={`Eliminar orden de montaje ${m.id} de la base de datos`}
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -1139,47 +1139,47 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 4. TABLA: usuarios */}
           {activeTab === "usuarios" && (
             <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-zinc-100 text-zinc-600 font-mono text-[11px] uppercase sticky top-0 z-10 border-b border-zinc-200">
+              <thead className="bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold uppercase sticky top-0 z-10 border-b-2 border-black">
                 <tr>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">id</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">avatar</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">nombre</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">role</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">password</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">default_route</th>
-                  <th className="py-2.5 px-3 border-r border-zinc-200">badge</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">id</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">avatar</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">nombre</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">role</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">password</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">default_route</th>
+                  <th className="py-2.5 px-3 border-r-2 border-neutral-700">badge</th>
                   <th className="py-2.5 px-3">descripcion</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-200 bg-white">
+              <tbody className="divide-y-2 divide-black/10 bg-[#FFFDF9]">
                 {filteredUsuarios.map((u) => (
-                  <tr key={u.id} className="hover:bg-zinc-50 transition-colors">
-                    <td className="py-2.5 px-3 font-mono font-bold text-zinc-900 border-r border-zinc-100">
+                  <tr key={u.id} className="hover:bg-[#FAF6EE] transition-colors">
+                    <td className="py-2.5 px-3 font-mono font-bold text-black border-r-2 border-black/10">
                       {u.id}
                     </td>
-                    <td className="py-2.5 px-3 font-mono text-zinc-600 border-r border-zinc-100">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-zinc-900 text-white text-[10px] font-bold">
+                    <td className="py-2.5 px-3 font-mono text-neutral-700 border-r-2 border-black/10">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-[#FFD23F] text-black border-2 border-black shadow-[1px_1px_0px_#000] text-[10px] font-extrabold">
                         {u.avatar}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 font-bold text-zinc-900 border-r border-zinc-100">
+                    <td className="py-2.5 px-3 font-heading font-bold text-black border-r-2 border-black/10">
                       {u.nombre}
                     </td>
-                    <td className="py-2.5 px-3 font-mono text-[11px] border-r border-zinc-100">
-                      <span className="px-2 py-0.5 rounded bg-zinc-100 border border-zinc-200 text-zinc-800 font-bold">
+                    <td className="py-2.5 px-3 font-mono text-[11px] border-r-2 border-black/10">
+                      <span className="px-2 py-0.5 rounded bg-[#FAF6EE] border-2 border-black text-black font-extrabold shadow-[1px_1px_0px_#000]">
                         {u.role}
                       </span>
                     </td>
-                    <td className="py-2.5 px-3 font-mono text-emerald-700 font-bold border-r border-zinc-100">
+                    <td className="py-2.5 px-3 font-mono text-[#2A9D8F] font-bold border-r-2 border-black/10">
                       •••••••• (SHA-256)
                     </td>
-                    <td className="py-2.5 px-3 font-mono text-zinc-600 border-r border-zinc-100">
+                    <td className="py-2.5 px-3 font-mono text-neutral-600 border-r-2 border-black/10">
                       {u.defaultRoute}
                     </td>
-                    <td className="py-2.5 px-3 text-zinc-700 border-r border-zinc-100">
+                    <td className="py-2.5 px-3 text-neutral-800 font-medium border-r-2 border-black/10">
                       {u.badge}
                     </td>
-                    <td className="py-2.5 px-3 text-zinc-600">{u.descripcion}</td>
+                    <td className="py-2.5 px-3 text-neutral-700">{u.descripcion}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1189,36 +1189,36 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
           {/* 5. ESTRUCTURA SQL */}
           {activeTab === "sql_schema" && (
             <div className="p-6 max-w-5xl mx-auto space-y-4">
-              <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-zinc-200">
+              <div className="flex items-center justify-between bg-[#FAF6EE] p-4 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
                 <div>
-                  <h3 className="text-sm font-bold text-zinc-900 flex items-center gap-2">
-                    <Table2 className="w-4 h-4 text-zinc-700" />
+                  <h3 className="text-sm font-heading font-extrabold text-black flex items-center gap-2">
+                    <Table2 className="w-4 h-4 text-black" />
                     <span>Esquema Oficial MySQL (`src/lib/mysql.ts`)</span>
                   </h3>
-                  <p className="text-xs text-zinc-500 mt-0.5">
+                  <p className="text-xs text-neutral-700 mt-0.5 font-medium">
                     Estas 4 tablas se crean y poblan automáticamente cuando el servicio MySQL está activo en `localhost:3306`.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleCopySql}
-                  className="px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-black text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-1.5 rounded-lg bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs font-heading font-extrabold flex items-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                 >
                   {copiedSql ? (
                     <>
-                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <Check className="w-3.5 h-3.5 text-black stroke-[3]" />
                       <span>SQL Copiado</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-3.5 h-3.5" />
+                      <Copy className="w-3.5 h-3.5 text-black" />
                       <span>Copiar Script SQL</span>
                     </>
                   )}
                 </button>
               </div>
 
-              <pre className="p-5 rounded-xl bg-zinc-900 text-zinc-100 font-mono text-xs overflow-x-auto leading-relaxed border border-zinc-800">
+              <pre className="p-5 rounded-xl bg-black text-[#FFD23F] font-mono text-xs overflow-x-auto leading-relaxed border-2 border-black shadow-[4px_4px_0px_#000]">
                 {SQL_SCHEMA_TEXT}
               </pre>
             </div>
@@ -1226,32 +1226,32 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
         </div>
       </div>
 
-      {/* Toast informativo */}
+      {/* Toast informativo Neo-Brutalista */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-[80] bg-emerald-600 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-lg border border-emerald-500 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <Check className="w-4 h-4" />
+        <div className="fixed bottom-6 right-6 z-[80] bg-[#FFD23F] text-black text-xs font-heading font-extrabold px-4 py-2.5 rounded-xl shadow-[4px_4px_0px_#000] border-2 border-black flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <Check className="w-4 h-4 text-black stroke-[3]" />
           <span>{toastMessage}</span>
         </div>
       )}
 
-      {/* Modal de confirmación para eliminar fila */}
+      {/* Modal de confirmación para eliminar fila Neo-Brutalista */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-zinc-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#FFFDF9] rounded-xl max-w-md w-full shadow-[8px_8px_0px_#000] border-3 border-black overflow-hidden animate-in fade-in zoom-in-95 duration-150">
             <div className="p-6">
-              <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-4">
-                <AlertTriangle className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-[#E76F51] border-2 border-black text-white flex items-center justify-center mb-4 shadow-[2px_2px_0px_#000]">
+                <AlertTriangle className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-base font-bold text-zinc-900 mb-1">
+              <h3 className="text-base font-heading font-extrabold text-black mb-1">
                 ¿Eliminar registro de la base de datos?
               </h3>
-              <p className="text-xs text-zinc-600 mb-4 leading-relaxed">
+              <p className="text-xs text-neutral-800 mb-4 leading-relaxed font-medium">
                 Esta acción eliminará permanentemente{" "}
-                <span className="font-mono font-bold text-zinc-900">{confirmDelete.label}</span>{" "}
-                de la tabla <span className="font-mono font-bold text-zinc-900">{confirmDelete.table}</span> en MySQL y en el almacenamiento local.
+                <span className="font-mono font-bold text-black bg-[#FFD23F] px-1 border border-black rounded">{confirmDelete.label}</span>{" "}
+                de la tabla <span className="font-mono font-bold text-black">{confirmDelete.table}</span> en MySQL y en el almacenamiento local.
               </p>
-              <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-[11px] text-amber-800 leading-relaxed mb-5">
-                <strong>Advertencia:</strong> Esta operación no se puede deshacer.
+              <div className="p-3 bg-[#FFD23F]/30 rounded-lg border-2 border-black text-xs text-black leading-relaxed mb-5 shadow-[2px_2px_0px_#000] font-medium">
+                <strong className="font-bold">Advertencia:</strong> Esta operación no se puede deshacer.
               </div>
 
               <div className="flex items-center justify-end gap-2.5">
@@ -1259,7 +1259,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   type="button"
                   disabled={isDeleting}
                   onClick={() => setConfirmDelete(null)}
-                  className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                  className="px-4 py-2 text-xs font-heading font-extrabold text-black bg-[#FAF6EE] hover:bg-[#FFD23F] border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                 >
                   Cancelar
                 </button>
@@ -1267,7 +1267,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                   type="button"
                   disabled={isDeleting}
                   onClick={() => executeDelete(confirmDelete.table, confirmDelete.id)}
-                  className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-lg transition-colors flex items-center gap-2"
+                  className="px-4 py-2 text-xs font-heading font-extrabold text-white bg-[#E76F51] hover:bg-rose-700 disabled:opacity-50 border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
                 >
                   {isDeleting ? (
                     <>
@@ -1287,24 +1287,24 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
         </div>
       )}
 
-      {/* Pantalla de Re-autenticación de Seguridad (30 segundos expirados) */}
+      {/* Pantalla de Re-autenticación de Seguridad (30 segundos expirados) Neo-Brutalista */}
       {isSessionLocked && (
-        <div className="fixed inset-0 z-[75] bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-zinc-200 overflow-hidden">
-            <div className="bg-zinc-900 text-white px-5 py-4 flex items-center justify-between border-b border-zinc-800">
+        <div className="fixed inset-0 z-[75] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-[#FFFDF9] rounded-xl max-w-md w-full shadow-[8px_8px_0px_#000] border-3 border-black overflow-hidden">
+            <div className="bg-black text-[#FFD23F] px-5 py-4 flex items-center justify-between border-b-2 border-black">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
-                  <ShieldAlert className="w-5 h-5" />
+                <div className="w-9 h-9 rounded-lg bg-[#FFD23F] text-black border-2 border-black flex items-center justify-center shadow-[1px_1px_0px_#000]">
+                  <ShieldAlert className="w-5 h-5 text-black" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold tracking-tight">Sesión MySQL Expirada (30s)</h3>
-                  <p className="text-[11px] text-zinc-400 font-mono">Límite de seguridad alcanzado</p>
+                  <h3 className="text-sm font-heading font-extrabold text-[#FFD23F] tracking-tight">Sesión MySQL Expirada (30s)</h3>
+                  <p className="text-[11px] text-neutral-300 font-mono">Límite de seguridad alcanzado</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-lg bg-zinc-800 hover:bg-rose-600 text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg bg-neutral-900 hover:bg-[#E76F51] text-white border-2 border-black transition-colors cursor-pointer"
                 title="Cerrar visor MySQL"
               >
                 <X className="w-4 h-4" />
@@ -1312,19 +1312,19 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             </div>
 
             <form onSubmit={handleReauthSubmit} className="p-6 space-y-4">
-              <div className="p-3.5 bg-amber-50 rounded-xl border border-amber-200 text-amber-900 text-xs leading-relaxed flex items-start gap-2.5">
-                <Clock className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="p-3.5 bg-[#FAF6EE] rounded-xl border-2 border-black text-black text-xs leading-relaxed flex items-start gap-2.5 shadow-[2px_2px_0px_#000]">
+                <Clock className="w-4 h-4 text-black shrink-0 mt-0.5" />
                 <div>
-                  <strong className="block font-bold">Tiempo de visualización agotado</strong>
-                  <span>
-                    Por seguridad, el visor de MySQL se bloquea automáticamente cada 30 segundos. Escriba la contraseña de Administrador para renovar el acceso.
+                  <strong className="block font-heading font-extrabold text-black">Tiempo de visualización agotado</strong>
+                  <span className="font-medium text-neutral-800">
+                    Por seguridad, el visor de MySQL se bloquea automáticamente cada 30 segundos. Ingrese la clave para renovar el acceso.
                   </span>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-zinc-700 block">
-                  Contraseña de Administrador
+                <label className="text-xs font-heading font-extrabold text-black block">
+                  Contraseña de Administrador (MySQL)
                 </label>
                 <div className="relative">
                   <input
@@ -1332,24 +1332,28 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                     type={showReauthPass ? "text" : "password"}
                     value={reauthPassword}
                     onChange={handleReauthPasswordChange}
-                    placeholder="Escriba la clave de Admin..."
+                    placeholder="Escriba la clave de Admin / Depósito..."
                     autoFocus
-                    className="w-full text-sm bg-zinc-50 border border-zinc-300 rounded-lg px-3.5 py-2.5 pr-10 focus:border-zinc-900 focus:bg-white outline-none transition-colors"
+                    className="w-full text-sm bg-white text-black border-2 border-black rounded-lg px-3.5 py-2.5 pr-10 focus:bg-[#FAF6EE] outline-none shadow-[2px_2px_0px_#000] font-mono transition-colors"
                   />
                   <button
                     type="button"
                     onClick={() => setShowReauthPass(!showReauthPass)}
-                    className="absolute right-3 top-3 text-zinc-400 hover:text-zinc-700 transition-colors cursor-pointer"
+                    className="absolute right-3 top-3 text-neutral-500 hover:text-black transition-colors cursor-pointer"
                     title={showReauthPass ? "Ocultar" : "Mostrar"}
                   >
                     {showReauthPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-neutral-700 font-mono font-bold pt-0.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#2A9D8F] shrink-0" />
+                  <span>Validación automática en tiempo real al escribir</span>
+                </div>
               </div>
 
               {reauthError && (
-                <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-lg text-rose-700 text-xs flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+                <div className="p-2.5 bg-[#E76F51]/15 border-2 border-[#E76F51] rounded-lg text-[#E76F51] text-xs font-bold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
                   <span>{reauthError}</span>
                 </div>
               )}
@@ -1358,13 +1362,13 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 text-xs font-semibold text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer"
+                  className="px-4 py-2 text-xs font-heading font-extrabold text-black hover:bg-[#FFD23F] bg-[#FAF6EE] border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
                 >
                   Cerrar Visor
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-zinc-900 hover:bg-black rounded-lg transition-colors flex items-center gap-2 cursor-pointer shadow-sm"
+                  className="px-4 py-2 text-xs font-heading font-extrabold text-[#FFD23F] bg-black hover:bg-neutral-800 border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <Lock className="w-3.5 h-3.5" />
                   <span>Desbloquear MySQL</span>

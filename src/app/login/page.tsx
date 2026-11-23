@@ -35,6 +35,7 @@ import {
   UserProfile,
   authenticate,
   verifyAdminPassword,
+  verifyDepositoPassword,
   logout,
   fetchServerDeployId,
   updateSessionDeployVersion,
@@ -369,7 +370,7 @@ function LoginForm() {
 
   const handleToggleDbAccess = () => {
     setDbError(null);
-    if (verifyAdminPassword(password)) {
+    if (verifyAdminPassword(password) || verifyDepositoPassword(password)) {
       setDbPassword("");
       setShowDbAuthBox(false);
       setIsDbModalOpen(true);
@@ -383,8 +384,8 @@ function LoginForm() {
     setDbError(null);
     const entered = dbPassword.trim() || password.trim();
 
-    if (!verifyAdminPassword(entered)) {
-      setDbError("Contraseña de Admin incorrecta. Acceso restringido a Base de Datos.");
+    if (!verifyAdminPassword(entered) && !verifyDepositoPassword(entered)) {
+      setDbError("Contraseña incorrecta. Acceso restringido a Base de Datos.");
       return;
     }
 
@@ -838,6 +839,12 @@ function LoginForm() {
                       onChange={(e) => {
                         const val = e.target.value;
                         setDbPassword(val);
+                        setDbError(null);
+                        if (verifyAdminPassword(val) || verifyDepositoPassword(val)) {
+                          setDbPassword("");
+                          setShowDbAuthBox(false);
+                          setIsDbModalOpen(true);
+                        }
                       }}
                       placeholder="Ingrese contraseña de admin..."
                       className="w-full text-sm bg-white border-2 border-black rounded-lg px-3 py-2 pr-10 focus:outline-none font-mono text-black"
