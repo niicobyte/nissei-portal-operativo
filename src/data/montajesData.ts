@@ -1826,6 +1826,9 @@ export function formatearNombreComponenteBasico(raw: string, categoria?: string)
     s = s.replace(/\(\s*PC\s*\d+\s*\)/gi, "").trim();
   }
 
+  // Limpiar etiquetas de garantía ERP tipo 1GTA.BR, 1GTA, GTA.BR
+  s = s.replace(/\b\d+\s*GTA(?:\.[A-Z0-9]+)?\b/gi, "").replace(/\bGTA(?:\.[A-Z0-9]+)?\b/gi, "").trim();
+
   // Caso especial cooler de fábrica
   if (/cooler\s+de\s+f[aá]brica/i.test(s) || /stock-cooler/i.test(s)) {
     return `Cooler de Fábrica (Stock)${pcSuffix}`;
@@ -2087,22 +2090,25 @@ export function formatearNombreComponenteBasico(raw: string, categoria?: string)
       .trim()}${pcSuffix}`;
   }
 
-  // 7. Gabinete (soporta ERP 'GABINETE COUGAR UNIFACE RGB 4 FAN WHITE (AIRFLOW/MID TOWER)' y Web)
+  // 7. Gabinete (soporta ERP 'GABINETE KIT SATELLITE K731 TEC.ESP+MOUSE+SPEAKER+FUENTE', 'GABINETE COUGAR PURITY RGB WHITE' y Web)
   if (
     categoria === "GABINETE" ||
-    /^GABINETE\s+/i.test(s) ||
+    /^GABINETE\b/i.test(s) ||
     /^KIT\s+GABINETE/i.test(s)
   ) {
     let g = s
-      .replace(/^(?:KIT\s+)?GABINETE\s+(?:GAMER\s+)?/i, "")
+      .replace(/^(?:KIT\s+GABINETE|GABINETE\s+KIT|GABINETE|KIT)\s+(?:GAMER\s+)?/i, "")
       .replace(/\([^)]*\)/g, "")
-      .replace(/\b\d+\s*GTA\.?[A-Z-]*/gi, "")
+      .replace(/\b\d+\s*GTA(?:\.[A-Z0-9]+)?\b/gi, "")
+      .replace(/\b(?:TEC(?:LADO)?\.?\s*ESP(?:AÑOL)?|MOUSE|SPEAKER|PARLANTE|FUENTE)\b.*$/gi, "")
+      .replace(/\s*\+.*$/g, "")
+      .replace(/\b(?:C\/|S\/)(?:FUENTE|TECLADO|MOUSE|PARLANTE).*/gi, "")
       .replace(
-        /\/?(?:AIRFLOW|WINDOW|MID\s*TOWER|FULL\s*TOWER|MICRO\s*ATX|M-ATX|ATX|PWM)\b/gi,
+        /\/?(?:AIRFLOW|WINDOW|MID\s*TOWER|FULL\s*TOWER|MINI\s*TOWER|MICRO\s*ATX|M-ATX|ATX|PWM|MESH)\b/gi,
         " "
       )
       .replace(/\b\d+\s*FAN(?:S)?\b/gi, " ")
-      .replace(/\b(?:BLACK|WHITE|NEGRO|BLANCO)\b/gi, " ")
+      .replace(/\b(?:BLACK|WHITE|NEGRO|BLANCO|EDITION)\b/gi, " ")
       .replace(/[\/]+/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -2122,16 +2128,20 @@ export function formatearNombreComponenteBasico(raw: string, categoria?: string)
   }
 
   // 8. Refrigeración / Cooler
-  if (categoria === "REFRIGERACION" || /^COOLER\s+/i.test(s)) {
+  if (categoria === "REFRIGERACION" || /^COOLER\b/i.test(s)) {
     const isLiquido = /L[IÍ]QUIDO|LIQUID|WATER|AIO|\b(?:240|360)\s*MM\b/i.test(s);
     let c = s
       .replace(
-        /^COOLER\s+(?:L[IÍ]QUIDO\s+|P\/CPU\s+|PARA\s+CPU\s+|CPU\s+|FAN\s+)?/i,
+        /^COOLER\s+(?:L[IÍ]QUIDO\s+|LIQUID\s+|WATER\s+|P\/CPU\s+|PARA\s+CPU\s+|CPU\s+|FAN\s+)?/i,
         ""
       )
       .replace(/\([^)]*\)/g, "")
+      .replace(/\b\d+\s*GTA(?:\.[A-Z0-9]+)?\b/gi, "")
+      .replace(/\bUNIVERSAL\s+COMPATIBILITY\b/gi, "")
+      .replace(/\b(?:UNIVERSAL|COMPATIBILITY|COMPATIBILIDAD|COMPATIBLE|COMPATIBILTY)\b/gi, "")
+      .replace(/\b\d{2,3}\s*MM\b/gi, "")
       .replace(
-        /\b(?:LGA\s*\d+|AM[45]|BLACK|WHITE|NEGRO|BLANCO|PWM|PARA\s+CPU)\b/gi,
+        /\b(?:LGA\s*\d+|AM[45]|BLACK|WHITE|NEGRO|BLANCO|PWM|PARA\s+CPU|P\/CPU|SOCKETS?)\b/gi,
         " "
       )
       .replace(/[\/]+/g, " ")
@@ -2140,8 +2150,12 @@ export function formatearNombreComponenteBasico(raw: string, categoria?: string)
     c = c
       .split(" ")
       .map((w) =>
-        /^(RGB|ARGB|SE|EVO|RS|PRO|II|III|X|GL|\d+MM|\d+|CR-\d+|M\d-\d+)$/i.test(w)
+        /^(RGB|ARGB|SE|EVO|RS|PRO|II|III|IV|V\d|M\d-\d+[A-Z]?|CR-\d+|AK\d+|AG\d+|PA\d+|X|GL|\d+)$/i.test(w)
           ? w.toUpperCase()
+          : /^be$/i.test(w)
+          ? "be"
+          : /^quiet!?$/i.test(w)
+          ? "quiet!"
           : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
       )
       .join(" ");
