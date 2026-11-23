@@ -44,6 +44,8 @@ import {
   Users,
   Loader2,
   MapPin,
+  ChevronDown,
+  Cable,
 } from "lucide-react";
 import {
   UbicacionCascadaSelector,
@@ -773,6 +775,8 @@ export default function RecepcionDashboardPage() {
   const [quickAccessories, setQuickAccessories] = useState<string[]>([]);
   const [isAddingQuickShortcut, setIsAddingQuickShortcut] = useState(false);
   const [newQuickShortcutText, setNewQuickShortcutText] = useState("");
+  const [isCableDropdownOpen, setIsCableDropdownOpen] = useState(false);
+  const cableDropdownRef = useRef<HTMLDivElement | null>(null);
   const [modalUbicacion, setModalUbicacion] = useState<string>("");
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -788,21 +792,102 @@ export default function RecepcionDashboardPage() {
 
   const QUICK_ACCESSORIES_STORAGE_KEY = "nissei_recepcion_accesorios_rapidos_v1";
 
+  const CABLE_ACCESSORY_OPTIONS = useMemo(() => [
+    {
+      value: "USB-C a USB-C",
+      label: "USB-C a USB-C",
+      badge: "Tipo C",
+      description: "Conector reversible en ambos extremos",
+    },
+    {
+      value: "USB-A a USB-C",
+      label: "USB-A a USB-C",
+      badge: "Tipo A-C",
+      description: "Cable USB tradicional a Tipo-C",
+    },
+    {
+      value: "Cable de carga",
+      label: "Cable de carga",
+      badge: "Carga",
+      description: "Cable de alimentación o cargador estándar",
+    },
+  ], []);
+
+  const isCableShortcut = (val: string) => {
+    const lower = val.toLowerCase().trim();
+    return (
+      lower === "cable de carga" ||
+      lower === "cable usb" ||
+      lower === "cable" ||
+      lower === "usb-c a usb-c" ||
+      lower === "usb-a a usb-c"
+    );
+  };
+
+  const anyCableAdded = useMemo(() => {
+    return CABLE_ACCESSORY_OPTIONS.some((opt) =>
+      modalAccessoriesList.includes(opt.value)
+    );
+  }, [CABLE_ACCESSORY_OPTIONS, modalAccessoriesList]);
+
+  const handleToggleCableOption = (val: string) => {
+    const isAdded = modalAccessoriesList.includes(val);
+    if (isAdded) {
+      const idx = modalAccessoriesList.indexOf(val);
+      if (idx !== -1) {
+        handleRemoveModalAccessory(idx);
+      }
+    } else {
+      handleAddModalAccessory(val);
+    }
+    setIsCableDropdownOpen(false);
+  };
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
+      if (
+        cableDropdownRef.current &&
+        !cableDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsCableDropdownOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsCableDropdownOpen(false);
+      }
+    }
+    if (isCableDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside, { passive: true });
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isCableDropdownOpen]);
+
   useEffect(() => {
     try {
       const raw = localStorage.getItem(QUICK_ACCESSORIES_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
+        if (Array.isArray(parsed) && parsed.length > 0) {
           setQuickAccessories(parsed.map((s) => String(s).trim()).filter(Boolean));
+          return;
         }
       }
-    } catch {}
+      setQuickAccessories(["Unidad", "Caja", "Manuales"]);
+    } catch {
+      setQuickAccessories(["Unidad", "Caja", "Manuales"]);
+    }
   }, []);
 
   const saveQuickAccessoryShortcut = (val: string) => {
     const trimmed = val.trim();
-    if (!trimmed) return;
+    if (!trimmed || isCableShortcut(trimmed)) return;
     setQuickAccessories((prev) => {
       if (prev.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
         return prev;
@@ -4007,7 +4092,9 @@ ${dictamen.accText}`;
                           ACCESOS DIRECTOS:
                         </span>
 
-                        {quickAccessories.map((sug) => {
+                        {quickAccessories
+                          .filter((sug) => !isCableShortcut(sug))
+                          .map((sug) => {
                           const isAdded = modalAccessoriesList.includes(sug);
                           return (
                             <span
@@ -4037,6 +4124,100 @@ ${dictamen.accText}`;
                             </span>
                           );
                         })}
+
+                        {/* Selector desplegable Neo-Brutalista de Cables (USB-C a USB-C, USB-A a USB-C, Cable de carga) */}
+                        <div ref={cableDropdownRef} className="relative inline-block">
+                          <button
+                            type="button"
+                            onClick={() => setIsCableDropdownOpen((prev) => !prev)}
+                            className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border-2 border-black text-[11px] font-mono font-bold transition-all shadow-[1px_1px_0px_#000] cursor-pointer select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
+                              anyCableAdded
+                                ? "bg-[#2A9D8F] text-white"
+                                : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
+                            } ${isCableDropdownOpen ? "bg-[#FFD23F] text-black ring-1 ring-black" : ""}`}
+                            title="Desplegar y seleccionar tipo de cable (USB-C, USB-A, Carga)"
+                          >
+                            <Cable className="w-3 h-3 shrink-0" />
+                            <span>{anyCableAdded ? "✓ Cable" : "+ Cable"}</span>
+                            <ChevronDown
+                              className={`w-3 h-3 shrink-0 transition-transform duration-150 ${
+                                isCableDropdownOpen ? "rotate-180" : ""
+                              }`}
+                            />
+                          </button>
+
+                          {isCableDropdownOpen && (
+                            <div
+                              role="menu"
+                              className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 max-w-[calc(100vw-2rem)] rounded-xl border-2 border-black bg-[#FFFDF9] p-2 shadow-[4px_4px_0px_#000] space-y-1.5 animate-in fade-in zoom-in-95 duration-100"
+                            >
+                              <div className="flex items-center justify-between px-1 pb-1 border-b-2 border-black/10">
+                                <span className="text-[10px] font-heading font-extrabold text-black uppercase tracking-wider flex items-center gap-1.5">
+                                  <Cable className="w-3.5 h-3.5 text-black" />
+                                  Tipo de Cable / Conector
+                                </span>
+                                <span className="text-[9px] font-mono font-bold text-neutral-500">
+                                  3 opciones
+                                </span>
+                              </div>
+
+                              <div className="space-y-1">
+                                {CABLE_ACCESSORY_OPTIONS.map((opt) => {
+                                  const isSelected = modalAccessoriesList.includes(opt.value);
+                                  return (
+                                    <button
+                                      key={opt.value}
+                                      type="button"
+                                      role="menuitem"
+                                      onClick={() => handleToggleCableOption(opt.value)}
+                                      className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all cursor-pointer select-none border ${
+                                        isSelected
+                                          ? "bg-black text-[#FFD23F] border-black shadow-[2px_2px_0px_#000]"
+                                          : "border-transparent text-black hover:bg-[#FFD23F] hover:border-black"
+                                      }`}
+                                    >
+                                      <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-1.5">
+                                          <span
+                                            className={`text-xs font-heading font-extrabold truncate ${
+                                              isSelected ? "text-[#FFD23F]" : "text-black"
+                                            }`}
+                                          >
+                                            {opt.label}
+                                          </span>
+                                          <span
+                                            className={`text-[9px] font-mono font-black uppercase px-1.5 py-0.2 rounded border ${
+                                              isSelected
+                                                ? "bg-[#FFD23F] text-black border-black"
+                                                : "bg-[#FAF6EE] text-black border-black/70"
+                                            }`}
+                                          >
+                                            {opt.badge}
+                                          </span>
+                                        </div>
+                                        <p
+                                          className={`text-[10px] font-sans mt-0.5 truncate ${
+                                            isSelected
+                                              ? "text-zinc-300 font-medium"
+                                              : "text-zinc-600 font-bold"
+                                          }`}
+                                        >
+                                          {opt.description}
+                                        </p>
+                                      </div>
+
+                                      {isSelected ? (
+                                        <Check className="w-4 h-4 text-[#FFD23F] shrink-0" />
+                                      ) : (
+                                        <Plus className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
 
                         {isAddingQuickShortcut ? (
                           <div className="inline-flex items-center gap-1">
