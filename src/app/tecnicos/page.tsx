@@ -49,6 +49,7 @@ import {
   useFlushDraftBeforeLogout,
 } from "@/lib/workDrafts";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
+import { ThermalLengthSelect } from "@/components/common/ThermalLengthSelect";
 import {
   ThermalPrintSettings,
   ThermalPaperProfile,
@@ -1377,18 +1378,10 @@ export default function TecnicosDashboardPage() {
                     <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
                       Largo de corte:
                     </label>
-                    <select
+                    <ThermalLengthSelect
                       value={thermalSettings.lengthMode}
-                      onChange={(e) =>
-                        updateThermalSetting("lengthMode", e.target.value as ThermalLengthMode)
-                      }
-                      className="w-full rounded-lg border-2 border-black bg-white px-2.5 py-1.5 text-xs font-mono font-bold text-black outline-none shadow-[2px_2px_0px_#000]"
-                    >
-                      <option value="auto">Rollo continuo (Recomendado - Auto)</option>
-                      <option value="120mm">Etiqueta 120mm (Stickers precortados)</option>
-                      <option value="150mm">Etiqueta 150mm (Stickers precortados)</option>
-                      <option value="200mm">Etiqueta 200mm (Stickers precortados)</option>
-                    </select>
+                      onChange={(val) => updateThermalSetting("lengthMode", val)}
+                    />
                   </div>
 
                   <div className="space-y-1.5">
