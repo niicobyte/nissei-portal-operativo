@@ -2358,29 +2358,16 @@ export default function RecepcionCdeDashboardPage() {
                           </td>
                         )}
 
-                        {/* Acción / Ver Detalle e Imprimir Comprobante */}
+                        {/* Acción / Ver Detalle */}
                         <td className="py-3.5 px-4 text-right whitespace-nowrap">
-                          <div className="inline-flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenTicketModal(ticket)}
-                              className="p-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
-                              title="Ver detalles completos de la orden SATI"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                setAutoPrintTicket(e.shiftKey);
-                                setShowPrintModal(ticket);
-                              }}
-                              className="p-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
-                              title="Imprimir Comprobante SATI con código de barras CODE128 (Shift+Clic para imprimir directo)"
-                            >
-                              <Printer className="w-4 h-4" />
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenTicketModal(ticket)}
+                            className="p-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
+                            title="Ver detalles completos de la orden SATI"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
                         </td>
                       </tr>
                     );

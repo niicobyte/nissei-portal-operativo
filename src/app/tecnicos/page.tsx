@@ -1722,10 +1722,6 @@ export default function TecnicosDashboardPage() {
                   </span>
                 </div>
 
-                {/* Línea de corte térmico */}
-                <div className="pt-2 text-center text-[9px] font-mono font-bold text-black border-t-2 border-dashed border-black">
-                  - - - - - ✂ CORTAR AQUÍ ✂ - - - - -
-                </div>
               </div>
             </div>
 

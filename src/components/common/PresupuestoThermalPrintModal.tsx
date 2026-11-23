@@ -683,10 +683,6 @@ export function PresupuestoThermalPrintModal({
               </p>
             </div>
 
-            {/* Línea de corte retro */}
-            <div className="pt-2 text-center font-mono text-[9px] tracking-widest text-black border-t-2 border-dashed border-black">
-              - - - - - ✂ CORTAR AQUÍ ✂ - - - - -
-            </div>
           </div>
         </div>
 

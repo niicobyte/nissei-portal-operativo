@@ -754,10 +754,6 @@ export function SatiThermalPrintModal({
               </div>
             )}
 
-            {/* Línea de corte retro neo-brutalista */}
-            <div className="pt-2 text-center font-mono text-[9px] tracking-widest text-black border-t-2 border-dashed border-black">
-              - - - - - ✂ CORTAR AQUÍ ✂ - - - - -
-            </div>
 
           </div>
         </div>
