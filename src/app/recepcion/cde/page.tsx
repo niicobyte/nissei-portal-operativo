@@ -2013,45 +2013,66 @@ export default function RecepcionCdeDashboardPage() {
           </div>
         )}
 
-        {/* Tabla de Órdenes SATI ASU - CDE */}
-        <section className="bg-white rounded-2xl border border-zinc-200 shadow-xs overflow-hidden">
-          <div className="p-4 border-b border-zinc-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-zinc-500" />
-              <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-700">
-                {viewScope === "DANESA"
-                  ? "Envíos Danesa SA (Nuestra Sucursal ASU ↔ Laboratorio CDE)"
-                  : viewScope === "CLIENTES_ASU"
-                  ? "Órdenes de Clientes Particulares ASU"
-                  : viewScope === "CLIENTES_CDE"
-                  ? "Órdenes de Clientes SATI CDE"
-                  : "Consolidado General de Órdenes SATI"}{" "}
-                ({filteredTickets.length.toLocaleString()})
-              </h2>
+        {/* Tabla de Órdenes SATI ASU - CDE (Neo-Brutalismo Retro) */}
+        <section className="bg-[#FFFDF9] rounded-xl border-2 border-black overflow-hidden shadow-[4px_4px_0px_#000]">
+          <div className="p-4 sm:p-5 border-b-2 border-black bg-[#FAF6EE] flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#FFD23F] border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center shrink-0 mt-0.5">
+                <Layers className="w-5 h-5 text-black stroke-[2.5]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-base sm:text-lg font-heading font-extrabold text-black">
+                    {viewScope === "DANESA"
+                      ? "Envíos Danesa SA (Nuestra Sucursal ASU ↔ Laboratorio CDE)"
+                      : viewScope === "CLIENTES_ASU"
+                      ? "Órdenes de Clientes Particulares ASU"
+                      : viewScope === "CLIENTES_CDE"
+                      ? "Órdenes de Clientes SATI CDE"
+                      : "Consolidado General de Órdenes SATI"}
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-[#FFD23F] text-black border-2 border-black font-mono font-black text-xs shadow-[1.5px_1.5px_0px_#000] tabular-nums">
+                    {filteredTickets.length.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-800 font-medium mt-0.5">
+                  {viewScope === "DANESA"
+                    ? "Envíos directos entre Sucursal ASU y Laboratorio Técnico Central CDE"
+                    : viewScope === "CLIENTES_ASU"
+                    ? "Servicios técnicos y garantías de clientes NISSEI Asunción"
+                    : viewScope === "CLIENTES_CDE"
+                    ? "Registros operativos de recepción en Casa Matriz CDE"
+                    : "Consolidado universal de órdenes SATI"}
+                </p>
+              </div>
             </div>
-            <span className="text-xs text-zinc-400 font-mono">
-              Página {currentPage} de {totalPages}
-            </span>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-black bg-[#FFFDF9] px-3 py-1.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] tabular-nums">
+                <Calendar className="w-3.5 h-3.5 text-black" />
+                <span>Página {currentPage} de {totalPages}</span>
+                <span className="text-neutral-600 font-medium">({filteredTickets.length.toLocaleString()} resultados)</span>
+              </span>
+            </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-black text-[#FFD23F] font-mono uppercase text-xs tracking-wider border-b-2 border-black">
+              <thead className="bg-black text-[#FFD23F] font-mono uppercase text-xs tracking-wider border-b-2 border-black select-none">
                 <tr>
-                  <th className="py-3.5 px-4 font-bold">Nº Orden</th>
-                  <th className="py-3.5 px-3.5 font-bold">Cliente</th>
-                  <th className="py-3.5 px-3.5 font-bold">Equipo / Hardware</th>
-                  <th className="py-3.5 px-3.5 font-bold">Serial</th>
-                  <th className="py-3.5 px-3.5 font-bold">Ingreso ASU</th>
-                  <th className="py-3.5 px-3.5 font-bold">Ingreso CDE</th>
-                  <th className="py-3.5 px-3.5 font-bold">Despacho CDE</th>
-                  <th className="py-3.5 px-3.5 text-center font-bold">Días Taller</th>
-                  <th className="py-3.5 px-3.5 font-bold">Estado</th>
-                  <th className="py-3.5 px-3.5 font-bold">Dictamen / Informe Técnico</th>
+                  <th className="py-3.5 px-4 font-black">Nº Orden</th>
+                  <th className="py-3.5 px-3.5 font-black">Cliente</th>
+                  <th className="py-3.5 px-3.5 font-black">Equipo / Hardware</th>
+                  <th className="py-3.5 px-3.5 font-black">Serial</th>
+                  <th className="py-3.5 px-3.5 font-black">Ingreso ASU</th>
+                  <th className="py-3.5 px-3.5 font-black">Ingreso CDE</th>
+                  <th className="py-3.5 px-3.5 font-black">Despacho CDE</th>
+                  <th className="py-3.5 px-3.5 text-center font-black">Días Taller</th>
+                  <th className="py-3.5 px-3.5 font-black">Estado</th>
+                  <th className="py-3.5 px-3.5 font-black">Dictamen / Informe Técnico</th>
                   {viewScope !== "CLIENTES_CDE" && (
-                    <th className="py-3.5 px-3.5 text-center font-bold">Llegada Depósito</th>
+                    <th className="py-3.5 px-3.5 text-center font-black">Llegada Depósito</th>
                   )}
-                  <th className="py-3.5 px-4 text-right font-bold">Acción</th>
+                  <th className="py-3.5 px-4 text-right font-black">Acción</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/10">
@@ -2059,11 +2080,11 @@ export default function RecepcionCdeDashboardPage() {
                   <tr>
                     <td
                       colSpan={viewScope === "CLIENTES_CDE" ? 11 : 12}
-                      className="py-12 text-center text-zinc-500"
+                      className="py-12 text-center text-neutral-600 font-mono text-sm"
                     >
-                      <Package className="w-8 h-8 text-zinc-300 mx-auto mb-2" />
-                      <p className="font-semibold text-sm text-zinc-700">No se encontraron órdenes con los filtros actuales.</p>
-                      <p className="text-xs text-zinc-400 mt-0.5">Pruebe modificando los términos de búsqueda o el selector de ámbito.</p>
+                      <Package className="w-8 h-8 text-black/40 mx-auto mb-2" />
+                      <p className="font-heading font-extrabold text-sm text-black">No se encontraron órdenes con los filtros actuales.</p>
+                      <p className="text-xs text-neutral-600 mt-0.5">Pruebe modificando los términos de búsqueda o el selector de ámbito.</p>
                     </td>
                   </tr>
                 ) : (
@@ -2099,7 +2120,7 @@ export default function RecepcionCdeDashboardPage() {
                     return (
                       <tr
                         key={rowKey}
-                        className="hover:bg-zinc-50/80 transition-colors"
+                        className="hover:bg-[#FAF6EE] transition-colors border-b border-black/10"
                       >
                         {/* Nº Orden según el ámbito */}
                         <td className="py-3.5 px-4 font-mono font-bold text-zinc-900 whitespace-nowrap">

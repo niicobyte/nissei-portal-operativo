@@ -3404,42 +3404,54 @@ ${dictamen.accText}`;
 
         {/* Tabla de Tickets de Recepción (Neo-Brutalismo Retro) */}
         <section className="bg-[#FFFDF9] rounded-xl border-2 border-black overflow-hidden shadow-[4px_4px_0px_#000]">
-          <div className="p-4 border-b-2 border-black bg-[#FAF6EE] flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-base font-heading font-extrabold text-black">
-                {viewScope === "DANESA"
-                  ? `Envíos Danesa SA (Nuestra Sucursal ASU) (${filteredTickets.length})`
-                  : viewScope === "CLIENTES_ASU"
-                  ? `Órdenes de Clientes ASU (${filteredTickets.length})`
-                  : `Tickets de Recepción & Retornos Post-Venta (${filteredTickets.length})`}
-              </h3>
-              <p className="text-xs text-neutral-800 font-medium">
-                {viewScope === "DANESA"
-                  ? "Envíos directos de Danesa SA a laboratorio técnico y retornos"
-                  : viewScope === "CLIENTES_ASU"
-                  ? "Servicios técnicos y garantías de clientes NISSEI Asunción"
-                  : "Registros sincronizados con la base central de NISSEI SATI"}
-              </p>
+          <div className="p-4 sm:p-5 border-b-2 border-black bg-[#FAF6EE] flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-lg bg-[#FFD23F] border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center shrink-0 mt-0.5">
+                <Inbox className="w-5 h-5 text-black stroke-[2.5]" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="text-base sm:text-lg font-heading font-extrabold text-black">
+                    {viewScope === "DANESA"
+                      ? "Envíos Danesa SA (Nuestra Sucursal ASU)"
+                      : viewScope === "CLIENTES_ASU"
+                      ? "Órdenes de Clientes ASU"
+                      : "Tickets de Recepción & Retornos Post-Venta"}
+                  </h3>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-[#FFD23F] text-black border-2 border-black font-mono font-black text-xs shadow-[1.5px_1.5px_0px_#000] tabular-nums">
+                    {filteredTickets.length.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-neutral-800 font-medium mt-0.5">
+                  {viewScope === "DANESA"
+                    ? "Envíos directos de Danesa SA a laboratorio técnico y retornos"
+                    : viewScope === "CLIENTES_ASU"
+                    ? "Servicios técnicos y garantías de clientes NISSEI Asunción"
+                    : "Registros sincronizados con la base central de NISSEI SATI"}
+                </p>
+              </div>
             </div>
             <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="text-xs font-mono font-bold text-black bg-[#FFFDF9] px-2.5 py-1.5 rounded-lg border-2 border-black shadow-[1px_1px_0px_#000] tabular-nums">
-                Página {currentPage} de {totalPages} ({filteredTickets.length} resultados)
+              <span className="inline-flex items-center gap-1.5 text-xs font-mono font-bold text-black bg-[#FFFDF9] px-3 py-1.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] tabular-nums">
+                <Calendar className="w-3.5 h-3.5 text-black" />
+                <span>Página {currentPage} de {totalPages}</span>
+                <span className="text-neutral-600 font-medium">({filteredTickets.length.toLocaleString()} resultados)</span>
               </span>
             </div>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
-              <thead className="bg-black text-[#FFD23F] uppercase tracking-wider border-b-2 border-black font-mono text-xs">
+              <thead className="bg-black text-[#FFD23F] uppercase tracking-wider border-b-2 border-black font-mono text-xs select-none">
                 <tr>
-                  <th className="py-3.5 px-4 font-bold">Nº Orden</th>
-                  <th className="py-3.5 px-4 font-bold">Cliente</th>
-                  <th className="py-3.5 px-4 font-bold">Equipo &amp; Categoría</th>
-                  <th className="py-3.5 px-4 font-bold">Nº Serie / IMEI</th>
-                  <th className="py-3.5 px-4 font-bold">Mensaje / Detalle Técnico</th>
-                  <th className="py-3.5 px-4 font-bold">Ingreso / Salida</th>
-                  <th className="py-3.5 px-4 font-bold">Estado</th>
-                  <th className="py-3.5 px-4 font-bold min-w-[160px] text-right">Acciones</th>
+                  <th className="py-3.5 px-4 font-black">Nº Orden</th>
+                  <th className="py-3.5 px-4 font-black">Cliente</th>
+                  <th className="py-3.5 px-4 font-black">Equipo &amp; Categoría</th>
+                  <th className="py-3.5 px-4 font-black">Nº Serie / IMEI</th>
+                  <th className="py-3.5 px-4 font-black">Mensaje / Detalle Técnico</th>
+                  <th className="py-3.5 px-4 font-black">Ingreso / Salida</th>
+                  <th className="py-3.5 px-4 font-black">Estado</th>
+                  <th className="py-3.5 px-4 font-black min-w-[160px] text-right">Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-black/10 text-[#111111]">
