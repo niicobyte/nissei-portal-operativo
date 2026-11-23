@@ -462,7 +462,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     whatsappBody:
       "El presupuesto informado no fue aprobado; el equipo se encuentra disponible para retiro sin reparar.",
     readyForPickup: true,
-    chipInactive: "bg-[#E76F51]/15 text-black border-2 border-black hover:bg-[#E76F51]/35 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
+    chipInactive: "bg-[#FFFDF9] text-[#E76F51] border-2 border-black hover:bg-[#E76F51] hover:text-white font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   },
 ];

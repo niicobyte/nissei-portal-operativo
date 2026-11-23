@@ -678,8 +678,8 @@ export default function TecnicosDashboardPage() {
 
               {/* Comparativa Montaje vs Expansión */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-lg border-2 border-black bg-[#FFD23F]/20 shadow-[2px_2px_0px_#000] space-y-1">
-                  <span className="text-[11px] font-mono text-black uppercase block font-extrabold">
+                <div className="p-3 rounded-lg border-2 border-black bg-[#FFFDF9] shadow-[2px_2px_0px_#000] space-y-1">
+                  <span className="text-[10px] font-mono text-black uppercase font-extrabold px-1.5 py-0.5 rounded bg-[#FFD23F] border border-black inline-block">
                     Montaje de PC Completa
                   </span>
                   <div className="text-xl font-mono font-extrabold text-black tabular-nums">
@@ -690,8 +690,8 @@ export default function TecnicosDashboardPage() {
                   </p>
                 </div>
 
-                <div className="p-3 rounded-lg border-2 border-black bg-[#2A9D8F]/15 shadow-[2px_2px_0px_#000] space-y-1">
-                  <span className="text-[11px] font-mono text-black uppercase block font-extrabold">
+                <div className="p-3 rounded-lg border-2 border-black bg-[#FFFDF9] shadow-[2px_2px_0px_#000] space-y-1">
+                  <span className="text-[10px] font-mono text-white uppercase font-extrabold px-1.5 py-0.5 rounded bg-[#2A9D8F] border border-black inline-block">
                     Expansión Notebook
                   </span>
                   <div className="text-xl font-mono font-extrabold text-black tabular-nums">

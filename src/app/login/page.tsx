@@ -416,20 +416,22 @@ function LoginForm() {
           <div
             className={`p-4 sm:p-5 rounded-xl border-2 border-black flex items-start gap-3.5 text-xs sm:text-sm shadow-[4px_4px_0px_#000] animate-in fade-in duration-300 ${
               reasonBanner.tone === "indigo"
-                ? "bg-[#2A9D8F]/15 border-black text-black"
-                : "bg-[#FFD23F]/30 border-black text-black"
+                ? "bg-[#2A9D8F] text-white"
+                : "bg-[#FFD23F] text-black"
             }`}
           >
-            {reasonBanner.tone === "indigo" ? (
-              <RefreshCw className="w-5 h-5 text-black shrink-0 mt-0.5" />
-            ) : (
-              <Clock className="w-5 h-5 text-black shrink-0 mt-0.5" />
-            )}
+            <span className="w-8 h-8 rounded-lg bg-white border-2 border-black flex items-center justify-center shrink-0 shadow-[1px_1px_0px_#000]">
+              {reasonBanner.tone === "indigo" ? (
+                <RefreshCw className="w-4 h-4 text-black" />
+              ) : (
+                <Clock className="w-4 h-4 text-black" />
+              )}
+            </span>
             <div>
-              <strong className="block text-sm font-heading font-extrabold text-black">
+              <strong className="block text-sm font-heading font-extrabold">
                 {reasonBanner.title}
               </strong>
-              <p className="text-xs sm:text-sm mt-0.5 text-neutral-900 font-medium">
+              <p className="text-xs sm:text-sm mt-0.5 font-medium opacity-90">
                 {reasonBanner.desc}
               </p>
             </div>
@@ -788,16 +790,24 @@ function LoginForm() {
 
               {/* Mensajes de Estado */}
               {error && (
-                <div className="p-3.5 rounded-lg bg-[#E76F51]/15 border-2 border-black text-black text-xs sm:text-sm flex items-center gap-2.5 shadow-[2px_2px_0px_#000]">
-                  <AlertCircle className="w-4 h-4 flex-shrink-0 text-[#E76F51]" />
-                  <span className="font-bold">{error}</span>
+                <div className="p-3.5 rounded-lg bg-[#E76F51] border-2 border-black text-white text-xs sm:text-sm flex items-center gap-3 shadow-[3px_3px_0px_#000] animate-in fade-in">
+                  <span className="w-7 h-7 rounded-md bg-[#FFFDF9] border-2 border-black flex items-center justify-center shrink-0 shadow-[1px_1px_0px_#000]">
+                    <AlertCircle className="w-4 h-4 text-black stroke-[2.5]" />
+                  </span>
+                  <span className="font-heading font-extrabold text-white text-xs sm:text-sm leading-snug">
+                    {error}
+                  </span>
                 </div>
               )}
 
               {success && (
-                <div className="p-3.5 rounded-lg bg-[#2A9D8F]/15 border-2 border-black text-black text-xs sm:text-sm flex items-center gap-2.5 shadow-[2px_2px_0px_#000]">
-                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-[#2A9D8F]" />
-                  <span className="font-bold">{success}</span>
+                <div className="p-3.5 rounded-lg bg-[#2A9D8F] border-2 border-black text-white text-xs sm:text-sm flex items-center gap-3 shadow-[3px_3px_0px_#000] animate-in fade-in">
+                  <span className="w-7 h-7 rounded-md bg-[#FFFDF9] border-2 border-black flex items-center justify-center shrink-0 shadow-[1px_1px_0px_#000]">
+                    <CheckCircle2 className="w-4 h-4 text-black stroke-[2.5]" />
+                  </span>
+                  <span className="font-heading font-extrabold text-white text-xs sm:text-sm leading-snug">
+                    {success}
+                  </span>
                 </div>
               )}
 

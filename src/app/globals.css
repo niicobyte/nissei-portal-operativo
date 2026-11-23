@@ -213,7 +213,7 @@ html {
 /* Floor Rule 4: overflow-x: clip on html and body. Never hidden, never 100vw. */
 html,
 body {
-  font-family: var(--font-roboto), 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-jakarta), 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-main);
   color: var(--text-primary);
   overflow-x: clip;
@@ -259,7 +259,7 @@ code,
 pre,
 kbd,
 samp {
-  font-family: var(--font-roboto-mono), 'Roboto Mono', monospace !important;
+  font-family: var(--font-space-mono), 'Space Mono', monospace !important;
 }
 
 .tabular-nums {
