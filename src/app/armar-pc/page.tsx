@@ -3901,23 +3901,23 @@ export default function ArmarPcPresupuestadorPage() {
         >
           <div className="bg-[#FFFDF9] text-black border-2 border-black rounded-xl shadow-[4px_4px_0px_#000] overflow-hidden">
             <div className="p-3.5 sm:p-5 flex items-start gap-3 sm:gap-3.5">
-              <div className="w-9 h-9 rounded-lg bg-[#FFD23F] border-2 border-black text-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#000]">
+              <div className="w-10 h-10 rounded-lg bg-[#FFD23F] border-2 border-black text-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#000]">
                 {warningStage === "STOCK" ? (
-                  <AlertTriangle className="w-5 h-5 text-black" />
+                  <AlertTriangle className="w-5 h-5 text-black stroke-[2.5]" />
                 ) : (
-                  <Clock className="w-5 h-5 text-black" />
+                  <Clock className="w-5 h-5 text-black stroke-[2.5]" />
                 )}
               </div>
 
               <div className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-xs sm:text-sm font-bold text-zinc-900 tracking-tight truncate">
+                  <span className="text-xs sm:text-sm font-heading font-extrabold text-black tracking-tight truncate">
                     {warningStage === "STOCK"
                       ? "Advertencia de Stock y Disponibilidad"
                       : "Tiempo Estimado de Montaje"}
                   </span>
                   <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-700 border border-zinc-200">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#FAF6EE] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                       {warningStage === "STOCK" ? "1/2" : "2/2"} · {warningSecondsLeft}s
                     </span>
                     <button
@@ -3927,23 +3927,23 @@ export default function ArmarPcPresupuestadorPage() {
                           prev === "STOCK" ? "TIEMPO_MONTAJE" : null
                         )
                       }
-                      className="text-zinc-400 hover:text-zinc-900 p-1 rounded-lg hover:bg-zinc-100 transition-colors cursor-pointer"
+                      className="text-black hover:bg-[#FFD23F] p-1 rounded-md border border-black shadow-[1px_1px_0px_#000] transition-colors cursor-pointer"
                       title={
                         warningStage === "STOCK"
                           ? "Siguiente aviso"
                           : "Cerrar aviso"
                       }
                     >
-                      <X className="w-4 h-4" />
+                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
                     </button>
                   </div>
                 </div>
 
                 {warningStage === "STOCK" ? (
                   <>
-                    <p className="text-xs text-zinc-600 leading-relaxed">
+                    <p className="text-xs text-neutral-800 leading-relaxed font-medium">
                       Estos componentes son de{" "}
-                      <strong className="text-zinc-900 font-bold">referencia</strong> y se debe
+                      <strong className="text-black font-extrabold underline decoration-2 decoration-[#FFD23F]">referencia</strong> y se debe
                       verificar si tenemos disponibilidad física en nuestros stocks:
                     </p>
 
@@ -3951,7 +3951,7 @@ export default function ArmarPcPresupuestadorPage() {
                       {["PA", "Barrail", "Distrito", "Showroom", "Emap"].map((deposito) => (
                         <span
                           key={deposito}
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-zinc-900 text-white shadow-2xs"
+                          className="px-2.5 py-1 rounded-md text-[11px] font-heading font-extrabold bg-[#FAF6EE] text-black border-2 border-black shadow-[1.5px_1.5px_0px_#000]"
                         >
                           {deposito}
                         </span>
@@ -3960,9 +3960,9 @@ export default function ArmarPcPresupuestadorPage() {
                   </>
                 ) : (
                   <>
-                    <p className="text-xs text-zinc-600 leading-relaxed">
+                    <p className="text-xs text-neutral-800 leading-relaxed font-medium">
                       El tiempo de montaje es de{" "}
-                      <strong className="text-zinc-900 font-bold">24 / 48 Hs.</strong> dependiendo
+                      <strong className="text-black font-extrabold underline decoration-2 decoration-[#2A9D8F]">24 / 48 Hs.</strong> dependiendo
                       de la carga de trabajo en taller:
                     </p>
 
@@ -3971,7 +3971,7 @@ export default function ArmarPcPresupuestadorPage() {
                         (etiqueta) => (
                           <span
                             key={etiqueta}
-                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-zinc-900 text-white shadow-2xs"
+                            className="px-2.5 py-1 rounded-md text-[11px] font-heading font-extrabold bg-[#FAF6EE] text-black border-2 border-black shadow-[1.5px_1.5px_0px_#000]"
                           >
                             {etiqueta}
                           </span>
@@ -3984,9 +3984,9 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
 
             {/* Barra de progreso de 8 segundos */}
-            <div className="h-1 w-full bg-zinc-100">
+            <div className="h-1.5 w-full bg-[#FAF6EE] border-t-2 border-black">
               <div
-                className="h-full bg-zinc-900 transition-all duration-1000 ease-linear"
+                className="h-full bg-[#FFD23F] transition-all duration-1000 ease-linear"
                 style={{ width: `${(warningSecondsLeft / 8) * 100}%` }}
               />
             </div>
@@ -4569,17 +4569,20 @@ export default function ArmarPcPresupuestadorPage() {
 
                   {/* Banner de Éxito al Armar un Perfil con AMD o Intel */}
                   {presetSuccessBanner && (
-                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs sm:text-sm font-bold text-emerald-900 flex items-center justify-between gap-2 animate-in fade-in">
+                    <div className="p-3 sm:p-3.5 rounded-xl bg-[#2A9D8F] text-white border-2 border-black text-xs sm:text-sm font-heading font-extrabold flex items-center justify-between gap-2 shadow-[3px_3px_0px_#000] animate-in fade-in">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>{presetSuccessBanner}</span>
+                        <span className="w-6 h-6 rounded-md bg-black text-[#FFD23F] border border-black flex items-center justify-center text-xs font-heading font-black shrink-0 shadow-[1px_1px_0px_#000]">
+                          ✓
+                        </span>
+                        <span className="tracking-tight">{presetSuccessBanner}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setPresetSuccessBanner(null)}
-                        className="text-emerald-700 hover:text-emerald-950 p-1 cursor-pointer"
+                        className="p-1 rounded-md text-white hover:bg-black hover:text-[#FFD23F] border border-black shadow-[1px_1px_0px_#000] transition-colors cursor-pointer"
+                        title="Cerrar aviso"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3.5 h-3.5 stroke-[2.5]" />
                       </button>
                     </div>
                   )}
@@ -5097,17 +5100,20 @@ export default function ArmarPcPresupuestadorPage() {
                   )}
 
                   {budgetFeedback && (
-                    <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 animate-in fade-in flex items-center justify-between gap-2">
+                    <div className="p-3 sm:p-3.5 rounded-xl bg-[#2A9D8F] text-white border-2 border-black text-xs sm:text-sm font-heading font-extrabold flex items-center justify-between gap-2 shadow-[3px_3px_0px_#000] animate-in fade-in">
                       <div className="flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>{budgetFeedback}</span>
+                        <span className="w-6 h-6 rounded-md bg-black text-[#FFD23F] border border-black flex items-center justify-center text-xs font-heading font-black shrink-0 shadow-[1px_1px_0px_#000]">
+                          ✓
+                        </span>
+                        <span className="tracking-tight">{budgetFeedback}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setBudgetFeedback(null)}
-                        className="text-emerald-700 hover:text-emerald-950 p-1 cursor-pointer"
+                        className="p-1 rounded-md text-white hover:bg-black hover:text-[#FFD23F] border border-black shadow-[1px_1px_0px_#000] transition-colors cursor-pointer"
+                        title="Cerrar aviso"
                       >
-                        <X className="w-3.5 h-3.5" />
+                        <X className="w-3.5 h-3.5 stroke-[2.5]" />
                       </button>
                     </div>
                   )}
@@ -5119,13 +5125,15 @@ export default function ArmarPcPresupuestadorPage() {
           {/* Ranuras Principales del Ensamble */}
           <div id="catalog-slots-section" className="space-y-2">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
-                <Sliders className="w-3.5 h-3.5 text-zinc-500" />
+              <span className="text-xs font-heading font-extrabold uppercase tracking-wider text-black flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-md bg-[#FFD23F] border border-black flex items-center justify-center text-black shrink-0 shadow-[1px_1px_0px_#000]">
+                  <Sliders className="w-3 h-3 text-black stroke-[2.5]" />
+                </span>
                 Ranuras de Hardware &amp; Componentes
               </span>
 
-              <div className="flex items-center gap-2.5 sm:gap-4 flex-wrap">
-                <label className="text-xs text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer">
+              <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                <label className="text-xs text-black font-heading font-bold bg-[#2A9D8F]/20 border-2 border-black px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_#000] hover:bg-[#2A9D8F]/30 transition-all select-none">
                   <input
                     type="checkbox"
                     checked={onlyWebStock}
@@ -5133,19 +5141,19 @@ export default function ArmarPcPresupuestadorPage() {
                       setOnlyWebStock(e.target.checked);
                       setDisplayLimit(60);
                     }}
-                    className="accent-emerald-700 rounded"
+                    className="accent-black w-3.5 h-3.5 cursor-pointer"
                   />
-                  <span className="font-bold">Solo disponibles en stock</span>
+                  <span>Solo disponibles en stock</span>
                 </label>
 
-                <label className="text-xs text-zinc-600 flex items-center gap-1.5 cursor-pointer">
+                <label className="text-xs text-black font-heading font-bold bg-[#FFFDF9] border-2 border-black px-2.5 py-1 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-[2px_2px_0px_#000] hover:bg-[#FAF6EE] transition-all select-none">
                   <input
                     type="checkbox"
                     checked={onlyCompatible}
                     onChange={(e) => setOnlyCompatible(e.target.checked)}
-                    className="accent-zinc-900 rounded"
+                    className="accent-black w-3.5 h-3.5 cursor-pointer"
                   />
-                  <span className="font-medium">Filtrar solo compatibles</span>
+                  <span>Filtrar solo compatibles</span>
                 </label>
               </div>
             </div>
@@ -5161,15 +5169,15 @@ export default function ArmarPcPresupuestadorPage() {
                     key={slot.categoria}
                     type="button"
                     onClick={() => switchActiveSlot(slot.categoria)}
-                    className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap flex items-center gap-2 transition-all cursor-pointer min-h-[42px] sm:min-h-[46px] ${
+                    className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-heading font-extrabold whitespace-nowrap flex items-center gap-2 transition-all cursor-pointer min-h-[42px] sm:min-h-[46px] border-2 border-black ${
                       isSelected
-                        ? "bg-zinc-900 text-white font-bold shadow-xs"
+                        ? "bg-black text-[#FFD23F] shadow-[3px_3px_0px_#000] translate-x-[-1px] translate-y-[-1px]"
                         : hasItem
-                        ? "bg-emerald-50 border border-emerald-200 text-emerald-800 hover:bg-emerald-100"
-                        : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                        ? "bg-[#2A9D8F]/20 text-black shadow-[2px_2px_0px_#000] hover:bg-[#2A9D8F]/30"
+                        : "bg-[#FFFDF9] text-black shadow-[2px_2px_0px_#000] hover:bg-[#FAF6EE]"
                     }`}
                   >
-                    <Icon className="w-4 h-4 shrink-0" />
+                    <Icon className="w-4 h-4 shrink-0 stroke-[2.5]" />
                     <span>
                       {slot.categoria === "GPU"
                         ? "Tarjeta gráfica"
@@ -5177,17 +5185,19 @@ export default function ArmarPcPresupuestadorPage() {
                         ? "Placa Madre"
                         : slot.nombre.split(" ")[0]}
                     </span>
-                    {hasItem && <span className="w-2 h-2 rounded-full bg-emerald-500" />}
+                    {hasItem && (
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F] border border-black shadow-[0.5px_0.5px_0px_#000]" />
+                    )}
                   </button>
                 );
               })}
               <button
                 type="button"
                 onClick={() => switchActiveSlot("TODO")}
-                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer min-h-[42px] sm:min-h-[46px] ${
+                className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-heading font-extrabold whitespace-nowrap transition-all cursor-pointer min-h-[42px] sm:min-h-[46px] border-2 border-black ${
                   activeTabSlot === "TODO"
-                    ? "bg-zinc-900 text-white font-bold shadow-xs"
-                    : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                    ? "bg-black text-[#FFD23F] shadow-[3px_3px_0px_#000] translate-x-[-1px] translate-y-[-1px]"
+                    : "bg-[#FFFDF9] text-black shadow-[2px_2px_0px_#000] hover:bg-[#FAF6EE]"
                 }`}
               >
                 Ver Todo
@@ -5225,7 +5235,7 @@ export default function ArmarPcPresupuestadorPage() {
                   <button
                     type="button"
                     onClick={() => setShowProductivityInsight(!showProductivityInsight)}
-                    className="text-xs text-black hover:text-[#2A9D8F] font-heading font-extrabold cursor-pointer flex items-center gap-1"
+                    className="px-2.5 py-1 rounded-lg bg-[#FAF6EE] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] text-xs font-heading font-extrabold cursor-pointer flex items-center gap-1.5 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                   >
                     <span>{showProductivityInsight ? "Ocultar guía productiva" : "Ver guía de potencia productiva"}</span>
                     <span className="text-[10px]">{showProductivityInsight ? "▲" : "▼"}</span>
@@ -5235,13 +5245,13 @@ export default function ArmarPcPresupuestadorPage() {
 
               {/* Banner Dinámico de Compatibilidad y Plataforma Activa */}
               {effectiveSocket !== "TODOS" && (
-                <div className="p-3.5 rounded-xl bg-[#2A9D8F]/15 border-2 border-black text-black flex items-center justify-between flex-wrap gap-2.5 shadow-[2px_2px_0px_#000] animate-in fade-in duration-150">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-lg bg-black text-[#FFD23F] border border-black flex items-center justify-center text-xs font-heading font-black shrink-0 shadow-[1px_1px_0px_#000]">
+                <div className="p-3.5 sm:p-4 rounded-xl bg-[#FAF6EE] border-2 border-black text-black flex items-center justify-between flex-wrap gap-2.5 shadow-[3px_3px_0px_#000] animate-in fade-in duration-150">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-[#2A9D8F] text-white border-2 border-black flex items-center justify-center text-sm font-heading font-black shrink-0 shadow-[2px_2px_0px_#000]">
                       ✓
                     </div>
                     <div>
-                      <p className="font-heading font-extrabold text-black text-xs sm:text-sm flex items-center gap-2">
+                      <p className="font-heading font-extrabold text-black text-xs sm:text-sm flex items-center gap-2 flex-wrap">
                         <span>
                           {effectiveSocket === "AM4"
                             ? "Plataforma Activa: 🔴 AMD Socket AM4 (DDR4)"
@@ -5249,11 +5259,11 @@ export default function ArmarPcPresupuestadorPage() {
                             ? "Plataforma Activa: 🔴 AMD Socket AM5 (DDR5)"
                             : "Plataforma Activa: 🔵 Intel Socket LGA 1700"}
                         </span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FFD23F] text-black font-extrabold border border-black shadow-[1px_1px_0px_#000]">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-[#FFD23F] text-black font-extrabold border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
                           100% Filtrado
                         </span>
                       </p>
-                      <p className="text-[11px] text-neutral-800 leading-tight mt-0.5 font-medium">
+                      <p className="text-[11px] text-neutral-800 leading-tight mt-1 font-medium">
                         {effectiveSocket === "AM4" &&
                           "Mostrando exclusivamente Procesadores AM4, Placas Madre AM4 y Memorias RAM DDR4. No se mezclará con AM5 ni DDR5."}
                         {effectiveSocket === "AM5" &&
@@ -5265,7 +5275,7 @@ export default function ArmarPcPresupuestadorPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {currentCpu && (
-                      <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-md bg-[#FFFDF9] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
+                      <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-md bg-[#FFFDF9] text-black border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
                         CPU: {cleanDisplayTitle(currentCpu.nombreWeb || currentCpu.descripcion).slice(0, 22)}...
                       </span>
                     )}
@@ -5296,12 +5306,14 @@ export default function ArmarPcPresupuestadorPage() {
               {/* 1. Selector de Plataforma / Arquitectura */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-zinc-900 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                  <span className="text-[11px] font-heading font-extrabold text-black uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-md bg-black text-[#FFD23F] text-[10px] flex items-center justify-center font-black border border-black shadow-[1px_1px_0px_#000]">
+                      1
+                    </span>
                     Seleccionar Plataforma / Arquitectura:
                   </span>
                   {(effectiveSocket !== "TODOS" || slotPlatformFilter !== "TODOS") && (
-                    <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold">
+                    <span className="text-[10px] font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded-md border-2 border-black shadow-[1.5px_1.5px_0px_#000]">
                       Filtro Activo: {effectiveSocket !== "TODOS" ? effectiveSocket : slotPlatformFilter}
                     </span>
                   )}
@@ -7018,11 +7030,6 @@ export default function ArmarPcPresupuestadorPage() {
           </div>
         </section>
       </div>
-
-      {/* Pie de Página */}
-      <footer className="border-t-2 border-black bg-[#FAF6EE] py-3 text-center text-xs text-black font-mono font-bold">
-        NISSEI Tech Service Ops · Cotizador de Ensamble de PC
-      </footer>
     </main>
 
     {/* Modal de Impresión Térmica Oficial (Ticket 80mm / 58mm) fuera de <main> para que no sea ocultado por CSS print */}

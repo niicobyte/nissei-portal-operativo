@@ -170,22 +170,22 @@ export function FloatingFeedbackWidget({
     <div className="fixed bottom-4 right-4 sm:bottom-5 sm:right-5 z-50 print:hidden">
       {/* Recuadro Flotante del Formulario */}
       {isOpen && (
-        <div className="fixed bottom-20 right-3 left-3 sm:left-auto sm:right-5 sm:w-[390px] bg-white rounded-2xl border border-zinc-200 shadow-2xl overflow-hidden animate-in fade-in duration-150 mb-1">
+        <div className="fixed bottom-20 right-3 left-3 sm:left-auto sm:right-5 sm:w-[390px] bg-[#FFFDF9] rounded-2xl border-2 border-black shadow-[6px_6px_0px_#000] overflow-hidden animate-in fade-in duration-150 mb-1 z-50">
           {/* Cabecera */}
-          <div className="bg-zinc-900 text-white px-4 py-3.5 flex items-center justify-between gap-2">
+          <div className="bg-[#FFD23F] text-black border-b-2 border-black px-4 py-3 flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-8 h-8 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-black text-[#FFD23F] border border-black flex items-center justify-center shrink-0 shadow-[1px_1px_0px_#000]">
                 {tipo === "BUG" ? (
-                  <Bug className="w-4 h-4 text-rose-400" />
+                  <Bug className="w-4 h-4 text-[#E76F51] stroke-[2.5]" />
                 ) : (
-                  <Lightbulb className="w-4 h-4 text-amber-300" />
+                  <Lightbulb className="w-4 h-4 text-[#FFD23F] stroke-[2.5]" />
                 )}
               </div>
               <div className="min-w-0">
-                <h4 className="text-xs sm:text-sm font-extrabold leading-tight truncate">
+                <h4 className="text-xs sm:text-sm font-heading font-extrabold text-black leading-tight truncate">
                   Sugerencias &amp; Reporte de Bugs
                 </h4>
-                <span className="text-[11px] text-zinc-300 block truncate">
+                <span className="text-[11px] font-mono font-bold text-neutral-800 block truncate">
                   Notificación directa por WhatsApp
                 </span>
               </div>
@@ -197,26 +197,26 @@ export function FloatingFeedbackWidget({
                 setIsOpen(false);
                 setErrorMsg(null);
               }}
-              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              className="p-1.5 rounded-lg text-black hover:bg-black hover:text-white border border-black shadow-[1px_1px_0px_#000] transition-colors cursor-pointer shrink-0"
               title="Cerrar formulario"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
 
           {/* Cuerpo del Formulario */}
           {sentSuccess ? (
-            <div className="p-6 text-center space-y-3 bg-emerald-50/40">
-              <div className="w-12 h-12 rounded-full bg-emerald-100 border border-emerald-200 text-emerald-700 flex items-center justify-center mx-auto">
-                <CheckCircle2 className="w-6 h-6" />
+            <div className="p-6 text-center space-y-3 bg-[#FAF6EE]">
+              <div className="w-12 h-12 rounded-xl bg-[#2A9D8F] border-2 border-black text-white flex items-center justify-center mx-auto shadow-[2px_2px_0px_#000]">
+                <CheckCircle2 className="w-6 h-6 stroke-[2.5]" />
               </div>
               <div className="space-y-1">
-                <h5 className="text-sm font-black text-zinc-900">
+                <h5 className="text-sm font-heading font-extrabold text-black">
                   ¡Reporte enviado con éxito!
                 </h5>
-                <p className="text-xs text-zinc-600 leading-relaxed">
+                <p className="text-xs text-neutral-700 leading-relaxed font-medium">
                   Tu {tipo === "BUG" ? "reporte de error" : "sugerencia"} ya fue enviado por{" "}
-                  <strong>WhatsApp</strong> con todo el detalle. ¡Muchas gracias por ayudar a mejorar!
+                  <strong className="text-black font-extrabold">WhatsApp</strong> con todo el detalle. ¡Muchas gracias por colaborar!
                 </p>
               </div>
               <button
@@ -225,16 +225,16 @@ export function FloatingFeedbackWidget({
                   setSentSuccess(false);
                   setIsOpen(false);
                 }}
-                className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-black text-white text-xs font-bold cursor-pointer transition-colors"
+                className="px-4 py-2 rounded-xl bg-black hover:bg-zinc-800 text-[#FFD23F] border-2 border-black text-xs font-heading font-extrabold cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
               >
                 Cerrar ventana
               </button>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="p-4 space-y-3.5">
+            <form onSubmit={handleSubmit} className="p-4 space-y-3.5 bg-[#FFFDF9]">
               {/* 1. Selector de Tipo: Sugerencia o Error / Bug */}
               <div>
-                <label className="text-xs font-bold text-zinc-700 block mb-1.5">
+                <label className="text-xs font-heading font-extrabold text-black block mb-1.5">
                   ¿Qué deseas reportar?
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -244,22 +244,20 @@ export function FloatingFeedbackWidget({
                       setTipo("SUGERENCIA");
                       setErrorMsg(null);
                     }}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2 ${
+                    className={`p-2.5 rounded-xl border-2 border-black text-left transition-all cursor-pointer flex items-center gap-2 ${
                       tipo === "SUGERENCIA"
-                        ? "bg-amber-50 border-amber-500 text-amber-950 ring-2 ring-amber-500/20 font-bold"
-                        : "bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700"
+                        ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
+                        : "bg-[#FAF6EE] text-neutral-700 hover:bg-white shadow-[1px_1px_0px_#000]"
                     }`}
                   >
                     <Lightbulb
-                      className={`w-4 h-4 shrink-0 ${
-                        tipo === "SUGERENCIA" ? "text-amber-600" : "text-zinc-400"
-                      }`}
+                      className="w-4 h-4 shrink-0 text-black stroke-[2.5]"
                     />
                     <div className="min-w-0">
-                      <span className="text-xs font-bold block leading-tight">
+                      <span className="text-xs font-heading font-extrabold text-black block leading-tight">
                         Sugerencia
                       </span>
-                      <span className="text-[10px] text-zinc-500 block truncate">
+                      <span className="text-[10px] font-mono text-neutral-700 block truncate">
                         Idea o mejora
                       </span>
                     </div>
@@ -271,22 +269,26 @@ export function FloatingFeedbackWidget({
                       setTipo("BUG");
                       setErrorMsg(null);
                     }}
-                    className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-2 ${
+                    className={`p-2.5 rounded-xl border-2 border-black text-left transition-all cursor-pointer flex items-center gap-2 ${
                       tipo === "BUG"
-                        ? "bg-rose-50 border-rose-500 text-rose-950 ring-2 ring-rose-500/20 font-bold"
-                        : "bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-700"
+                        ? "bg-[#E76F51] text-white shadow-[2px_2px_0px_#000]"
+                        : "bg-[#FAF6EE] text-neutral-700 hover:bg-white shadow-[1px_1px_0px_#000]"
                     }`}
                   >
                     <Bug
-                      className={`w-4 h-4 shrink-0 ${
-                        tipo === "BUG" ? "text-rose-600" : "text-zinc-400"
+                      className={`w-4 h-4 shrink-0 stroke-[2.5] ${
+                        tipo === "BUG" ? "text-white" : "text-black"
                       }`}
                     />
                     <div className="min-w-0">
-                      <span className="text-xs font-bold block leading-tight">
+                      <span className={`text-xs font-heading font-extrabold block leading-tight ${
+                        tipo === "BUG" ? "text-white" : "text-black"
+                      }`}>
                         Algún Bug / Error
                       </span>
-                      <span className="text-[10px] text-zinc-500 block truncate">
+                      <span className={`text-[10px] font-mono block truncate ${
+                        tipo === "BUG" ? "text-white/90" : "text-neutral-700"
+                      }`}>
                         Falla en la página
                       </span>
                     </div>
@@ -296,8 +298,8 @@ export function FloatingFeedbackWidget({
 
               {/* 2. Nombre del Vendedor */}
               <div>
-                <label className="text-xs font-bold text-zinc-700 block mb-1">
-                  Tu Nombre (Vendedor) <span className="text-rose-600">*</span>
+                <label className="text-xs font-heading font-extrabold text-black block mb-1">
+                  Tu Nombre (Vendedor) <span className="text-[#E76F51]">*</span>
                 </label>
                 <input
                   type="text"
@@ -309,17 +311,17 @@ export function FloatingFeedbackWidget({
                     if (errorMsg) setErrorMsg(null);
                   }}
                   placeholder="Ej: Marcelo Gómez..."
-                  className="w-full bg-zinc-50 focus:bg-white border border-zinc-300 focus:border-zinc-900 rounded-xl px-3 py-2 text-xs sm:text-sm font-medium text-zinc-900 outline-none transition-colors"
+                  className="w-full bg-[#FAF6EE] focus:bg-white border-2 border-black rounded-xl px-3 py-2 text-xs sm:text-sm font-sans font-medium text-black outline-none shadow-[2px_2px_0px_#000] transition-colors"
                 />
               </div>
 
               {/* 3. Detalle de la Sugerencia o Bug */}
               <div>
-                <label className="text-xs font-bold text-zinc-700 block mb-1">
+                <label className="text-xs font-heading font-extrabold text-black block mb-1">
                   {tipo === "BUG"
                     ? "Detalle del error o bug encontrado"
                     : "Detalle de tu sugerencia o mejora"}{" "}
-                  <span className="text-rose-600">*</span>
+                  <span className="text-[#E76F51]">*</span>
                 </label>
                 <textarea
                   rows={4}
@@ -335,13 +337,13 @@ export function FloatingFeedbackWidget({
                       ? "Describí qué error encontraste en la página (ej: qué botón o componente dio problema)..."
                       : "Contanos qué idea o mejora te gustaría que agreguemos a la página..."
                   }
-                  className="w-full bg-zinc-50 focus:bg-white border border-zinc-300 focus:border-zinc-900 rounded-xl p-3 text-xs sm:text-sm text-zinc-900 outline-none transition-colors resize-none leading-relaxed"
+                  className="w-full bg-[#FAF6EE] focus:bg-white border-2 border-black rounded-xl p-3 text-xs sm:text-sm text-black outline-none shadow-[2px_2px_0px_#000] transition-colors resize-none leading-relaxed font-sans"
                 />
               </div>
 
               {errorMsg && (
-                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-[#E76F51]/15 border-2 border-black text-black text-xs font-heading font-extrabold flex items-center gap-2 shadow-[2px_2px_0px_#000]">
+                  <AlertCircle className="w-4 h-4 text-[#E76F51] shrink-0 stroke-[2.5]" />
                   <span>{errorMsg}</span>
                 </div>
               )}
@@ -350,10 +352,10 @@ export function FloatingFeedbackWidget({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full py-2.5 px-4 rounded-xl text-white text-xs sm:text-sm font-extrabold shadow-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 ${
+                className={`w-full py-2.5 px-4 rounded-xl text-white text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 ${
                   tipo === "BUG"
-                    ? "bg-rose-600 hover:bg-rose-700"
-                    : "bg-emerald-600 hover:bg-emerald-700"
+                    ? "bg-[#E76F51] hover:bg-rose-700"
+                    : "bg-[#2A9D8F] hover:bg-emerald-600"
                 }`}
               >
                 {isSubmitting ? (
@@ -385,18 +387,18 @@ export function FloatingFeedbackWidget({
           setErrorMsg(null);
           setSentSuccess(false);
         }}
-        className={`group flex items-center gap-2.5 px-4 py-3 rounded-full shadow-xl border transition-all cursor-pointer ${
+        className={`group flex items-center gap-2.5 px-4 sm:px-5 py-3 rounded-full border-2 border-black font-heading font-extrabold text-xs sm:text-sm tracking-tight transition-all cursor-pointer shadow-[3px_3px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
           isOpen
-            ? "bg-zinc-800 text-white border-zinc-700"
-            : "bg-zinc-900 hover:bg-black text-white border-zinc-700/80 hover:scale-[1.03] active:scale-95"
+            ? "bg-black text-[#FFD23F]"
+            : "bg-[#FFD23F] hover:bg-[#FACC15] text-black"
         }`}
         title="Enviar sugerencia o reportar algún bug en la página"
       >
         <span className="relative flex items-center justify-center">
-          <MessageSquarePlus className="w-5 h-5 text-emerald-400 group-hover:rotate-6 transition-transform" />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-zinc-900" />
+          <MessageSquarePlus className="w-5 h-5 text-black group-hover:rotate-6 transition-transform stroke-[2.5]" />
+          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#2A9D8F] border border-black" />
         </span>
-        <span className="text-xs sm:text-sm font-bold tracking-tight">
+        <span>
           {isOpen ? "Cerrar" : "Sugerencias / Reportar Bug"}
         </span>
       </button>
