@@ -987,42 +987,46 @@ export default function NuevoIngresoMontajePage() {
 
   return (
     <AuthGuard requiredModule="montajes">
-      <main className="min-h-dvh bg-[#fbf9f9] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10">
+      <main className="min-h-dvh bg-[#FAF6EE] py-4 sm:py-6 lg:py-8 2xl:py-10 px-3 sm:px-5 lg:px-7 2xl:px-10 font-sans">
       <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 min-w-0">
         
-        {/* Cabecera con Botón Volver Mejorado */}
-        <div className="flex items-center justify-between pb-4 border-b border-zinc-200 gap-2 flex-wrap">
+        {/* Cabecera con Botón Volver Mejorado Neo-Brutalismo */}
+        <div className="flex items-center justify-between pb-4 border-b-2 border-black gap-2 flex-wrap">
           <Link
             href="/tecnicos"
-            className="group inline-flex items-center gap-2 px-3.5 py-1.5 text-xs sm:text-sm font-semibold text-zinc-700 bg-white hover:bg-zinc-50 hover:text-zinc-900 border border-zinc-200 rounded-lg shadow-sm transition-all"
+            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-heading font-extrabold text-black bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
           >
-            <ArrowLeft className="w-4 h-4 text-zinc-500 group-hover:-translate-x-0.5 group-hover:text-zinc-900 transition-transform" />
+            <ArrowLeft className="w-4 h-4 text-black stroke-[2.5]" />
             <span>Volver al Dashboard de Montajes</span>
           </Link>
           <AuthBadge requiredModule="tecnicos" />
         </div>
 
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-zinc-900 tracking-tight">
+        <div className="space-y-1.5">
+          <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000]">
+            <Wrench className="w-3.5 h-3.5 text-black" />
+            <span>TALLER DE MONTAJES &amp; ENSAMBLES</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-extrabold text-black tracking-tight">
             Nuevo Ingreso de Montaje &amp; Ensamble de PC
           </h1>
-          <p className="text-xs sm:text-sm text-zinc-600 max-w-4xl">
+          <p className="text-xs sm:text-sm text-neutral-800 max-w-4xl font-medium">
             Carga de órdenes operativas para ensambles de computadoras de escritorio y expansiones de memoria o almacenamiento en notebooks.
           </p>
         </div>
 
         {restoredDraftBanner && (
-          <div className="p-3.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs flex items-center justify-between gap-2">
+          <div className="p-3.5 rounded-xl bg-[#2A9D8F] text-white border-2 border-black text-xs sm:text-sm flex items-center justify-between gap-2 shadow-[4px_4px_0px_#000] font-heading font-extrabold">
             <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-indigo-600 shrink-0" />
-              <span className="font-medium">
+              <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
+              <span>
                 Se restauró tu carga en progreso automáticamente tras reiniciar sesión.
               </span>
             </div>
             <button
               type="button"
               onClick={() => setRestoredDraftBanner(false)}
-              className="text-[11px] font-semibold text-indigo-700 hover:underline shrink-0 cursor-pointer"
+              className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-black text-[#FFD23F] border border-black shadow-[1px_1px_0px_#000] shrink-0 cursor-pointer"
             >
               Ocultar
             </button>
@@ -1030,9 +1034,9 @@ export default function NuevoIngresoMontajePage() {
         )}
 
         {formError && (
-          <div className="p-3.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
-            <span className="font-medium">{formError}</span>
+          <div className="p-3.5 rounded-xl bg-[#E76F51] text-white border-2 border-black text-xs sm:text-sm flex items-center gap-2 shadow-[4px_4px_0px_#000] font-heading font-extrabold">
+            <AlertCircle className="w-4 h-4 text-white flex-shrink-0" />
+            <span>{formError}</span>
           </div>
         )}
 
@@ -1042,28 +1046,28 @@ export default function NuevoIngresoMontajePage() {
           <div className="lg:col-span-8 space-y-6">
 
             {/* SECCIÓN 1: APARTADO DE VENDEDOR & CANAL COMERCIAL */}
-            <section className="bg-white p-5 sm:p-6 rounded-xl border border-zinc-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <section className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
+              <div className="flex items-center justify-between border-b-2 border-black pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-lg bg-zinc-900 text-white text-xs flex items-center justify-center font-bold">
+                  <span className="w-8 h-8 rounded-lg bg-[#FFD23F] text-black border-2 border-black text-xs sm:text-sm flex items-center justify-center font-heading font-black shadow-[1px_1px_0px_#000]">
                     1
                   </span>
                   <div>
-                    <h2 className="text-sm sm:text-base font-bold text-zinc-900">
+                    <h2 className="text-sm sm:text-base font-heading font-extrabold text-black">
                       Apartado de Vendedor &amp; Canal Comercial
                     </h2>
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-neutral-600 font-medium">
                       Asesor comercial responsable, canal de venta y número de registro interno
                     </span>
                   </div>
                 </div>
-                <ShoppingBag className="w-5 h-5 text-zinc-400" />
+                <ShoppingBag className="w-5 h-5 text-black" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                 {/* Vendedor Comercial Categorizado */}
                 <div>
-                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Vendedor Comercial *
                   </label>
                   <VendedorSelect
@@ -1081,7 +1085,7 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Canal de Venta: Tienda, Ecommerce - Web, Empresas / Coorporativo */}
                 <div>
-                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Canal de Venta
                   </label>
                   <CleanSelect
@@ -1096,7 +1100,7 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Nro. Registro / Interno */}
                 <div className="sm:col-span-2">
-                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Nro. Registro / Interno *
                   </label>
                   <div className="flex items-center gap-2">
@@ -1107,7 +1111,7 @@ export default function NuevoIngresoMontajePage() {
                       value={nroRegistroInterno}
                       onChange={(e) => setNroRegistroInterno(e.target.value)}
                       placeholder="Ej: 966.565 ó 001-002-0045892"
-                      className="w-full min-w-0 text-sm sm:text-base font-mono border border-zinc-200 rounded-xl px-3.5 py-2.5 focus:border-zinc-900 outline-none font-bold text-zinc-900"
+                      className="w-full min-w-0 text-sm sm:text-base font-mono border-2 border-black rounded-xl px-3.5 py-2.5 bg-white outline-none font-bold text-black shadow-[2px_2px_0px_#000]"
                     />
                     <ScanButton
                       onClick={() => setScannerTarget({ mode: "nro_reg" })}
@@ -1119,7 +1123,7 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Fecha de Facturación */}
                 <div className="sm:col-span-2">
-                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Fecha de Facturación
                   </label>
                   <CleanDatePicker
@@ -1132,27 +1136,27 @@ export default function NuevoIngresoMontajePage() {
             </section>
 
             {/* SECCIÓN 2: APARTADO DE DATOS DEL CLIENTE & MODALIDAD */}
-            <section className="bg-white p-5 sm:p-6 rounded-xl border border-zinc-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <section className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
+              <div className="flex items-center justify-between border-b-2 border-black pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-8 h-8 rounded-lg bg-zinc-900 text-white text-xs sm:text-sm flex items-center justify-center font-bold">
+                  <span className="w-8 h-8 rounded-lg bg-[#FFD23F] text-black border-2 border-black text-xs sm:text-sm flex items-center justify-center font-heading font-black shadow-[1px_1px_0px_#000]">
                     2
                   </span>
                   <div>
-                    <h2 className="text-sm sm:text-base font-bold text-zinc-900">
+                    <h2 className="text-sm sm:text-base font-heading font-extrabold text-black">
                       Apartado de Datos del Cliente &amp; Tipo de Servicio
                     </h2>
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-neutral-600 font-medium">
                       Titular de la orden y selección entre Ensamble de PC Completa o Expansión de Notebook
                     </span>
                   </div>
                 </div>
-                <User className="w-5 h-5 text-zinc-400" />
+                <User className="w-5 h-5 text-black" />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
                 <div className="sm:col-span-2">
-                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Cliente / Razón Social *
                   </label>
                   <input
@@ -1162,19 +1166,19 @@ export default function NuevoIngresoMontajePage() {
                     value={clientName}
                     onChange={(e) => setClientName(e.target.value)}
                     placeholder="Ej: Prychen Wei / J.W.F. SA / Mariano Cano"
-                    className="w-full text-sm sm:text-base border border-zinc-200 rounded-xl px-3.5 py-2.5 focus:border-zinc-900 outline-none font-bold text-zinc-900"
+                    className="w-full text-sm sm:text-base border-2 border-black rounded-xl px-3.5 py-2.5 bg-white outline-none font-bold text-black shadow-[2px_2px_0px_#000]"
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Cantidad de Equipos (PCs / Laptops) *
                   </label>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => setCantidadEquipos((prev) => Math.max(1, prev - 1))}
-                      className="px-3.5 py-2.5 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-sm font-bold text-zinc-700 cursor-pointer"
+                      className="px-3.5 py-2.5 border-2 border-black rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-base font-black text-black cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                       aria-label="Restar equipo"
                     >
                       −
@@ -1189,12 +1193,12 @@ export default function NuevoIngresoMontajePage() {
                       onChange={(e) =>
                         setCantidadEquipos(Math.max(1, parseInt(e.target.value, 10) || 1))
                       }
-                      className="w-full text-center text-sm sm:text-base font-mono font-bold border border-zinc-200 rounded-lg px-2 py-2.5 focus:border-zinc-900 outline-none text-zinc-900"
+                      className="w-full text-center text-sm sm:text-base font-mono font-black border-2 border-black rounded-lg px-2 py-2.5 bg-white outline-none text-black shadow-[2px_2px_0px_#000]"
                     />
                     <button
                       type="button"
                       onClick={() => setCantidadEquipos((prev) => Math.min(99, prev + 1))}
-                      className="px-3.5 py-2.5 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 text-sm font-bold text-zinc-700 cursor-pointer"
+                      className="px-3.5 py-2.5 border-2 border-black rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-base font-black text-black cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                       aria-label="Sumar equipo"
                     >
                       +
@@ -1205,25 +1209,25 @@ export default function NuevoIngresoMontajePage() {
 
               {/* Selector de Modalidad */}
               <div>
-                <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1.5">
+                <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                   Tipo de Servicio Técnico *
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     type="button"
                     onClick={() => handleChangeTipoServicio("Montaje")}
-                    className={`p-4 sm:p-5 rounded-xl border text-left transition-colors flex items-start gap-3.5 ${
+                    className={`p-4 sm:p-5 rounded-xl border-2 text-left transition-all cursor-pointer flex items-start gap-3.5 ${
                       tipoServicio === "Montaje"
-                        ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                        : "border-zinc-200 bg-zinc-50/50 hover:bg-zinc-100 text-zinc-900"
+                        ? "border-black bg-[#FFD23F] text-black shadow-[4px_4px_0px_#000]"
+                        : "border-black/30 hover:border-black bg-[#FFFDF9] text-black shadow-[2px_2px_0px_#000]"
                     }`}
                   >
-                    <Cpu className={`w-6 h-6 mt-0.5 flex-shrink-0 ${tipoServicio === "Montaje" ? "text-white" : "text-zinc-700"}`} />
+                    <Cpu className="w-6 h-6 mt-0.5 flex-shrink-0 text-black stroke-[2.5]" />
                     <div>
-                      <strong className="block text-sm sm:text-base font-bold">
+                      <strong className="block text-sm sm:text-base font-heading font-extrabold text-black">
                         Montaje de PC Completa
                       </strong>
-                      <span className={`text-xs block mt-1 leading-relaxed ${tipoServicio === "Montaje" ? "text-zinc-300" : "text-zinc-500"}`}>
+                      <span className="text-xs block mt-1 leading-relaxed text-neutral-800 font-medium">
                         Ensamble desde cero: CPU, Placa Madre, RAM Desktop, GPU, Fuente, Gabinete, Cooler y SSD.
                       </span>
                     </div>
@@ -1232,18 +1236,18 @@ export default function NuevoIngresoMontajePage() {
                   <button
                     type="button"
                     onClick={() => handleChangeTipoServicio("Expansion")}
-                    className={`p-4 sm:p-5 rounded-xl border text-left transition-colors flex items-start gap-3.5 ${
+                    className={`p-4 sm:p-5 rounded-xl border-2 text-left transition-all cursor-pointer flex items-start gap-3.5 ${
                       tipoServicio === "Expansion"
-                        ? "border-zinc-900 bg-zinc-900 text-white shadow-sm"
-                        : "border-zinc-200 bg-zinc-50/50 hover:bg-zinc-100 text-zinc-900"
+                        ? "border-black bg-[#FFD23F] text-black shadow-[4px_4px_0px_#000]"
+                        : "border-black/30 hover:border-black bg-[#FFFDF9] text-black shadow-[2px_2px_0px_#000]"
                     }`}
                   >
-                    <Laptop className={`w-6 h-6 mt-0.5 flex-shrink-0 ${tipoServicio === "Expansion" ? "text-white" : "text-zinc-700"}`} />
+                    <Laptop className="w-6 h-6 mt-0.5 flex-shrink-0 text-black stroke-[2.5]" />
                     <div>
-                      <strong className="block text-sm sm:text-base font-bold">
+                      <strong className="block text-sm sm:text-base font-heading font-extrabold text-black">
                         Expansión / Upgrade de Notebook
                       </strong>
-                      <span className={`text-xs block mt-1 leading-relaxed ${tipoServicio === "Expansion" ? "text-zinc-300" : "text-zinc-500"}`}>
+                      <span className="text-xs block mt-1 leading-relaxed text-neutral-800 font-medium">
                         Ampliación de hardware en laptops: Expansión de Memoria RAM SODIMM (DDR4/DDR5) o Almacenamiento SSD M.2/SATA.
                       </span>
                     </div>
@@ -1253,17 +1257,17 @@ export default function NuevoIngresoMontajePage() {
             </section>
 
             {/* SECCIÓN 3: APARTADO DE COMPONENTES DE HARDWARE CON AUTOCOMPLETADO POR SKU */}
-            <section className="bg-white p-5 sm:p-6 rounded-xl border border-zinc-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-3 flex-wrap gap-2">
+            <section className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
+              <div className="flex items-center justify-between border-b-2 border-black pb-3 flex-wrap gap-2">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-lg bg-zinc-900 text-white text-xs flex items-center justify-center font-bold">
+                  <span className="w-8 h-8 rounded-lg bg-[#FFD23F] text-black border-2 border-black text-xs sm:text-sm flex items-center justify-center font-heading font-black shadow-[1px_1px_0px_#000]">
                     3
                   </span>
                   <div>
-                    <h2 className="text-sm sm:text-base font-bold text-zinc-900">
+                    <h2 className="text-sm sm:text-base font-heading font-extrabold text-black">
                       Apartado de Componentes de Hardware ({tipoServicio === "Montaje" ? "PC Completa" : "Notebook & Expansión"})
                     </h2>
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-neutral-600 font-medium">
                       Ingrese el SKU para autocompletar o cargue uno nuevo y quedará guardado en MySQL para todos.
                     </span>
                   </div>
@@ -1282,37 +1286,37 @@ export default function NuevoIngresoMontajePage() {
                       setShowSkuImporter((prev) => !prev);
                       setSkuImportFeedback(null);
                     }}
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1 rounded-lg bg-white hover:bg-zinc-50 text-zinc-700 border border-zinc-200 cursor-pointer transition-colors"
+                    className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer transition-all"
                     title="Importar lista o CSV de SKUs a MySQL"
                   >
-                    <Database className="w-3.5 h-3.5 text-emerald-600" />
+                    <Database className="w-3.5 h-3.5 text-black" />
                     <span>{skuCatalog.length} SKUs en catálogo · Importar CSV</span>
                   </button>
-                  <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-zinc-100 text-zinc-800 border border-zinc-200">
+                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-lg bg-[#FAF6EE] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                     {components.length} {components.length === 1 ? "componente" : "componentes"}
                   </span>
                 </div>
               </div>
 
               {showSkuImporter && (
-                <div className="bg-emerald-50/50 border border-emerald-200 rounded-xl p-4 space-y-3">
+                <div className="bg-[#2A9D8F]/15 border-2 border-black rounded-xl p-4 space-y-3 shadow-[3px_3px_0px_#000]">
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div>
-                      <h3 className="text-xs font-bold text-zinc-900 flex items-center gap-1.5">
-                        <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                      <h3 className="text-xs font-heading font-extrabold text-black flex items-center gap-1.5">
+                        <FileSpreadsheet className="w-4 h-4 text-black" />
                         Importar SKUs al Catálogo Maestro MySQL
                       </h3>
-                      <p className="text-[11px] text-zinc-600">
-                        Subí un archivo CSV o pegá una lista (<code className="font-mono">SKU, Descripción, Categoría, UPC</code>). Se sincroniza en la nube para cualquier PC.
+                      <p className="text-[11px] text-neutral-700 font-medium">
+                        Subí un archivo CSV o pegá una lista (<code className="font-mono font-bold">SKU, Descripción, Categoría, UPC</code>). Se sincroniza en la nube para cualquier PC.
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={() => skuFileInputRef.current?.click()}
                       disabled={isImportingSkus}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-zinc-50 border border-zinc-300 rounded-lg text-xs font-semibold text-zinc-800 cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black rounded-lg text-xs font-heading font-extrabold text-black shadow-[2px_2px_0px_#000] cursor-pointer"
                     >
-                      <Upload className="w-3.5 h-3.5 text-emerald-600" />
+                      <Upload className="w-3.5 h-3.5 text-black" />
                       <span>Subir archivo .CSV</span>
                     </button>
                   </div>
@@ -1322,18 +1326,18 @@ export default function NuevoIngresoMontajePage() {
                     value={skuImportText}
                     onChange={(e) => setSkuImportText(e.target.value)}
                     placeholder={"774198, CPU INTEL I5-12400 2.5GHZ LGA1700, PROCESADOR\n879268, MB ASUS PRIME H610M-D D4, PLACA_MADRE"}
-                    className="w-full text-xs font-mono bg-white border border-zinc-200 rounded-lg p-2.5 outline-none focus:border-zinc-900 text-zinc-900"
+                    className="w-full text-xs font-mono bg-white border-2 border-black rounded-lg p-2.5 outline-none text-black shadow-[1px_1px_0px_#000]"
                   />
 
                   <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span className="text-[11px] text-zinc-600">
+                    <span className="text-[11px] text-neutral-800 font-medium">
                       {skuImportFeedback || "También podés escribir un SKU nuevo directo abajo y se guardará automáticamente al agregarlo."}
                     </span>
                     <button
                       type="button"
                       disabled={isImportingSkus || !skuImportText.trim()}
                       onClick={() => void handleSaveImportedSkus(skuImportText)}
-                      className="px-3 py-1.5 bg-zinc-900 hover:bg-black disabled:opacity-50 text-white text-xs font-semibold rounded-lg cursor-pointer"
+                      className="px-3 py-1.5 bg-[#FFD23F] hover:bg-[#FACC15] disabled:opacity-50 text-black text-xs font-heading font-extrabold border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] cursor-pointer"
                     >
                       {isImportingSkus ? "Guardando en MySQL..." : "Guardar Lista en MySQL"}
                     </button>
@@ -1342,13 +1346,13 @@ export default function NuevoIngresoMontajePage() {
               )}
 
               {/* Formulario de Ingreso Directo Inteligente (OPCIÓN DEFAULT) */}
-              <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-200 space-y-3">
+              <div className="bg-[#FAF6EE] p-4 rounded-xl border-2 border-black space-y-3 shadow-[3px_3px_0px_#000]">
                 <div className="flex items-center justify-between flex-wrap gap-1">
-                  <span className="text-xs font-bold text-zinc-900 uppercase font-mono tracking-wide flex items-center gap-1.5">
-                    <Plus className="w-3.5 h-3.5 text-zinc-700" />
+                  <span className="text-xs font-heading font-extrabold text-black uppercase font-mono tracking-wide flex items-center gap-1.5">
+                    <Plus className="w-3.5 h-3.5 text-black stroke-[3]" />
                     Cargar Componente a la Orden:
                   </span>
-                  <span className="text-[11px] text-zinc-500 font-mono">
+                  <span className="text-[11px] text-neutral-600 font-mono font-bold">
                     Escanee el UPC o escriba el SKU
                   </span>
                 </div>
@@ -1356,7 +1360,7 @@ export default function NuevoIngresoMontajePage() {
                 <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5">
                   {/* UPC / EAN arriba del SKU (autocompleta SKU/Descripción y se vincula en MySQL) */}
                   <div className="sm:col-span-12">
-                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       UPC / Código de Barras del Producto *
                     </label>
                     <div className="flex items-center gap-2">
@@ -1367,7 +1371,7 @@ export default function NuevoIngresoMontajePage() {
                         value={customUpc}
                         onChange={(e) => handleUpcChange(e.target.value)}
                         placeholder="Escanear o escribir UPC / EAN para autocompletar o vincular al SKU..."
-                        className="w-full min-w-0 text-sm font-mono font-bold bg-white border border-zinc-300 rounded-xl px-3.5 py-2.5 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                        className="w-full min-w-0 text-sm font-mono font-bold bg-white border-2 border-black rounded-xl px-3.5 py-2.5 outline-none text-black shadow-[2px_2px_0px_#000]"
                       />
                       <ScanButton
                         onClick={() => setScannerTarget({ mode: "upc" })}
@@ -1388,7 +1392,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* SKU con datalist de autocompletado */}
                   <div className="sm:col-span-3">
-                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       SKU (Código) *
                     </label>
                     <input
@@ -1398,7 +1402,7 @@ export default function NuevoIngresoMontajePage() {
                       value={customSku}
                       onChange={(e) => handleSkuChange(e.target.value)}
                       placeholder="Ej: 774198"
-                      className="w-full text-sm font-mono font-bold bg-white border border-zinc-300 rounded-xl px-3.5 py-2.5 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                      className="w-full text-sm font-mono font-bold bg-white border-2 border-black rounded-xl px-3.5 py-2.5 outline-none text-black shadow-[2px_2px_0px_#000]"
                     />
                     <datalist id="skus-list">
                       {currentCatalog.map((c) => (
@@ -1411,7 +1415,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* Categoría (se autoselecciona al coincidir SKU o se elige manual) */}
                   <div className="sm:col-span-3">
-                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       Categoría *
                     </label>
                     <CleanSelect
@@ -1426,7 +1430,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* Descripción del Hardware */}
                   <div className="sm:col-span-6">
-                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       Descripción del Hardware *
                     </label>
                     <input
@@ -1436,7 +1440,7 @@ export default function NuevoIngresoMontajePage() {
                       value={customDesc}
                       onChange={(e) => handleDescChange(e.target.value)}
                       placeholder="Ej: CPU INTEL I5-12400 2.5GHZ... o escribir nombre"
-                      className="w-full text-sm bg-white border border-zinc-300 rounded-xl px-3.5 py-2.5 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                      className="w-full text-sm font-bold bg-white border-2 border-black rounded-xl px-3.5 py-2.5 outline-none text-black shadow-[2px_2px_0px_#000]"
                     />
                     <datalist id="desc-list">
                       {currentCatalog.map((c) => (
@@ -1449,7 +1453,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* Serial / IMEI */}
                   <div className="sm:col-span-8">
-                    <label className="text-xs sm:text-sm text-zinc-700 font-bold block mb-1 font-mono">
+                    <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       Serial Físico / IMEI (Opcional · vacío = N/A)
                     </label>
                     <div className="flex items-center gap-2">
@@ -1459,7 +1463,7 @@ export default function NuevoIngresoMontajePage() {
                         value={customSerial}
                         onChange={(e) => setCustomSerial(e.target.value)}
                         placeholder="Escanear serial físico o dejar vacío (se asignará N/A)..."
-                        className="w-full min-w-0 text-sm font-mono bg-white border border-zinc-300 rounded-xl px-3.5 py-2.5 outline-none focus:border-zinc-900 text-zinc-900 shadow-sm"
+                        className="w-full min-w-0 text-sm font-mono bg-white border-2 border-black rounded-xl px-3.5 py-2.5 outline-none text-black shadow-[2px_2px_0px_#000]"
                       />
                       <ScanButton
                         onClick={() => setScannerTarget({ mode: "new" })}
@@ -1474,9 +1478,9 @@ export default function NuevoIngresoMontajePage() {
                     <button
                       type="button"
                       onClick={() => handleAddComponent()}
-                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 bg-zinc-900 hover:bg-black text-white text-xs sm:text-sm font-bold rounded-xl shadow-sm transition-colors cursor-pointer"
+                      className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs sm:text-sm font-heading font-extrabold rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-4 h-4 stroke-[3]" />
                       <span>+ Agregar a la Orden</span>
                     </button>
                   </div>
@@ -1485,16 +1489,16 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Error de campos obligatorios del componente */}
                 {componentError && (
-                  <div className="text-xs font-mono text-rose-800 bg-rose-50 border border-rose-200 px-3.5 py-2 rounded-lg flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                  <div className="text-xs font-mono font-bold text-white bg-[#E76F51] border-2 border-black px-3.5 py-2.5 rounded-xl flex items-center gap-2 shadow-[2px_2px_0px_#000]">
+                    <AlertCircle className="w-4 h-4 text-white flex-shrink-0" />
                     <span>{componentError}</span>
                   </div>
                 )}
 
                 {/* Aviso visual de coincidencia automática */}
                 {skuMatchNotice && (
-                  <div className="text-xs font-mono text-emerald-800 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-lg flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                  <div className="text-xs font-mono font-bold text-black bg-[#2A9D8F]/25 border-2 border-black px-3.5 py-2.5 rounded-xl flex items-center gap-2 shadow-[2px_2px_0px_#000]">
+                    <CheckCircle2 className="w-4 h-4 text-black flex-shrink-0" />
                     <span>{skuMatchNotice}</span>
                   </div>
                 )}
@@ -1502,33 +1506,33 @@ export default function NuevoIngresoMontajePage() {
                 {/* Alerta en tiempo real de conflicto previsto al escribir o escanear un componente */}
                 {prospectiveConflict && (
                   <div
-                    className={`p-3.5 rounded-xl border text-xs flex items-start gap-3 transition-all ${
+                    className={`p-3.5 rounded-xl border-2 border-black text-xs flex items-start gap-3 shadow-[4px_4px_0px_#000] transition-all ${
                       prospectiveConflict.tipo === "ERROR"
-                        ? "bg-rose-50 border-rose-300 text-rose-950 animate-pulse shadow-2xs"
-                        : "bg-amber-50 border-amber-300 text-amber-950 shadow-2xs"
+                        ? "bg-[#E76F51]/20 text-black"
+                        : "bg-[#FFD23F]/30 text-black"
                     }`}
                   >
                     {prospectiveConflict.tipo === "ERROR" ? (
-                      <ShieldAlert className="w-5 h-5 text-rose-600 flex-shrink-0 mt-0.5" />
+                      <ShieldAlert className="w-5 h-5 text-black flex-shrink-0 mt-0.5" />
                     ) : (
-                      <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                      <AlertTriangle className="w-5 h-5 text-black flex-shrink-0 mt-0.5" />
                     )}
                     <div className="space-y-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span
-                          className={`font-mono font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded ${
+                          className={`font-mono font-black uppercase tracking-wider text-[10px] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] ${
                             prospectiveConflict.tipo === "ERROR"
-                              ? "bg-rose-200 text-rose-900"
-                              : "bg-amber-200 text-amber-900"
+                              ? "bg-[#E76F51] text-white"
+                              : "bg-[#FFD23F] text-black"
                           }`}
                         >
                           {prospectiveConflict.tipo === "ERROR" ? "Conflicto Detectado antes de Agregar" : "Advertencia Técnica"}
                         </span>
-                        <strong className="text-xs sm:text-sm font-bold">
+                        <strong className="text-xs sm:text-sm font-heading font-extrabold text-black">
                           {prospectiveConflict.titulo}
                         </strong>
                       </div>
-                      <p className="text-xs leading-relaxed font-normal">
+                      <p className="text-xs leading-relaxed font-medium text-neutral-800">
                         {prospectiveConflict.detalle}
                       </p>
                     </div>
@@ -1539,24 +1543,24 @@ export default function NuevoIngresoMontajePage() {
               {/* ESCUDO DE COMPATIBILIDAD DE HARDWARE (MOTOR ARMAR-PC) */}
               {tipoServicio === "Montaje" && components.length > 0 && resultadoCompatibilidad && (
                 <div
-                  className={`p-4 sm:p-5 rounded-2xl border transition-all space-y-3.5 shadow-sm ${
+                  className={`p-4 sm:p-5 rounded-2xl border-2 border-black transition-all space-y-3.5 shadow-[4px_4px_0px_#000] ${
                     resultadoCompatibilidad.totalErrores > 0
-                      ? "bg-rose-50/90 border-rose-300 shadow-rose-100/50"
+                      ? "bg-[#E76F51]/15"
                       : resultadoCompatibilidad.totalWarnings > 0
-                      ? "bg-amber-50/80 border-amber-300"
-                      : "bg-emerald-50/80 border-emerald-300 shadow-emerald-100/50"
+                      ? "bg-[#FFD23F]/20"
+                      : "bg-[#2A9D8F]/15"
                   }`}
                 >
                   {/* Cabecera del Escudo */}
                   <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div className="flex items-center gap-2.5">
                       <div
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        className={`w-9 h-9 rounded-xl border-2 border-black flex items-center justify-center shrink-0 shadow-[2px_2px_0px_#000] ${
                           resultadoCompatibilidad.totalErrores > 0
-                            ? "bg-rose-600 text-white shadow-sm"
+                            ? "bg-[#E76F51] text-white"
                             : resultadoCompatibilidad.totalWarnings > 0
-                            ? "bg-amber-500 text-white shadow-sm"
-                            : "bg-emerald-600 text-white shadow-sm"
+                            ? "bg-[#FFD23F] text-black"
+                            : "bg-[#2A9D8F] text-white"
                         }`}
                       >
                         {resultadoCompatibilidad.totalErrores > 0 ? (
@@ -1568,13 +1572,13 @@ export default function NuevoIngresoMontajePage() {
                         )}
                       </div>
                       <div>
-                        <h3 className="text-sm sm:text-base font-extrabold text-zinc-900 flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-heading font-extrabold text-black flex items-center gap-2">
                           <span>Escudo de Compatibilidad de Ensamble</span>
-                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-white/90 border border-zinc-200 text-zinc-700">
+                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-white border border-black text-black shadow-[1px_1px_0px_#000]">
                             Motor Armar-PC
                           </span>
                         </h3>
-                        <p className="text-xs text-zinc-600">
+                        <p className="text-xs text-neutral-800 font-medium">
                           {resultadoCompatibilidad.totalErrores > 0
                             ? `Se detectaron ${resultadoCompatibilidad.totalErrores} incompatibilidad(es) física(s) que impiden el funcionamiento correcto.`
                             : resultadoCompatibilidad.totalWarnings > 0
@@ -1586,20 +1590,20 @@ export default function NuevoIngresoMontajePage() {
 
                     {/* Badges de Consumo Eléctrico y Estado */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-zinc-200 text-xs font-mono font-bold text-zinc-800 shadow-2xs">
-                        <Zap className="w-3.5 h-3.5 text-amber-500" />
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black text-xs font-mono font-bold text-black shadow-[2px_2px_0px_#000]">
+                        <Zap className="w-3.5 h-3.5 text-black" />
                         <span>Consumo: ~{resultadoCompatibilidad.consumoTotalWatts}W</span>
-                        <span className="text-zinc-300">|</span>
-                        <span className="text-zinc-600">Fuente recomendada: {resultadoCompatibilidad.fuenteRecomendadaWatts}W+</span>
+                        <span className="text-neutral-400">|</span>
+                        <span className="text-neutral-700">Fuente recomendada: {resultadoCompatibilidad.fuenteRecomendadaWatts}W+</span>
                       </div>
 
                       <span
-                        className={`px-3 py-1 rounded-xl text-xs font-extrabold flex items-center gap-1.5 shadow-2xs ${
+                        className={`px-3 py-1 rounded-xl text-xs font-mono font-extrabold border-2 border-black flex items-center gap-1.5 shadow-[2px_2px_0px_#000] ${
                           resultadoCompatibilidad.totalErrores > 0
-                            ? "bg-rose-600 text-white animate-pulse"
+                            ? "bg-[#E76F51] text-white"
                             : resultadoCompatibilidad.totalWarnings > 0
-                            ? "bg-amber-500 text-white"
-                            : "bg-emerald-600 text-white"
+                            ? "bg-[#FFD23F] text-black"
+                            : "bg-[#2A9D8F] text-white"
                         }`}
                       >
                         {resultadoCompatibilidad.totalErrores > 0 ? (
@@ -1630,13 +1634,13 @@ export default function NuevoIngresoMontajePage() {
                         .map((alerta, idx) => (
                           <div
                             key={idx}
-                            className="p-3 sm:p-3.5 rounded-xl bg-rose-100/90 border border-rose-300 text-rose-950 space-y-1 shadow-2xs"
+                            className="p-3 sm:p-3.5 rounded-xl bg-white border-2 border-black text-black space-y-1 shadow-[2px_2px_0px_#000]"
                           >
-                            <div className="flex items-center gap-2 font-black text-rose-900 text-xs sm:text-sm">
+                            <div className="flex items-center gap-2 font-heading font-extrabold text-[#E76F51] text-xs sm:text-sm">
                               <span>⛔</span>
                               <span>{alerta.titulo}</span>
                             </div>
-                            <p className="text-xs sm:text-[13px] leading-relaxed text-rose-900 font-medium pl-6">
+                            <p className="text-xs sm:text-[13px] leading-relaxed text-neutral-800 font-medium pl-6">
                               {alerta.detalle}
                             </p>
                           </div>
@@ -1652,13 +1656,13 @@ export default function NuevoIngresoMontajePage() {
                         .map((alerta, idx) => (
                           <div
                             key={idx}
-                            className="p-3 rounded-xl bg-amber-100/80 border border-amber-300 text-amber-950 space-y-1 shadow-2xs"
+                            className="p-3 rounded-xl bg-white border-2 border-black text-black space-y-1 shadow-[2px_2px_0px_#000]"
                           >
-                            <div className="flex items-center gap-2 font-bold text-amber-900 text-xs">
+                            <div className="flex items-center gap-2 font-heading font-extrabold text-[#B45309] text-xs">
                               <span>⚠️</span>
                               <span>{alerta.titulo}</span>
                             </div>
-                            <p className="text-xs leading-relaxed text-amber-900 pl-6">
+                            <p className="text-xs leading-relaxed text-neutral-800 font-medium pl-6">
                               {alerta.detalle}
                             </p>
                           </div>
@@ -1669,21 +1673,21 @@ export default function NuevoIngresoMontajePage() {
                   {/* Checklist de Compatibilidad cuando está 100% Compatible */}
                   {resultadoCompatibilidad.totalErrores === 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
-                      <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="font-semibold text-zinc-800">Socket CPU &amp; Placa</span>
+                      <div className="p-2.5 rounded-xl bg-white border-2 border-black flex items-center gap-2 shadow-[2px_2px_0px_#000]">
+                        <CheckCircle2 className="w-4 h-4 text-[#2A9D8F] shrink-0 stroke-[2.5]" />
+                        <span className="font-mono font-bold text-black">Socket CPU &amp; Placa</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="font-semibold text-zinc-800">Generación de RAM</span>
+                      <div className="p-2.5 rounded-xl bg-white border-2 border-black flex items-center gap-2 shadow-[2px_2px_0px_#000]">
+                        <CheckCircle2 className="w-4 h-4 text-[#2A9D8F] shrink-0 stroke-[2.5]" />
+                        <span className="font-mono font-bold text-black">Generación de RAM</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="font-semibold text-zinc-800">Refrigeración &amp; Gabinete</span>
+                      <div className="p-2.5 rounded-xl bg-white border-2 border-black flex items-center gap-2 shadow-[2px_2px_0px_#000]">
+                        <CheckCircle2 className="w-4 h-4 text-[#2A9D8F] shrink-0 stroke-[2.5]" />
+                        <span className="font-mono font-bold text-black">Refrigeración &amp; Gabinete</span>
                       </div>
-                      <div className="p-2.5 rounded-xl bg-white/90 border border-emerald-200 flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span className="font-semibold text-zinc-800">Capacidad Eléctrica</span>
+                      <div className="p-2.5 rounded-xl bg-white border-2 border-black flex items-center gap-2 shadow-[2px_2px_0px_#000]">
+                        <CheckCircle2 className="w-4 h-4 text-[#2A9D8F] shrink-0 stroke-[2.5]" />
+                        <span className="font-mono font-bold text-black">Capacidad Eléctrica</span>
                       </div>
                     </div>
                   )}
@@ -1692,21 +1696,21 @@ export default function NuevoIngresoMontajePage() {
 
               {/* Tabla de Componentes Agregados */}
               {components.length === 0 ? (
-                <div className="p-8 text-center border-2 border-dashed border-zinc-200 rounded-xl space-y-2">
-                  <Cpu className="w-9 h-9 text-zinc-400 mx-auto" />
-                  <p className="text-sm font-medium text-zinc-600">
+                <div className="p-8 text-center border-2 border-dashed border-black rounded-xl space-y-2 bg-[#FAF6EE]">
+                  <Cpu className="w-9 h-9 text-black mx-auto" />
+                  <p className="text-sm font-heading font-extrabold text-black">
                     Aún no se han registrado componentes en esta orden.
                   </p>
-                  <p className="text-xs text-zinc-400">
+                  <p className="text-xs text-neutral-600 font-medium">
                     {tipoServicio === "Montaje"
                       ? "Ingrese el SKU (ej: 774198 para i5-12400 o 879268 para placa Asus) para autocompletar y presione '+ Agregar a la Orden'."
                       : "Ingrese el SKU o descripción de la Notebook y el módulo de memoria SODIMM o disco SSD a instalar."}
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto border border-zinc-200 rounded-xl">
+                <div className="overflow-x-auto border-2 border-black rounded-xl shadow-[3px_3px_0px_#000] bg-white">
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-zinc-50 border-b border-zinc-200 text-zinc-600 font-mono uppercase text-xs">
+                    <thead className="bg-[#FAF6EE] border-b-2 border-black text-black font-mono uppercase text-xs">
                       <tr>
                         <th className="py-3 px-3.5 font-bold">SKU</th>
                         <th className="py-3 px-3.5 font-bold">Categoría</th>
@@ -1715,54 +1719,54 @@ export default function NuevoIngresoMontajePage() {
                         <th className="py-3 px-3 text-right font-bold">Quitar</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-200">
+                    <tbody className="divide-y divide-black/20">
                       {components.map((item, index) => (
-                        <tr key={index} className="hover:bg-zinc-50/50 transition-colors">
-                          <td className="py-3 px-3.5 font-mono font-bold text-zinc-900 whitespace-nowrap text-sm">
+                        <tr key={index} className="hover:bg-[#FAF6EE]/50 transition-colors">
+                          <td className="py-3 px-3.5 font-mono font-bold text-black whitespace-nowrap text-sm">
                             <span>{item.sku}</span>
                             {item.upc && (
-                              <span className="block text-xs font-normal text-zinc-500">
+                              <span className="block text-xs font-normal text-neutral-600">
                                 UPC: {item.upc}
                               </span>
                             )}
                           </td>
                           <td className="py-3 px-3.5 whitespace-nowrap">
-                            <span className="px-2 py-0.5 rounded text-xs font-mono font-semibold bg-zinc-100 text-zinc-800 border border-zinc-200">
+                            <span className="px-2 py-0.5 rounded text-xs font-mono font-bold bg-[#FAF6EE] text-black border border-black shadow-[1px_1px_0px_#000]">
                               {item.categoria}
                             </span>
                           </td>
-                          <td className="py-3 px-3.5 font-semibold text-zinc-900 min-w-[240px] text-sm">
+                          <td className="py-3 px-3.5 font-bold text-black min-w-[240px] text-sm">
                             <div>{item.descripcion}</div>
                             {enrichedComponents[index] && (
                               <div className="flex items-center gap-1.5 flex-wrap mt-1">
                                 {enrichedComponents[index].socket && (
-                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-bold">
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FAF6EE] text-black border border-black font-bold">
                                     Socket {enrichedComponents[index].socket}
                                   </span>
                                 )}
                                 {enrichedComponents[index].ramType && (
-                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-100 text-zinc-700 border border-zinc-200 font-bold">
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FAF6EE] text-black border border-black font-bold">
                                     {enrichedComponents[index].ramType}
                                   </span>
                                 )}
                                 {enrichedComponents[index].categoria === "GABINETE" && (
                                   <span
-                                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded border font-bold ${
+                                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded border border-black font-bold ${
                                       (enrichedComponents[index].maxRadiatorMm ?? 0) > 0
-                                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                        : "bg-zinc-100 text-zinc-600 border-zinc-200"
+                                        ? "bg-[#2A9D8F] text-white"
+                                        : "bg-[#FAF6EE] text-black"
                                     }`}
                                   >
                                     Soporte Rad: {(enrichedComponents[index].maxRadiatorMm ?? 0) > 0 ? `${enrichedComponents[index].maxRadiatorMm}mm` : "0mm (Solo Aire)"}
                                   </span>
                                 )}
                                 {enrichedComponents[index].categoria === "REFRIGERACION" && enrichedComponents[index].isAioLiquid && (
-                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-bold">
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FFD23F] text-black border border-black font-bold">
                                     Líquida {enrichedComponents[index].radiatorSizeMm ? `${enrichedComponents[index].radiatorSizeMm}mm` : "AIO"}
                                   </span>
                                 )}
                                 {enrichedComponents[index].potenciaWatts ? (
-                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-bold">
+                                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FFD23F] text-black border border-black font-bold">
                                     {enrichedComponents[index].potenciaWatts}W
                                   </span>
                                 ) : null}
@@ -1781,7 +1785,7 @@ export default function NuevoIngresoMontajePage() {
                                   }
                                 }}
                                 placeholder="N/A o escanee serial..."
-                                className="w-full min-w-0 text-sm font-mono border border-zinc-200 rounded-lg px-2.5 py-1.5 focus:border-zinc-900 outline-none"
+                                className="w-full min-w-0 text-sm font-mono border-2 border-black rounded-lg px-2.5 py-1.5 bg-white text-black font-bold outline-none shadow-[1px_1px_0px_#000]"
                               />
                               <ScanButton
                                 onClick={() => setScannerTarget({ mode: "row", index })}
@@ -1795,7 +1799,7 @@ export default function NuevoIngresoMontajePage() {
                             <button
                               type="button"
                               onClick={() => handleRemoveComponent(index)}
-                              className="p-1.5 text-zinc-400 hover:text-rose-600 rounded-lg transition-colors cursor-pointer"
+                              className="p-1.5 text-black hover:text-white hover:bg-[#E76F51] rounded-lg border-2 border-transparent hover:border-black transition-all cursor-pointer shadow-none hover:shadow-[1px_1px_0px_#000]"
                               title="Eliminar de la orden"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1810,28 +1814,28 @@ export default function NuevoIngresoMontajePage() {
             </section>
 
             {/* SECCIÓN 4: ASIGNACIÓN A TÉCNICO RESPONSABLE & PRIORIDAD */}
-            <section className="bg-white p-5 sm:p-6 rounded-xl border border-zinc-200 shadow-sm space-y-4">
-              <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
+            <section className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
+              <div className="flex items-center justify-between border-b-2 border-black pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-7 h-7 rounded-lg bg-zinc-900 text-white text-xs flex items-center justify-center font-bold">
+                  <span className="w-8 h-8 rounded-lg bg-[#FFD23F] text-black border-2 border-black text-xs sm:text-sm flex items-center justify-center font-heading font-black shadow-[1px_1px_0px_#000]">
                     4
                   </span>
                   <div>
-                    <h2 className="text-sm sm:text-base font-bold text-zinc-900">
+                    <h2 className="text-sm sm:text-base font-heading font-extrabold text-black">
                       Técnico Responsable &amp; Compromiso
                     </h2>
-                    <span className="text-xs text-zinc-500">
+                    <span className="text-xs text-neutral-600 font-medium">
                       Técnico de laboratorio asignado, prioridad de cola y fecha prometida
                     </span>
                   </div>
                 </div>
-                <Wrench className="w-5 h-5 text-zinc-400" />
+                <Wrench className="w-5 h-5 text-black" />
               </div>
 
               <div className={`grid grid-cols-1 sm:grid-cols-2 ${assignedTech === "OTRO" ? "lg:grid-cols-4" : "lg:grid-cols-3"} gap-3 sm:gap-4`}>
                 {/* Técnico Responsable */}
                 <div>
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Técnico Responsable *
                   </label>
                   <CleanSelect
@@ -1850,10 +1854,10 @@ export default function NuevoIngresoMontajePage() {
                 {assignedTech === "OTRO" && (
                   <div className="space-y-1">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs text-zinc-600 font-semibold block">
+                      <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1">
                         Nombre del Técnico *
                       </label>
-                      <span className="text-[10px] text-zinc-400 font-mono">
+                      <span className="text-[10px] text-neutral-600 font-mono font-bold">
                         Enter confirma
                       </span>
                     </div>
@@ -1866,12 +1870,12 @@ export default function NuevoIngresoMontajePage() {
                         onChange={(e) => setCustomTech(e.target.value)}
                         onBlur={handleConfirmCustomTech}
                         placeholder="Ej: Carlos Silva"
-                        className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg px-3 py-2 focus:border-zinc-900 outline-none text-zinc-900"
+                        className="w-full text-xs sm:text-sm border-2 border-black rounded-lg px-3 py-2 bg-white text-black font-bold outline-none shadow-[1px_1px_0px_#000]"
                       />
                       <button
                         type="button"
                         onClick={handleConfirmCustomTech}
-                        className="px-2.5 py-2 text-xs font-semibold bg-zinc-900 hover:bg-black text-white rounded-lg whitespace-nowrap shadow-xs cursor-pointer"
+                        className="px-3 py-2 text-xs font-heading font-extrabold bg-[#FFD23F] hover:bg-[#FACC15] text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] whitespace-nowrap cursor-pointer"
                         title="Guardar técnico en la lista"
                       >
                         Añadir
@@ -1882,7 +1886,7 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Prioridad */}
                 <div>
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Prioridad de Entrega
                   </label>
                   <CleanSelect
@@ -1897,7 +1901,7 @@ export default function NuevoIngresoMontajePage() {
 
                 {/* Fecha Estimada */}
                 <div>
-                  <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                  <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                     Fecha Prometida de Entrega
                   </label>
                   <CleanDatePicker
@@ -1911,7 +1915,7 @@ export default function NuevoIngresoMontajePage() {
 
               {/* Observaciones */}
               <div>
-                <label className="text-xs text-zinc-600 font-semibold block mb-1">
+                <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1.5">
                   Observaciones / Instrucciones del Vendedor para el Taller
                 </label>
                 <textarea
@@ -1923,7 +1927,7 @@ export default function NuevoIngresoMontajePage() {
                       ? "Ej: Actualizar BIOS a última versión para microprocesador, verificar cable management limpio y pruebas térmicas Cinebench."
                       : "Ej: Instalación de módulo adicional de memoria SODIMM en Slot 2 y verificación en Windows Task Manager."
                   }
-                  className="w-full text-xs sm:text-sm border border-zinc-200 rounded-lg p-3 focus:border-zinc-900 outline-none text-zinc-900"
+                  className="w-full text-xs sm:text-sm border-2 border-black rounded-xl p-3 bg-white text-black font-medium outline-none shadow-[2px_2px_0px_#000]"
                 />
               </div>
             </section>
@@ -1933,61 +1937,65 @@ export default function NuevoIngresoMontajePage() {
           {/* COLUMNA LATERAL: RESUMEN, WHATSAPP & BOTÓN REGISTRAR (4 cols) */}
           <div className="lg:col-span-4 space-y-6">
 
-            {/* Tarjeta Resumen de la Orden */}
-            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-zinc-200 shadow-sm space-y-4 sticky top-6">
-              <h3 className="text-xs sm:text-sm font-bold text-zinc-600 uppercase tracking-wide font-mono">
-                Resumen de Ingreso al Taller
-              </h3>
+            {/* Tarjeta Resumen de la Orden Neo-Brutalista */}
+            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-3 border-black shadow-[6px_6px_0px_#000] space-y-4 sticky top-6">
+              <div className="border-b-2 border-black pb-3">
+                <span className="text-xs sm:text-sm font-heading font-extrabold text-black uppercase tracking-wider bg-[#FFD23F] px-2.5 py-1 border-2 border-black rounded shadow-[2px_2px_0px_#000] inline-block">
+                  Resumen de Ingreso al Taller
+                </span>
+              </div>
 
-              <div className="space-y-3.5 text-xs sm:text-sm divide-y divide-zinc-100">
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Vendedor:</span>
-                  <strong className="text-zinc-900 text-right">
+              <div className="space-y-2.5 text-xs sm:text-sm divide-y-2 divide-dashed divide-black/20">
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="font-mono text-neutral-700 text-xs">Vendedor:</span>
+                  <strong className="text-black font-mono font-bold text-right">
                     {salesAgent === "OTRO" ? customSalesAgent || "No especificado" : salesAgent}
                   </strong>
                 </div>
 
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Canal:</span>
-                  <span className="font-medium text-zinc-800">{salesChannel}</span>
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="font-mono text-neutral-700 text-xs">Canal:</span>
+                  <span className="font-mono font-bold text-black">{salesChannel}</span>
                 </div>
 
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Nro. Registro / Interno:</span>
-                  <span className="font-mono font-bold text-zinc-900">{nroRegistroInterno || "---"}</span>
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="font-mono text-neutral-700 text-xs">Nro. Registro / Interno:</span>
+                  <span className="font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
+                    {nroRegistroInterno || "---"}
+                  </span>
                 </div>
 
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Cliente:</span>
-                  <strong className="text-zinc-900 text-right truncate max-w-[180px]">
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="font-mono text-neutral-700 text-xs">Cliente:</span>
+                  <strong className="text-black font-mono font-bold text-right truncate max-w-[180px]">
                     {clientName || "Sin asignar"}
                   </strong>
                 </div>
 
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Modalidad:</span>
-                  <span className="px-2 py-0.5 rounded bg-zinc-100 text-zinc-800 font-mono text-xs font-semibold">
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="font-mono text-neutral-700 text-xs">Modalidad:</span>
+                  <span className="px-2 py-0.5 rounded bg-[#FAF6EE] text-black font-mono text-xs font-bold border border-black shadow-[1px_1px_0px_#000]">
                     {tipoServicio === "Montaje" ? "Montaje PC" : "Expansión Notebook"}
                   </span>
                 </div>
 
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Cantidad de Equipos:</span>
-                  <span className="font-mono font-bold text-zinc-900">
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="font-mono text-neutral-700 text-xs">Cantidad de Equipos:</span>
+                  <span className="font-mono font-bold text-black">
                     {cantidadEquipos} {cantidadEquipos === 1 ? "unidad" : "unidades"}
                   </span>
                 </div>
 
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Técnico Responsable:</span>
-                  <span className="text-zinc-900 font-bold">
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="font-mono text-neutral-700 text-xs">Técnico Responsable:</span>
+                  <span className="text-black font-mono font-bold">
                     {assignedTech === "OTRO" ? customTech || "No especificado" : assignedTech}
                   </span>
                 </div>
 
-                <div className="pt-2 flex justify-between">
-                  <span className="text-zinc-500">Piezas cargadas:</span>
-                  <span className="font-mono font-bold text-zinc-900 tabular-nums">
+                <div className="pt-2 flex justify-between items-center">
+                  <span className="font-mono text-neutral-700 text-xs">Piezas cargadas:</span>
+                  <span className="font-mono font-bold text-black tabular-nums">
                     {components.length} ítems
                   </span>
                 </div>
@@ -1995,22 +2003,22 @@ export default function NuevoIngresoMontajePage() {
                 {tipoServicio === "Montaje" && (
                   <>
                     <div className="pt-2 flex justify-between items-center">
-                      <span className="text-zinc-500">Compatibilidad:</span>
+                      <span className="font-mono text-neutral-700 text-xs">Compatibilidad:</span>
                       {components.length === 0 ? (
-                        <span className="text-zinc-400 font-mono text-xs">Sin piezas</span>
+                        <span className="text-neutral-500 font-mono text-xs">Sin piezas</span>
                       ) : (resultadoCompatibilidad?.totalErrores ?? 0) > 0 ? (
-                        <span className="px-2 py-0.5 rounded-lg bg-rose-100 text-rose-800 border border-rose-300 font-mono text-xs font-bold flex items-center gap-1">
-                          <ShieldAlert className="w-3 h-3 text-rose-600" />
+                        <span className="px-2 py-0.5 rounded-lg bg-[#E76F51] text-white border border-black font-mono text-xs font-bold flex items-center gap-1 shadow-[1px_1px_0px_#000]">
+                          <ShieldAlert className="w-3 h-3 text-white" />
                           <span>Incompatible ({resultadoCompatibilidad?.totalErrores})</span>
                         </span>
                       ) : (resultadoCompatibilidad?.totalWarnings ?? 0) > 0 ? (
-                        <span className="px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300 font-mono text-xs font-bold flex items-center gap-1">
-                          <AlertTriangle className="w-3 h-3 text-amber-600" />
+                        <span className="px-2 py-0.5 rounded-lg bg-[#FFD23F] text-black border border-black font-mono text-xs font-bold flex items-center gap-1 shadow-[1px_1px_0px_#000]">
+                          <AlertTriangle className="w-3 h-3 text-black" />
                           <span>Con Advertencia</span>
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono text-xs font-bold flex items-center gap-1">
-                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                        <span className="px-2 py-0.5 rounded-lg bg-[#2A9D8F] text-white border border-black font-mono text-xs font-bold flex items-center gap-1 shadow-[1px_1px_0px_#000]">
+                          <ShieldCheck className="w-3 h-3 text-white" />
                           <span>100% Compatible</span>
                         </span>
                       )}
@@ -2018,8 +2026,8 @@ export default function NuevoIngresoMontajePage() {
 
                     {components.length > 0 && resultadoCompatibilidad && (
                       <div className="pt-2 flex justify-between items-center text-xs">
-                        <span className="text-zinc-500">Potencia estimada:</span>
-                        <span className="font-mono font-bold text-zinc-800">
+                        <span className="font-mono text-neutral-700">Potencia estimada:</span>
+                        <span className="font-mono font-bold text-black">
                           ~{resultadoCompatibilidad.consumoTotalWatts}W (Pico: {resultadoCompatibilidad.fuenteRecomendadaWatts}W)
                         </span>
                       </div>
@@ -2029,17 +2037,17 @@ export default function NuevoIngresoMontajePage() {
               </div>
 
               {/* Previsualización Notificación WhatsApp al Grupo Montajes */}
-              <div className="pt-3 border-t border-zinc-200 space-y-1.5">
+              <div className="pt-3 border-t-2 border-black space-y-2">
                 <div className="flex items-center justify-between gap-1">
-                  <span className="text-xs font-mono text-zinc-600 uppercase block font-bold">
+                  <span className="text-xs font-mono text-black uppercase block font-bold">
                     Aviso al Grupo WhatsApp (Montajes):
                   </span>
-                  <span className="text-xs font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded inline-flex items-center gap-1">
-                    <Send className="w-3 h-3" />
+                  <span className="text-xs font-mono font-bold text-white bg-[#2A9D8F] border-2 border-black px-2 py-0.5 rounded-lg inline-flex items-center gap-1 shadow-[1px_1px_0px_#000]">
+                    <Send className="w-3 h-3 text-white" />
                     Grupo CDE
                   </span>
                 </div>
-                <pre className="p-3 rounded-xl bg-zinc-50 border border-zinc-200 text-xs font-mono text-zinc-700 whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed">
+                <pre className="p-3 rounded-xl bg-[#FAF6EE] border-2 border-black text-xs font-mono text-black whitespace-pre-wrap max-h-48 overflow-y-auto leading-relaxed shadow-[2px_2px_0px_#000]">
                   {generateWhatsAppMessage()}
                 </pre>
               </div>
@@ -2048,21 +2056,21 @@ export default function NuevoIngresoMontajePage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full py-3.5 bg-zinc-900 hover:bg-black text-white text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3.5 bg-[#FFD23F] hover:bg-[#FACC15] text-black text-sm sm:text-base font-heading font-extrabold rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 {isSubmitting ? (
                   <span>Guardando y enviando al grupo...</span>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                    <CheckCircle2 className="w-5 h-5 text-black stroke-[2.5]" />
                     <span>Registrar Ingreso de Montaje</span>
                   </>
                 )}
               </button>
 
-              <p className="text-xs text-zinc-500 text-center">
+              <p className="text-xs text-neutral-700 font-medium text-center">
                 La orden ingresará a la cola activa del taller bajo la responsabilidad de{" "}
-                {assignedTech === "OTRO" ? customTech || "nuevo técnico" : assignedTech}.
+                <span className="font-bold text-black">{assignedTech === "OTRO" ? customTech || "nuevo técnico" : assignedTech}</span>.
               </p>
             </div>
 
