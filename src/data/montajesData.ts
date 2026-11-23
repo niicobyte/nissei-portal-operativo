@@ -2104,12 +2104,13 @@ export function formatearNombreComponenteBasico(raw: string, categoria?: string)
       .replace(/\s*\+.*$/g, "")
       .replace(/\b(?:C\/|S\/)(?:FUENTE|TECLADO|MOUSE|PARLANTE).*/gi, "")
       .replace(
-        /\/?(?:AIRFLOW|WINDOW|MID\s*TOWER|FULL\s*TOWER|MINI\s*TOWER|MICRO\s*ATX|M-ATX|ATX|PWM|MESH)\b/gi,
+        /\/?(?:AIRFLOW|WINDOW|MID\s*TOWER|FULL\s*TOWER|MINI\s*TOWER|MICRO\s*-?\s*ATX|M-ATX|MINI\s*-?\s*ITX|E-ATX|ATX|MICRO|PWM|MESH)\b/gi,
         " "
       )
       .replace(/\b\d+\s*FAN(?:S)?\b/gi, " ")
       .replace(/\b(?:BLACK|WHITE|NEGRO|BLANCO|EDITION)\b/gi, " ")
       .replace(/[\/]+/g, " ")
+      .replace(/[\s\-_]+$/g, "")
       .replace(/\s+/g, " ")
       .trim();
     g = g
@@ -2124,6 +2125,7 @@ export function formatearNombreComponenteBasico(raw: string, categoria?: string)
           : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
       )
       .join(" ");
+    g = g.replace(/[\s\-_]+$/g, "").trim();
     return `${`Gabinete ${g}`.replace(/\s+/g, " ").trim()}${pcSuffix}`;
   }
 
@@ -2139,12 +2141,13 @@ export function formatearNombreComponenteBasico(raw: string, categoria?: string)
       .replace(/\b\d+\s*GTA(?:\.[A-Z0-9]+)?\b/gi, "")
       .replace(/\bUNIVERSAL\s+COMPATIBILITY\b/gi, "")
       .replace(/\b(?:UNIVERSAL|COMPATIBILITY|COMPATIBILIDAD|COMPATIBLE|COMPATIBILTY)\b/gi, "")
-      .replace(/\b\d{2,3}\s*MM\b/gi, "")
+      .replace(/\b\d+\s*MM\b/gi, "")
       .replace(
         /\b(?:LGA\s*\d+|AM[45]|BLACK|WHITE|NEGRO|BLANCO|PWM|PARA\s+CPU|P\/CPU|SOCKETS?)\b/gi,
         " "
       )
       .replace(/[\/]+/g, " ")
+      .replace(/[\s\-_]+$/g, "")
       .replace(/\s+/g, " ")
       .trim();
     c = c
@@ -2159,6 +2162,7 @@ export function formatearNombreComponenteBasico(raw: string, categoria?: string)
           : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()
       )
       .join(" ");
+    c = c.replace(/[\s\-_]+$/g, "").trim();
     return `${`${isLiquido ? "Cooler Líquido " : "Cooler "}${c}`
       .replace(/\s+/g, " ")
       .trim()}${pcSuffix}`;

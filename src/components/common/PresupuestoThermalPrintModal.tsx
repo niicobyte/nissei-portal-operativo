@@ -650,7 +650,7 @@ export function PresupuestoThermalPrintModal({
             <div className="pt-2 border-t-2 border-black space-y-1 font-mono">
               <div className="border-4 border-double border-black p-2 bg-white space-y-1">
                 <div className="flex justify-between items-center text-[13px] font-black font-heading">
-                  <span>TOTAL OFICIAL WEB (GS):</span>
+                  <span>TOTAL (GS):</span>
                   <span className="text-[16px] font-black font-mono">
                     ₲ {data.totalPyg.toLocaleString("es-PY")}
                   </span>
@@ -667,7 +667,7 @@ export function PresupuestoThermalPrintModal({
                 </div>
               </div>
               <div className="text-[9.5px] font-bold text-black/90 pt-0.5 text-center">
-                (TC Dólar del Día: ₲ {data.tipoCambio.toLocaleString("es-PY")} · IVA 10% Incluido)
+                (TC Dólar del Día: ₲ {data.tipoCambio.toLocaleString("es-PY")})
               </div>
             </div>
 
@@ -679,7 +679,7 @@ export function PresupuestoThermalPrintModal({
                 </p>
               </div>
               <p className="text-[9px] font-bold text-black/80 leading-tight uppercase">
-                Garantía oficial 3 meses en componentes
+                Todos los componentes tienen 3 meses de garantía
               </p>
             </div>
 
