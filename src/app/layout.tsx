@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/common/ThemeProvider";
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -16,14 +17,17 @@ export const metadata: Metadata = {
   },
 };
 
+const THEME_INIT_SCRIPT = `(function(){try{if(window.location.pathname.indexOf('/armar-pc')===0){document.documentElement.classList.remove('dark');return;}if(localStorage.getItem('nissei_portal_theme_v1')==='dark'){document.documentElement.classList.add('dark');}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
@@ -32,7 +36,7 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans min-h-dvh bg-[#FAF6EE] text-[#111111] antialiased selection:bg-[#FFD23F] selection:text-[#000000]">
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

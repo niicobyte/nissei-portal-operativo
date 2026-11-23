@@ -29,6 +29,7 @@ import {
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { AnimatedReceptionBox } from "@/components/common/AnimatedReceptionBox";
 import { AnimatedCpu } from "@/components/common/AnimatedCpu";
+import { ThemeToggle } from "@/components/common/ThemeToggle";
 import dynamic from "next/dynamic";
 import {
   USER_PROFILES,
@@ -443,10 +444,13 @@ function LoginForm() {
         <div className="bg-[#FFFDF9] rounded-xl border-3 border-black shadow-[6px_6px_0px_#000] overflow-hidden">
           
           {/* Barra Superior Estilo Ventana Retro */}
-          <div className="bg-[#FFD23F] border-b-3 border-black px-4 py-2.5 flex items-center gap-2 select-none">
-            <span className="w-3.5 h-3.5 rounded-full bg-[#E76F51] border-2 border-black inline-block"></span>
-            <span className="w-3.5 h-3.5 rounded-full bg-[#FFFDF9] border-2 border-black inline-block"></span>
-            <span className="w-3.5 h-3.5 rounded-full bg-[#2A9D8F] border-2 border-black inline-block"></span>
+          <div className="bg-[#FFD23F] border-b-3 border-black px-4 py-2.5 flex items-center justify-between gap-2 select-none">
+            <div className="flex items-center gap-2">
+              <span className="w-3.5 h-3.5 rounded-full bg-[#E76F51] border-2 border-black inline-block"></span>
+              <span className="w-3.5 h-3.5 rounded-full bg-[#FFFDF9] border-2 border-black inline-block"></span>
+              <span className="w-3.5 h-3.5 rounded-full bg-[#2A9D8F] border-2 border-black inline-block"></span>
+            </div>
+            <ThemeToggle variant="compact" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-12">

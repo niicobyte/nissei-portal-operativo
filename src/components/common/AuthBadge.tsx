@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Lock, LogOut, Key, ChevronDown, ShieldAlert, ArrowRight, Trash2, RefreshCw } from "lucide-react";
 import { getActiveUser, logout, UserProfile } from "@/data/authData";
 import { useClampedPopover } from "@/lib/popoverPosition";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface AuthBadgeProps {
   requiredModule?: "recepcion" | "reparaciones" | "montajes" | "tecnicos" | "deposito.danesa" | "sati-cde";
@@ -184,7 +185,9 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
   }
 
   return (
-    <div ref={containerRef} className="relative">
+    <div className="inline-flex items-center gap-2">
+      <ThemeToggle />
+      <div ref={containerRef} className="relative">
       <button
         type="button"
         onClick={() => {
@@ -275,6 +278,7 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
           </button>
         </div>
       )}
+      </div>
     </div>
   );
 }
