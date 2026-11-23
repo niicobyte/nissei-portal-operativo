@@ -308,28 +308,30 @@ export function PresupuestoThermalPrintModal({
           </div>
         </div>
 
-        {/* Panel de Calibración Desplegable */}
+        {/* Panel de Calibración Desplegable (Neo-Brutalismo Retro) */}
         {showThermalConfig && (
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50/80 p-3.5 space-y-3.5 text-xs print:hidden animate-in fade-in duration-150">
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-              <div className="flex items-center gap-1.5 font-bold text-zinc-800">
-                <SlidersHorizontal className="w-4 h-4 text-zinc-600" />
+          <div className="rounded-xl border-2 border-black bg-[#FAF6EE] p-4 space-y-3.5 text-xs shadow-[3px_3px_0px_#000] print:hidden animate-in fade-in">
+            <div className="flex items-center justify-between border-b-2 border-black pb-2.5">
+              <div className="flex items-center gap-1.5 font-heading font-extrabold text-black uppercase tracking-wide text-xs">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-black" />
                 <span>Calibración de Impresora Térmica</span>
               </div>
               <button
                 type="button"
                 onClick={handleResetThermal}
-                className="text-[11px] text-zinc-500 hover:text-zinc-900 flex items-center gap-1 font-semibold cursor-pointer underline"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold text-black bg-[#FFFDF9] hover:bg-[#FFD23F] border border-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer transition-all"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3 h-3 text-black" />
                 <span>Restablecer</span>
               </button>
             </div>
 
             {/* Perfil de Papel */}
             <div className="space-y-1.5">
-              <span className="font-bold text-zinc-700 block">Ancho de Rollo / Papel:</span>
-              <div className="grid grid-cols-3 gap-1.5">
+              <span className="font-heading font-extrabold text-black block text-[11px] uppercase tracking-wider">
+                Ancho de Rollo / Papel:
+              </span>
+              <div className="grid grid-cols-3 gap-2">
                 {(["80_72", "80_76", "58_48"] as ThermalPaperProfile[]).map((prof) => {
                   const meta = THERMAL_PROFILE_META[prof];
                   if (!meta) return null;
@@ -339,14 +341,14 @@ export function PresupuestoThermalPrintModal({
                       key={prof}
                       type="button"
                       onClick={() => updateThermalSetting("paperProfile", prof)}
-                      className={`p-2 rounded-lg border text-left cursor-pointer transition-all ${
+                      className={`p-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
                         isSel
-                          ? "bg-zinc-900 text-white border-zinc-900 font-bold shadow-xs"
-                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
+                          ? "bg-black text-[#FFD23F] font-heading font-extrabold shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                       }`}
                     >
                       <span className="block font-mono text-[11px] font-bold">{meta.shortLabel}</span>
-                      <span className={`block text-[10px] ${isSel ? "text-zinc-300" : "text-zinc-500"}`}>
+                      <span className={`block text-[10px] ${isSel ? "text-neutral-300" : "text-neutral-600"} font-mono`}>
                         {meta.contentWidthMm}mm útil
                       </span>
                     </button>
@@ -359,8 +361,8 @@ export function PresupuestoThermalPrintModal({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Escala de impresión:</span>
-                  <span className="font-mono font-bold text-zinc-900">{thermalSettings.scalePct}%</span>
+                  <span className="font-heading font-bold text-black">Escala de impresión:</span>
+                  <span className="font-mono font-black text-black">{thermalSettings.scalePct}%</span>
                 </div>
                 <input
                   type="range"
@@ -369,24 +371,24 @@ export function PresupuestoThermalPrintModal({
                   step={5}
                   value={thermalSettings.scalePct}
                   onChange={(e) => updateThermalSetting("scalePct", Number(e.target.value))}
-                  className="w-full accent-zinc-900 cursor-pointer"
+                  className="w-full accent-black cursor-pointer"
                 />
               </div>
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Tinta Ultra Negra:</span>
-                  <span className="font-mono font-bold text-zinc-900">
+                  <span className="font-heading font-bold text-black">Tinta Ultra Negra:</span>
+                  <span className="font-mono font-bold text-black">
                     {isUltraBlack ? "Máxima" : "Estándar"}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsUltraBlack((prev) => !prev)}
-                  className={`w-full py-1 px-2.5 rounded-lg border text-[11px] font-bold transition-colors cursor-pointer ${
+                  className={`w-full py-1.5 px-2.5 rounded-lg border-2 border-black text-xs font-heading font-extrabold transition-all cursor-pointer ${
                     isUltraBlack
-                      ? "bg-zinc-900 text-white border-zinc-900"
-                      : "bg-white text-zinc-700 border-zinc-200"
+                      ? "bg-black text-[#FFD23F] shadow-[2px_2px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                   }`}
                 >
                   {isUltraBlack ? "✓ Negro Intenso ON" : "Desactivado"}
@@ -398,8 +400,8 @@ export function PresupuestoThermalPrintModal({
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Subir/Bajar (Y):</span>
-                  <span className="font-mono font-bold text-zinc-900">
+                  <span className="font-heading font-bold text-black">Subir/Bajar (Y):</span>
+                  <span className="font-mono font-black text-black">
                     {thermalSettings.offsetYMm > 0 ? `+${thermalSettings.offsetYMm}` : thermalSettings.offsetYMm}mm
                   </span>
                 </div>
@@ -410,28 +412,28 @@ export function PresupuestoThermalPrintModal({
                   step={1}
                   value={thermalSettings.offsetYMm}
                   onChange={(e) => updateThermalSetting("offsetYMm", Number(e.target.value))}
-                  className="w-full accent-zinc-900 cursor-pointer"
+                  className="w-full accent-black cursor-pointer"
                   title="Ajuste vertical de inicio. Valores negativos (-15mm, -10mm) suben el texto hacia el inicio del rollo"
                 />
-                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                <div className="flex items-center justify-between text-[10px] pt-0.5">
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetYMm", -15)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     -15mm
                   </button>
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetYMm", -10)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     -10mm
                   </button>
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetYMm", 0)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     0mm
                   </button>
@@ -440,8 +442,8 @@ export function PresupuestoThermalPrintModal({
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Posición Horizontal (X):</span>
-                  <span className="font-mono font-bold text-zinc-900">
+                  <span className="font-heading font-bold text-black">Posición Horizontal (X):</span>
+                  <span className="font-mono font-black text-black">
                     {thermalSettings.offsetXMm > 0 ? `+${thermalSettings.offsetXMm}` : thermalSettings.offsetXMm}mm
                   </span>
                 </div>
@@ -452,28 +454,28 @@ export function PresupuestoThermalPrintModal({
                   step={0.5}
                   value={thermalSettings.offsetXMm}
                   onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
-                  className="w-full accent-zinc-900 cursor-pointer"
+                  className="w-full accent-black cursor-pointer"
                   title="Ajuste horizontal fino (+/- mm). Mueve el ticket a la izquierda o derecha"
                 />
-                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                <div className="flex items-center justify-between text-[10px] pt-0.5">
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetXMm", -4)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     -4mm
                   </button>
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetXMm", 0)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     0mm
                   </button>
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetXMm", 4)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     +4mm
                   </button>
@@ -482,19 +484,21 @@ export function PresupuestoThermalPrintModal({
             </div>
 
             {/* Márgenes Laterales y Modo de Nombres */}
-            <div className="space-y-2 pt-1 border-t border-zinc-200">
-              <div className="space-y-1">
-                <span className="font-bold text-zinc-700 block text-[11px]">Márgenes Laterales:</span>
-                <div className="grid grid-cols-3 gap-1.5">
+            <div className="space-y-2.5 pt-2 border-t-2 border-black border-dashed">
+              <div className="space-y-1.5">
+                <span className="font-heading font-extrabold text-black block text-[11px] uppercase tracking-wider">
+                  Márgenes Laterales:
+                </span>
+                <div className="grid grid-cols-3 gap-2">
                   {[0, 2, 4].map((mm) => (
                     <button
                       key={mm}
                       type="button"
                       onClick={() => updateThermalSetting("marginMm", mm)}
-                      className={`py-1 rounded-lg border text-[11px] font-bold text-center cursor-pointer transition-colors ${
+                      className={`py-1.5 rounded-lg border-2 border-black text-xs font-mono font-bold text-center cursor-pointer transition-all ${
                         thermalSettings.marginMm === mm
-                          ? "bg-zinc-900 text-white border-zinc-900 shadow-xs"
-                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300"
+                          ? "bg-black text-[#FFD23F] shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                       }`}
                     >
                       {mm}mm
@@ -504,19 +508,19 @@ export function PresupuestoThermalPrintModal({
               </div>
 
               {/* Formato de nombres de componentes en el ticket (Permanente Básico / Limpio) */}
-              <div className="p-2.5 rounded-xl bg-zinc-50 border border-zinc-200 text-xs flex items-center justify-between">
+              <div className="p-3 rounded-lg bg-[#FFFDF9] border-2 border-black shadow-[2px_2px_0px_#000] text-xs flex items-center justify-between">
                 <div>
-                  <span className="font-bold text-zinc-800 block text-[11px]">Formato de Nombres en Ticket:</span>
-                  <span className="text-[10px] text-zinc-500">Muestra el modelo principal limpio y legible sin descripciones redundantes.</span>
+                  <span className="font-heading font-extrabold text-black block text-[11px]">Formato de Nombres en Ticket:</span>
+                  <span className="text-[10px] text-neutral-700 font-medium">Muestra el modelo principal limpio y legible sin descripciones redundantes.</span>
                 </div>
-                <span className="font-mono font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded text-[10px] whitespace-nowrap">
+                <span className="font-mono font-bold text-white bg-[#2A9D8F] border border-black px-2 py-0.5 rounded text-[10px] whitespace-nowrap shadow-[1px_1px_0px_#000]">
                   ✓ Básico Permanente
                 </span>
               </div>
             </div>
 
             {/* Tip POS-80 / 3nStar */}
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[10.5px] text-amber-900 leading-tight space-y-1">
+            <div className="rounded-lg bg-[#FFD23F]/30 border-2 border-black p-3 text-xs text-black shadow-[2px_2px_0px_#000] space-y-1.5 font-sans">
               <div className="flex items-center gap-1 font-bold">
                 <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                 <span>Configuración recomendada para POS-80 / Térmica:</span>

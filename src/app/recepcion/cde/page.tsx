@@ -1406,17 +1406,17 @@ export default function RecepcionCdeDashboardPage() {
                 }
               }}
               disabled={isUploadingCSV}
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+              className="inline-flex items-center gap-2.5 px-3.5 h-12 min-w-[185px] sm:min-w-[205px] rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer select-none"
               title="Subir uno o varios archivos CSV o Excel (.xlsx) a la vez (ASU y/o CDE)"
             >
-              <span className="w-6 h-6 rounded bg-black text-[#FFD23F] flex items-center justify-center font-bold border border-black">
+              <span className="w-7 h-7 rounded-md bg-black text-[#FFD23F] flex items-center justify-center font-bold border border-black shrink-0">
                 <Upload className="w-3.5 h-3.5" />
               </span>
-              <div className="text-left leading-tight">
-                <strong className="block text-xs font-heading font-extrabold text-black">
+              <div className="text-left leading-tight truncate flex-1 min-w-0">
+                <strong className="block text-xs font-heading font-extrabold text-black truncate">
                   {isUploadingCSV ? "Subiendo a MySQL..." : "Subir CSV / Excel"}
                 </strong>
-                <span className="text-[10px] text-neutral-700 font-mono font-semibold">
+                <span className="text-[10px] text-neutral-700 font-mono font-bold block truncate">
                   {isUploadingCSV ? "Sincronizando online" : "Uno o varios (ASU / CDE)"}
                 </span>
               </div>

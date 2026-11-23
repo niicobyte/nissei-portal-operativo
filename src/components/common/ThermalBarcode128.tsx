@@ -15,9 +15,9 @@ interface ThermalBarcode128Props {
 export function ThermalBarcode128({
   value,
   width = 1.8,
-  height = 44,
-  fontSize = 13,
-  displayValue = true,
+  height = 42,
+  fontSize = 12,
+  displayValue = false,
   className = "",
 }: ThermalBarcode128Props) {
   const svgRef = useRef<SVGSVGElement | null>(null);

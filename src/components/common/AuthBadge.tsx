@@ -193,14 +193,14 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
         }}
         aria-expanded={menuOpen}
         aria-haspopup="menu"
-        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#FFFDF9] border-2 border-black shadow-[2px_2px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] text-xs font-bold text-black transition-all cursor-pointer"
+        className="inline-flex items-center gap-2.5 px-3.5 h-12 min-w-[185px] sm:min-w-[205px] rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none text-xs font-bold text-black transition-all cursor-pointer select-none"
       >
-        <span className="w-6 h-6 rounded bg-black text-[#FFD23F] font-mono text-[11px] font-bold flex items-center justify-center tracking-tight shrink-0 border border-black">
+        <span className="w-7 h-7 rounded-md bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold flex items-center justify-center tracking-tight shrink-0 border border-black">
           {user.avatar}
         </span>
-        <div className="text-left leading-tight hidden sm:block">
-          <strong className="block text-xs font-bold text-black">{user.nombre}</strong>
-          <span className="text-[11px] text-neutral-700 font-medium">{user.badge}</span>
+        <div className="text-left leading-tight hidden sm:block truncate flex-1 min-w-0">
+          <strong className="block text-xs font-heading font-extrabold text-black truncate">{user.nombre}</strong>
+          <span className="text-[10px] text-neutral-700 font-mono font-bold block truncate">{user.badge}</span>
         </div>
         <ChevronDown className={`w-3.5 h-3.5 text-black shrink-0 transition-transform duration-150 ${menuOpen ? "rotate-180" : ""}`} />
       </button>

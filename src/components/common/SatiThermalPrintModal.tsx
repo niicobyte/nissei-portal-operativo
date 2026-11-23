@@ -347,30 +347,30 @@ export function SatiThermalPrintModal({
           </div>
         </div>
 
-        {/* Panel Colapsable de Calibración de Impresora Térmica */}
+        {/* Panel Colapsable de Calibración de Impresora Térmica (Neo-Brutalismo Retro) */}
         {showThermalConfig && (
-          <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3.5 space-y-3 text-xs print:hidden">
-            <div className="flex items-center justify-between border-b border-zinc-200 pb-2">
-              <span className="font-extrabold text-zinc-900 text-[11px] uppercase tracking-wide flex items-center gap-1.5">
-                <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-700" />
+          <div className="rounded-xl border-2 border-black bg-[#FAF6EE] p-4 space-y-3.5 text-xs shadow-[3px_3px_0px_#000] print:hidden animate-in fade-in">
+            <div className="flex items-center justify-between border-b-2 border-black pb-2.5">
+              <span className="font-heading font-extrabold text-black text-xs uppercase tracking-wide flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-black" />
                 Calibración de Impresora Térmica
               </span>
               <button
                 type="button"
                 onClick={() => setThermalSettings(resetThermalPrintSettings())}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-600 hover:text-zinc-900 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold text-black bg-[#FFFDF9] hover:bg-[#FFD23F] border border-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer transition-all"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-3 h-3 text-black" />
                 Restablecer
               </button>
             </div>
 
             {/* Ancho de papel */}
-            <div className="space-y-1">
-              <label className="block text-[11px] font-bold text-zinc-700">
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
                 Ancho del rollo / cabezal:
               </label>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {(Object.keys(THERMAL_PROFILE_META) as ThermalPaperProfile[]).map((key) => {
                   const active = thermalSettings.paperProfile === key;
                   return (
@@ -378,10 +378,10 @@ export function SatiThermalPrintModal({
                       key={key}
                       type="button"
                       onClick={() => updateThermalSetting("paperProfile", key)}
-                      className={`px-2 py-1.5 rounded-lg text-[11px] font-semibold border text-center transition-colors cursor-pointer ${
+                      className={`px-2 py-1.5 rounded-lg text-xs font-heading border-2 border-black text-center transition-all cursor-pointer ${
                         active
-                          ? "bg-zinc-900 text-white border-zinc-900"
-                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                          ? "bg-black text-[#FFD23F] font-extrabold shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                       }`}
                     >
                       {THERMAL_PROFILE_META[key].shortLabel}
@@ -392,9 +392,9 @@ export function SatiThermalPrintModal({
             </div>
 
             {/* Formato y Márgenes */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-zinc-700">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
                   Largo de corte:
                 </label>
                 <select
@@ -402,7 +402,7 @@ export function SatiThermalPrintModal({
                   onChange={(e) =>
                     updateThermalSetting("lengthMode", e.target.value as ThermalLengthMode)
                   }
-                  className="w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-[11px] font-medium text-zinc-900 outline-none focus:border-zinc-900"
+                  className="w-full rounded-lg border-2 border-black bg-white px-2.5 py-1.5 text-xs font-mono font-bold text-black outline-none shadow-[2px_2px_0px_#000]"
                 >
                   <option value="auto">Rollo continuo (Recomendado - Auto)</option>
                   <option value="120mm">Etiqueta 120mm (Stickers precortados)</option>
@@ -411,20 +411,20 @@ export function SatiThermalPrintModal({
                 </select>
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-[11px] font-bold text-zinc-700">
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
                   Márgenes laterales (X):
                 </label>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   {[0, 1, 2, 4].map((mm) => (
                     <button
                       key={mm}
                       type="button"
                       onClick={() => updateThermalSetting("marginMm", mm)}
-                      className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-mono border-2 border-black transition-all cursor-pointer ${
                         thermalSettings.marginMm === mm
-                          ? "bg-zinc-900 text-white border-zinc-900"
-                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                          ? "bg-black text-[#FFD23F] font-bold shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                       }`}
                     >
                       {mm}mm
@@ -435,11 +435,11 @@ export function SatiThermalPrintModal({
             </div>
 
             {/* Escala y Centrados X / Y */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Escala:</span>
-                  <span className="font-mono font-bold text-zinc-900">{thermalSettings.scalePct}%</span>
+                  <span className="font-heading font-bold text-black">Escala:</span>
+                  <span className="font-mono font-black text-black">{thermalSettings.scalePct}%</span>
                 </div>
                 <input
                   type="range"
@@ -448,14 +448,14 @@ export function SatiThermalPrintModal({
                   step={5}
                   value={thermalSettings.scalePct}
                   onChange={(e) => updateThermalSetting("scalePct", Number(e.target.value))}
-                  className="w-full accent-zinc-900 cursor-pointer"
+                  className="w-full accent-black cursor-pointer"
                 />
               </div>
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Posición (X):</span>
-                  <span className="font-mono font-bold text-zinc-900">
+                  <span className="font-heading font-bold text-black">Posición (X):</span>
+                  <span className="font-mono font-black text-black">
                     {thermalSettings.offsetXMm > 0 ? `+${thermalSettings.offsetXMm}` : thermalSettings.offsetXMm}mm
                   </span>
                 </div>
@@ -466,14 +466,14 @@ export function SatiThermalPrintModal({
                   step={0.5}
                   value={thermalSettings.offsetXMm}
                   onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
-                  className="w-full accent-zinc-900 cursor-pointer"
+                  className="w-full accent-black cursor-pointer"
                 />
               </div>
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-bold text-zinc-700">Subir/Bajar (Y):</span>
-                  <span className="font-mono font-bold text-zinc-900">
+                  <span className="font-heading font-bold text-black">Subir/Bajar (Y):</span>
+                  <span className="font-mono font-black text-black">
                     {thermalSettings.offsetYMm > 0 ? `+${thermalSettings.offsetYMm}` : thermalSettings.offsetYMm}mm
                   </span>
                 </div>
@@ -484,28 +484,28 @@ export function SatiThermalPrintModal({
                   step={1}
                   value={thermalSettings.offsetYMm}
                   onChange={(e) => updateThermalSetting("offsetYMm", Number(e.target.value))}
-                  className="w-full accent-zinc-900 cursor-pointer"
+                  className="w-full accent-black cursor-pointer"
                   title="Desplaza el inicio verticalmente. Valores negativos (-15mm, -25mm) contrarrestan el avance en blanco de la impresora"
                 />
-                <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                <div className="flex items-center justify-between text-[10px] pt-0.5">
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetYMm", -20)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     Subir -20mm
                   </button>
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetYMm", -10)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     -10mm
                   </button>
                   <button
                     type="button"
                     onClick={() => updateThermalSetting("offsetYMm", 0)}
-                    className="hover:text-zinc-900 underline cursor-pointer"
+                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
                     0mm
                   </button>
@@ -514,19 +514,19 @@ export function SatiThermalPrintModal({
             </div>
 
             {/* Opción Bien Negro / Alto Contraste */}
-            <div className="pt-1 border-t border-zinc-200">
-              <label className="flex items-start gap-2.5 text-[11px] font-medium text-zinc-800 cursor-pointer p-2 rounded-lg bg-white border border-zinc-200 hover:border-zinc-400 transition-colors">
+            <div className="pt-2 border-t-2 border-black border-dashed">
+              <label className="flex items-start gap-3 text-xs font-medium text-black cursor-pointer p-3 rounded-lg bg-[#FFFDF9] border-2 border-black shadow-[2px_2px_0px_#000] hover:bg-[#FAF6EE] transition-colors">
                 <input
                   type="checkbox"
                   checked={thermalSettings.highContrast}
                   onChange={(e) => updateThermalSetting("highContrast", e.target.checked)}
-                  className="rounded border-zinc-300 accent-zinc-900 mt-0.5 w-4 h-4 cursor-pointer"
+                  className="rounded border-2 border-black accent-black mt-0.5 w-4 h-4 cursor-pointer"
                 />
                 <div className="flex-1">
-                  <span className="font-bold text-zinc-900 block">
+                  <span className="font-heading font-extrabold text-black block text-xs">
                     Negro Intenso (Ultra Black / Cabezal térmico nítido)
                   </span>
-                  <span className="text-[10px] text-zinc-500 leading-tight block mt-0.5">
+                  <span className="text-[11px] text-neutral-800 leading-tight block mt-0.5 font-medium">
                     Aplica tinta negra pura (#000000), trazo engrosado y bordes sólidos de 2px para que la impresora térmica imprima bien oscuro y legible.
                   </span>
                 </div>
@@ -534,12 +534,12 @@ export function SatiThermalPrintModal({
             </div>
 
             {/* Tip operativo y solución para espacio arriba y saltos en 3nStar / POS-80 */}
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-900 space-y-1.5">
-              <div className="flex items-center gap-1.5 font-bold">
-                <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+            <div className="rounded-lg bg-[#FFD23F]/30 border-2 border-black p-3 text-xs text-black shadow-[2px_2px_0px_#000] space-y-1.5 font-sans">
+              <div className="flex items-center gap-1.5 font-heading font-extrabold text-black">
+                <Info className="w-4 h-4 text-black shrink-0" />
                 <span>Solución a saltos en blanco y espacio arriba (3nStar / POS-80):</span>
               </div>
-              <ul className="text-[10.5px] leading-relaxed list-disc list-inside space-y-1 text-amber-950">
+              <ul className="text-[11px] leading-relaxed list-disc list-inside space-y-1 text-black font-medium">
                 <li>
                   <strong>Evitar saltos en blanco en el medio:</strong> Dejá siempre <strong>Largo de corte: Rollo continuo (Auto)</strong>. Las etiquetas fijas cortan el comprobante a la mitad.
                 </li>
@@ -581,7 +581,7 @@ export function SatiThermalPrintModal({
           >
             {/* CÓDIGO DE BARRAS REAL CODE128 SUPERIOR (Exclusivo Recepción) */}
             <div className="text-center pt-0.5 pb-2 border-b-2 border-black bg-white print:border-b-2 print:border-black">
-              <ThermalBarcode128 value={data.idOrden} height={40} width={1.8} fontSize={12} />
+              <ThermalBarcode128 value={data.idOrden} height={40} width={1.8} displayValue={false} />
             </div>
 
             {/* Encabezado Térmico Limpio (Fondo Blanco, Borde Negro 2px - Previene Sobrecalentamiento Térmico) */}
