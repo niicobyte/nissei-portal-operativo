@@ -1092,6 +1092,7 @@ export default function NuevoIngresoMontajePage() {
                     value={salesChannel}
                     onChange={(val) => setSalesChannel(val as any)}
                     options={canalOptions}
+                    size="md"
                     fullWidth
                     dropdownWidth="w-full"
                     className="w-full justify-between"
@@ -1130,6 +1131,7 @@ export default function NuevoIngresoMontajePage() {
                     value={invoiceDate}
                     onChange={(val) => setInvoiceDate(val)}
                     placeholder="DD / MM / AAAA"
+                    size="md"
                   />
                 </div>
               </div>
@@ -1422,6 +1424,7 @@ export default function NuevoIngresoMontajePage() {
                       value={customCategory}
                       onChange={(val) => setCustomCategory(val as any)}
                       options={categoriaOptions}
+                      size="md"
                       fullWidth
                       dropdownWidth="w-full"
                       className="w-full justify-between"
@@ -1842,6 +1845,7 @@ export default function NuevoIngresoMontajePage() {
                     value={assignedTech}
                     onChange={(val) => setAssignedTech(val)}
                     options={tecnicoOptions}
+                    size="md"
                     fullWidth
                     dropdownWidth="w-full"
                     searchable
@@ -1893,6 +1897,7 @@ export default function NuevoIngresoMontajePage() {
                     value={priority}
                     onChange={(val) => setPriority(val as any)}
                     options={prioridadOptions}
+                    size="md"
                     fullWidth
                     dropdownWidth="w-full"
                     className="w-full justify-between"
@@ -1909,6 +1914,7 @@ export default function NuevoIngresoMontajePage() {
                     onChange={(val) => setAssemblyDate(val)}
                     placeholder="DD / MM / AAAA"
                     align="right"
+                    size="md"
                   />
                 </div>
               </div>

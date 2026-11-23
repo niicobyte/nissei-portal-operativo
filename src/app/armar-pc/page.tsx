@@ -3771,6 +3771,9 @@ export default function ArmarPcPresupuestadorPage() {
     }
   };
 
+  const neoPillActive = "px-3 py-1.5 rounded-full text-xs font-heading font-extrabold transition-all cursor-pointer bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none";
+  const neoPillInactive = "px-3 py-1.5 rounded-full text-xs font-heading font-extrabold transition-all cursor-pointer bg-[#FFFDF9] hover:bg-[#FAF6EE] text-black border-2 border-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none";
+
   return (
     <>
       {/* Modal Obligatorio al Iniciar o Recargar la Página: Cotización del Dólar (Neo-Brutalismo Retro) */}
@@ -4259,16 +4262,16 @@ export default function ArmarPcPresupuestadorPage() {
 
                   {/* Menú Desplegable de Selección de Procesador (CPU): ¿AMD Ryzen o Intel Core? */}
                   {selectedPresetForCpuMenu && presetBrandPreviews && (
-                    <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border-2 border-zinc-900/80 shadow-xs space-y-3 animate-in fade-in duration-150">
-                      <div className="flex items-start sm:items-center justify-between gap-2 border-b border-zinc-200 pb-2.5">
+                    <div className="p-3.5 sm:p-5 rounded-xl bg-[#FFFDF9] border-2 border-black shadow-[4px_4px_0px_#000] space-y-3 animate-in fade-in duration-150">
+                      <div className="flex items-start sm:items-center justify-between gap-2 border-b-2 border-black pb-2.5">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="px-2 py-0.5 rounded-md bg-zinc-900 text-white font-mono text-[10px] sm:text-xs font-bold uppercase">
+                          <span className="px-2.5 py-0.5 rounded-full bg-black text-[#FFD23F] font-mono text-[10px] sm:text-xs font-bold uppercase border border-black shadow-[1px_1px_0px_#000]">
                             Paso 2 · Elegir CPU
                           </span>
-                          <span className="text-xs sm:text-sm font-extrabold text-zinc-900">
+                          <span className="text-xs sm:text-sm font-heading font-extrabold text-black">
                             {PRESETS.find((x) => x.id === selectedPresetForCpuMenu)?.icono}{" "}
                             {PRESETS.find((x) => x.id === selectedPresetForCpuMenu)?.nombre}:{" "}
-                            <span className="font-semibold text-zinc-600">
+                            <span className="font-medium text-neutral-800">
                               ¿Con qué procesador querés armar el equipo?
                             </span>
                           </span>
@@ -4279,17 +4282,17 @@ export default function ArmarPcPresupuestadorPage() {
                             setSelectedPresetForCpuMenu(null);
                             setPresetCpuAlert(null);
                           }}
-                          className="p-1 rounded-lg text-zinc-400 hover:text-zinc-800 hover:bg-zinc-200/60 transition-colors cursor-pointer shrink-0"
+                          className="p-1.5 rounded-lg text-black hover:bg-[#E76F51] hover:text-white border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer shrink-0"
                           title="Cerrar menú de CPU"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-4 h-4 stroke-[2.5]" />
                         </button>
                       </div>
 
                       {/* Veredicto de Rendimiento y Relación Precio/Calidad */}
                       {presetCpuComparison?.veredictoGlobal && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 shadow-2xs">
-                          <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                        <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[#FFD23F] border-2 border-black text-xs text-black shadow-[2px_2px_0px_#000]">
+                          <Award className="w-4 h-4 text-black shrink-0" />
                           <span className="leading-snug">
                             <strong>Análisis NISSEI:</strong> {presetCpuComparison.veredictoGlobal}
                           </span>
@@ -4313,42 +4316,42 @@ export default function ArmarPcPresupuestadorPage() {
                                   "AMD"
                                 )
                               }
-                              className={`p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                              className={`p-3.5 sm:p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                                 isSelectedAmd
-                                  ? "bg-rose-50/70 border-rose-600 ring-2 ring-rose-500/20"
+                                  ? "bg-[#FFD23F] border-black shadow-[4px_4px_0px_#000]"
                                   : amd.ok
-                                  ? "bg-white hover:bg-rose-50/30 border-rose-200 hover:border-rose-500 shadow-2xs"
-                                  : "bg-zinc-100/80 hover:bg-amber-50/40 border-zinc-300 border-dashed"
+                                  ? "bg-[#FFFDF9] hover:bg-[#FAF6EE] border-black shadow-[3px_3px_0px_#000]"
+                                  : "bg-[#FAF6EE] hover:bg-[#F4EFE6] border-black border-dashed opacity-80"
                               }`}
                             >
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-black text-rose-900">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-600 shrink-0" />
+                                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-heading font-extrabold text-black">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-[#E76F51] border border-black shrink-0" />
                                     AMD Ryzen™ (AM4 / AM5)
                                   </span>
                                   {amd.ok ? (
-                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#2A9D8F] text-white border border-black shadow-[1px_1px_0px_#000]">
                                       ✓ Stock Completo ({amd.socketUsed})
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#E76F51] text-white border border-black shadow-[1px_1px_0px_#000]">
                                       ⚠️ Sin componente clave
                                     </span>
                                   )}
                                 </div>
 
                                 {amd.ok ? (
-                                  <div className="text-[11px] sm:text-xs text-zinc-700 space-y-0.5 pt-0.5">
-                                    <p className="font-bold text-zinc-900 truncate">
+                                  <div className="text-[11px] sm:text-xs text-neutral-800 space-y-0.5 pt-0.5">
+                                    <p className="font-heading font-extrabold text-black truncate">
                                       • CPU: {amd.cpuName}
                                     </p>
-                                    <p className="text-zinc-600 truncate">
+                                    <p className="text-neutral-700 truncate font-medium">
                                       • Video: {amd.gpuName} · RAM: {amd.ramName}
                                     </p>
                                   </div>
                                 ) : (
-                                  <p className="text-[11px] text-amber-900 font-medium leading-snug pt-0.5">
+                                  <p className="text-[11px] text-black font-medium leading-snug pt-0.5">
                                     No tenemos actualmente en stock:{" "}
                                     <strong>{amd.faltantes.join(", ")}</strong>. (Tocar para ver opciones)
                                   </p>
@@ -4356,66 +4359,70 @@ export default function ArmarPcPresupuestadorPage() {
 
                                 {/* Porcentaje de Rendimiento & Análisis de Conveniencia por Precio */}
                                 {amd.ok && presetCpuComparison && (
-                                  <div className="pt-2 border-t border-rose-200/60 space-y-1.5 text-left">
+                                  <div className="pt-2 border-t-2 border-dashed border-black space-y-1.5 text-left">
                                     <div className="flex items-center justify-between text-[11px]">
-                                      <span className="font-bold text-zinc-700 flex items-center gap-1">
-                                        <TrendingUp className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                      <span className="font-bold text-black flex items-center gap-1">
+                                        <TrendingUp className="w-3.5 h-3.5 text-[#E76F51] shrink-0" />
                                         <span>Rendimiento Estimado:</span>
                                       </span>
-                                      <span className="font-mono font-extrabold text-zinc-900">
+                                      <span className="font-mono font-extrabold text-black">
                                         {presetCpuComparison.amd.pct}%
                                         {presetCpuComparison.amd.esGanadorRendimiento && (
-                                          <span className="text-emerald-700 font-bold ml-1 text-[10px]">
+                                          <span className="text-[#2A9D8F] font-bold ml-1 text-[10px]">
                                             (+potencia)
                                           </span>
                                         )}
                                       </span>
                                     </div>
-                                    <div className="w-full h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                                    <div className="w-full h-2 rounded-full bg-white border-2 border-black overflow-hidden">
                                       <div
-                                        className="h-full rounded-full bg-rose-500 transition-all duration-300"
+                                        className="h-full rounded-full bg-[#E76F51] transition-all duration-300"
                                         style={{ width: `${presetCpuComparison.amd.pct}%` }}
                                       />
                                     </div>
                                     <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
                                       <span
-                                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                                        className={`text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] ${
                                           presetCpuComparison.amd.esMasConveniente
-                                            ? "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black"
-                                            : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                                            ? "bg-[#2A9D8F] text-white font-black"
+                                            : "bg-[#FAF6EE] text-black"
                                         }`}
                                       >
                                         {presetCpuComparison.amd.etiquetaConveniencia}
                                       </span>
                                       {presetCpuComparison.amd.esMasBarato && presetCpuComparison.amd.ahorroPyg > 0 && (
-                                        <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                                        <span className="text-[10px] font-mono font-bold text-black bg-[#2A9D8F]/20 px-1.5 py-0.2 rounded border border-black">
                                           Ahorrás ₲ {presetCpuComparison.amd.ahorroPyg.toLocaleString("es-PY")}
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-[10.5px] text-zinc-600 leading-snug">
+                                    <p className="text-[10.5px] text-neutral-700 leading-snug">
                                       {presetCpuComparison.amd.analisis}
                                     </p>
                                   </div>
                                 )}
                               </div>
 
-                              <div className="pt-2 border-t border-zinc-100 flex items-center justify-between gap-2">
+                              <div className="pt-2 border-t-2 border-black flex items-center justify-between gap-2">
                                 {amd.ok ? (
                                   <>
-                                    <span className="font-mono text-xs sm:text-sm font-black text-zinc-900">
+                                    <span className="font-mono text-xs sm:text-sm font-extrabold text-black">
                                       ₲ {amd.totalPyg.toLocaleString("es-PY")}
                                     </span>
-                                    <span className="px-2.5 py-1 rounded-lg bg-rose-600 text-white text-[11px] sm:text-xs font-bold">
+                                    <span className={`px-3 py-1.5 rounded-lg border-2 border-black text-[11px] sm:text-xs font-heading font-extrabold shadow-[2px_2px_0px_#000] transition-all ${
+                                      isSelectedAmd
+                                        ? "bg-black text-[#FFD23F]"
+                                        : "bg-[#E76F51] hover:bg-red-600 text-white"
+                                    }`}>
                                       {isSelectedAmd ? "Cargado ✓" : "Armar con AMD →"}
                                     </span>
                                   </>
                                 ) : (
                                   <>
-                                    <span className="text-[11px] font-mono text-zinc-500">
+                                    <span className="text-[11px] font-mono text-neutral-600 font-bold">
                                       Perfil no disponible en AMD
                                     </span>
-                                    <span className="px-2.5 py-1 rounded-lg bg-zinc-200 text-zinc-700 text-[11px] font-bold">
+                                    <span className="px-2.5 py-1 rounded-lg bg-neutral-200 text-black border-2 border-black text-[11px] font-heading font-extrabold shadow-[1px_1px_0px_#000]">
                                       Ver detalle
                                     </span>
                                   </>
@@ -4441,42 +4448,42 @@ export default function ArmarPcPresupuestadorPage() {
                                   "INTEL"
                                 )
                               }
-                              className={`p-3.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                              className={`p-3.5 sm:p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                                 isSelectedIntel
-                                  ? "bg-sky-50/70 border-sky-600 ring-2 ring-sky-500/20"
+                                  ? "bg-[#FFD23F] border-black shadow-[4px_4px_0px_#000]"
                                   : intel.ok
-                                  ? "bg-white hover:bg-sky-50/30 border-sky-200 hover:border-sky-500 shadow-2xs"
-                                  : "bg-zinc-100/80 hover:bg-amber-50/40 border-zinc-300 border-dashed"
+                                  ? "bg-[#FFFDF9] hover:bg-[#FAF6EE] border-black shadow-[3px_3px_0px_#000]"
+                                  : "bg-[#FAF6EE] hover:bg-[#F4EFE6] border-black border-dashed opacity-80"
                               }`}
                             >
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2 flex-wrap">
-                                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-black text-sky-900">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-sky-600 shrink-0" />
+                                  <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-heading font-extrabold text-black">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F] border border-black shrink-0" />
                                     Intel® Core™ (LGA 1700 / Ultra)
                                   </span>
                                   {intel.ok ? (
-                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#2A9D8F] text-white border border-black shadow-[1px_1px_0px_#000]">
                                       ✓ Stock Completo ({intel.socketUsed})
                                     </span>
                                   ) : (
-                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                                    <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#E76F51] text-white border border-black shadow-[1px_1px_0px_#000]">
                                       ⚠️ Sin componente clave
                                     </span>
                                   )}
                                 </div>
 
                                 {intel.ok ? (
-                                  <div className="text-[11px] sm:text-xs text-zinc-700 space-y-0.5 pt-0.5">
-                                    <p className="font-bold text-zinc-900 truncate">
+                                  <div className="text-[11px] sm:text-xs text-neutral-800 space-y-0.5 pt-0.5">
+                                    <p className="font-heading font-extrabold text-black truncate">
                                       • CPU: {intel.cpuName}
                                     </p>
-                                    <p className="text-zinc-600 truncate">
+                                    <p className="text-neutral-700 truncate font-medium">
                                       • Video: {intel.gpuName} · RAM: {intel.ramName}
                                     </p>
                                   </div>
                                 ) : (
-                                  <p className="text-[11px] text-amber-900 font-medium leading-snug pt-0.5">
+                                  <p className="text-[11px] text-black font-medium leading-snug pt-0.5">
                                     No tenemos actualmente en stock:{" "}
                                     <strong>{intel.faltantes.join(", ")}</strong>. (Tocar para ver opciones)
                                   </p>
@@ -4484,66 +4491,70 @@ export default function ArmarPcPresupuestadorPage() {
 
                                 {/* Porcentaje de Rendimiento & Análisis de Conveniencia por Precio */}
                                 {intel.ok && presetCpuComparison && (
-                                  <div className="pt-2 border-t border-sky-200/60 space-y-1.5 text-left">
+                                  <div className="pt-2 border-t-2 border-dashed border-black space-y-1.5 text-left">
                                     <div className="flex items-center justify-between text-[11px]">
-                                      <span className="font-bold text-zinc-700 flex items-center gap-1">
-                                        <TrendingUp className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                                      <span className="font-bold text-black flex items-center gap-1">
+                                        <TrendingUp className="w-3.5 h-3.5 text-[#2A9D8F] shrink-0" />
                                         <span>Rendimiento Estimado:</span>
                                       </span>
-                                      <span className="font-mono font-extrabold text-zinc-900">
+                                      <span className="font-mono font-extrabold text-black">
                                         {presetCpuComparison.intel.pct}%
                                         {presetCpuComparison.intel.esGanadorRendimiento && (
-                                          <span className="text-emerald-700 font-bold ml-1 text-[10px]">
+                                          <span className="text-[#2A9D8F] font-bold ml-1 text-[10px]">
                                             (+potencia)
                                           </span>
                                         )}
                                       </span>
                                     </div>
-                                    <div className="w-full h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                                    <div className="w-full h-2 rounded-full bg-white border-2 border-black overflow-hidden">
                                       <div
-                                        className="h-full rounded-full bg-sky-500 transition-all duration-300"
+                                        className="h-full rounded-full bg-[#2A9D8F] transition-all duration-300"
                                         style={{ width: `${presetCpuComparison.intel.pct}%` }}
                                       />
                                     </div>
                                     <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
                                       <span
-                                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                                        className={`text-[9.5px] font-mono font-bold px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] ${
                                           presetCpuComparison.intel.esMasConveniente
-                                            ? "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black"
-                                            : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                                            ? "bg-[#2A9D8F] text-white font-black"
+                                            : "bg-[#FAF6EE] text-black"
                                         }`}
                                       >
                                         {presetCpuComparison.intel.etiquetaConveniencia}
                                       </span>
                                       {presetCpuComparison.intel.esMasBarato && presetCpuComparison.intel.ahorroPyg > 0 && (
-                                        <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                                        <span className="text-[10px] font-mono font-bold text-black bg-[#2A9D8F]/20 px-1.5 py-0.2 rounded border border-black">
                                           Ahorrás ₲ {presetCpuComparison.intel.ahorroPyg.toLocaleString("es-PY")}
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-[10.5px] text-zinc-600 leading-snug">
+                                    <p className="text-[10.5px] text-neutral-700 leading-snug">
                                       {presetCpuComparison.intel.analisis}
                                     </p>
                                   </div>
                                 )}
                               </div>
 
-                              <div className="pt-2 border-t border-zinc-100 flex items-center justify-between gap-2">
+                              <div className="pt-2 border-t-2 border-black flex items-center justify-between gap-2">
                                 {intel.ok ? (
                                   <>
-                                    <span className="font-mono text-xs sm:text-sm font-black text-zinc-900">
+                                    <span className="font-mono text-xs sm:text-sm font-extrabold text-black">
                                       ₲ {intel.totalPyg.toLocaleString("es-PY")}
                                     </span>
-                                    <span className="px-2.5 py-1 rounded-lg bg-sky-600 text-white text-[11px] sm:text-xs font-bold">
+                                    <span className={`px-3 py-1.5 rounded-lg border-2 border-black text-[11px] sm:text-xs font-heading font-extrabold shadow-[2px_2px_0px_#000] transition-all ${
+                                      isSelectedIntel
+                                        ? "bg-black text-[#FFD23F]"
+                                        : "bg-[#2A9D8F] hover:bg-emerald-600 text-white"
+                                    }`}>
                                       {isSelectedIntel ? "Cargado ✓" : "Armar con Intel →"}
                                     </span>
                                   </>
                                 ) : (
                                   <>
-                                    <span className="text-[11px] font-mono text-zinc-500">
+                                    <span className="text-[11px] font-mono text-neutral-600 font-bold">
                                       Perfil no disponible en Intel
                                     </span>
-                                    <span className="px-2.5 py-1 rounded-lg bg-zinc-200 text-zinc-700 text-[11px] font-bold">
+                                    <span className="px-2.5 py-1 rounded-lg bg-neutral-200 text-black border-2 border-black text-[11px] font-heading font-extrabold shadow-[1px_1px_0px_#000]">
                                       Ver detalle
                                     </span>
                                   </>
@@ -4575,26 +4586,26 @@ export default function ArmarPcPresupuestadorPage() {
 
                   {/* Alerta Explícita cuando NO hay componentes en stock para el Perfil + Marca de CPU elegida */}
                   {presetCpuAlert && (
-                    <div className="p-3.5 sm:p-4 rounded-xl bg-amber-50/95 border-2 border-amber-300 text-amber-950 space-y-2.5 animate-in fade-in">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2 font-extrabold text-xs sm:text-sm">
-                          <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-black space-y-2.5 shadow-[4px_4px_0px_#000] animate-in fade-in">
+                      <div className="flex items-start justify-between gap-2 border-b-2 border-black pb-2">
+                        <div className="flex items-center gap-2 font-heading font-extrabold text-xs sm:text-sm text-black">
+                          <AlertTriangle className="w-4 h-4 text-[#E76F51] shrink-0 stroke-[2.5]" />
                           <span>{presetCpuAlert.titulo}</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => setPresetCpuAlert(null)}
-                          className="text-amber-700 hover:text-amber-950 p-1 cursor-pointer"
+                          className="p-1 rounded-lg text-black hover:bg-[#E76F51] hover:text-white border border-black shadow-[1px_1px_0px_#000] cursor-pointer"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-4 h-4 stroke-[2.5]" />
                         </button>
                       </div>
 
-                      <p className="text-xs text-amber-900 leading-relaxed">
+                      <p className="text-xs text-neutral-800 font-medium leading-relaxed">
                         {presetCpuAlert.detalle}
                       </p>
 
-                      <ul className="list-disc list-inside text-xs font-bold text-rose-800 bg-white/80 p-2.5 rounded-lg border border-amber-200 space-y-1">
+                      <ul className="list-disc list-inside text-xs font-mono font-bold text-black bg-[#FAF6EE] p-2.5 rounded-lg border-2 border-black space-y-1">
                         {presetCpuAlert.faltantes.map((f, idx) => (
                           <li key={idx}>Falta en stock: {f}</li>
                         ))}
@@ -4613,7 +4624,7 @@ export default function ArmarPcPresupuestadorPage() {
                                   presetCpuAlert.alternativeBrand
                                 )
                               }
-                              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-2xs transition-colors cursor-pointer flex items-center gap-1.5"
+                              className="px-3.5 py-2 rounded-xl bg-[#2A9D8F] hover:bg-emerald-600 text-white text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer flex items-center gap-1.5"
                             >
                               <Sparkles className="w-3.5 h-3.5" />
                               <span>
@@ -4634,7 +4645,7 @@ export default function ArmarPcPresupuestadorPage() {
                                 setSelectedComponents(presetCpuAlert.fallbackBuild!);
                                 setPresetCpuAlert(null);
                               }}
-                              className="px-3 py-2 rounded-xl bg-white hover:bg-zinc-100 text-zinc-800 border border-amber-300 text-xs font-bold transition-colors cursor-pointer"
+                              className="px-3 py-2 rounded-xl bg-[#FFFDF9] hover:bg-[#FAF6EE] text-black border-2 border-black text-xs font-heading font-extrabold shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                             >
                               Cargar componentes base disponibles ({presetCpuAlert.fallbackBuild.length} piezas)
                             </button>
@@ -5186,13 +5197,13 @@ export default function ArmarPcPresupuestadorPage() {
 
           {/* Panel Interactivo de Orientación Asistida, Plataforma & Perfil Productivo */}
           {activeTabSlot !== "TODO" && (
-            <div className="bg-white border border-zinc-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-4">
+            <div className="bg-[#FFFDF9] border-2 border-black rounded-xl p-4 sm:p-5 shadow-[4px_4px_0px_#000] space-y-4">
               {/* Encabezado con reset */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-100 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b-2 border-black pb-3">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <h3 className="text-xs sm:text-sm font-bold text-zinc-900 uppercase tracking-wide flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F] border border-black animate-pulse" />
+                  <h3 className="text-xs sm:text-sm font-heading font-extrabold text-black uppercase tracking-wide flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-black shrink-0" />
                     Orientación Asistida &amp; Perfiles ·{" "}
                     {SLOTS_CONFIG.find((s) => s.categoria === activeTabSlot)?.nombre || activeTabSlot}
                   </h3>
@@ -5206,7 +5217,7 @@ export default function ArmarPcPresupuestadorPage() {
                         setSlotPlatformFilter("TODOS");
                         setSlotWorkProfileFilter("TODOS");
                       }}
-                      className="text-xs text-zinc-600 hover:text-zinc-900 font-semibold underline cursor-pointer"
+                      className="text-xs text-[#E76F51] hover:underline font-heading font-extrabold cursor-pointer"
                     >
                       Limpiar filtros
                     </button>
@@ -5214,7 +5225,7 @@ export default function ArmarPcPresupuestadorPage() {
                   <button
                     type="button"
                     onClick={() => setShowProductivityInsight(!showProductivityInsight)}
-                    className="text-xs text-sky-700 hover:text-sky-900 font-semibold cursor-pointer flex items-center gap-1"
+                    className="text-xs text-black hover:text-[#2A9D8F] font-heading font-extrabold cursor-pointer flex items-center gap-1"
                   >
                     <span>{showProductivityInsight ? "Ocultar guía productiva" : "Ver guía de potencia productiva"}</span>
                     <span className="text-[10px]">{showProductivityInsight ? "▲" : "▼"}</span>
@@ -5224,13 +5235,13 @@ export default function ArmarPcPresupuestadorPage() {
 
               {/* Banner Dinámico de Compatibilidad y Plataforma Activa */}
               {effectiveSocket !== "TODOS" && (
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-xs text-emerald-950 flex items-center justify-between flex-wrap gap-2.5 shadow-2xs animate-in fade-in duration-150">
+                <div className="p-3.5 rounded-xl bg-[#2A9D8F]/15 border-2 border-black text-black flex items-center justify-between flex-wrap gap-2.5 shadow-[2px_2px_0px_#000] animate-in fade-in duration-150">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-black shrink-0 shadow-2xs">
+                    <div className="w-6 h-6 rounded-lg bg-black text-[#FFD23F] border border-black flex items-center justify-center text-xs font-heading font-black shrink-0 shadow-[1px_1px_0px_#000]">
                       ✓
                     </div>
                     <div>
-                      <p className="font-bold text-emerald-950 text-xs sm:text-sm flex items-center gap-2">
+                      <p className="font-heading font-extrabold text-black text-xs sm:text-sm flex items-center gap-2">
                         <span>
                           {effectiveSocket === "AM4"
                             ? "Plataforma Activa: 🔴 AMD Socket AM4 (DDR4)"
@@ -5238,11 +5249,11 @@ export default function ArmarPcPresupuestadorPage() {
                             ? "Plataforma Activa: 🔴 AMD Socket AM5 (DDR5)"
                             : "Plataforma Activa: 🔵 Intel Socket LGA 1700"}
                         </span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-200/80 text-emerald-900 font-bold">
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#FFD23F] text-black font-extrabold border border-black shadow-[1px_1px_0px_#000]">
                           100% Filtrado
                         </span>
                       </p>
-                      <p className="text-[11px] text-emerald-800 leading-tight mt-0.5">
+                      <p className="text-[11px] text-neutral-800 leading-tight mt-0.5 font-medium">
                         {effectiveSocket === "AM4" &&
                           "Mostrando exclusivamente Procesadores AM4, Placas Madre AM4 y Memorias RAM DDR4. No se mezclará con AM5 ni DDR5."}
                         {effectiveSocket === "AM5" &&
@@ -5254,7 +5265,7 @@ export default function ArmarPcPresupuestadorPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {currentCpu && (
-                      <span className="text-[10px] font-mono font-bold px-2 py-1 rounded-md bg-white text-emerald-900 border border-emerald-200 shadow-2xs">
+                      <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-md bg-[#FFFDF9] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                         CPU: {cleanDisplayTitle(currentCpu.nombreWeb || currentCpu.descripcion).slice(0, 22)}...
                       </span>
                     )}
@@ -5274,7 +5285,7 @@ export default function ArmarPcPresupuestadorPage() {
                           );
                         }
                       }}
-                      className="px-2.5 py-1 rounded-lg bg-white border border-emerald-300 text-[11px] font-bold text-emerald-900 hover:bg-emerald-100 cursor-pointer shadow-2xs"
+                      className="px-2.5 py-1 rounded-lg bg-[#FFFDF9] border-2 border-black text-[11px] font-heading font-extrabold text-black hover:bg-[#FFD23F] cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                     >
                       {currentCpu || currentMb ? "✕ Quitar CPU/Placa" : "✕ Ver Todo"}
                     </button>
@@ -5306,11 +5317,11 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        className={
                           effectiveSocket === "TODOS" && slotPlatformFilter === "TODOS"
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                        }`}
+                            ? neoPillActive
+                            : neoPillInactive
+                        }
                       >
                         Todas las CPUs
                       </button>
@@ -5321,13 +5332,11 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AM4");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          effectiveSocket === "AM4"
-                            ? "bg-rose-700 text-white shadow-xs font-bold"
-                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          effectiveSocket === "AM4" ? neoPillActive : neoPillInactive
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span className="w-2 h-2 rounded-full bg-[#E76F51] border border-black shrink-0" />
                         <span>🔴 AMD Socket AM4 (DDR4)</span>
                         <span className="text-[10px] opacity-80 font-normal">· Ryzen Serie 3000/4000/5000</span>
                       </button>
@@ -5338,13 +5347,11 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AM5");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          effectiveSocket === "AM5"
-                            ? "bg-rose-700 text-white shadow-xs font-bold"
-                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          effectiveSocket === "AM5" ? neoPillActive : neoPillInactive
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span className="w-2 h-2 rounded-full bg-[#E76F51] border border-black shrink-0" />
                         <span>🔴 AMD Socket AM5 (DDR5)</span>
                         <span className="text-[10px] opacity-80 font-normal">· Ryzen Serie 7000/8000/9000</span>
                       </button>
@@ -5355,13 +5362,11 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("LGA1700");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          effectiveSocket === "LGA1700"
-                            ? "bg-sky-700 text-white shadow-xs font-bold"
-                            : "bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          effectiveSocket === "LGA1700" ? neoPillActive : neoPillInactive
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-full bg-sky-500" />
+                        <span className="w-2 h-2 rounded-full bg-[#2A9D8F] border border-black shrink-0" />
                         <span>🔵 Intel Core LGA 1700</span>
                         <span className="text-[10px] opacity-80 font-normal">· 12ª, 13ª y 14ª Gen</span>
                       </button>
@@ -5377,11 +5382,11 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        className={
                           effectiveSocket === "TODOS" && slotPlatformFilter === "TODOS"
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                        }`}
+                            ? neoPillActive
+                            : neoPillInactive
+                        }
                       >
                         Todos los Sockets
                       </button>
@@ -5392,10 +5397,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AM4");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          effectiveSocket === "AM4"
-                            ? "bg-rose-700 text-white shadow-xs font-bold"
-                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          effectiveSocket === "AM4" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>🔴 AMD Socket AM4 (DDR4)</span>
@@ -5408,10 +5411,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AM5");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          effectiveSocket === "AM5"
-                            ? "bg-rose-700 text-white shadow-xs font-bold"
-                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          effectiveSocket === "AM5" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>🔴 AMD Socket AM5 (DDR5)</span>
@@ -5424,10 +5425,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("LGA1700");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          effectiveSocket === "LGA1700"
-                            ? "bg-sky-700 text-white shadow-xs font-bold"
-                            : "bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          effectiveSocket === "LGA1700" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>🔵 Intel Socket LGA 1700</span>
@@ -5444,11 +5443,9 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          slotPlatformFilter === "TODOS"
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                        }`}
+                        className={
+                          slotPlatformFilter === "TODOS" ? neoPillActive : neoPillInactive
+                        }
                       >
                         Todas las GPUs
                       </button>
@@ -5458,13 +5455,11 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("NVIDIA");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "NVIDIA"
-                            ? "bg-emerald-700 text-white shadow-xs font-bold"
-                            : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "NVIDIA" ? neoPillActive : neoPillInactive
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="w-2 h-2 rounded-full bg-[#2A9D8F] border border-black shrink-0" />
                         <span>🟢 NVIDIA GeForce RTX</span>
                         <span className="text-[10px] opacity-80 font-normal">· CUDA, OptiX, IA &amp; DLSS 3.5</span>
                       </button>
@@ -5474,13 +5469,11 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AMD");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "AMD"
-                            ? "bg-rose-700 text-white shadow-xs font-bold"
-                            : "bg-rose-50 text-rose-900 border border-rose-200 hover:bg-rose-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AMD" ? neoPillActive : neoPillInactive
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span className="w-2 h-2 rounded-full bg-[#E76F51] border border-black shrink-0" />
                         <span>🔴 AMD Radeon RX</span>
                         <span className="text-[10px] opacity-80 font-normal">· Más VRAM &amp; FSR 3</span>
                       </button>
@@ -5495,11 +5488,11 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        className={
                           effectiveRamType === "TODAS" && slotPlatformFilter === "TODOS"
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                        }`}
+                            ? neoPillActive
+                            : neoPillInactive
+                        }
                       >
                         Todas las Memorias
                       </button>
@@ -5509,10 +5502,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("DDR4");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          effectiveRamType === "DDR4"
-                            ? "bg-blue-700 text-white shadow-xs font-bold"
-                            : "bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          effectiveRamType === "DDR4" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>💎 DDR4 (3200 MHz)</span>
@@ -5526,10 +5517,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("DDR5");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          effectiveRamType === "DDR5"
-                            ? "bg-purple-700 text-white shadow-xs font-bold"
-                            : "bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          effectiveRamType === "DDR5" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>⚡ DDR5 (5200 - 6000 MHz)</span>
@@ -5548,11 +5537,9 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          slotPlatformFilter === "TODOS"
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                        }`}
+                        className={
+                          slotPlatformFilter === "TODOS" ? neoPillActive : neoPillInactive
+                        }
                       >
                         Todos los Almacenamientos
                       </button>
@@ -5562,14 +5549,12 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("1TB");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "1TB"
-                            ? "bg-emerald-700 text-white shadow-xs font-bold"
-                            : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "1TB" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>⚡ 1 TB M.2 NVMe PCIe</span>
-                        <span className="text-[10px] font-bold text-emerald-800">⭐ Recomendado Tienda</span>
+                        <span className="text-[10px] font-bold text-black bg-[#FFD23F] px-1 rounded">⭐ Recomendado Tienda</span>
                       </button>
                       <button
                         type="button"
@@ -5577,10 +5562,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("2TB");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "2TB"
-                            ? "bg-indigo-700 text-white shadow-xs font-bold"
-                            : "bg-indigo-50 text-indigo-900 border border-indigo-200 hover:bg-indigo-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "2TB" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>🚀 2 TB+ M.2 NVMe</span>
@@ -5592,10 +5575,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("500GB");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "500GB"
-                            ? "bg-zinc-800 text-white shadow-xs font-bold"
-                            : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "500GB" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>📦 500 GB M.2 NVMe</span>
@@ -5607,10 +5588,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("SATA");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "SATA"
-                            ? "bg-zinc-800 text-white shadow-xs font-bold"
-                            : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "SATA" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>💾 SSD 2.5" SATA</span>
@@ -5627,11 +5606,9 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          slotPlatformFilter === "TODOS"
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                        }`}
+                        className={
+                          slotPlatformFilter === "TODOS" ? neoPillActive : neoPillInactive
+                        }
                       >
                         Todas las Fuentes
                       </button>
@@ -5641,14 +5618,12 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("650W_750W");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "650W_750W"
-                            ? "bg-emerald-700 text-white shadow-xs"
-                            : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "650W_750W" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>🏆 650W - 750W (80 Plus)</span>
-                        <span className="text-[10px] font-bold text-emerald-800">⭐ Recomendado Gaming</span>
+                        <span className="text-[10px] font-bold text-black bg-[#FFD23F] px-1 rounded">⭐ Recomendado Gaming</span>
                       </button>
                       <button
                         type="button"
@@ -5656,10 +5631,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("850W");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "850W"
-                            ? "bg-amber-700 text-white shadow-xs"
-                            : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "850W" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>⚡ 850W+ Gold</span>
@@ -5671,10 +5644,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("550W");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "550W"
-                            ? "bg-zinc-800 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "550W" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>💼 450W - 550W</span>
@@ -5691,11 +5662,9 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          slotPlatformFilter === "TODOS"
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                        }`}
+                        className={
+                          slotPlatformFilter === "TODOS" ? neoPillActive : neoPillInactive
+                        }
                       >
                         Todos los Diseños
                       </button>
@@ -5705,10 +5674,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AIRFLOW");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "AIRFLOW"
-                            ? "bg-teal-700 text-white shadow-xs"
-                            : "bg-teal-50 text-teal-900 border border-teal-200 hover:bg-teal-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AIRFLOW" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>🌬️ Gamer Mesh Airflow</span>
@@ -5720,10 +5687,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("ACUARIO");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "ACUARIO"
-                            ? "bg-cyan-700 text-white shadow-xs"
-                            : "bg-cyan-50 text-cyan-900 border border-cyan-200 hover:bg-cyan-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "ACUARIO" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>💎 Acuario Panorámico</span>
@@ -5735,10 +5700,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("OFICINA");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "OFICINA"
-                            ? "bg-zinc-800 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-800 border border-zinc-200 hover:bg-zinc-200"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "OFICINA" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>💼 Kit Comercial / Oficina</span>
@@ -5755,11 +5718,9 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("TODOS");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                          slotPlatformFilter === "TODOS"
-                            ? "bg-zinc-900 text-white shadow-xs"
-                            : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                        }`}
+                        className={
+                          slotPlatformFilter === "TODOS" ? neoPillActive : neoPillInactive
+                        }
                       >
                         Todas las Opciones
                       </button>
@@ -5769,10 +5730,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AIRE");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "AIRE"
-                            ? "bg-teal-700 text-white shadow-xs"
-                            : "bg-teal-50 text-teal-900 border border-teal-200 hover:bg-teal-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AIRE" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>🌪️ Cooler Torre por Aire</span>
@@ -5784,10 +5743,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AIO_240");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "AIO_240"
-                            ? "bg-sky-700 text-white shadow-xs"
-                            : "bg-sky-50 text-sky-900 border border-sky-200 hover:bg-sky-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AIO_240" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>💧 Water Cooler AIO 240mm</span>
@@ -5799,10 +5756,8 @@ export default function ArmarPcPresupuestadorPage() {
                           setSlotPlatformFilter("AIO_360");
                           setDisplayLimit(60);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                          slotPlatformFilter === "AIO_360"
-                            ? "bg-purple-700 text-white shadow-xs"
-                            : "bg-purple-50 text-purple-900 border border-purple-200 hover:bg-purple-100"
+                        className={`inline-flex items-center gap-1.5 ${
+                          slotPlatformFilter === "AIO_360" ? neoPillActive : neoPillInactive
                         }`}
                       >
                         <span>🌊 Water Cooler AIO 360mm</span>
@@ -5816,12 +5771,12 @@ export default function ArmarPcPresupuestadorPage() {
               {/* 2. Selector de Perfil Productivo / Tipo de Trabajo */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[11px] font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <span className="w-4 h-4 rounded-full bg-zinc-900 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                  <span className="text-[11px] font-heading font-extrabold text-black uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-5 h-5 rounded-full bg-black text-[#FFD23F] text-[10px] flex items-center justify-center font-bold border border-black shadow-[1px_1px_0px_#000]">2</span>
                     Tipo de Trabajo / Potencia Productiva Requerida:
                   </span>
                   {slotWorkProfileFilter !== "TODOS" && (
-                    <span className="text-[10px] font-mono text-sky-800 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 font-semibold">
+                    <span className="text-[10px] font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
                       Perfil: {slotWorkProfileFilter}
                     </span>
                   )}
@@ -5833,11 +5788,9 @@ export default function ArmarPcPresupuestadorPage() {
                       setSlotWorkProfileFilter("TODOS");
                       setDisplayLimit(60);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
-                      slotWorkProfileFilter === "TODOS"
-                        ? "bg-zinc-900 text-white shadow-xs"
-                        : "bg-zinc-100 text-zinc-700 hover:bg-zinc-200"
-                    }`}
+                    className={
+                      slotWorkProfileFilter === "TODOS" ? neoPillActive : neoPillInactive
+                    }
                   >
                     Todos los Perfiles
                   </button>
@@ -5847,10 +5800,8 @@ export default function ArmarPcPresupuestadorPage() {
                       setSlotWorkProfileFilter("OFICINA");
                       setDisplayLimit(60);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      slotWorkProfileFilter === "OFICINA"
-                        ? "bg-emerald-700 text-white shadow-xs"
-                        : "bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100"
+                    className={`inline-flex items-center gap-1.5 ${
+                      slotWorkProfileFilter === "OFICINA" ? neoPillActive : neoPillInactive
                     }`}
                   >
                     <span>💼 Oficina, Facturación &amp; Estudios</span>
@@ -5861,10 +5812,8 @@ export default function ArmarPcPresupuestadorPage() {
                       setSlotWorkProfileFilter("GAMING_1080P");
                       setDisplayLimit(60);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      slotWorkProfileFilter === "GAMING_1080P"
-                        ? "bg-blue-700 text-white shadow-xs"
-                        : "bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100"
+                    className={`inline-flex items-center gap-1.5 ${
+                      slotWorkProfileFilter === "GAMING_1080P" ? neoPillActive : neoPillInactive
                     }`}
                   >
                     <span>🎮 Gaming 1080p Entrada / Esports</span>
@@ -5875,10 +5824,8 @@ export default function ArmarPcPresupuestadorPage() {
                       setSlotWorkProfileFilter("GAMING_1440P");
                       setDisplayLimit(60);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      slotWorkProfileFilter === "GAMING_1440P"
-                        ? "bg-indigo-700 text-white shadow-xs"
-                        : "bg-indigo-50 text-indigo-900 border border-indigo-200 hover:bg-indigo-100"
+                    className={`inline-flex items-center gap-1.5 ${
+                      slotWorkProfileFilter === "GAMING_1440P" ? neoPillActive : neoPillInactive
                     }`}
                   >
                     <span>🚀 Gaming 1440p Ultra &amp; Streaming</span>
@@ -5890,10 +5837,8 @@ export default function ArmarPcPresupuestadorPage() {
                         setSlotWorkProfileFilter("GAMING_X3D");
                         setDisplayLimit(60);
                       }}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                        slotWorkProfileFilter === "GAMING_X3D"
-                          ? "bg-amber-600 text-white shadow-xs"
-                          : "bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100"
+                      className={`inline-flex items-center gap-1.5 ${
+                        slotWorkProfileFilter === "GAMING_X3D" ? neoPillActive : neoPillInactive
                       }`}
                     >
                       <span>🏆 Gaming Extremo (AMD 3D V-Cache)</span>
@@ -5905,10 +5850,8 @@ export default function ArmarPcPresupuestadorPage() {
                       setSlotWorkProfileFilter("RENDER_IA");
                       setDisplayLimit(60);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                      slotWorkProfileFilter === "RENDER_IA"
-                        ? "bg-violet-700 text-white shadow-xs"
-                        : "bg-violet-50 text-violet-900 border border-violet-200 hover:bg-violet-100"
+                    className={`inline-flex items-center gap-1.5 ${
+                      slotWorkProfileFilter === "RENDER_IA" ? neoPillActive : neoPillInactive
                     }`}
                   >
                     <span>🎬 Render 3D, Arquitectura, Lumion &amp; IA</span>
@@ -5918,16 +5861,16 @@ export default function ArmarPcPresupuestadorPage() {
 
               {/* 3. Panel Educativo de Potencia Productiva (Intel vs AMD / NVIDIA / Componentes) */}
               {showProductivityInsight && (
-                <div className="pt-2 border-t border-zinc-100">
+                <div className="pt-2 border-t-2 border-black">
                   {activeTabSlot === "PROCESADOR" && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {/* Potencia Intel */}
-                      <div className="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200 text-xs space-y-1.5">
-                        <div className="flex items-center gap-2 font-bold text-sky-950">
-                          <span className="w-2.5 h-2.5 rounded-full bg-sky-600" />
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                        <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F] border border-black" />
                           <span>🔵 Potencia Productiva de Intel Core</span>
                         </div>
-                        <ul className="text-zinc-700 space-y-1 text-[11px] leading-relaxed">
+                        <ul className="text-neutral-800 space-y-1 text-[11px] leading-relaxed font-medium">
                           <li>
                             <strong>• Intel QuickSync Video:</strong> Motor en silicio para Adobe Premiere Pro y DaVinci Resolve. Decodificación y renderizado de video 4K sin tirones en línea de tiempo.
                           </li>
@@ -5941,12 +5884,12 @@ export default function ArmarPcPresupuestadorPage() {
                       </div>
 
                       {/* Potencia AMD */}
-                      <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200 text-xs space-y-1.5">
-                        <div className="flex items-center gap-2 font-bold text-rose-950">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                        <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#E76F51] border border-black" />
                           <span>🔴 Potencia Productiva de AMD Ryzen</span>
                         </div>
-                        <ul className="text-zinc-700 space-y-1 text-[11px] leading-relaxed">
+                        <ul className="text-neutral-800 space-y-1 text-[11px] leading-relaxed font-medium">
                           <li>
                             <strong>• Tecnología 3D V-Cache (X3D):</strong> Memoria caché L3 apilada en el chip. Reduce la latencia de RAM, logrando los FPS más altos del mundo en juegos competitivos y simuladores.
                           </li>
@@ -5962,12 +5905,12 @@ export default function ArmarPcPresupuestadorPage() {
                   )}
 
                   {activeTabSlot === "PLACA_MADRE" && (
-                    <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs space-y-1.5">
-                      <div className="flex items-center gap-2 font-bold text-emerald-950">
-                        <Sparkles className="w-4 h-4 text-emerald-600" />
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                      <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                        <Sparkles className="w-4 h-4 text-black" />
                         <span>💡 Clave de Elección en Placas Madre (VRM &amp; Disipación)</span>
                       </div>
-                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                      <p className="text-[11px] text-neutral-800 leading-relaxed font-medium">
                         Para gaming y trabajo continuo se recomienda la <strong>Gama B (B650 para AMD / B760 para Intel)</strong>: incluye disipadores de aluminio en los módulos reguladores de voltaje (VRM) para evitar que el procesador baje sus frecuencias por calor, y ranuras M.2 NVMe blindadas para cuidar la vida útil del SSD.
                       </p>
                     </div>
@@ -5975,12 +5918,12 @@ export default function ArmarPcPresupuestadorPage() {
 
                   {activeTabSlot === "GPU" && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div className="p-3.5 rounded-xl bg-emerald-50/70 border border-emerald-200 text-xs space-y-1.5">
-                        <div className="flex items-center gap-2 font-bold text-emerald-950">
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                        <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F] border border-black" />
                           <span>🟢 Potencia de NVIDIA GeForce RTX</span>
                         </div>
-                        <ul className="text-zinc-700 space-y-1 text-[11px] leading-relaxed">
+                        <ul className="text-neutral-800 space-y-1 text-[11px] leading-relaxed font-medium">
                           <li>
                             <strong>• Ecosistema CUDA &amp; OptiX:</strong> Estándar obligatorio para aceleración en Blender Cycles, V-Ray, Lumion, Unreal Engine 5 y Adobe After Effects.
                           </li>
@@ -5992,12 +5935,12 @@ export default function ArmarPcPresupuestadorPage() {
                           </li>
                         </ul>
                       </div>
-                      <div className="p-3.5 rounded-xl bg-rose-50/70 border border-rose-200 text-xs space-y-1.5">
-                        <div className="flex items-center gap-2 font-bold text-rose-950">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                      <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                        <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#E76F51] border border-black" />
                           <span>🔴 Potencia de AMD Radeon RX</span>
                         </div>
-                        <ul className="text-zinc-700 space-y-1 text-[11px] leading-relaxed">
+                        <ul className="text-neutral-800 space-y-1 text-[11px] leading-relaxed font-medium">
                           <li>
                             <strong>• Mayor Memoria VRAM por Dólar:</strong> Búferes de memoria generosos que evitan caídas de rendimiento en texturas ultra en juegos modernos exigentes.
                           </li>
@@ -6010,60 +5953,60 @@ export default function ArmarPcPresupuestadorPage() {
                   )}
 
                   {activeTabSlot === "RAM" && (
-                    <div className="p-3.5 rounded-xl bg-purple-50/70 border border-purple-200 text-xs space-y-1.5">
-                      <div className="flex items-center gap-2 font-bold text-purple-950">
-                        <Sparkles className="w-4 h-4 text-purple-600" />
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                      <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                        <Sparkles className="w-4 h-4 text-black" />
                         <span>💡 Clave Productiva: Dual Channel Obligatorio &amp; Estándar 32GB</span>
                       </div>
-                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                      <p className="text-[11px] text-neutral-800 leading-relaxed font-medium">
                         Cotizar siempre <strong>2 módulos de memoria idénticos</strong> (ej: 2x16GB) duplica el ancho de banda del bus a 128 bits, incrementando entre un <strong>+15% y +25% los FPS</strong> en juegos y eliminando micro-tirones en edición de video. Hoy en día <strong>32 GB</strong> es el estándar recomendado para evitar que Windows recurra al archivo de paginación.
                       </p>
                     </div>
                   )}
 
                   {activeTabSlot === "ALMACENAMIENTO" && (
-                    <div className="p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-200 text-xs space-y-1.5">
-                      <div className="flex items-center gap-2 font-bold text-indigo-950">
-                        <Sparkles className="w-4 h-4 text-indigo-600" />
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                      <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                        <Sparkles className="w-4 h-4 text-black" />
                         <span>💡 Clave Productiva: SSD M.2 NVMe PCIe Gen4 de 1TB</span>
                       </div>
-                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                      <p className="text-[11px] text-neutral-800 leading-relaxed font-medium">
                         Con lecturas de hasta 5.000 MB/s, Windows arranca en menos de 8 segundos y los juegos cargan de inmediato mediante DirectStorage. <strong>1 TB</strong> es el punto de equilibrio ideal para albergar el sistema operativo, herramientas de trabajo pesadas y múltiples juegos simultáneos.
                       </p>
                     </div>
                   )}
 
                   {activeTabSlot === "FUENTE" && (
-                    <div className="p-3.5 rounded-xl bg-amber-50/70 border border-amber-200 text-xs space-y-1.5">
-                      <div className="flex items-center gap-2 font-bold text-amber-950">
-                        <Sparkles className="w-4 h-4 text-amber-600" />
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                      <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                        <Sparkles className="w-4 h-4 text-black" />
                         <span>💡 Clave de Seguridad: Certificación 80 Plus &amp; Margen del 25%</span>
                       </div>
-                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                      <p className="text-[11px] text-neutral-800 leading-relaxed font-medium">
                         Una fuente certificada 80 Plus garantiza más del 80% de eficiencia y protecciones eléctricas activas (OVP, OPP, SCP). Mantener una fuente de <strong>650W a 750W</strong> asegura que trabaje al 50-60% de su capacidad total, prolongando su vida útil, manteniéndose fría y silenciosa.
                       </p>
                     </div>
                   )}
 
                   {activeTabSlot === "GABINETE" && (
-                    <div className="p-3.5 rounded-xl bg-teal-50/70 border border-teal-200 text-xs space-y-1.5">
-                      <div className="flex items-center gap-2 font-bold text-teal-950">
-                        <Sparkles className="w-4 h-4 text-teal-600" />
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                      <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                        <Sparkles className="w-4 h-4 text-black" />
                         <span>💡 Clave Estética &amp; Térmica: Frente Mesh (Airflow) vs Vidrio (Acuario)</span>
                       </div>
-                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                      <p className="text-[11px] text-neutral-800 leading-relaxed font-medium">
                         Los gabinetes <strong>Mesh Airflow</strong> priorizan la entrada directa de aire fresco manteniendo los componentes hasta 8°C más fríos. Los gabinetes <strong>Acuario Panorámicos</strong> ofrecen una vista limpia de 270° de componentes con iluminación ARGB mediante paneles de vidrio templado continuo.
                       </p>
                     </div>
                   )}
 
                   {activeTabSlot === "REFRIGERACION" && (
-                    <div className="p-3.5 rounded-xl bg-sky-50/70 border border-sky-200 text-xs space-y-1.5">
-                      <div className="flex items-center gap-2 font-bold text-sky-950">
-                        <Sparkles className="w-4 h-4 text-sky-600" />
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black text-xs space-y-1.5 shadow-[3px_3px_0px_#000]">
+                      <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                        <Sparkles className="w-4 h-4 text-black" />
                         <span>💡 Clave Térmica: Cooler Torre por Aire vs Water Cooler Líquido AIO (240mm / 360mm)</span>
                       </div>
-                      <p className="text-[11px] text-zinc-700 leading-relaxed">
+                      <p className="text-[11px] text-neutral-800 leading-relaxed font-medium">
                         Los <strong>Coolers de Torre por Aire</strong> son indestructibles, no requieren mantenimiento y enfrían eficazmente procesadores de hasta 100W TDP. Para procesadores de alto rendimiento (Core i7/i9, Ryzen 7/9) en renders sostenidos, una <strong>Refrigeración Líquida AIO de 240mm o 360mm</strong> disipa el calor rápidamente hacia el exterior del gabinete sin saturar el interior.
                       </p>
                     </div>
@@ -6076,7 +6019,7 @@ export default function ArmarPcPresupuestadorPage() {
           {/* Buscador en Catálogo & Selector de Marca */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
             <div className="sm:col-span-2 relative">
-              <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-3.5" />
+              <Search className="w-4 h-4 text-black absolute left-3.5 top-3.5" />
               <input
                 type="text"
                 maxLength={100}
@@ -6086,13 +6029,13 @@ export default function ArmarPcPresupuestadorPage() {
                   setDisplayLimit(60);
                 }}
                 placeholder="Buscar por SKU numérico (ej: 67488, 131437), modelo o descripción..."
-                className="w-full bg-white border border-zinc-200 rounded-xl pl-10 pr-9 py-2.5 sm:py-3 text-xs sm:text-sm text-zinc-900 outline-none focus:border-zinc-900 transition-colors shadow-2xs min-h-[46px]"
+                className="w-full bg-[#FFFDF9] border-2 border-black rounded-xl pl-10 pr-9 py-2.5 sm:py-3 text-xs sm:text-sm text-black outline-none font-bold shadow-[2px_2px_0px_#000] focus:ring-0 min-h-[46px]"
               />
               {catalogSearchTerm && (
                 <button
                   type="button"
                   onClick={() => setCatalogSearchTerm("")}
-                  className="absolute right-3.5 top-3 text-sm text-zinc-400 hover:text-zinc-700 p-1"
+                  className="absolute right-3.5 top-3 text-sm text-black hover:text-[#E76F51] p-1 font-bold"
                 >
                   ✕
                 </button>
@@ -6108,7 +6051,8 @@ export default function ArmarPcPresupuestadorPage() {
                 }}
                 fullWidth
                 dropdownWidth="w-full"
-                className="min-h-[46px] !py-2.5 !text-xs sm:!text-sm !rounded-xl"
+                size="md"
+                className="w-full justify-between"
                 options={[
                   {
                     value: "TODAS",
@@ -6129,10 +6073,10 @@ export default function ArmarPcPresupuestadorPage() {
           </div>
 
           {/* Contador y Estado de Filtro */}
-          <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1 flex-wrap gap-2">
+          <div className="flex items-center justify-between text-[11px] font-mono font-bold text-neutral-700 px-1 flex-wrap gap-2">
             <span>
               Mostrando {Math.min(catalogoFiltrado.length, displayLimit)} de{" "}
-              <strong>{catalogoFiltrado.length}</strong> componentes{" "}
+              <strong className="text-black">{catalogoFiltrado.length}</strong> componentes{" "}
               {onlyWebStock ? "en stock" : "del catálogo"}
             </span>
             <div className="flex items-center gap-3">
@@ -6140,7 +6084,7 @@ export default function ArmarPcPresupuestadorPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedBrand("TODAS")}
-                  className="text-zinc-700 font-semibold hover:underline cursor-pointer"
+                  className="text-black font-extrabold hover:underline cursor-pointer"
                 >
                   Limpiar marca ({selectedBrand})
                 </button>
@@ -6150,9 +6094,9 @@ export default function ArmarPcPresupuestadorPage() {
 
           {/* Barra de Guía Inteligente de Ranura Activa (Armado 1 a 1 Asistido) */}
           {activeTabSlot !== "TODO" && (
-            <div className="p-2.5 px-3.5 rounded-xl bg-sky-50/90 border border-sky-200 text-xs text-sky-950 flex items-center justify-between flex-wrap gap-2 shadow-2xs">
-              <span className="flex items-center gap-1.5 font-medium">
-                <Sparkles className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+            <div className="p-3 px-4 rounded-xl bg-[#FFD23F] border-2 border-black text-xs text-black flex items-center justify-between flex-wrap gap-2 shadow-[2px_2px_0px_#000]">
+              <span className="flex items-center gap-1.5 font-heading font-extrabold">
+                <Sparkles className="w-3.5 h-3.5 text-black shrink-0" />
                 <span>
                   {activeTabSlot === "PROCESADOR" &&
                     (effectiveSocket !== "TODOS"
@@ -6180,28 +6124,28 @@ export default function ArmarPcPresupuestadorPage() {
                       : "Mostrando opciones de disipación y Water Coolers AIO recomendados")}
                 </span>
               </span>
-              <span className="text-[11px] font-mono font-bold text-sky-800 bg-white/90 px-2 py-0.5 rounded-md border border-sky-200 shadow-2xs">
+              <span className="text-[11px] font-mono font-extrabold text-black bg-[#FFFDF9] px-2.5 py-0.5 rounded-full border border-black shadow-[1px_1px_0px_#000]">
                 ⭐ Recomendados al inicio
               </span>
             </div>
           )}
 
           {/* Lista de Componentes Disponibles en Catálogo */}
-          <div className="bg-white border border-zinc-200 rounded-xl overflow-hidden divide-y divide-zinc-100 max-h-[58dvh] sm:max-h-[540px] 2xl:max-h-[680px] 3xl:max-h-[780px] overflow-y-auto overscroll-contain shadow-sm">
+          <div className="bg-[#FAF6EE] border-2 border-black rounded-xl overflow-hidden divide-y-2 divide-black max-h-[58dvh] sm:max-h-[540px] 2xl:max-h-[680px] 3xl:max-h-[780px] overflow-y-auto overscroll-contain shadow-[4px_4px_0px_#000]">
             {isLoadingWeb && Object.keys(liveBySku).length === 0 ? (
-              <div className="p-6 sm:p-10 text-center text-zinc-500 space-y-2">
-                <RefreshCw className="w-6 h-6 mx-auto animate-spin text-emerald-600" />
-                <p className="text-xs font-semibold text-zinc-800">
+              <div className="p-6 sm:p-10 text-center text-black space-y-2">
+                <RefreshCw className="w-6 h-6 mx-auto animate-spin text-black" />
+                <p className="text-xs font-heading font-extrabold text-black">
                   Consultando precios en Guaraníes y disponibilidad en tiempo real...
                 </p>
-                <p className="text-[11px] text-zinc-400">
+                <p className="text-[11px] text-neutral-700 font-mono">
                   Filtrando únicamente hardware real de escritorio (Fuentes ATX certificadas, Memorias Desktop DDR4/DDR5, SSDs NVMe y Coolers de CPU).
                 </p>
               </div>
             ) : catalogoFiltrado.length === 0 ? (
-              <div className="p-6 sm:p-8 text-center text-zinc-500 space-y-2.5">
-                <Info className="w-6 h-6 mx-auto opacity-40 text-zinc-400" />
-                <p className="text-xs">
+              <div className="p-6 sm:p-8 text-center text-black space-y-2.5">
+                <Info className="w-6 h-6 mx-auto opacity-40 text-black" />
+                <p className="text-xs font-heading font-extrabold">
                   No se encontraron componentes en stock con los filtros actuales.
                 </p>
                 <div className="flex items-center justify-center gap-3 flex-wrap pt-1">
@@ -6209,7 +6153,7 @@ export default function ArmarPcPresupuestadorPage() {
                     <button
                       type="button"
                       onClick={() => setOnlyCompatible(false)}
-                      className="text-xs text-zinc-900 font-semibold hover:underline cursor-pointer"
+                      className="text-xs text-black font-extrabold hover:underline cursor-pointer"
                     >
                       Desactivar filtro de compatibilidad
                     </button>
@@ -6218,7 +6162,7 @@ export default function ArmarPcPresupuestadorPage() {
                     <button
                       type="button"
                       onClick={() => setOnlyWebStock(false)}
-                      className="text-xs text-amber-800 font-semibold hover:underline cursor-pointer"
+                      className="text-xs text-[#E76F51] font-extrabold hover:underline cursor-pointer"
                     >
                       Ver también SKUs agotados
                     </button>
@@ -6246,130 +6190,130 @@ export default function ArmarPcPresupuestadorPage() {
                       key={item.sku}
                       className={`p-3.5 sm:p-4 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-3.5 ${
                         isSelected
-                          ? "bg-zinc-50/90 border-l-4 border-l-zinc-900"
+                          ? "bg-[#FFD23F]/25 border-l-4 border-l-black"
                           : recommended
-                          ? "bg-amber-50/20 border-l-4 border-l-amber-500 hover:bg-amber-50/35"
+                          ? "bg-[#FFFDF9] hover:bg-[#FAF6EE] border-l-4 border-l-black"
                           : !isInStock
-                          ? "bg-zinc-50/40 opacity-65"
-                          : "hover:bg-zinc-50/60"
+                          ? "bg-[#FAF6EE] opacity-60"
+                          : "bg-[#FFFDF9] hover:bg-[#FAF6EE]"
                       }`}
                     >
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 sm:gap-2 mb-1.5 flex-wrap">
-                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200">
+                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded bg-[#FAF6EE] text-black border border-black shadow-[1px_1px_0px_#000]">
                             SKU {item.sku}
                           </span>
                           {item.marca && (
-                            <span className="font-mono text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-300">
+                            <span className="font-mono text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded bg-[#FAF6EE] text-black border border-black shadow-[1px_1px_0px_#000]">
                               {item.marca}
                             </span>
                           )}
                           {isInStock ? (
-                            <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#2A9D8F] text-white border border-black shadow-[1px_1px_0px_#000]">
+                              <span className="w-2 h-2 rounded-full bg-white shrink-0" />
                               EN STOCK
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                            <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#E76F51] text-white border border-black shadow-[1px_1px_0px_#000]">
                               ✕ SIN STOCK
                             </span>
                           )}
                           {recommended && (
-                            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-500 text-white shadow-2xs">
+                            <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-black px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                               ⭐ RECOMENDADO &amp; COMPATIBLE
                             </span>
                           )}
                           {hasDiscount && discountPct > 0 && (
-                            <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-300">
+                            <span className="text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                               -{discountPct}% WEB
                             </span>
                           )}
                           {item.socket && item.socket !== "UNIVERSAL" && (
-                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-sky-50 text-sky-800 border border-sky-200 font-mono font-semibold">
+                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded bg-[#FAF6EE] text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]">
                               {item.socket}
                             </span>
                           )}
                           {item.ramType && item.ramType !== "UNIVERSAL" && (
-                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200 font-mono font-semibold">
+                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded bg-[#FAF6EE] text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]">
                               {item.ramType}
                             </span>
                           )}
                           {item.esM2Nvme && (
-                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-800 border border-indigo-200 font-mono font-semibold">
+                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded bg-[#FAF6EE] text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]">
                               M.2 NVMe
                             </span>
                           )}
                           {item.potenciaWatts ? (
-                            <span className="text-[10px] sm:text-[11px] text-emerald-800 font-mono font-bold bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[10px] sm:text-[11px] text-black font-mono font-bold bg-[#2A9D8F]/20 border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               {item.potenciaWatts}W Reales
                             </span>
                           ) : null}
                         </div>
 
-                        <h4 className="text-sm sm:text-base font-bold text-zinc-900 line-clamp-2 leading-snug">
+                        <h4 className="text-sm sm:text-base font-heading font-extrabold text-black line-clamp-2 leading-snug">
                           {displayTitle}
                         </h4>
 
-                        <div className="flex items-center gap-3.5 text-xs sm:text-sm text-zinc-600 mt-1.5 flex-wrap">
-                          <span className="font-medium">Garantía: 3 meses</span>
+                        <div className="flex items-center gap-3.5 text-xs sm:text-sm text-neutral-700 mt-1.5 flex-wrap font-medium">
+                          <span>Garantía: 3 meses</span>
                           {item.urlWeb && (
                             <a
                               href={item.urlWeb}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-bold hover:underline"
+                              className="inline-flex items-center gap-1 text-[#2A9D8F] hover:underline font-extrabold"
                             >
                               <span>Ver producto</span>
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
                           )}
                           {item.categoria === "PROCESADOR" && item.hasIGpu === false && (
-                            <span className="text-amber-700 font-semibold">
+                            <span className="text-[#E76F51] font-bold">
                               ⚠️ Requiere placa de video dedicada
                             </span>
                           )}
                           {item.categoria === "PROCESADOR" && item.includesCooler === false && (
-                            <span className="text-rose-700 font-semibold">
+                            <span className="text-[#E76F51] font-bold">
                               ❄️ Sin cooler de fábrica (Requiere Cooler CPU)
                             </span>
                           )}
                           {item.categoria === "GABINETE" && item.isKitOficina && (
-                            <span className="text-[11px] font-bold text-zinc-700 bg-zinc-100 border border-zinc-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[11px] font-bold text-black bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               📦 Kit Oficina (Fuente {item.fuenteIncluidaWatts || 200}W + Periféricos)
                             </span>
                           )}
                           {item.categoria === "GABINETE" && currentCooler && (currentCooler.isAioLiquid || /WATER|LIQUID|L[IÍ]QUIDO|AIO|360|240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && (item.isKitOficina || (item.maxRadiatorMm ?? 0) === 0) && (
-                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[11px] font-bold text-[#E76F51] bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               ❌ Incompatible: No admite Water Cooler (Solo Aire)
                             </span>
                           )}
                           {item.categoria === "GABINETE" && currentCooler && (currentCooler.radiatorSizeMm === 360 || /360/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && (item.maxRadiatorMm ?? 0) > 0 && (item.maxRadiatorMm ?? 0) < 360 && (
-                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[11px] font-bold text-[#E76F51] bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               ❌ Incompatible con radiador 360mm (admite hasta 240mm)
                             </span>
                           )}
                           {item.categoria === "GABINETE" && currentCooler && (currentCooler.radiatorSizeMm === 240 || /240/i.test(`${currentCooler.descripcion} ${currentCooler.nombreWeb || ""}`)) && (item.maxRadiatorMm ?? 0) < 240 && (
-                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[11px] font-bold text-[#E76F51] bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               ❌ Incompatible con radiador 240mm
                             </span>
                           )}
                           {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && (
-                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded-md bg-purple-50 text-purple-800 border border-purple-200 font-mono font-bold">
+                            <span className="text-[10px] sm:text-[11px] px-2 py-0.5 rounded bg-[#FAF6EE] text-black border border-black font-mono font-bold shadow-[1px_1px_0px_#000]">
                               Radiador 360mm
                             </span>
                           )}
                           {item.categoria === "REFRIGERACION" && (item.isAioLiquid || item.radiatorSizeMm) && currentGabinete && (currentGabinete.isKitOficina || (currentGabinete.maxRadiatorMm ?? 0) === 0) && (
-                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[11px] font-bold text-[#E76F51] bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               ❌ Incompatible: Gabinete actual ({currentGabinete.sku}) no admite Water Cooler (Solo Aire)
                             </span>
                           )}
                           {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 360 || /360/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && currentGabinete && (currentGabinete.maxRadiatorMm ?? 0) > 0 && (currentGabinete.maxRadiatorMm ?? 0) < 360 && (
-                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[11px] font-bold text-[#E76F51] bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               ❌ Incompatible: Gabinete actual solo admite hasta {currentGabinete.maxRadiatorMm}mm
                             </span>
                           )}
                           {item.categoria === "REFRIGERACION" && (item.radiatorSizeMm === 240 || /240/i.test(`${item.descripcion} ${item.nombreWeb || ""}`)) && currentGabinete && (currentGabinete.maxRadiatorMm ?? 0) < 240 && (
-                            <span className="text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded-md">
+                            <span className="text-[11px] font-bold text-[#E76F51] bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
                               ❌ Incompatible: Gabinete actual no admite radiador de 240mm
                             </span>
                           )}
@@ -6377,37 +6321,37 @@ export default function ArmarPcPresupuestadorPage() {
 
                         {/* Perfil Productivo & Resumen de Trabajo */}
                         {item.perfilProductivo && (
-                          <div className="mt-2.5 p-2 rounded-lg bg-zinc-50 border border-zinc-200/80 flex flex-col gap-1">
+                          <div className="mt-2.5 p-2 rounded-lg bg-[#FAF6EE] border-2 border-black flex flex-col gap-1 shadow-[1px_1px_0px_#000]">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-50 text-blue-900 border border-blue-200 inline-flex items-center gap-1">
+                              <span className="text-[11px] font-heading font-extrabold px-2 py-0.5 rounded-full bg-[#FFD23F] text-black border border-black inline-flex items-center gap-1 shadow-[1px_1px_0px_#000]">
                                 <span>🎯</span> {item.perfilProductivo}
                               </span>
                               {item.categoria === "PROCESADOR" && (
                                 item.marca === "AMD" || /RYZEN/i.test(item.descripcion) ? (
-                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#E76F51] text-white border border-black shadow-[1px_1px_0px_#000]">
                                     🔴 AMD Ryzen
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200">
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#2A9D8F] text-white border border-black shadow-[1px_1px_0px_#000]">
                                     🔵 Intel Core
                                   </span>
                                 )
                               )}
                               {item.categoria === "GPU" && (
                                 item.marca === "NVIDIA" || /RTX|GEFORCE|GTX/i.test(item.descripcion) ? (
-                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#2A9D8F] text-white border border-black shadow-[1px_1px_0px_#000]">
                                     🟢 NVIDIA RTX
                                   </span>
                                 ) : (
-                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200">
+                                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-[#E76F51] text-white border border-black shadow-[1px_1px_0px_#000]">
                                     🔴 AMD Radeon
                                   </span>
                                 )
                               )}
                             </div>
                             {item.resumenTrabajo && (
-                              <p className="text-[11px] sm:text-xs text-zinc-600 leading-snug flex items-center gap-1">
-                                <span className="not-italic text-amber-500 font-bold">💡</span>
+                              <p className="text-[11px] sm:text-xs text-neutral-800 leading-snug flex items-center gap-1 font-medium">
+                                <span className="not-italic text-black font-bold">💡</span>
                                 <span>{item.resumenTrabajo}</span>
                               </p>
                             )}
@@ -6416,30 +6360,30 @@ export default function ArmarPcPresupuestadorPage() {
                       </div>
 
                       {/* Precios Estrictos de https://nissei.com/py/ y Botón de Selección */}
-                      <div className="sm:text-right shrink-0 flex items-center justify-between sm:justify-end gap-3.5 pt-2 sm:pt-0 border-t sm:border-t-0 border-zinc-100">
+                      <div className="sm:text-right shrink-0 flex items-center justify-between sm:justify-end gap-3.5 pt-2 sm:pt-0 border-t-2 sm:border-t-0 border-black">
                         <div>
                           {item.sku === "STOCK-COOLER" ? (
                             <>
-                              <span className="text-sm sm:text-base font-extrabold font-mono text-emerald-700 block">
+                              <span className="text-sm sm:text-base font-extrabold font-mono text-[#2A9D8F] block">
                                 BONIFICADO
                               </span>
-                              <span className="text-[11px] font-mono text-zinc-500 block">
+                              <span className="text-[11px] font-mono text-neutral-600 font-bold block">
                                 Incluido con CPU
                               </span>
                             </>
                           ) : isInStock ? (
                             <>
                               {hasDiscount && (
-                                <span className="text-[11px] font-mono text-zinc-400 line-through block">
+                                <span className="text-[11px] font-mono text-neutral-500 line-through block">
                                   ₲ {precioRegPyg.toLocaleString("es-PY")}
                                 </span>
                               )}
                               {moneda === "PYG" ? (
                                 <>
-                                  <span className="text-sm sm:text-base font-extrabold font-mono text-zinc-900 block">
+                                  <span className="text-sm sm:text-base font-extrabold font-mono text-black block">
                                     ₲ {precioPyg.toLocaleString("es-PY")}
                                   </span>
-                                  <span className="text-[11px] font-mono text-zinc-500 block">
+                                  <span className="text-[11px] font-mono text-neutral-600 font-bold block">
                                     US${" "}
                                     {precioUsd.toLocaleString("es-PY", {
                                       minimumFractionDigits: 2,
@@ -6449,14 +6393,14 @@ export default function ArmarPcPresupuestadorPage() {
                                 </>
                               ) : (
                                 <>
-                                  <span className="text-sm sm:text-base font-extrabold font-mono text-zinc-900 block">
+                                  <span className="text-sm sm:text-base font-extrabold font-mono text-black block">
                                     US${" "}
                                     {precioUsd.toLocaleString("es-PY", {
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2,
                                     })}
                                   </span>
-                                  <span className="text-[11px] font-mono text-zinc-500 block">
+                                  <span className="text-[11px] font-mono text-neutral-600 font-bold block">
                                     ₲ {precioPyg.toLocaleString("es-PY")}
                                   </span>
                                 </>
@@ -6464,10 +6408,10 @@ export default function ArmarPcPresupuestadorPage() {
                             </>
                           ) : (
                             <>
-                              <span className="text-xs sm:text-sm font-bold font-mono text-rose-700 block">
+                              <span className="text-xs sm:text-sm font-bold font-mono text-[#E76F51] block">
                                 Sin stock web
                               </span>
-                              <span className="text-[11px] font-mono text-zinc-400 block">
+                              <span className="text-[11px] font-mono text-neutral-500 block">
                                 No cotizable
                               </span>
                             </>
@@ -6478,12 +6422,12 @@ export default function ArmarPcPresupuestadorPage() {
                           type="button"
                           disabled={!isInStock}
                           onClick={() => handleSelectComponent(item)}
-                          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all shrink-0 min-h-[40px] sm:min-h-[44px] min-w-[90px] text-center ${
+                          className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-heading font-extrabold transition-all shrink-0 min-h-[40px] sm:min-h-[44px] min-w-[90px] text-center border-2 border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                             !isInStock
-                              ? "bg-zinc-100 text-zinc-400 border border-zinc-200 cursor-not-allowed"
+                              ? "bg-neutral-200 text-neutral-500 border-neutral-400 cursor-not-allowed"
                               : isSelected
-                              ? "bg-zinc-900 text-white shadow-xs cursor-pointer"
-                              : "bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200 cursor-pointer shadow-2xs"
+                              ? "bg-black text-[#FFD23F] shadow-[2px_2px_0px_#000] cursor-pointer"
+                              : "bg-[#FFFDF9] hover:bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000] cursor-pointer"
                           }`}
                         >
                           {!isInStock
@@ -6498,11 +6442,11 @@ export default function ArmarPcPresupuestadorPage() {
                 })}
 
                 {catalogoFiltrado.length > displayLimit && (
-                  <div className="p-3 text-center bg-zinc-50 border-t border-zinc-100">
+                  <div className="p-3 text-center bg-[#FAF6EE] border-t-2 border-black">
                     <button
                       type="button"
                       onClick={() => setDisplayLimit((prev) => prev + 60)}
-                      className="px-4 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-zinc-100 text-zinc-800 border border-zinc-200 shadow-2xs cursor-pointer transition-colors"
+                      className="px-4 py-2 rounded-lg text-xs font-heading font-extrabold bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
                     >
                       Cargar más componentes (+{catalogoFiltrado.length - displayLimit} restantes)
                     </button>
@@ -6515,21 +6459,21 @@ export default function ArmarPcPresupuestadorPage() {
 
         {/* Columna Derecha: Hoja de Presupuesto en Vivo & Compatibilidad (5 cols) */}
         <section className="lg:col-span-5 3xl:col-span-4 space-y-4 min-w-0">
-          <div className="bg-white border border-zinc-200 rounded-xl p-3.5 sm:p-5 space-y-4 shadow-sm lg:sticky lg:top-20">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-100 pb-3">
+          <div className="bg-[#FFFDF9] border-2 border-black rounded-xl p-3.5 sm:p-5 space-y-4 shadow-[4px_4px_0px_#000] lg:sticky lg:top-20">
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b-2 border-black pb-3">
               <div className="min-w-0">
-                <h3 className="text-base sm:text-lg font-black text-zinc-900 flex items-center gap-2 flex-wrap">
+                <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-2 flex-wrap">
                   <span>Presupuesto de PC</span>
-                  <span className="text-xs sm:text-sm font-mono font-medium text-zinc-500">
+                  <span className="text-xs sm:text-sm font-mono font-bold text-neutral-600">
                     ({selectedComponents.length} componentes)
                   </span>
                 </h3>
                 {clienteNombre ? (
-                  <span className="text-xs sm:text-sm text-zinc-600 block mt-0.5 truncate">
-                    Cliente: {clienteNombre}
+                  <span className="text-xs sm:text-sm text-neutral-700 block mt-0.5 truncate font-medium">
+                    Cliente: <strong>{clienteNombre}</strong>
                   </span>
                 ) : (
-                  <span className="text-xs sm:text-sm text-zinc-500 block mt-0.5 truncate">
+                  <span className="text-xs sm:text-sm text-neutral-500 block mt-0.5 truncate">
                     Resumen del ensamble
                   </span>
                 )}
@@ -6537,34 +6481,34 @@ export default function ArmarPcPresupuestadorPage() {
 
               {/* Estado de Compatibilidad General Dinámico */}
               <div
-                className={`px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-1.5 shrink-0 ${
+                className={`px-3 py-1.5 rounded-full border-2 border-black text-xs sm:text-sm font-heading font-extrabold flex items-center gap-1.5 shrink-0 shadow-[2px_2px_0px_#000] ${
                   resultadoCompatibilidad.totalErrores > 0
-                    ? "bg-rose-50 border-rose-200 text-rose-800 animate-pulse"
+                    ? "bg-[#E76F51] text-white animate-pulse"
                     : resultadoCompatibilidad.totalWarnings > 0
-                    ? "bg-amber-50 border-amber-200 text-amber-800"
+                    ? "bg-[#FFD23F] text-black"
                     : resultadoCompatibilidad.totalSugerencias > 0
-                    ? "bg-sky-50 border-sky-200 text-sky-800"
-                    : "bg-emerald-50 border-emerald-200 text-emerald-800"
+                    ? "bg-[#FFD23F] text-black"
+                    : "bg-[#2A9D8F] text-white"
                 }`}
               >
                 {resultadoCompatibilidad.totalErrores > 0 ? (
                   <>
-                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-white shrink-0" />
                     <span>Incompatible ({resultadoCompatibilidad.totalErrores} {resultadoCompatibilidad.totalErrores === 1 ? "error crítico" : "errores críticos"})</span>
                   </>
                 ) : resultadoCompatibilidad.totalWarnings > 0 ? (
                   <>
-                    <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <AlertTriangle className="w-4 h-4 text-black shrink-0" />
                     <span>Revisar ({resultadoCompatibilidad.totalWarnings} advertencias)</span>
                   </>
                 ) : resultadoCompatibilidad.totalSugerencias > 0 ? (
                   <>
-                    <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
-                    <span>Compatible ({resultadoCompatibilidad.totalSugerencias} sugerencias pro)</span>
+                    <Sparkles className="w-4 h-4 text-black shrink-0" />
+                    <span>Compatible ({resultadoCompatibilidad.totalSugerencias} sugerencias)</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
                     <span>Compatible 100%</span>
                   </>
                 )}
@@ -6574,16 +6518,16 @@ export default function ArmarPcPresupuestadorPage() {
             {/* AUDITORÍA DE COMPATIBILIDAD EN TIEMPO REAL CON FICHAS TÉCNICAS WEB */}
             {selectedComponents.length >= 2 && (
               <div
-                className={`p-3 rounded-xl border text-xs space-y-2.5 transition-all ${
+                className={`p-3.5 rounded-xl border-2 border-black text-xs space-y-2.5 transition-all shadow-[3px_3px_0px_#000] ${
                   resultadoCompatibilidad.totalErrores > 0
-                    ? "bg-rose-50/90 border-rose-300 shadow-2xs"
-                    : "bg-emerald-50/70 border-emerald-300"
+                    ? "bg-[#FFE8E8]"
+                    : "bg-[#E8F8F5]"
                 }`}
               >
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 font-bold">
+                  <div className="flex items-center gap-1.5 font-heading font-extrabold">
                     <span className="text-sm">🌐</span>
-                    <span className="text-zinc-900 font-extrabold text-[12px]">
+                    <span className="text-black text-[12px] uppercase">
                       Auditoría Web Oficial de Fabricantes
                     </span>
                   </div>
@@ -6591,18 +6535,18 @@ export default function ArmarPcPresupuestadorPage() {
                     type="button"
                     onClick={handleRunWebAudit}
                     disabled={isAuditingWeb}
-                    className="px-2 py-1 rounded-lg bg-white border border-zinc-200 text-zinc-700 hover:text-black font-semibold text-[10.5px] shadow-2xs cursor-pointer flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black text-black font-heading font-bold text-[10.5px] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer flex items-center gap-1.5 transition-all"
                   >
-                    <Search className={`w-3 h-3 ${isAuditingWeb ? "animate-spin text-emerald-600" : ""}`} />
-                    <span>{isAuditingWeb ? "Auditando web..." : "Re-auditar Fichas Web"}</span>
+                    <Search className={`w-3 h-3 ${isAuditingWeb ? "animate-spin text-black" : "text-black"}`} />
+                    <span>{isAuditingWeb ? "Auditando..." : "Re-auditar Fichas Web"}</span>
                   </button>
                 </div>
 
                 {/* Si hay error crítico (ej: Cooler Líquido en Gabinete sin soporte de radiadores) */}
                 {resultadoCompatibilidad.totalErrores > 0 ? (
                   <div className="space-y-2 pt-0.5">
-                    <div className="p-2.5 rounded-lg bg-rose-100/90 border border-rose-300 text-rose-950 font-medium space-y-1">
-                      <div className="flex items-center gap-1.5 font-black text-rose-900">
+                    <div className="p-2.5 rounded-lg bg-[#FFDADA] border-2 border-black text-black font-medium space-y-1">
+                      <div className="flex items-center gap-1.5 font-heading font-extrabold text-black">
                         <span>⛔</span>
                         <span>Incompatibilidad Física Detectada en Fichas Oficiales</span>
                       </div>
@@ -6621,7 +6565,7 @@ export default function ArmarPcPresupuestadorPage() {
                             <button
                               type="button"
                               onClick={handleAutoFixGabineteLiquid}
-                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-zinc-900 hover:bg-black text-white font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-black hover:bg-neutral-800 text-[#FFD23F] font-heading font-extrabold text-[11px] flex items-center justify-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_#000] cursor-pointer transition-all active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             >
                               <span>✨</span>
                               <span>Poner Gabinete con soporte de radiador</span>
@@ -6629,7 +6573,7 @@ export default function ArmarPcPresupuestadorPage() {
                             <button
                               type="button"
                               onClick={handleAutoFixCoolerAir}
-                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-[11px] flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                              className="flex-1 py-1.5 px-2.5 rounded-lg bg-[#2A9D8F] hover:bg-[#208376] text-white font-heading font-extrabold text-[11px] flex items-center justify-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_#000] cursor-pointer transition-all active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             >
                               <span>❄️</span>
                               <span>Cambiar a Cooler de Aire (Recomendado)</span>
@@ -6639,12 +6583,12 @@ export default function ArmarPcPresupuestadorPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="space-y-1.5 pt-0.5 text-[11px] text-zinc-700">
-                    <div className="flex items-center gap-1.5 text-emerald-900 font-bold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <div className="space-y-1.5 pt-0.5 text-[11px] text-neutral-800">
+                    <div className="flex items-center gap-1.5 text-black font-heading font-extrabold">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-[#2A9D8F] shrink-0" />
                       <span>Fichas técnicas oficiales validadas (0 colisiones):</span>
                     </div>
-                    <ul className="grid grid-cols-1 gap-1 text-[10.5px] font-mono text-zinc-600 pl-4 list-disc">
+                    <ul className="grid grid-cols-1 gap-1 text-[10.5px] font-mono text-neutral-700 pl-4 list-disc">
                       {currentCooler && currentGabinete && (
                         <li>
                           {currentCooler.isAioLiquid || currentCooler.radiatorSizeMm
@@ -6673,7 +6617,7 @@ export default function ArmarPcPresupuestadorPage() {
 
                 {/* Enlace directo para verificar ficha técnica en Google */}
                 {currentGabinete && currentCooler && (
-                  <div className="pt-1.5 border-t border-zinc-200/60 flex items-center justify-between text-[10px]">
+                  <div className="pt-1.5 border-t-2 border-black/20 flex items-center justify-between text-[10px]">
                     <span className="text-zinc-500 font-mono">
                       {lastAuditTimestamp ? `Auditado a las ${lastAuditTimestamp}` : "Revisión técnica en vivo"}
                     </span>
@@ -6752,9 +6696,9 @@ export default function ArmarPcPresupuestadorPage() {
               <button
                 type="button"
                 onClick={handleAutoCompletarInteligente}
-                className="w-full py-2.5 px-3.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-2xs min-h-[42px]"
+                className="w-full py-2.5 px-3.5 rounded-xl bg-[#FFD23F] hover:bg-[#f5c72b] border-2 border-black text-black text-xs sm:text-sm font-heading font-extrabold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none min-h-[44px]"
               >
-                <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                <Sparkles className="w-4 h-4 text-black shrink-0" />
                 <span>Autocompletar piezas faltantes compatibles inteligentemente</span>
               </button>
             )}
@@ -6770,36 +6714,36 @@ export default function ArmarPcPresupuestadorPage() {
                   return (
                     <div
                       key={idx}
-                      className={`p-3 rounded-xl border text-xs transition-all ${
+                      className={`p-3 rounded-xl border-2 border-black text-xs transition-all shadow-[3px_3px_0px_#000] ${
                         isError
-                          ? "bg-rose-50/90 border-rose-300 text-rose-950 shadow-2xs"
+                          ? "bg-[#FFE8E8] text-black"
                           : isWarning
-                          ? "bg-amber-50/90 border-amber-300 text-amber-950 shadow-2xs"
-                          : "bg-sky-50/90 border-sky-300 text-sky-950 shadow-2xs"
+                          ? "bg-[#FFF9DB] text-black"
+                          : "bg-[#E8F4F8] text-black"
                       }`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-1.5 font-bold flex-wrap">
+                        <div className="flex items-center gap-1.5 font-heading font-extrabold flex-wrap">
                           {isError && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-rose-200/90 text-rose-900 border border-rose-300">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-[#E76F51] text-white border-2 border-black shadow-[1px_1px_0px_#000]">
                               ⛔ Error Crítico
                             </span>
                           )}
                           {isWarning && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-amber-200/90 text-amber-900 border border-amber-300">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-[#FFD23F] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                               ⚠️ Advertencia
                             </span>
                           )}
                           {isSuggestion && (
-                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-sky-200/90 text-sky-900 border border-sky-300">
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-black uppercase bg-[#2A9D8F] text-white border-2 border-black shadow-[1px_1px_0px_#000]">
                               💡 Sugerencia Pro
                             </span>
                           )}
-                          <strong className="block leading-tight">{a.titulo}</strong>
+                          <strong className="block leading-tight text-black">{a.titulo}</strong>
                         </div>
                       </div>
 
-                      <p className="text-[11px] opacity-90 mt-1 leading-relaxed">{a.detalle}</p>
+                      <p className="text-[11px] font-medium text-neutral-800 mt-1 leading-relaxed">{a.detalle}</p>
 
                       {/* Botón de acción rápida asistida en 1 clic */}
                       {a.accionSugerida && (
@@ -6808,7 +6752,7 @@ export default function ArmarPcPresupuestadorPage() {
                             <button
                               type="button"
                               onClick={() => handleAlertAction(a)}
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-700 text-white font-bold text-[11px] shadow-2xs transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#2A9D8F] hover:bg-[#208376] text-white font-heading font-extrabold text-[11px] border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                             >
                               <Sparkles className="w-3.5 h-3.5 shrink-0" />
                               <span>{a.accionSugerida}</span>
@@ -6817,12 +6761,12 @@ export default function ArmarPcPresupuestadorPage() {
                             <button
                               type="button"
                               onClick={() => handleAlertAction(a)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white font-bold text-[11px] shadow-2xs transition-colors cursor-pointer ${
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white font-heading font-extrabold text-[11px] border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer ${
                                 isError
-                                  ? "bg-rose-700 hover:bg-rose-800"
+                                  ? "bg-[#E76F51] hover:bg-[#d4583b]"
                                   : isWarning
-                                  ? "bg-amber-700 hover:bg-amber-800"
-                                  : "bg-zinc-900 hover:bg-black"
+                                  ? "bg-black text-[#FFD23F] hover:bg-neutral-800"
+                                  : "bg-black hover:bg-neutral-800"
                               }`}
                             >
                               <ArrowRight className="w-3.5 h-3.5 shrink-0" />
@@ -6838,19 +6782,19 @@ export default function ArmarPcPresupuestadorPage() {
             )}
 
             {/* Barra de Consumo Eléctrico & Fuente */}
-            <div className="p-3.5 bg-zinc-50 rounded-xl border border-zinc-200 space-y-2 text-xs sm:text-sm font-mono">
+            <div className="p-3.5 bg-[#FAF6EE] rounded-xl border-2 border-black space-y-2 text-xs sm:text-sm font-mono shadow-[2px_2px_0px_#000]">
               <div className="flex items-center justify-between">
-                <span className="text-zinc-600 flex items-center gap-1.5 font-sans font-medium">
-                  <Zap className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="text-black flex items-center gap-1.5 font-heading font-bold">
+                  <Zap className="w-4 h-4 text-black shrink-0" />
                   Consumo Estimado:
                 </span>
-                <span className="font-bold text-zinc-900 text-sm sm:text-base">
+                <span className="font-extrabold text-black text-sm sm:text-base font-mono">
                   {resultadoCompatibilidad.consumoTotalWatts} W
                 </span>
               </div>
-              <div className="flex items-center justify-between border-t border-zinc-200/60 pt-1.5">
-                <span className="text-zinc-600 font-sans font-medium">Fuente Recomendada:</span>
-                <span className="font-bold text-zinc-900 text-sm sm:text-base">
+              <div className="flex items-center justify-between border-t-2 border-black/20 pt-1.5">
+                <span className="text-black font-heading font-bold">Fuente Recomendada:</span>
+                <span className="font-extrabold text-black text-sm sm:text-base font-mono">
                   {resultadoCompatibilidad.fuenteRecomendadaWatts} W+
                 </span>
               </div>
@@ -6859,8 +6803,8 @@ export default function ArmarPcPresupuestadorPage() {
             {/* Lista de Componentes Cargados */}
             <div className="space-y-2.5 max-h-[42dvh] sm:max-h-[360px] 2xl:max-h-[480px] 3xl:max-h-[580px] overflow-y-auto overscroll-contain pr-1">
               {selectedComponents.length === 0 ? (
-                <div className="p-6 text-center text-zinc-400 border border-dashed border-zinc-200 rounded-lg">
-                  <p className="text-xs">
+                <div className="p-6 text-center text-neutral-600 bg-[#FAF6EE] border-2 border-dashed border-black rounded-xl font-mono text-xs">
+                  <p>
                     Ningún componente seleccionado aún. Seleccione componentes con stock activo o elija una recomendación rápida.
                   </p>
                 </div>
@@ -6878,36 +6822,36 @@ export default function ArmarPcPresupuestadorPage() {
                   return (
                     <div
                       key={c.sku}
-                      className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col gap-2.5"
+                      className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black flex flex-col gap-2.5 shadow-[2px_2px_0px_#000]"
                     >
                       <div className="min-w-0 w-full">
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap mb-1.5">
-                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-200/90 text-zinc-800 border border-zinc-300 uppercase">
+                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-[#FAF6EE] text-black border-2 border-black shadow-[1px_1px_0px_#000] uppercase">
                             {c.categoria}
                           </span>
-                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-zinc-100 text-zinc-800 border border-zinc-200">
+                          <span className="font-mono text-[11px] sm:text-xs font-bold px-2 py-0.5 rounded-md bg-white text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                             SKU #{c.sku}
                           </span>
-                          <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                          <span className="inline-flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-[#2A9D8F] text-white border-2 border-black shadow-[1px_1px_0px_#000]">
+                            <span className="w-2 h-2 rounded-full bg-white shrink-0" />
                             WEB OK
                           </span>
                         </div>
 
                         <h5
-                          className="text-sm sm:text-base font-bold text-zinc-900 break-words leading-snug"
+                          className="text-sm sm:text-base font-heading font-extrabold text-black break-words leading-snug"
                           title={cleanTitle}
                         >
                           {cleanTitle}
                         </h5>
 
-                        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-zinc-600 mt-1.5 flex-wrap">
-                          <span className="font-medium">
+                        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm text-neutral-700 mt-1.5 flex-wrap">
+                          <span className="font-mono font-bold text-black">
                             ₲ {(c.precioPyg || 0).toLocaleString("es-PY")}{" "}
                             {c.cantidad && c.cantidad > 1 ? `x ${c.cantidad}` : ""}
                           </span>
                           <span>·</span>
-                          <span className="font-medium">Garantía: 3 meses</span>
+                          <span className="font-medium text-neutral-600">Garantía: 3 meses</span>
                           {itemUrl && (
                             <>
                               <span>·</span>
@@ -6915,7 +6859,7 @@ export default function ArmarPcPresupuestadorPage() {
                                 href={itemUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-emerald-700 hover:text-emerald-900 font-bold hover:underline print:hidden"
+                                className="inline-flex items-center gap-1 text-black font-bold underline hover:text-[#2A9D8F] print:hidden"
                                 title="Ver detalle del producto"
                               >
                                 <span>Ver producto</span>
@@ -6926,9 +6870,9 @@ export default function ArmarPcPresupuestadorPage() {
                         </div>
                       </div>
 
-                      <div className="w-full flex items-center justify-between gap-2 pt-2.5 border-t border-zinc-200/70">
+                      <div className="w-full flex items-center justify-between gap-2 pt-2.5 border-t-2 border-black/10">
                         <div className="min-w-0">
-                          <span className="font-mono font-extrabold text-sm sm:text-base text-zinc-900 block">
+                          <span className="font-mono font-extrabold text-sm sm:text-base text-black block">
                             {moneda === "PYG"
                               ? `₲ ${subPyg.toLocaleString("es-PY")}`
                               : `US$ ${subUsd.toLocaleString("es-PY", {
@@ -6936,7 +6880,7 @@ export default function ArmarPcPresupuestadorPage() {
                                   maximumFractionDigits: 2,
                                 })}`}
                           </span>
-                          <span className="text-[11px] font-mono text-zinc-500 block">
+                          <span className="text-[11px] font-mono font-bold text-neutral-500 block">
                             {moneda === "PYG"
                               ? `US$ ${subUsd.toLocaleString("es-PY", {
                                   minimumFractionDigits: 2,
@@ -6950,18 +6894,18 @@ export default function ArmarPcPresupuestadorPage() {
                           <button
                             type="button"
                             onClick={() => handleChangeCantidad(c.sku, -1)}
-                            className="w-9 h-9 rounded-xl bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-800 text-sm font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
+                            className="w-8 h-8 rounded-lg bg-[#FAF6EE] hover:bg-[#FFD23F] border-2 border-black text-black font-mono font-black flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                             title="Disminuir cantidad"
                           >
                             -
                           </button>
-                          <span className="font-mono text-sm sm:text-base px-1.5 sm:px-2 text-zinc-900 font-black min-w-[24px] text-center">
+                          <span className="font-mono text-sm sm:text-base px-1.5 sm:px-2 text-black font-black min-w-[24px] text-center">
                             {c.cantidad || 1}
                           </span>
                           <button
                             type="button"
                             onClick={() => handleChangeCantidad(c.sku, 1)}
-                            className="w-9 h-9 rounded-xl bg-white hover:bg-zinc-200 border border-zinc-200 text-zinc-800 text-sm font-bold flex items-center justify-center cursor-pointer shadow-2xs transition-colors"
+                            className="w-8 h-8 rounded-lg bg-[#FAF6EE] hover:bg-[#FFD23F] border-2 border-black text-black font-mono font-black flex items-center justify-center cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                             title="Aumentar cantidad"
                           >
                             +
@@ -6969,7 +6913,7 @@ export default function ArmarPcPresupuestadorPage() {
                           <button
                             type="button"
                             onClick={() => handleRemoveComponent(c.sku)}
-                            className="w-9 h-9 rounded-xl bg-white hover:bg-rose-50 border border-zinc-200 text-zinc-400 hover:text-rose-600 text-sm flex items-center justify-center ml-0.5 sm:ml-1 cursor-pointer shadow-2xs transition-colors"
+                            className="w-8 h-8 rounded-lg bg-[#FAF6EE] hover:bg-[#E76F51] hover:text-white border-2 border-black text-black flex items-center justify-center ml-0.5 sm:ml-1 cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
                             title="Quitar componente"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -6983,15 +6927,16 @@ export default function ArmarPcPresupuestadorPage() {
             </div>
 
             {/* Servicio de Armado & Totales Estrictos Web */}
-            <div className="pt-3 border-t border-zinc-100 space-y-3.5">
+            <div className="pt-3 border-t-2 border-black space-y-3.5">
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm">
-                <span className="text-zinc-700 font-semibold">Costo de servicio del montaje:</span>
+                <span className="text-black font-heading font-extrabold">Costo de servicio del montaje:</span>
                 <CleanSelect
+                  size="md"
                   value={isCorpVendedor ? "0" : String(costoMontajeTiendaPyg)}
                   onChange={() => {}}
                   align="right"
                   dropdownWidth="w-64"
-                  className="min-h-[44px] !py-2.5 !text-xs sm:!text-sm !rounded-xl"
+                  className="min-h-[46px] !rounded-xl"
                   options={
                     isCorpVendedor
                       ? [{ value: "0", label: "¡Bonificado / GRATIS!" }]
@@ -7075,7 +7020,7 @@ export default function ArmarPcPresupuestadorPage() {
       </div>
 
       {/* Pie de Página */}
-      <footer className="border-t border-zinc-200 bg-white py-3 text-center text-xs text-zinc-500 font-mono">
+      <footer className="border-t-2 border-black bg-[#FAF6EE] py-3 text-center text-xs text-black font-mono font-bold">
         NISSEI Tech Service Ops · Cotizador de Ensamble de PC
       </footer>
     </main>

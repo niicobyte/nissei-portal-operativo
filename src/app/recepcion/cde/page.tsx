@@ -32,7 +32,6 @@ import {
   Edit3,
   Plus,
   Unlink,
-  Printer,
 } from "lucide-react";
 import { SatiThermalPrintModal } from "@/components/common/SatiThermalPrintModal";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
@@ -2801,15 +2800,6 @@ export default function RecepcionCdeDashboardPage() {
                     <span>Editar Fechas y Órdenes</span>
                   </button>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setShowPrintModal(selectedTicket)}
-                  className="px-3.5 py-1.5 bg-[#FFD23F] hover:bg-yellow-400 text-black rounded-lg text-xs font-heading font-extrabold transition-all cursor-pointer flex items-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
-                  title="Imprimir Comprobante térmico con código de barras CODE128"
-                >
-                  <Printer className="w-3.5 h-3.5 text-black" />
-                  <span>Imprimir Comprobante</span>
-                </button>
               </div>
               <button
                 type="button"

@@ -592,7 +592,7 @@ export default function TecnicosDashboardPage() {
               <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.canales.canalTienda}
               </span>
-              <span className="text-xs sm:text-sm text-black font-extrabold bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">Tienda CDE</span>
+              <span className="text-xs sm:text-sm text-black font-extrabold bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">Tienda</span>
             </div>
             <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">
               {metrics.canales.canalEmpresas} Emp · {metrics.canales.canalEcommerce} Web
@@ -796,15 +796,6 @@ export default function TecnicosDashboardPage() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                href="/armar-pc"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-heading font-extrabold text-black bg-[#FFD23F] hover:bg-yellow-400 border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
-                title="Configurador de PC y Presupuestos con Hardware Compatible"
-              >
-                <Wrench className="w-3.5 h-3.5 text-black" />
-                <span>Armar PC &amp; Presupuestos</span>
-              </Link>
-
               <Link
                 href="/tecnicos/nuevo"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-heading font-extrabold text-[#FFD23F] bg-black hover:bg-neutral-800 border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"

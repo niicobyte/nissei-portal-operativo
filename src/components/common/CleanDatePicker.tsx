@@ -12,6 +12,7 @@ interface CleanDatePickerProps {
   fullWidth?: boolean;
   align?: "left" | "right";
   format?: "YYYY-MM-DD" | "DD/MM/YYYY";
+  size?: "sm" | "md";
 }
 
 const MONTH_NAMES = [
@@ -82,6 +83,7 @@ export function CleanDatePicker({
   fullWidth = true,
   align = "left",
   format = "YYYY-MM-DD",
+  size = "sm",
 }: CleanDatePickerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -261,7 +263,9 @@ export function CleanDatePicker({
           if (!isOpen) updatePopoverPosition();
           setIsOpen((prev) => !prev);
         }}
-        className={`inline-flex items-center justify-between gap-2 px-3 py-2 text-xs sm:text-sm font-bold rounded-lg border-2 border-black transition-all duration-150 cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none select-none ${
+        className={`inline-flex items-center justify-between gap-2 ${
+          size === "md" ? "px-3.5 py-2.5 min-h-[46px] rounded-xl text-sm" : "px-3 py-2 rounded-lg text-xs sm:text-sm"
+        } font-bold border-2 border-black transition-all duration-150 cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none select-none ${
           fullWidth ? "w-full" : ""
         } ${
           isOpen

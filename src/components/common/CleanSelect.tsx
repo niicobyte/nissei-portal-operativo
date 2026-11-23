@@ -121,9 +121,10 @@ export function CleanSelect({
     };
   }, [isOpen]);
 
-  const pyClass = size === "sm" ? "py-1.5" : "py-2";
-  const pxClass = size === "sm" ? "px-2.5" : "px-3";
+  const pyClass = size === "sm" ? "py-1.5" : "py-2.5 min-h-[46px]";
+  const pxClass = size === "sm" ? "px-2.5" : "px-3.5";
   const textClass = size === "sm" ? "text-xs" : "text-sm";
+  const roundedClass = size === "sm" ? "rounded-lg" : "rounded-xl";
 
   return (
     <div ref={containerRef} className={`relative text-left ${isFull ? "w-full block" : "inline-block"}`}>
@@ -133,7 +134,7 @@ export function CleanSelect({
           if (!isOpen) updatePopoverPosition();
           setIsOpen((prev) => !prev);
         }}
-        className={`inline-flex items-center justify-between gap-2 ${pxClass} ${pyClass} ${textClass} font-bold rounded-lg border-2 border-black transition-all duration-150 cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none select-none ${
+        className={`inline-flex items-center justify-between gap-2 ${pxClass} ${pyClass} ${textClass} font-bold ${roundedClass} border-2 border-black transition-all duration-150 cursor-pointer shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none select-none ${
           isFull ? "w-full" : ""
         } ${
           isOpen
