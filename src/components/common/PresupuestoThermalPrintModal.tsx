@@ -12,6 +12,7 @@ import {
 import {
   ThermalPrintSettings,
   ThermalPaperProfile,
+  ThermalLengthMode,
   DEFAULT_THERMAL_PRINT_SETTINGS,
   THERMAL_PROFILE_META,
   getStoredThermalPrintSettings,
@@ -312,10 +313,10 @@ export function PresupuestoThermalPrintModal({
         {showThermalConfig && (
           <div className="rounded-xl border-2 border-black bg-[#FAF6EE] p-4 space-y-3.5 text-xs shadow-[3px_3px_0px_#000] print:hidden animate-in fade-in">
             <div className="flex items-center justify-between border-b-2 border-black pb-2.5">
-              <div className="flex items-center gap-1.5 font-heading font-extrabold text-black uppercase tracking-wide text-xs">
+              <span className="font-heading font-extrabold text-black text-xs uppercase tracking-wide flex items-center gap-1.5">
                 <SlidersHorizontal className="w-3.5 h-3.5 text-black" />
-                <span>Calibración de Impresora Térmica</span>
-              </div>
+                Calibración de Impresora Térmica
+              </span>
               <button
                 type="button"
                 onClick={handleResetThermal}
@@ -326,42 +327,80 @@ export function PresupuestoThermalPrintModal({
               </button>
             </div>
 
-            {/* Perfil de Papel */}
+            {/* Ancho de papel */}
             <div className="space-y-1.5">
-              <span className="font-heading font-extrabold text-black block text-[11px] uppercase tracking-wider">
-                Ancho de Rollo / Papel:
-              </span>
+              <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
+                Ancho del rollo / cabezal:
+              </label>
               <div className="grid grid-cols-3 gap-2">
-                {(["80_72", "80_76", "58_48"] as ThermalPaperProfile[]).map((prof) => {
-                  const meta = THERMAL_PROFILE_META[prof];
-                  if (!meta) return null;
-                  const isSel = thermalSettings.paperProfile === prof;
+                {(Object.keys(THERMAL_PROFILE_META) as ThermalPaperProfile[]).map((key) => {
+                  const active = thermalSettings.paperProfile === key;
                   return (
                     <button
-                      key={prof}
+                      key={key}
                       type="button"
-                      onClick={() => updateThermalSetting("paperProfile", prof)}
-                      className={`p-2 rounded-lg border-2 border-black text-left cursor-pointer transition-all ${
-                        isSel
-                          ? "bg-black text-[#FFD23F] font-heading font-extrabold shadow-[2px_2px_0px_#000]"
-                          : "bg-[#FFFDF9] text-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
+                      onClick={() => updateThermalSetting("paperProfile", key)}
+                      className={`px-2 py-1.5 rounded-lg text-xs font-heading border-2 border-black text-center transition-all cursor-pointer ${
+                        active
+                          ? "bg-black text-[#FFD23F] font-extrabold shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                       }`}
                     >
-                      <span className="block font-mono text-[11px] font-bold">{meta.shortLabel}</span>
-                      <span className={`block text-[10px] ${isSel ? "text-neutral-300" : "text-neutral-600"} font-mono`}>
-                        {meta.contentWidthMm}mm útil
-                      </span>
+                      {THERMAL_PROFILE_META[key].shortLabel}
                     </button>
                   );
                 })}
               </div>
             </div>
 
-            {/* Escala y Calibración Y / X */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Formato y Márgenes */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
+                  Largo de corte:
+                </label>
+                <select
+                  value={thermalSettings.lengthMode}
+                  onChange={(e) =>
+                    updateThermalSetting("lengthMode", e.target.value as ThermalLengthMode)
+                  }
+                  className="w-full rounded-lg border-2 border-black bg-white px-2.5 py-1.5 text-xs font-mono font-bold text-black outline-none shadow-[2px_2px_0px_#000]"
+                >
+                  <option value="auto">Rollo continuo (Recomendado - Auto)</option>
+                  <option value="120mm">Etiqueta 120mm (Stickers precortados)</option>
+                  <option value="150mm">Etiqueta 150mm (Stickers precortados)</option>
+                  <option value="200mm">Etiqueta 200mm (Stickers precortados)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
+                  Márgenes laterales (X):
+                </label>
+                <div className="flex items-center gap-1.5">
+                  {[0, 1, 2, 4].map((mm) => (
+                    <button
+                      key={mm}
+                      type="button"
+                      onClick={() => updateThermalSetting("marginMm", mm)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-mono border-2 border-black transition-all cursor-pointer ${
+                        thermalSettings.marginMm === mm
+                          ? "bg-black text-[#FFD23F] font-bold shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
+                      }`}
+                    >
+                      {mm}mm
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Escala y Centrados X / Y */}
+            <div className="grid grid-cols-3 gap-2.5 pt-1">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-heading font-bold text-black">Escala de impresión:</span>
+                  <span className="font-heading font-bold text-black">Escala:</span>
                   <span className="font-mono font-black text-black">{thermalSettings.scalePct}%</span>
                 </div>
                 <input
@@ -377,27 +416,22 @@ export function PresupuestoThermalPrintModal({
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-heading font-bold text-black">Tinta Ultra Negra:</span>
-                  <span className="font-mono font-bold text-black">
-                    {isUltraBlack ? "Máxima" : "Estándar"}
+                  <span className="font-heading font-bold text-black">Posición (X):</span>
+                  <span className="font-mono font-black text-black">
+                    {thermalSettings.offsetXMm > 0 ? `+${thermalSettings.offsetXMm}` : thermalSettings.offsetXMm}mm
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsUltraBlack((prev) => !prev)}
-                  className={`w-full py-1.5 px-2.5 rounded-lg border-2 border-black text-xs font-heading font-extrabold transition-all cursor-pointer ${
-                    isUltraBlack
-                      ? "bg-black text-[#FFD23F] shadow-[2px_2px_0px_#000]"
-                      : "bg-[#FFFDF9] text-black shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
-                  }`}
-                >
-                  {isUltraBlack ? "✓ Negro Intenso ON" : "Desactivado"}
-                </button>
+                <input
+                  type="range"
+                  min={-8}
+                  max={8}
+                  step={0.5}
+                  value={thermalSettings.offsetXMm}
+                  onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
+                  className="w-full accent-black cursor-pointer"
+                />
               </div>
-            </div>
 
-            {/* Ajuste Fino de Ejes: Vertical (Y) y Horizontal (X) */}
-            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <div className="flex items-center justify-between text-[11px]">
                   <span className="font-heading font-bold text-black">Subir/Bajar (Y):</span>
@@ -413,15 +447,15 @@ export function PresupuestoThermalPrintModal({
                   value={thermalSettings.offsetYMm}
                   onChange={(e) => updateThermalSetting("offsetYMm", Number(e.target.value))}
                   className="w-full accent-black cursor-pointer"
-                  title="Ajuste vertical de inicio. Valores negativos (-15mm, -10mm) suben el texto hacia el inicio del rollo"
+                  title="Desplaza el inicio verticalmente. Valores negativos (-15mm, -25mm) contrarrestan el avance en blanco de la impresora"
                 />
                 <div className="flex items-center justify-between text-[10px] pt-0.5">
                   <button
                     type="button"
-                    onClick={() => updateThermalSetting("offsetYMm", -15)}
+                    onClick={() => updateThermalSetting("offsetYMm", -20)}
                     className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
                   >
-                    -15mm
+                    Subir -20mm
                   </button>
                   <button
                     type="button"
@@ -439,95 +473,51 @@ export function PresupuestoThermalPrintModal({
                   </button>
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-1">
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="font-heading font-bold text-black">Posición Horizontal (X):</span>
-                  <span className="font-mono font-black text-black">
-                    {thermalSettings.offsetXMm > 0 ? `+${thermalSettings.offsetXMm}` : thermalSettings.offsetXMm}mm
+            {/* Opción Bien Negro / Alto Contraste */}
+            <div className="pt-2 border-t-2 border-black border-dashed">
+              <label className="flex items-start gap-3 text-xs font-medium text-black cursor-pointer p-3 rounded-lg bg-[#FFFDF9] border-2 border-black shadow-[2px_2px_0px_#000] hover:bg-[#FAF6EE] transition-colors">
+                <input
+                  type="checkbox"
+                  checked={isUltraBlack}
+                  onChange={(e) => {
+                    updateThermalSetting("highContrast", e.target.checked);
+                    setIsUltraBlack(e.target.checked);
+                  }}
+                  className="rounded border-2 border-black accent-black mt-0.5 w-4 h-4 cursor-pointer"
+                />
+                <div className="flex-1">
+                  <span className="font-heading font-extrabold text-black block text-xs">
+                    Negro Intenso (Ultra Black / Cabezal térmico nítido)
+                  </span>
+                  <span className="text-[11px] text-neutral-800 leading-tight block mt-0.5 font-medium">
+                    Aplica tinta negra pura (#000000), trazo engrosado y bordes sólidos de 2px para que la impresora térmica imprima bien oscuro y legible.
                   </span>
                 </div>
-                <input
-                  type="range"
-                  min={-8}
-                  max={8}
-                  step={0.5}
-                  value={thermalSettings.offsetXMm}
-                  onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
-                  className="w-full accent-black cursor-pointer"
-                  title="Ajuste horizontal fino (+/- mm). Mueve el ticket a la izquierda o derecha"
-                />
-                <div className="flex items-center justify-between text-[10px] pt-0.5">
-                  <button
-                    type="button"
-                    onClick={() => updateThermalSetting("offsetXMm", -4)}
-                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
-                  >
-                    -4mm
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateThermalSetting("offsetXMm", 0)}
-                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
-                  >
-                    0mm
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => updateThermalSetting("offsetXMm", 4)}
-                    className="hover:text-black font-mono font-bold underline cursor-pointer text-neutral-800"
-                  >
-                    +4mm
-                  </button>
-                </div>
-              </div>
+              </label>
             </div>
 
-            {/* Márgenes Laterales y Modo de Nombres */}
-            <div className="space-y-2.5 pt-2 border-t-2 border-black border-dashed">
-              <div className="space-y-1.5">
-                <span className="font-heading font-extrabold text-black block text-[11px] uppercase tracking-wider">
-                  Márgenes Laterales:
-                </span>
-                <div className="grid grid-cols-3 gap-2">
-                  {[0, 2, 4].map((mm) => (
-                    <button
-                      key={mm}
-                      type="button"
-                      onClick={() => updateThermalSetting("marginMm", mm)}
-                      className={`py-1.5 rounded-lg border-2 border-black text-xs font-mono font-bold text-center cursor-pointer transition-all ${
-                        thermalSettings.marginMm === mm
-                          ? "bg-black text-[#FFD23F] shadow-[2px_2px_0px_#000]"
-                          : "bg-[#FFFDF9] text-black shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
-                      }`}
-                    >
-                      {mm}mm
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Formato de nombres de componentes en el ticket (Permanente Básico / Limpio) */}
-              <div className="p-3 rounded-lg bg-[#FFFDF9] border-2 border-black shadow-[2px_2px_0px_#000] text-xs flex items-center justify-between">
-                <div>
-                  <span className="font-heading font-extrabold text-black block text-[11px]">Formato de Nombres en Ticket:</span>
-                  <span className="text-[10px] text-neutral-700 font-medium">Muestra el modelo principal limpio y legible sin descripciones redundantes.</span>
-                </div>
-                <span className="font-mono font-bold text-white bg-[#2A9D8F] border border-black px-2 py-0.5 rounded text-[10px] whitespace-nowrap shadow-[1px_1px_0px_#000]">
-                  ✓ Básico Permanente
-                </span>
-              </div>
-            </div>
-
-            {/* Tip POS-80 / 3nStar */}
+            {/* Tip operativo y solución para espacio arriba y saltos en 3nStar / POS-80 */}
             <div className="rounded-lg bg-[#FFD23F]/30 border-2 border-black p-3 text-xs text-black shadow-[2px_2px_0px_#000] space-y-1.5 font-sans">
-              <div className="flex items-center gap-1 font-bold">
-                <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                <span>Configuración recomendada para POS-80 / Térmica:</span>
+              <div className="flex items-center gap-1.5 font-heading font-extrabold text-black">
+                <Info className="w-4 h-4 text-black shrink-0" />
+                <span>Solución a saltos en blanco y espacio arriba (3nStar / POS-80):</span>
               </div>
-              <p className="text-amber-950">
-                En la ventana de impresión de Chrome/Edge: dejar <strong>Márgenes: Ninguno</strong> y <strong>Escala: 100%</strong>. Si tu impresora lo admite en Tamaño de papel, seleccioná <strong>80 x Receipt</strong> o <strong>Continuous</strong> para que no pagine a hojas de 210mm.
-              </p>
+              <ul className="text-[11px] leading-relaxed list-disc list-inside space-y-1 text-black font-medium">
+                <li>
+                  <strong>Evitar saltos en blanco en el medio:</strong> Dejá siempre <strong>Largo de corte: Rollo continuo (Auto)</strong>. Las etiquetas fijas cortan el comprobante a la mitad.
+                </li>
+                <li>
+                  <strong>En la ventana de Chrome:</strong> Dejar <strong>Escala: 100%</strong> y <strong>Márgenes: Ninguno</strong>.
+                </li>
+                <li>
+                  <strong>Tamaño de papel en Chrome:</strong> Cambiar de <em>80(72.1) x 210 mm</em> a <strong>80 x Receipt</strong> o <strong>Continuous / Rollo</strong> para evitar que Windows divida en hojas fijas de 210mm.
+                </li>
+                <li>
+                  <strong>Compensar avance de cabezal:</strong> En impresoras 3nStar, podés usar <strong>Subir/Bajar (Y)</strong> en <strong>-10mm</strong> a <strong>-20mm</strong> para que el texto comience pegado al borde cortado.
+                </li>
+              </ul>
             </div>
           </div>
         )}
