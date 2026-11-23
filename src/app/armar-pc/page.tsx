@@ -4106,25 +4106,28 @@ export default function ArmarPcPresupuestadorPage() {
           </div>
 
           {/* Ficha de Datos del Vendedor y Cliente */}
-          <div className="bg-white border border-zinc-200 rounded-xl p-3.5 sm:p-5 space-y-3.5 shadow-sm">
+          <div className="bg-[#FFFDF9] border-2 border-black rounded-xl p-3.5 sm:p-5 space-y-3.5 shadow-[4px_4px_0px_#000]">
             <div className="flex items-center justify-between gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5 min-w-0 truncate">
-                <FileText className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
+              <span className="text-xs font-heading font-extrabold uppercase tracking-wider text-black flex items-center gap-1.5 min-w-0 truncate">
+                <span className="w-5 h-5 rounded-md bg-[#FFD23F] border border-black flex items-center justify-center text-black shrink-0 shadow-[1px_1px_0px_#000]">
+                  <FileText className="w-3 h-3 text-black stroke-[2.5]" />
+                </span>
                 <span className="truncate">Datos de la Cotización</span>
               </span>
               <button
                 type="button"
                 onClick={handleReset}
-                className="text-[11px] text-zinc-400 hover:text-rose-600 flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-heading font-extrabold text-black bg-[#FAF6EE] hover:bg-[#E76F51] hover:text-white border-2 border-black shadow-[1.5px_1.5px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all shrink-0"
+                title="Reiniciar cotización y vaciar componentes seleccionados"
               >
-                <RotateCcw className="w-3 h-3" />
-                Reiniciar
+                <RotateCcw className="w-3 h-3 stroke-[2.5]" />
+                <span>Reiniciar</span>
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
               <div>
-                <label className="text-xs sm:text-sm font-semibold text-zinc-700 block mb-1.5">
+                <label className="text-xs sm:text-sm font-heading font-extrabold text-black block mb-1.5">
                   Vendedor Asignado
                 </label>
                 <VendedorSelect
@@ -4150,7 +4153,7 @@ export default function ArmarPcPresupuestadorPage() {
               </div>
 
               <div>
-                <label className="text-xs sm:text-sm font-semibold text-zinc-700 block mb-1.5">
+                <label className="text-xs sm:text-sm font-heading font-extrabold text-black block mb-1.5">
                   Nombre del Cliente
                 </label>
                 <input
@@ -4159,16 +4162,18 @@ export default function ArmarPcPresupuestadorPage() {
                   value={clienteNombre}
                   onChange={(e) => setClienteNombre(e.target.value)}
                   placeholder="Ej: Marcelo Gomez..."
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-3.5 py-2.5 text-sm sm:text-base text-zinc-900 outline-none focus:border-zinc-900 focus:bg-white transition-colors min-h-[46px]"
+                  className="w-full bg-[#FAF6EE] focus:bg-white border-2 border-black rounded-xl px-3.5 py-2.5 text-sm sm:text-base font-sans font-medium text-black outline-none shadow-[2px_2px_0px_#000] focus:shadow-[3px_3px_0px_#000] transition-all min-h-[46px]"
                 />
               </div>
             </div>
 
             {/* Selector de Modo de Presupuesto Rápido: Por Entorno vs Por Cantidad de Guaraníes */}
-            <div className="pt-3.5 border-t border-zinc-100 space-y-3">
+            <div className="pt-3.5 border-t-2 border-black space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <span className="text-xs font-heading font-extrabold uppercase tracking-wider text-black flex items-center gap-1.5">
+                  <span className="w-5 h-5 rounded-md bg-[#FFD23F] border border-black flex items-center justify-center text-black shrink-0 shadow-[1px_1px_0px_#000]">
+                    <Sparkles className="w-3 h-3 text-black stroke-[2.5]" />
+                  </span>
                   <span>Presets Inteligentes (100% Compatibles &amp; En Stock):</span>
                 </span>
 
