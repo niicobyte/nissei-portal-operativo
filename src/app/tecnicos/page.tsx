@@ -1663,26 +1663,47 @@ export default function TecnicosDashboardPage() {
                     )}
                 </div>
 
-                {/* Componentes (Sin seriales) */}
+                {/* Componentes (Formato Idéntico a Presupuesto) */}
                 <div className="py-2 space-y-1">
-                  <div className="text-[10px] font-mono font-black uppercase text-black border-b-2 border-black pb-0.5 thermal-label">
-                    COMPONENTES ({selectedOrderForCert.componentes.length}):
+                  <div className="flex justify-between text-[10px] font-mono font-black uppercase text-black border-b-2 border-black pb-0.5 thermal-label">
+                    <span>COMPONENTES ({selectedOrderForCert.componentes.length}):</span>
+                    <span>CANT</span>
                   </div>
-                  <ul className="space-y-1 pt-0.5">
-                    {selectedOrderForCert.componentes.map((c, i) => (
-                      <li
-                        key={i}
-                        className="text-[10px] leading-snug text-black border-b border-dotted border-zinc-400 print:border-black pb-1 last:border-b-0 last:pb-0 flex items-start gap-1.5"
-                      >
-                        <span className="font-mono font-black thermal-label shrink-0">
-                          [{c.sku ? `SKU: ${c.sku}` : formatCategoriaSticker(c.categoria)}]
-                        </span>
-                        <span className="font-black thermal-value flex-1 min-w-0 break-words">
-                          {formatearNombreComponenteBasico(c.descripcion, c.categoria)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="space-y-2 pt-1">
+                    {(() => {
+                      const map = new Map<
+                        string,
+                        { sku: string; nombre: string; categoria: string; cantidad: number }
+                      >();
+                      for (const c of selectedOrderForCert.componentes) {
+                        const nombre = formatearNombreComponenteBasico(c.descripcion, c.categoria);
+                        const key = `${c.sku || ""}:::${nombre}`;
+                        const existing = map.get(key);
+                        if (existing) {
+                          existing.cantidad += 1;
+                        } else {
+                          map.set(key, {
+                            sku: c.sku || "",
+                            nombre,
+                            categoria: c.categoria,
+                            cantidad: 1,
+                          });
+                        }
+                      }
+                      return Array.from(map.values()).map((item, idx) => (
+                        <div key={idx} className="text-[11px] font-mono leading-tight space-y-0.5">
+                          <div className="font-black text-black break-words whitespace-normal leading-snug thermal-value">
+                            {item.nombre}
+                          </div>
+                          <div className="text-[10px] text-black/80 font-bold font-mono">
+                            <span>
+                              {item.sku ? `SKU #${item.sku}` : formatCategoriaSticker(item.categoria)} · Cant: {item.cantidad}
+                            </span>
+                          </div>
+                        </div>
+                      ));
+                    })()}
+                  </div>
                 </div>
 
                 {/* Observaciones (Solo si el campo está rellenado) */}
