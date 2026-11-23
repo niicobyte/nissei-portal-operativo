@@ -1329,40 +1329,40 @@ export default function TecnicosDashboardPage() {
 
             {/* Panel Colapsable de Calibración de Impresora Térmica */}
             {showThermalConfig && (
-              <div className="rounded-xl border-2 border-black bg-[#FAF6EE] p-3.5 space-y-3 text-xs shadow-[2px_2px_0px_#000] print:hidden">
-                <div className="flex items-center justify-between border-b-2 border-black pb-2">
-                  <span className="font-heading font-extrabold text-black text-[11px] uppercase tracking-wide flex items-center gap-1.5">
+              <div className="rounded-xl border-2 border-black bg-[#FAF6EE] p-4 space-y-3.5 text-xs shadow-[3px_3px_0px_#000] print:hidden animate-in fade-in">
+                <div className="flex items-center justify-between border-b-2 border-black pb-2.5">
+                  <span className="font-heading font-extrabold text-black text-xs uppercase tracking-wide flex items-center gap-1.5">
                     <SlidersHorizontal className="w-3.5 h-3.5 text-black" />
                     Calibración de Impresora Térmica
                   </span>
                   <button
                     type="button"
                     onClick={() => setThermalSettings(resetThermalPrintSettings())}
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-600 hover:text-zinc-900 cursor-pointer"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-mono font-bold text-black bg-[#FFFDF9] hover:bg-[#FFD23F] border border-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer transition-all"
                   >
-                    <RotateCcw className="w-3 h-3" />
-                    Restablecer
+                    <RotateCcw className="w-3 h-3 text-black" />
+                    <span>Restablecer</span>
                   </button>
                 </div>
 
                 {/* Tipo de Comprobante / Título (Detección automática + selección manual) */}
-                <div className="space-y-1">
+                <div className="space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-bold text-zinc-700">
+                    <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
                       Tipo de Comprobante / Título:
                     </label>
-                    <span className="text-[10px] font-mono text-zinc-500">
+                    <span className="text-[10px] font-mono font-bold text-neutral-800 bg-[#FFFDF9] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
                       Detectado: {isOrderFinalizado ? "Finalizado" : "Nuevo Ingreso"}
                     </span>
                   </div>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
                       onClick={() => setOverrideStickerType("auto")}
-                      className={`px-2 py-1.5 rounded-lg text-[10.5px] font-semibold border text-center transition-colors cursor-pointer ${
+                      className={`px-2.5 py-2 rounded-lg text-[11px] border-2 border-black text-center transition-all cursor-pointer ${
                         overrideStickerType === "auto"
-                          ? "bg-zinc-900 text-white border-zinc-900"
-                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                          ? "bg-black text-[#FFD23F] font-heading font-extrabold shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                       }`}
                     >
                       Automático ({isOrderFinalizado ? "Finalizado" : "Nuevo"})
@@ -1370,10 +1370,10 @@ export default function TecnicosDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setOverrideStickerType("nuevo")}
-                      className={`px-2 py-1.5 rounded-lg text-[10.5px] font-semibold border text-center transition-colors cursor-pointer ${
+                      className={`px-2.5 py-2 rounded-lg text-[11px] border-2 border-black text-center transition-all cursor-pointer ${
                         overrideStickerType === "nuevo"
-                          ? "bg-zinc-900 text-white border-zinc-900"
-                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                          ? "bg-black text-[#FFD23F] font-heading font-extrabold shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                       }`}
                     >
                       {isExpansion ? "Nueva Expansión" : "Nuevo Montaje"}
@@ -1381,10 +1381,10 @@ export default function TecnicosDashboardPage() {
                     <button
                       type="button"
                       onClick={() => setOverrideStickerType("finalizado")}
-                      className={`px-2 py-1.5 rounded-lg text-[10.5px] font-semibold border text-center transition-colors cursor-pointer ${
+                      className={`px-2.5 py-2 rounded-lg text-[11px] border-2 border-black text-center transition-all cursor-pointer ${
                         overrideStickerType === "finalizado"
-                          ? "bg-zinc-900 text-white border-zinc-900"
-                          : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                          ? "bg-black text-[#FFD23F] font-heading font-extrabold shadow-[2px_2px_0px_#000]"
+                          : "bg-[#FFFDF9] text-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                       }`}
                     >
                       {isExpansion ? "Expansión Finalizada" : "Montaje Finalizado"}
@@ -1393,11 +1393,11 @@ export default function TecnicosDashboardPage() {
                 </div>
 
                 {/* Ancho de papel */}
-                <div className="space-y-1">
-                  <label className="block text-[11px] font-bold text-zinc-700">
-                    Ancho del rollo / cabezal:
+                <div className="space-y-1.5">
+                  <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
+                    Ancho del Rollo / Cabezal:
                   </label>
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-3 gap-2">
                     {(Object.keys(THERMAL_PROFILE_META) as ThermalPaperProfile[]).map((key) => {
                       const active = thermalSettings.paperProfile === key;
                       return (
@@ -1405,13 +1405,16 @@ export default function TecnicosDashboardPage() {
                           key={key}
                           type="button"
                           onClick={() => updateThermalSetting("paperProfile", key)}
-                          className={`px-2 py-1.5 rounded-lg text-[11px] font-semibold border text-center transition-colors cursor-pointer ${
+                          className={`px-2.5 py-2 rounded-lg text-[11px] border-2 border-black text-center transition-all cursor-pointer ${
                             active
-                              ? "bg-zinc-900 text-white border-zinc-900"
-                              : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                              ? "bg-black text-[#FFD23F] font-heading font-extrabold shadow-[2px_2px_0px_#000]"
+                              : "bg-[#FFFDF9] text-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                           }`}
                         >
-                          {THERMAL_PROFILE_META[key].shortLabel}
+                          <span className="block font-mono text-[11px] font-bold">{THERMAL_PROFILE_META[key].shortLabel}</span>
+                          <span className={`block text-[10px] ${active ? "text-neutral-300" : "text-neutral-600"} font-mono`}>
+                            {THERMAL_PROFILE_META[key].contentWidthMm}mm útil
+                          </span>
                         </button>
                       );
                     })}
@@ -1419,9 +1422,9 @@ export default function TecnicosDashboardPage() {
                 </div>
 
                 {/* Formato y Márgenes */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-bold text-zinc-700">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
                       Largo de corte:
                     </label>
                     <select
@@ -1429,7 +1432,7 @@ export default function TecnicosDashboardPage() {
                       onChange={(e) =>
                         updateThermalSetting("lengthMode", e.target.value as ThermalLengthMode)
                       }
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-[11px] font-medium text-zinc-900 outline-none focus:border-zinc-900"
+                      className="w-full rounded-lg border-2 border-black bg-[#FFFDF9] px-2.5 py-2 text-xs font-mono font-bold text-black outline-none shadow-[2px_2px_0px_#000]"
                     >
                       <option value="auto">Rollo continuo (Recomendado - Auto)</option>
                       <option value="120mm">Etiqueta 120mm (Stickers precortados)</option>
@@ -1438,20 +1441,20 @@ export default function TecnicosDashboardPage() {
                     </select>
                   </div>
 
-                  <div className="space-y-1">
-                    <label className="block text-[11px] font-bold text-zinc-700">
+                  <div className="space-y-1.5">
+                    <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
                       Márgenes laterales (X):
                     </label>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5">
                       {[0, 1, 2, 4].map((mm) => (
                         <button
                           key={mm}
                           type="button"
                           onClick={() => updateThermalSetting("marginMm", mm)}
-                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono font-semibold border transition-colors cursor-pointer ${
+                          className={`flex-1 py-1.5 rounded-lg text-[11px] font-mono font-bold border-2 border-black transition-all cursor-pointer ${
                             thermalSettings.marginMm === mm
-                              ? "bg-zinc-900 text-white border-zinc-900"
-                              : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-400"
+                              ? "bg-black text-[#FFD23F] shadow-[2px_2px_0px_#000]"
+                              : "bg-[#FFFDF9] text-black shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
                           }`}
                         >
                           {mm}mm
@@ -1462,11 +1465,11 @@ export default function TecnicosDashboardPage() {
                 </div>
 
                 {/* Escala y Centrados X / Y */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-zinc-700">Escala:</span>
-                      <span className="font-mono font-bold text-zinc-900">{thermalSettings.scalePct}%</span>
+                      <span className="font-heading font-bold text-black">Escala:</span>
+                      <span className="font-mono font-black text-black">{thermalSettings.scalePct}%</span>
                     </div>
                     <input
                       type="range"
@@ -1475,14 +1478,14 @@ export default function TecnicosDashboardPage() {
                       step={5}
                       value={thermalSettings.scalePct}
                       onChange={(e) => updateThermalSetting("scalePct", Number(e.target.value))}
-                      className="w-full accent-zinc-900 cursor-pointer"
+                      className="w-full accent-black cursor-pointer"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-zinc-700">Posición (X):</span>
-                      <span className="font-mono font-bold text-zinc-900">
+                      <span className="font-heading font-bold text-black">Posición (X):</span>
+                      <span className="font-mono font-black text-black">
                         {thermalSettings.offsetXMm > 0 ? `+${thermalSettings.offsetXMm}` : thermalSettings.offsetXMm}mm
                       </span>
                     </div>
@@ -1493,14 +1496,14 @@ export default function TecnicosDashboardPage() {
                       step={0.5}
                       value={thermalSettings.offsetXMm}
                       onChange={(e) => updateThermalSetting("offsetXMm", Number(e.target.value))}
-                      className="w-full accent-zinc-900 cursor-pointer"
+                      className="w-full accent-black cursor-pointer"
                     />
                   </div>
 
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-bold text-zinc-700">Subir/Bajar (Y):</span>
-                      <span className="font-mono font-bold text-zinc-900">
+                      <span className="font-heading font-bold text-black">Subir/Bajar (Y):</span>
+                      <span className="font-mono font-black text-black">
                         {thermalSettings.offsetYMm > 0 ? `+${thermalSettings.offsetYMm}` : thermalSettings.offsetYMm}mm
                       </span>
                     </div>
@@ -1511,28 +1514,28 @@ export default function TecnicosDashboardPage() {
                       step={1}
                       value={thermalSettings.offsetYMm}
                       onChange={(e) => updateThermalSetting("offsetYMm", Number(e.target.value))}
-                      className="w-full accent-zinc-900 cursor-pointer"
+                      className="w-full accent-black cursor-pointer"
                       title="Desplaza el inicio verticalmente. Valores negativos (-15mm, -25mm) contrarrestan el avance en blanco de la impresora"
                     />
-                    <div className="flex items-center justify-between text-[10px] text-zinc-500 pt-0.5">
+                    <div className="flex items-center justify-between text-[10px] text-neutral-800 pt-0.5">
                       <button
                         type="button"
                         onClick={() => updateThermalSetting("offsetYMm", -20)}
-                        className="hover:text-zinc-900 underline cursor-pointer"
+                        className="hover:text-black font-mono font-bold underline cursor-pointer"
                       >
                         Subir -20mm
                       </button>
                       <button
                         type="button"
                         onClick={() => updateThermalSetting("offsetYMm", -10)}
-                        className="hover:text-zinc-900 underline cursor-pointer"
+                        className="hover:text-black font-mono font-bold underline cursor-pointer"
                       >
                         -10mm
                       </button>
                       <button
                         type="button"
                         onClick={() => updateThermalSetting("offsetYMm", 0)}
-                        className="hover:text-zinc-900 underline cursor-pointer"
+                        className="hover:text-black font-mono font-bold underline cursor-pointer"
                       >
                         0mm
                       </button>
@@ -1541,19 +1544,21 @@ export default function TecnicosDashboardPage() {
                 </div>
 
                 {/* Opción Bien Negro / Alto Contraste */}
-                <div className="pt-1 border-t border-zinc-200">
-                  <label className="flex items-start gap-2.5 text-[11px] font-medium text-zinc-800 cursor-pointer p-2 rounded-lg bg-white border border-zinc-200 hover:border-zinc-400 transition-colors">
+                <div className="pt-1 border-t-2 border-black">
+                  <label className={`flex items-start gap-3 text-[11px] cursor-pointer p-3 rounded-xl border-2 border-black transition-all shadow-[2px_2px_0px_#000] ${
+                    thermalSettings.highContrast ? "bg-[#FFFDF9]" : "bg-[#FFFDF9] hover:bg-neutral-50"
+                  }`}>
                     <input
                       type="checkbox"
                       checked={thermalSettings.highContrast}
                       onChange={(e) => updateThermalSetting("highContrast", e.target.checked)}
-                      className="rounded border-zinc-300 accent-zinc-900 mt-0.5 w-4 h-4 cursor-pointer"
+                      className="rounded border-2 border-black accent-black mt-0.5 w-4 h-4 cursor-pointer"
                     />
                     <div className="flex-1">
-                      <span className="font-bold text-zinc-900 block">
+                      <span className="font-heading font-extrabold text-black text-xs block">
                         Negro Intenso (Ultra Black / Cabezal térmico nítido)
                       </span>
-                      <span className="text-[10px] text-zinc-500 leading-tight block mt-0.5">
+                      <span className="text-[10.5px] text-neutral-700 font-medium leading-relaxed block mt-0.5">
                         Fuerza texto en negro puro (#000000), grosor Black (900) y bordes sólidos de 2px en todos los componentes para que la impresora térmica imprima bien oscuro y nítido.
                       </span>
                     </div>
@@ -1561,23 +1566,23 @@ export default function TecnicosDashboardPage() {
                 </div>
 
                 {/* Tip operativo y solución para espacio arriba y saltos en 3nStar / POS-80 */}
-                <div className="rounded-lg bg-amber-50 border border-amber-200 p-2.5 text-[11px] text-amber-900 space-y-1.5">
-                  <div className="flex items-center gap-1.5 font-bold">
-                    <Info className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                <div className="rounded-xl bg-[#FFD23F]/20 border-2 border-black p-3 text-[11px] text-black space-y-2 shadow-[2px_2px_0px_#000]">
+                  <div className="flex items-center gap-2 font-heading font-extrabold text-black">
+                    <Info className="w-4 h-4 text-black shrink-0 stroke-[2.5]" />
                     <span>Solución a saltos en blanco y espacio arriba (3nStar / POS-80):</span>
                   </div>
-                  <ul className="text-[10.5px] leading-relaxed list-disc list-inside space-y-1 text-amber-950">
+                  <ul className="text-[10.5px] leading-relaxed list-disc list-inside space-y-1 text-neutral-900 font-medium">
                     <li>
-                      <strong>Evitar saltos en blanco en el medio:</strong> Dejá siempre <strong>Largo de corte: Rollo continuo (Auto)</strong>. Las etiquetas fijas cortan la lista de componentes a la mitad.
+                      <strong className="font-bold text-black">Evitar saltos en blanco en el medio:</strong> Dejá siempre <strong className="font-bold text-black">Largo de corte: Rollo continuo (Auto)</strong>. Las etiquetas fijas cortan la lista de componentes a la mitad.
                     </li>
                     <li>
-                      <strong>En la ventana de Chrome:</strong> Dejar <strong>Escala: 100%</strong> y <strong>Márgenes: Ninguno</strong>.
+                      <strong className="font-bold text-black">En la ventana de Chrome:</strong> Dejar <strong className="font-bold text-black">Escala: 100%</strong> y <strong className="font-bold text-black">Márgenes: Ninguno</strong>.
                     </li>
                     <li>
-                      <strong>Tamaño de papel en Chrome:</strong> Cambiar de <em>80(72.1) x 210 mm</em> a <strong>80 x Receipt</strong> o <strong>Continuous / Rollo</strong> para evitar que Windows divida en hojas fijas de 210mm.
+                      <strong className="font-bold text-black">Tamaño de papel en Chrome:</strong> Cambiar de <em>80(72.1) x 210 mm</em> a <strong className="font-bold text-black">80 x Receipt</strong> o <strong className="font-bold text-black">Continuous / Rollo</strong> para evitar que Windows divida en hojas fijas de 210mm.
                     </li>
                     <li>
-                      <strong>Compensar avance de cabezal:</strong> En impresoras 3nStar, podés usar <strong>Subir/Bajar (Y)</strong> en <strong>-10mm</strong> a <strong>-20mm</strong> para que el texto comience pegado al borde cortado.
+                      <strong className="font-bold text-black">Compensar avance de cabezal:</strong> En impresoras 3nStar, podés usar <strong className="font-bold text-black">Subir/Bajar (Y)</strong> en <strong className="font-bold text-black">-10mm</strong> a <strong className="font-bold text-black">-20mm</strong> para que el texto comience pegado al borde cortado.
                     </li>
                   </ul>
                 </div>
