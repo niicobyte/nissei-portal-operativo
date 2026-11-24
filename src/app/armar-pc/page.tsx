@@ -547,6 +547,8 @@ export default function ArmarPcPresupuestadorPage() {
   const [budgetCpuPreference, setBudgetCpuPreference] = useState<"AUTO" | "AMD" | "INTEL">("AUTO");
   const [selectedBudgetForCpuMenu, setSelectedBudgetForCpuMenu] = useState<number | null>(null);
   const [budgetFeedback, setBudgetFeedback] = useState<string | null>(null);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetCountdown, setResetCountdown] = useState(5);
   const [budgetAnalysis, setBudgetAnalysis] = useState<{
     targetPyg: number;
     achievedTotalPyg: number;
@@ -3126,15 +3128,55 @@ export default function ArmarPcPresupuestadorPage() {
     }
   };
 
-  // Limpiar configuración
-  const handleReset = () => {
-    if (confirm("¿Desea limpiar todos los componentes seleccionados?")) {
-      setSelectedComponents([]);
-      setPresetCpuAlert(null);
-      setPresetSuccessBanner(null);
-      setBudgetAnalysis(null);
-      setBudgetFeedback(null);
+  // Limpiar configuración con confirmación inline de 5 segundos
+  useEffect(() => {
+    if (!resetConfirmOpen) return;
+
+    const timer = window.setInterval(() => {
+      setResetCountdown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setResetConfirmOpen(false);
+        setResetCountdown(5);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [resetConfirmOpen]);
+
+  useEffect(() => {
+    if (resetConfirmOpen && resetCountdown <= 0) {
+      setResetConfirmOpen(false);
+      setResetCountdown(5);
     }
+  }, [resetConfirmOpen, resetCountdown]);
+
+  const handleReset = () => {
+    setResetCountdown(5);
+    setResetConfirmOpen(true);
+  };
+
+  const handleConfirmReset = () => {
+    setSelectedComponents([]);
+    setPresetCpuAlert(null);
+    setPresetSuccessBanner(null);
+    setBudgetAnalysis(null);
+    setBudgetFeedback(null);
+    setSelectedPresetForCpuMenu(null);
+    setSelectedBudgetForCpuMenu(null);
+    setResetConfirmOpen(false);
+    setResetCountdown(5);
+  };
+
+  const handleCancelReset = () => {
+    setResetConfirmOpen(false);
+    setResetCountdown(5);
   };
 
   // Marcas disponibles en la categoría activa
@@ -4107,22 +4149,50 @@ export default function ArmarPcPresupuestadorPage() {
 
           {/* Ficha de Datos del Vendedor y Cliente */}
           <div className="bg-[#FFFDF9] border-2 border-black rounded-xl p-3.5 sm:p-5 space-y-3.5 shadow-[4px_4px_0px_#000]">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
               <span className="text-xs font-heading font-extrabold uppercase tracking-wider text-black flex items-center gap-1.5 min-w-0 truncate">
                 <span className="w-5 h-5 rounded-md bg-[#FFD23F] border border-black flex items-center justify-center text-black shrink-0 shadow-[1px_1px_0px_#000]">
                   <FileText className="w-3 h-3 text-black stroke-[2.5]" />
                 </span>
                 <span className="truncate">Datos de la Cotización</span>
               </span>
-              <button
-                type="button"
-                onClick={handleReset}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-heading font-extrabold text-black bg-[#FAF6EE] hover:bg-[#E76F51] hover:text-white border-2 border-black shadow-[1.5px_1.5px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all shrink-0"
-                title="Reiniciar cotización y vaciar componentes seleccionados"
-              >
-                <RotateCcw className="w-3 h-3 stroke-[2.5]" />
-                <span>Reiniciar</span>
-              </button>
+              {!resetConfirmOpen ? (
+                <button
+                  type="button"
+                  onClick={handleReset}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[11px] font-heading font-extrabold text-black bg-[#FAF6EE] hover:bg-[#E76F51] hover:text-white border-2 border-black shadow-[1.5px_1.5px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all shrink-0"
+                  title="Reiniciar cotización y vaciar componentes seleccionados"
+                >
+                  <RotateCcw className="w-3 h-3 stroke-[2.5]" />
+                  <span>Reiniciar</span>
+                </button>
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[#FFD23F] border-2 border-black shadow-[2px_2px_0px_#000] animate-in fade-in duration-150 flex-wrap shrink-0">
+                  <span className="text-[11px] font-heading font-extrabold text-black">
+                    ¿Reiniciar?
+                  </span>
+                  <span
+                    className="px-1.5 py-0.5 rounded bg-black text-[#FFD23F] font-mono text-[10px] font-black tabular-nums border border-black"
+                    title="Se cerrará automáticamente sin reiniciar al llegar a 0"
+                  >
+                    {resetCountdown}s
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleConfirmReset}
+                    className="px-2.5 py-0.5 rounded-md text-[11px] font-heading font-extrabold bg-[#E76F51] hover:bg-rose-600 text-white border-2 border-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
+                  >
+                    Sí
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelReset}
+                    className="px-2.5 py-0.5 rounded-md text-[11px] font-heading font-extrabold bg-[#FFFDF9] hover:bg-neutral-200 text-black border-2 border-black shadow-[1px_1px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all"
+                  >
+                    No
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
