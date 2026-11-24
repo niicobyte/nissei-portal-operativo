@@ -1369,12 +1369,12 @@ export default function RecepcionCdeDashboardPage() {
         )}
 
         {/* Cabecera unificada Neo-Brutalista Retro */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b-2 border-black">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000] mb-2">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 lg:gap-4 pb-4 border-b-2 border-black">
+          <div className="min-w-0 flex-1">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000] mb-1.5 sm:mb-2">
               <span>SATI · DATOS CRUZADOS ASU CDE</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-[#111111] tracking-tight">
+            <h1 className="text-xl sm:text-2xl xl:text-3xl font-heading font-extrabold text-[#111111] tracking-tight">
               SATI ASU - CDE
             </h1>
             <p className="text-xs sm:text-sm text-neutral-800 mt-1 max-w-3xl font-medium">
@@ -1382,7 +1382,7 @@ export default function RecepcionCdeDashboardPage() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 self-start lg:self-center lg:justify-end w-full sm:w-auto">
             {/* Input oculto para carga múltiple de CSV o Excel (.xlsx) */}
             <input
               ref={fileInputRef}
@@ -1405,7 +1405,7 @@ export default function RecepcionCdeDashboardPage() {
                 }
               }}
               disabled={isUploadingCSV}
-              className="inline-flex items-center gap-2.5 px-3.5 h-12 min-w-[185px] sm:min-w-[205px] rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer select-none"
+              className="inline-flex items-center gap-2 px-3 h-10 sm:h-11 min-w-0 sm:min-w-[172px] xl:min-w-[190px] flex-1 sm:flex-initial rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer select-none whitespace-nowrap"
               title="Subir uno o varios archivos CSV o Excel (.xlsx) a la vez (ASU y/o CDE)"
             >
               <span className="w-7 h-7 rounded-md bg-black text-[#FFD23F] flex items-center justify-center font-bold border border-black shrink-0">
@@ -1584,9 +1584,9 @@ export default function RecepcionCdeDashboardPage() {
         )}
 
         {/* Tarjetas KPI de Rendimiento (Neo-Brutalismo Retro) */}
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-          <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
-            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
+        <section className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-3.5">
+          <div className="p-3.5 sm:p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1 min-w-0">
+            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block truncate">
               {viewScope === "DANESA"
                 ? "Envíos Danesa SA"
                 : viewScope === "CLIENTES_ASU"
@@ -1595,8 +1595,8 @@ export default function RecepcionCdeDashboardPage() {
                 ? "Clientes CDE"
                 : "Total Registros"}
             </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-mono font-extrabold text-black">
+            <div className="flex items-baseline justify-between gap-1 flex-wrap">
+              <strong className="text-2xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalScope.toLocaleString()}
               </strong>
               <span className="text-[11px] font-mono font-bold text-neutral-600">
@@ -1610,12 +1610,12 @@ export default function RecepcionCdeDashboardPage() {
 
           {viewScope === "DANESA" ? (
             <>
-              <div className="p-4 bg-[#FFD23F]/20 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
-                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block">
+              <div className="p-3.5 sm:p-4 bg-[#FFD23F]/20 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1 min-w-0">
+                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block truncate">
                   En Transportadora
                 </span>
-                <div className="flex items-baseline justify-between">
-                  <strong className="text-2xl font-mono font-extrabold text-black">
+                <div className="flex items-baseline justify-between gap-1 flex-wrap">
+                  <strong className="text-2xl font-mono font-extrabold text-black tabular-nums">
                     {metrics.danesaEnTransito}
                   </strong>
                   <span className="text-[11px] font-mono font-bold text-black">
@@ -1626,12 +1626,12 @@ export default function RecepcionCdeDashboardPage() {
                   Despachadas por CDE, pendientes ASU
                 </p>
               </div>
-              <div className="p-4 bg-[#2A9D8F]/15 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
-                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block">
+              <div className="p-3.5 sm:p-4 bg-[#2A9D8F]/15 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1 min-w-0">
+                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block truncate">
                   Recibidos en Depósito
                 </span>
-                <div className="flex items-baseline justify-between">
-                  <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F]">
+                <div className="flex items-baseline justify-between gap-1 flex-wrap">
+                  <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F] tabular-nums">
                     {metrics.danesaRecibidos}
                   </strong>
                   <span className="text-[11px] font-mono font-bold text-[#2A9D8F]">
@@ -1645,12 +1645,12 @@ export default function RecepcionCdeDashboardPage() {
             </>
           ) : (
             <>
-              <div className="p-4 bg-[#2A9D8F]/15 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
-                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block">
+              <div className="p-3.5 sm:p-4 bg-[#2A9D8F]/15 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1 min-w-0">
+                <span className="text-[11px] font-mono font-bold text-black uppercase tracking-wider block truncate">
                   Entregadas
                 </span>
-                <div className="flex items-baseline justify-between">
-                  <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F]">
+                <div className="flex items-baseline justify-between gap-1 flex-wrap">
+                  <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F] tabular-nums">
                     {metrics.scopeEntregadas}
                   </strong>
                   <span className="text-[11px] font-mono font-bold text-[#2A9D8F]">
@@ -1661,12 +1661,12 @@ export default function RecepcionCdeDashboardPage() {
                   Órdenes cerradas y entregadas
                 </p>
               </div>
-              <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
-                <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
+              <div className="p-3.5 sm:p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1 min-w-0">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block truncate">
                   Envíos Danesa SA
                 </span>
-                <div className="flex items-baseline justify-between">
-                  <strong className="text-2xl font-mono font-extrabold text-black">
+                <div className="flex items-baseline justify-between gap-1 flex-wrap">
+                  <strong className="text-2xl font-mono font-extrabold text-black tabular-nums">
                     {metrics.totalDanesa}
                   </strong>
                   <span className="text-[11px] font-mono font-bold text-neutral-600">
@@ -1680,12 +1680,12 @@ export default function RecepcionCdeDashboardPage() {
             </>
           )}
 
-          <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
-            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
+          <div className="p-3.5 sm:p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1 min-w-0">
+            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block truncate">
               Tiempo Prom. Retorno
             </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-mono font-extrabold text-black">
+            <div className="flex items-baseline justify-between gap-1 flex-wrap">
+              <strong className="text-2xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.avgDiasScope} <span className="text-sm font-normal text-neutral-600">días</span>
               </strong>
               <span className="text-[11px] font-mono font-bold text-neutral-600">
@@ -1696,12 +1696,12 @@ export default function RecepcionCdeDashboardPage() {
               Lapso entre ingreso y entrega
             </p>
           </div>
-          <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
-            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
+          <div className="p-3.5 sm:p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1 min-w-0">
+            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block truncate">
               En Laboratorio
             </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-mono font-extrabold text-black">
+            <div className="flex items-baseline justify-between gap-1 flex-wrap">
+              <strong className="text-2xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.scopeEnLaboratorio}
               </strong>
               <span className="text-[11px] font-mono font-bold text-neutral-600">
@@ -1712,12 +1712,12 @@ export default function RecepcionCdeDashboardPage() {
               Equipos en diagnóstico o reparación
             </p>
           </div>
-          <div className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1">
-            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block">
+          <div className="p-3.5 sm:p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] space-y-1 min-w-0">
+            <span className="text-[11px] font-mono font-bold text-neutral-700 uppercase tracking-wider block truncate">
               Resolución
             </span>
-            <div className="flex items-baseline justify-between">
-              <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F]">{metrics.reparados}</strong>
+            <div className="flex items-baseline justify-between gap-1 flex-wrap">
+              <strong className="text-2xl font-mono font-extrabold text-[#2A9D8F] tabular-nums">{metrics.reparados}</strong>
               <span className="text-[11px] font-mono font-bold text-[#E76F51]">{metrics.sinReparo} Sin Rep.</span>
             </div>
             <p className="text-[11px] text-neutral-700 leading-tight font-medium">Reparados vs Sin Reparo / RMA</p>
@@ -1725,8 +1725,8 @@ export default function RecepcionCdeDashboardPage() {
         </section>
 
         {/* Barra de Filtros, Selector de Ámbito Reestructurado y Búsqueda */}
-        <section className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <section className="p-3.5 sm:p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-3.5 sm:space-y-4">
+          <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
 
             {/* Selector de Ámbito con estilo Neo-Brutalista Retro */}
             <div className="w-full lg:w-auto flex items-center gap-1.5 p-1.5 bg-[#FAF6EE] rounded-xl border-2 border-black shadow-[2px_2px_0px_#000] flex-wrap">
@@ -1957,7 +1957,7 @@ export default function RecepcionCdeDashboardPage() {
                 setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="max-w-[180px]"
+              className="w-full sm:w-auto sm:max-w-[190px]"
             />
 
             {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
@@ -2398,8 +2398,8 @@ export default function RecepcionCdeDashboardPage() {
           </div>
 
           {/* Barra de Paginación */}
-          <div className="p-4 border-t-2 border-black bg-[#FAF6EE] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <span className="text-xs font-mono text-black font-semibold">
+          <div className="p-3.5 sm:p-4 border-t-2 border-black bg-[#FAF6EE] flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
+            <span className="text-xs font-mono text-black font-semibold text-center sm:text-left">
               Mostrando{" "}
               <strong className="text-black font-bold">
                 {filteredTickets.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}
@@ -2411,13 +2411,13 @@ export default function RecepcionCdeDashboardPage() {
               de <strong className="text-black font-bold">{filteredTickets.length.toLocaleString()}</strong> órdenes
             </span>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap">
               <button
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage(1)}
-                className="px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                className="px-2 sm:px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
-                « Primera
+                « <span className="hidden xs:inline">Primera</span>
               </button>
               <button
                 disabled={currentPage <= 1}
@@ -2428,7 +2428,7 @@ export default function RecepcionCdeDashboardPage() {
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <span className="px-3.5 py-1.5 text-xs font-mono font-extrabold bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] rounded-lg">
+              <span className="px-2.5 sm:px-3.5 py-1.5 text-xs font-mono font-extrabold bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] rounded-lg tabular-nums">
                 {currentPage} / {totalPages}
               </span>
 
@@ -2443,9 +2443,9 @@ export default function RecepcionCdeDashboardPage() {
               <button
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage(totalPages)}
-                className="px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                className="px-2 sm:px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
-                Última »
+                <span className="hidden xs:inline">Última</span> »
               </button>
             </div>
           </div>
@@ -2455,21 +2455,21 @@ export default function RecepcionCdeDashboardPage() {
 
       {/* Modal de Detalle y Edición de Orden SATI */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2.5 sm:p-4 animate-in fade-in">
-          <div className="bg-[#FFFDF9] rounded-xl max-w-xl w-full p-4 sm:p-6 shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[92dvh] overflow-y-auto overscroll-contain">
-            <div className="flex items-center justify-between border-b-2 border-black pb-3">
-              <div>
-                <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider font-bold">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4 animate-in fade-in">
+          <div className="bg-[#FFFDF9] rounded-xl max-w-[96vw] sm:max-w-xl w-full p-4 sm:p-6 shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[94dvh] overflow-y-auto overscroll-contain">
+            <div className="flex items-start sm:items-center justify-between gap-2.5 border-b-2 border-black pb-3 flex-wrap">
+              <div className="min-w-0 flex-1">
+                <span className="text-[11px] font-mono text-neutral-600 uppercase tracking-wider font-bold block">
                   DETALLE DE ORDEN SATI · MONITOREO SUCURSAL
                 </span>
-                <h3 className="text-lg font-heading font-extrabold text-black">
+                <h3 className="text-base sm:text-lg font-heading font-extrabold text-black break-words">
                   {selectedTicket.origen === "CDE" || parseInt(selectedTicket.idOrden, 10) >= 125000
                     ? `Orden CDE #${selectedTicket.idOrdenCde || selectedTicket.idOrden}`
                     : `Orden ASU #${selectedTicket.idOrdenAsu || selectedTicket.idOrden}`
                   } · {selectedTicket.marca} {selectedTicket.modelo}
                 </h3>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
                 {!isEditingModal ? (
                   <button
                     type="button"
@@ -2655,10 +2655,10 @@ export default function RecepcionCdeDashboardPage() {
               )}
 
               {/* Cuadrícula de Datos Principales */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-[#FAF6EE] p-4 rounded-xl border-2 border-black shadow-[2px_2px_0px_#000]">
-                <div>
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-3 bg-[#FAF6EE] p-3.5 sm:p-4 rounded-xl border-2 border-black shadow-[2px_2px_0px_#000]">
+                <div className="min-w-0">
                   <span className="text-neutral-600 block text-[11px] font-bold">Cliente</span>
-                  <strong className="text-black font-heading text-sm">{selectedTicket.cliente}</strong>
+                  <strong className="text-black font-heading text-sm break-words block">{selectedTicket.cliente}</strong>
                   {selectedTicket.esDanesa && (
                     <span className="text-[10px] font-bold text-black bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] mt-1 inline-block">
                       Envío de Nuestra Sucursal
@@ -2731,9 +2731,9 @@ export default function RecepcionCdeDashboardPage() {
                 <div className="font-heading font-extrabold text-sm text-black">
                   {selectedTicket.marca} {selectedTicket.modelo}
                 </div>
-                <div className="text-[11px] text-black font-mono flex items-center justify-between">
+                <div className="text-[11px] text-black font-mono flex flex-wrap items-center justify-between gap-1.5">
                   <span>Categoría: <strong>{selectedTicket.tipoComponente}</strong></span>
-                  <span>Serial: <strong>{selectedTicket.serial || "SIN SERIAL"}</strong></span>
+                  <span className="break-all sm:break-normal">Serial: <strong>{selectedTicket.serial || "SIN SERIAL"}</strong></span>
                 </div>
               </div>
 
@@ -2753,17 +2753,17 @@ export default function RecepcionCdeDashboardPage() {
                 const fechaModalMostrar = selectedTicket.fechaEntregada || selectedTicket.fechaRecibidoDeposito || "";
                 return (
                   <div
-                    className={`p-3.5 rounded-xl border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-between gap-3 ${
+                    className={`p-3.5 rounded-xl border-2 border-black shadow-[2px_2px_0px_#000] flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                       isRecibidoModal
                         ? "bg-[#2A9D8F]/20"
                         : "bg-[#FFD23F]/25"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-start sm:items-center gap-2.5">
                       {isRecibidoModal ? (
-                        <CheckCircle2 className="w-5 h-5 text-[#2A9D8F] shrink-0" />
+                        <CheckCircle2 className="w-5 h-5 text-[#2A9D8F] shrink-0 mt-0.5 sm:mt-0" />
                       ) : (
-                        <SpeedTruck className="w-5 h-5 text-black shrink-0" smokeColor="bg-amber-400" />
+                        <SpeedTruck className="w-5 h-5 text-black shrink-0 mt-0.5 sm:mt-0" smokeColor="bg-amber-400" />
                       )}
                       <div>
                         <strong className="block text-black text-xs font-heading font-extrabold">
@@ -2786,7 +2786,7 @@ export default function RecepcionCdeDashboardPage() {
                     <button
                       type="button"
                       onClick={() => handleToggleCheckin(selectedTicket)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-heading font-extrabold transition-all border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                      className={`w-full sm:w-auto justify-center px-3 py-2 sm:py-1.5 rounded-lg text-xs font-heading font-extrabold transition-all border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer shrink-0 flex items-center gap-1.5 ${
                         isRecibidoModal
                           ? "bg-[#2A9D8F] text-white hover:bg-emerald-600"
                           : "bg-black text-[#FFD23F] hover:bg-neutral-800"
@@ -2836,8 +2836,8 @@ export default function RecepcionCdeDashboardPage() {
 
       {/* Modal de Vinculación SATI Rápida (ASU ↔ CDE) */}
       {linkingTicket && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-          <div className="bg-[#FFFDF9] rounded-xl max-w-md w-full p-6 shadow-[6px_6px_0px_#000] border-2 border-black space-y-4 animate-in fade-in">
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-[#FFFDF9] rounded-xl max-w-[96vw] sm:max-w-md w-full p-4 sm:p-6 shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000] border-2 border-black space-y-4 animate-in fade-in max-h-[94dvh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b-2 border-black">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-[#FFD23F] border border-black flex items-center justify-center text-black shadow-[1px_1px_0px_#000]">

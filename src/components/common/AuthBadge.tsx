@@ -165,7 +165,7 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
               Su perfil activo (<strong>{user.nombre}</strong> · {user.badge}) no cuenta con permisos para visualizar este sector.
             </p>
           </div>
-          <div className="flex items-center justify-center gap-2 pt-2">
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             <Link
               href={user.defaultRoute}
               className="px-4 py-2 rounded-lg bg-black text-white text-xs font-bold border-2 border-black shadow-[2px_2px_0px_#000] transition-colors"
@@ -185,9 +185,9 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
   }
 
   return (
-    <div className="inline-flex items-center gap-2">
+    <div className="inline-flex items-center gap-2 shrink-0 max-w-full">
       <ThemeToggle />
-      <div ref={containerRef} className="relative">
+      <div ref={containerRef} className="relative min-w-0">
       <button
         type="button"
         onClick={() => {
@@ -196,7 +196,7 @@ export function AuthBadge({ requiredModule, onSyncMysql, isSyncingMysql }: AuthB
         }}
         aria-expanded={menuOpen}
         aria-haspopup="menu"
-        className="inline-flex items-center gap-2.5 px-3.5 h-12 min-w-[185px] sm:min-w-[205px] rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none text-xs font-bold text-black transition-all cursor-pointer select-none"
+        className="inline-flex items-center gap-2 px-2.5 sm:px-3 h-10 sm:h-11 min-w-0 sm:min-w-[168px] xl:min-w-[185px] max-w-[240px] rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none text-xs font-bold text-black transition-all cursor-pointer select-none whitespace-nowrap"
       >
         <span className="w-7 h-7 rounded-md bg-black text-[#FFD23F] font-mono text-[11px] font-extrabold flex items-center justify-center tracking-tight shrink-0 border border-black">
           {user.avatar}

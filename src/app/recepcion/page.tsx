@@ -2370,12 +2370,12 @@ ${dictamen.accText}`;
         )}
 
         {/* Cabecera unificada Neo-Brutalista Retro */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4 border-b-2 border-black">
-          <div>
-            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000] mb-2">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 lg:gap-4 pb-4 border-b-2 border-black">
+          <div className="min-w-0 flex-1">
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000] mb-1.5 sm:mb-2">
               <span>SATI · TALLER CDE &amp; ASU</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-heading font-extrabold text-[#111111] tracking-tight">
+            <h1 className="text-xl sm:text-2xl xl:text-3xl font-heading font-extrabold text-[#111111] tracking-tight">
               Recepción Post-Venta &amp; Retornos
             </h1>
             <p className="text-xs sm:text-sm text-neutral-800 mt-1 max-w-3xl font-medium">
@@ -2384,7 +2384,7 @@ ${dictamen.accText}`;
           </div>
 
           {/* Subir CSV / Excel y sincronización */}
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 self-start lg:self-center lg:justify-end w-full sm:w-auto">
             <input
               ref={fileInputRef}
               type="file"
@@ -2404,7 +2404,7 @@ ${dictamen.accText}`;
                 }
               }}
               disabled={isUploadingCSV}
-              className="inline-flex items-center gap-2.5 px-3.5 h-12 min-w-[185px] sm:min-w-[205px] rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer select-none"
+              className="inline-flex items-center gap-2 px-3 h-10 sm:h-11 min-w-0 sm:min-w-[172px] xl:min-w-[190px] flex-1 sm:flex-initial rounded-lg bg-[#FFFDF9] hover:bg-[#FAF6EE] border-2 border-black text-xs font-bold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer select-none whitespace-nowrap"
               title="Subir uno o varios archivos CSV o Excel (.xlsx) a la vez (ASU y/o CDE)"
             >
               <span className="w-7 h-7 rounded-md bg-black text-[#FFD23F] flex items-center justify-center font-bold border border-black shrink-0">
@@ -2562,24 +2562,24 @@ ${dictamen.accText}`;
         )}
 
         {/* 5 KPIs Principales con datos reales (Neo-Brutalismo Retro) */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 2xl:gap-6">
-          <div className="bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">
+        <section className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-3.5 2xl:gap-5">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] min-w-0">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block truncate">
               {viewScope === "DANESA"
                 ? "Envíos Danesa SA"
                 : viewScope === "CLIENTES_ASU"
                 ? "Órdenes Clientes ASU"
                 : "Total Órdenes SATI"}
             </span>
-            <div className="flex items-baseline gap-2 mt-1">
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
               <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-black tabular-nums">
                 {metrics.total.toLocaleString()}
               </span>
-              <span className="text-xs font-mono font-bold text-black bg-[#2A9D8F]/25 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
+              <span className="text-[11px] sm:text-xs font-mono font-bold text-black bg-[#2A9D8F]/25 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] whitespace-nowrap">
                 {viewScope === "TODOS" ? "100% Real" : `de ${totalUniversal.toLocaleString()} tot.`}
               </span>
             </div>
-            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1 truncate">
               {viewScope === "DANESA"
                 ? "Nuestra Sucursal ASU"
                 : viewScope === "CLIENTES_ASU"
@@ -2588,71 +2588,71 @@ ${dictamen.accText}`;
             </span>
           </div>
 
-          <div className="bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">Entregadas al Cliente</span>
-            <div className="flex items-baseline gap-2 mt-1">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] min-w-0">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block truncate">Entregadas al Cliente</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
               <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-[#2A9D8F] tabular-nums">
                 {metrics.entregadas.toLocaleString()}
               </span>
-              <span className="text-xs font-mono font-bold text-black bg-[#2A9D8F]/25 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
+              <span className="text-[11px] sm:text-xs font-mono font-bold text-black bg-[#2A9D8F]/25 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 {Math.round((metrics.entregadas / metrics.total) * 100)}%
               </span>
             </div>
-            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">Completadas con Éxito</span>
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1 truncate">Completadas con Éxito</span>
           </div>
 
-          <div className="bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">En Reparación en Taller</span>
-            <div className="flex items-baseline gap-2 mt-1">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] min-w-0">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block truncate">En Reparación en Taller</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
               <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-amber-700 tabular-nums">
                 {metrics.enReparacion.toLocaleString()}
               </span>
-              <span className="text-xs font-mono font-bold text-black bg-[#FFD23F]/40 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
+              <span className="text-[11px] sm:text-xs font-mono font-bold text-black bg-[#FFD23F]/40 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 {Math.round((metrics.enReparacion / metrics.total) * 100)}%
               </span>
             </div>
-            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">En Bancos Técnicos</span>
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1 truncate">En Bancos Técnicos</span>
           </div>
 
-          <div className="bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">Reparadas / Listas Entrega</span>
-            <div className="flex items-baseline gap-2 mt-1">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] min-w-0">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block truncate">Reparadas / Listas Entrega</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
               <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-sky-700 tabular-nums">
                 {metrics.reparadas.toLocaleString()}
               </span>
-              <span className="text-xs font-mono font-bold text-black bg-sky-200 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
+              <span className="text-[11px] sm:text-xs font-mono font-bold text-black bg-sky-200 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 {Math.round((metrics.reparadas / metrics.total) * 100)}%
               </span>
             </div>
-            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">Listas para Notificar</span>
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1 truncate">Listas para Notificar</span>
           </div>
 
-          <div className="col-span-2 sm:col-span-1 bg-[#FFFDF9] p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block">En Control Calidad (QC)</span>
-            <div className="flex items-baseline gap-2 mt-1">
+          <div className="xs:col-span-2 md:col-span-1 bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] min-w-0">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-black block truncate">En Control Calidad (QC)</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
               <span className="text-2xl sm:text-3xl 2xl:text-4xl font-heading font-extrabold text-purple-700 tabular-nums">
                 {metrics.qc}
               </span>
-              <span className="text-xs font-mono font-bold text-black bg-purple-200 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
+              <span className="text-[11px] sm:text-xs font-mono font-bold text-black bg-purple-200 px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] tabular-nums">
                 {Math.round((metrics.qc / metrics.total) * 100)}%
               </span>
             </div>
-            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1">Test de Ciclado Activo</span>
+            <span className="text-xs font-mono text-neutral-600 font-bold block mt-1 truncate">Test de Ciclado Activo</span>
           </div>
         </section>
 
         {/* Cabecera y Selector de Tableros de Analítica */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 bg-[#FFFDF9] p-4 sm:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-3 bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000]">
+          <div className="flex items-start sm:items-center gap-3 min-w-0 flex-1">
             <div className="w-10 h-10 rounded-lg bg-[#FFD23F] border-2 border-black flex items-center justify-center text-black shrink-0 shadow-[2px_2px_0px_#000]">
               <BarChart3 className="w-5 h-5 text-black" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base sm:text-lg font-heading font-extrabold text-black">
                   Tableros de Analítica & Rendimiento Operativo
                 </h3>
-                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FFD23F] font-mono font-bold text-black border border-black shadow-[1px_1px_0px_#000]">
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#FFD23F] font-mono font-bold text-black border border-black shadow-[1px_1px_0px_#000] shrink-0 whitespace-nowrap">
                   {dashboardView === "TODOS" ? "6 Paneles" : "4 Paneles"}
                 </span>
               </div>
@@ -2662,54 +2662,54 @@ ${dictamen.accText}`;
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5 p-1 bg-[#FAF6EE] rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] self-start md:self-auto flex-wrap">
+          <div className="grid grid-cols-1 sm:grid-cols-3 xl:inline-flex items-stretch xl:items-center gap-1.5 p-1 bg-[#FAF6EE] rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] w-full xl:w-auto shrink-0">
             <button
               type="button"
               onClick={() => setDashboardView("OPERATIVO")}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 dashboardView === "OPERATIVO"
                   ? "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]"
                   : "bg-[#FFFDF9] text-black border-2 border-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
               }`}
             >
-              <Activity className="w-3.5 h-3.5" />
+              <Activity className="w-3.5 h-3.5 shrink-0" />
               <span>Operativo & Calidad (4)</span>
             </button>
             <button
               type="button"
               onClick={() => setDashboardView("LOGISTICA")}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 dashboardView === "LOGISTICA"
                   ? "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]"
                   : "bg-[#FFFDF9] text-black border-2 border-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
               }`}
             >
-              <Truck className="w-3.5 h-3.5" />
+              <Truck className="w-3.5 h-3.5 shrink-0" />
               <span>Logística & Cuentas (4)</span>
             </button>
             <button
               type="button"
               onClick={() => setDashboardView("TODOS")}
-              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap ${
                 dashboardView === "TODOS"
                   ? "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]"
                   : "bg-[#FFFDF9] text-black border-2 border-black font-heading font-bold shadow-[1px_1px_0px_#000] hover:bg-[#FFD23F]"
               }`}
             >
-              <Layers className="w-3.5 h-3.5" />
+              <Layers className="w-3.5 h-3.5 shrink-0" />
               <span>Ver Todos (6 Dashboards)</span>
             </button>
           </div>
         </div>
 
         {/* Sección de Dashboards en Rejilla Responsiva */}
-        <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <section className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5 2xl:gap-6">
 
           {/* DASHBOARD 1: Top Marcas */}
           {(dashboardView === "OPERATIVO" || dashboardView === "TODOS") && (
-            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
+            <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 min-w-0">
+              <div className="flex justify-between items-start sm:items-center gap-2 flex-wrap">
+                <div className="min-w-0">
                   <h3 className="text-base sm:text-lg font-heading font-extrabold text-black">
                     Top Marcas de Equipos en Recepción
                   </h3>
@@ -2717,7 +2717,7 @@ ${dictamen.accText}`;
                     Distribución según marcas con mayor flujo de servicio
                   </p>
                 </div>
-                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000] shrink-0 whitespace-nowrap">
                   Sucursal CDE
                 </span>
               </div>
@@ -2765,9 +2765,9 @@ ${dictamen.accText}`;
 
           {/* DASHBOARD 2: Volumen por Tipo de Componente */}
           {(dashboardView === "OPERATIVO" || dashboardView === "TODOS") && (
-            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
+            <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 min-w-0">
+              <div className="flex justify-between items-start sm:items-center gap-2 flex-wrap">
+                <div className="min-w-0">
                   <h3 className="text-base sm:text-lg font-heading font-extrabold text-black">
                     Volumen por Tipo de Componente
                   </h3>
@@ -2775,7 +2775,7 @@ ${dictamen.accText}`;
                     Carga operativa ingresada por familia de producto
                   </p>
                 </div>
-                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000] shrink-0 whitespace-nowrap">
                   Carga Operativa
                 </span>
               </div>
@@ -2822,19 +2822,19 @@ ${dictamen.accText}`;
           )}
 
           {/* DASHBOARD 3: Distribución de Resoluciones & Dictamen QC */}
-          <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
+          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 min-w-0">
+            <div className="flex justify-between items-start sm:items-center gap-2 flex-wrap">
+              <div className="min-w-0">
                 <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-1.5">
-                  <ShieldCheck className="w-5 h-5 text-[#2A9D8F]" />
-                  Distribución de Resoluciones & Dictamen QC
+                  <ShieldCheck className="w-5 h-5 text-[#2A9D8F] shrink-0" />
+                  <span>Distribución de Resoluciones & Dictamen QC</span>
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                   Efectividad de cierre técnico y dictámenes de garantía
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#2A9D8F] text-white rounded-full border border-black shadow-[1px_1px_0px_#000] flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
+              <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#2A9D8F] text-white rounded-full border border-black shadow-[1px_1px_0px_#000] flex items-center gap-1 shrink-0 whitespace-nowrap">
+                <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
                 QC Efectivo
               </span>
             </div>
@@ -2868,18 +2868,18 @@ ${dictamen.accText}`;
           </div>
 
           {/* DASHBOARD 4: Tiempos de Permanencia & Control de Plazos */}
-          <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-            <div className="flex justify-between items-center">
-              <div>
+          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 min-w-0">
+            <div className="flex justify-between items-start sm:items-center gap-2 flex-wrap">
+              <div className="min-w-0">
                 <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-1.5">
-                  <Timer className="w-5 h-5 text-[#E76F51]" />
-                  Tiempos de Permanencia & Control de Plazos
+                  <Timer className="w-5 h-5 text-[#E76F51] shrink-0" />
+                  <span>Tiempos de Permanencia & Control de Plazos</span>
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                   Semáforo de antigüedad de equipos activos en taller / sucursal
                 </p>
               </div>
-              <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
+              <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000] shrink-0 whitespace-nowrap">
                 SLA & Plazos
               </span>
             </div>
@@ -2931,18 +2931,18 @@ ${dictamen.accText}`;
 
           {/* DASHBOARD 5: Flujo Logístico & Retornos CDE ⇄ ASU */}
           {(dashboardView === "LOGISTICA" || dashboardView === "TODOS") && (
-            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
+            <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 min-w-0">
+              <div className="flex justify-between items-start sm:items-center gap-2 flex-wrap">
+                <div className="min-w-0">
                   <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-1.5">
-                    <Truck className="w-5 h-5 text-blue-600" />
-                    Flujo Logístico & Retornos CDE ⇄ ASU
+                    <Truck className="w-5 h-5 text-blue-600 shrink-0" />
+                    <span>Flujo Logístico & Retornos CDE ⇄ ASU</span>
                   </h3>
                   <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                     Trazabilidad física de transferencias entre Matriz CDE y Sucursal
                   </p>
                 </div>
-                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000] shrink-0 whitespace-nowrap">
                   Inter-Sucursal
                 </span>
               </div>
@@ -2991,18 +2991,18 @@ ${dictamen.accText}`;
 
           {/* DASHBOARD 6: Segmentación de Clientes & Cuentas */}
           {(dashboardView === "LOGISTICA" || dashboardView === "TODOS") && (
-            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-              <div className="flex justify-between items-center">
-                <div>
+            <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 min-w-0">
+              <div className="flex justify-between items-start sm:items-center gap-2 flex-wrap">
+                <div className="min-w-0">
                   <h3 className="text-base sm:text-lg font-heading font-extrabold text-black flex items-center gap-1.5">
-                    <Users className="w-5 h-5 text-indigo-600" />
-                    Distribución por Origen & Tipo de Cliente
+                    <Users className="w-5 h-5 text-indigo-600 shrink-0" />
+                    <span>Distribución por Origen & Tipo de Cliente</span>
                   </h3>
                   <p className="text-xs sm:text-sm text-neutral-700 font-medium">
                     Carga asignada a particulares vs stock interno Danesa S.A.
                   </p>
                 </div>
-                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000]">
+                <span className="text-xs font-mono font-bold px-2.5 py-1 bg-[#FFD23F] rounded-full text-black border border-black shadow-[1px_1px_0px_#000] shrink-0 whitespace-nowrap">
                   Cartera SATI
                 </span>
               </div>
@@ -3086,8 +3086,8 @@ ${dictamen.accText}`;
         </section>
 
         {/* Barra de Filtros, Selector de Ámbito Reestructurado y Búsqueda */}
-        <section className="p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+        <section className="p-3.5 sm:p-4 bg-[#FFFDF9] rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-3.5 sm:space-y-4">
+          <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3">
 
             {/* Selector de Ámbito con las 3 pestañas solicitadas para Recepción Post-Venta */}
             <div className="flex items-center gap-1.5 p-1.5 bg-[#FAF6EE] rounded-lg border-2 border-black flex-wrap shadow-[2px_2px_0px_#000]">
@@ -3351,7 +3351,7 @@ ${dictamen.accText}`;
                 setStatusFilter(val);
                 setCurrentPage(1);
               }}
-              className="max-w-[180px]"
+              className="w-full sm:w-auto sm:max-w-[190px]"
             />
 
             {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
@@ -3376,7 +3376,7 @@ ${dictamen.accText}`;
                 setCurrentPage(1);
               }}
               icon={<ArrowUpDown className="w-3.5 h-3.5" />}
-              className="max-w-[195px]"
+              className="w-full sm:w-auto sm:max-w-[205px]"
             />
 
             {/* Resetear Filtros */}
@@ -3670,8 +3670,8 @@ ${dictamen.accText}`;
           </div>
 
           {/* Barra de Paginación */}
-          <div className="p-4 border-t-2 border-black bg-[#FAF6EE] flex flex-col sm:flex-row items-center justify-between gap-3">
-            <span className="text-xs font-mono text-black font-semibold">
+          <div className="p-3.5 sm:p-4 border-t-2 border-black bg-[#FAF6EE] flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
+            <span className="text-xs font-mono text-black font-semibold text-center sm:text-left">
               Mostrando{" "}
               <strong className="text-black font-bold">
                 {filteredTickets.length > 0 ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}
@@ -3683,13 +3683,13 @@ ${dictamen.accText}`;
               de <strong className="text-black font-bold">{filteredTickets.length.toLocaleString()}</strong> tickets
             </span>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center gap-1 sm:gap-1.5 flex-wrap">
               <button
                 disabled={currentPage <= 1}
                 onClick={() => setCurrentPage(1)}
-                className="px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                className="px-2 sm:px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
-                « Primera
+                « <span className="hidden xs:inline">Primera</span>
               </button>
               <button
                 disabled={currentPage <= 1}
@@ -3700,7 +3700,7 @@ ${dictamen.accText}`;
                 <ChevronLeft className="w-4 h-4" />
               </button>
 
-              <span className="px-3.5 py-1.5 text-xs font-mono font-extrabold bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] rounded-lg">
+              <span className="px-2.5 sm:px-3.5 py-1.5 text-xs font-mono font-extrabold bg-[#FFD23F] text-black border-2 border-black shadow-[2px_2px_0px_#000] rounded-lg tabular-nums">
                 {currentPage} / {totalPages}
               </span>
 
@@ -3715,9 +3715,9 @@ ${dictamen.accText}`;
               <button
                 disabled={currentPage >= totalPages}
                 onClick={() => setCurrentPage(totalPages)}
-                className="px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
+                className="px-2 sm:px-2.5 py-1.5 text-xs font-heading font-extrabold rounded-lg border-2 border-black bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all"
               >
-                Última »
+                <span className="hidden xs:inline">Última</span> »
               </button>
             </div>
           </div>
@@ -3853,14 +3853,14 @@ ${dictamen.accText}`;
           </div>
         )}
 
-        {/* Modal de Detalle Completo de la Orden (Diseño Horizontal Panorámico Sin Scroll) */}
+        {/* Modal de Detalle Completo de la Orden (Diseño Horizontal Panorámico Adaptable) */}
         {selectedTicket && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4 animate-in fade-in">
-            <div className="bg-[#FFFDF9] rounded-xl max-w-6xl 2xl:max-w-7xl w-full p-4 sm:p-5 shadow-[6px_6px_0px_#000] space-y-3 border-2 border-black max-h-[95dvh] overflow-y-auto overscroll-contain">
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-1.5 sm:p-3 lg:p-4 animate-in fade-in">
+            <div className="bg-[#FFFDF9] rounded-xl max-w-[98vw] xl:max-w-6xl 2xl:max-w-7xl w-full p-3 sm:p-4 lg:p-5 shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000] space-y-3 border-2 border-black max-h-[95dvh] overflow-y-auto overscroll-contain">
               {/* Cabecera Horizontal Compacta */}
-              <div className="flex items-center justify-between border-b-2 border-black pb-2.5 gap-3 flex-wrap">
-                <div className="flex items-center gap-3 flex-wrap min-w-0">
-                  <div>
+              <div className="flex items-start sm:items-center justify-between border-b-2 border-black pb-2.5 gap-2.5 sm:gap-3 flex-wrap">
+                <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap min-w-0 flex-1">
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-[10px] font-mono text-neutral-600 uppercase tracking-wider font-bold">
                         DETALLE DE ORDEN SATI
@@ -3868,11 +3868,11 @@ ${dictamen.accText}`;
                       <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                         {selectedTicket.tipoComponente}
                       </span>
-                      <span className="text-[11px] font-mono text-neutral-700">
+                      <span className="text-[11px] font-mono text-neutral-700 break-all sm:break-normal">
                         S/N: <strong className="text-black">{selectedTicket.serial || "N/A"}</strong>
                       </span>
                     </div>
-                    <h3 className="text-base sm:text-lg 2xl:text-xl font-heading font-extrabold text-black truncate">
+                    <h3 className="text-sm sm:text-lg 2xl:text-xl font-heading font-extrabold text-black break-words">
                       Orden #{selectedTicket.idOrden} · {selectedTicket.marca} {selectedTicket.modelo}
                     </h3>
                   </div>
@@ -3886,7 +3886,7 @@ ${dictamen.accText}`;
                         {selectedTicket.matchReason || "Match: Cliente & Equipo"}
                       </span>
                       {selectedTicket.estadoCde && (
-                        <span className="text-neutral-700 text-[11px] border-l-2 border-black pl-2">
+                        <span className="text-neutral-700 text-[11px] sm:border-l-2 sm:border-black sm:pl-2">
                           CDE: <strong className="text-black font-extrabold">{selectedTicket.estadoCde}</strong>
                         </span>
                       )}
@@ -3894,11 +3894,11 @@ ${dictamen.accText}`;
                   )}
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
                   {getStatusBadge(selectedTicket.estado)}
                   <button
                     onClick={() => setSelectedTicket(null)}
-                    className="w-8 h-8 rounded-lg bg-[#FAF6EE] hover:bg-[#E76F51] hover:text-white text-black font-extrabold flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+                    className="w-8 h-8 rounded-lg bg-[#FAF6EE] hover:bg-[#E76F51] hover:text-white text-black font-extrabold flex items-center justify-center border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer shrink-0"
                     title="Cerrar ventana"
                   >
                     ✕
@@ -3917,7 +3917,7 @@ ${dictamen.accText}`;
               )}
 
               {/* Barra Horizontal de Metadatos del Cliente y Fechas (100% Alineada y Nombre Completo) */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 bg-[#FAF6EE] px-3.5 py-2.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] text-xs items-start">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3 bg-[#FAF6EE] px-3 sm:px-3.5 py-2.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] text-xs items-start">
                 <div className="min-w-0">
                   <span className="text-neutral-700 block text-[11px] font-bold">Cliente</span>
                   <strong className="text-black text-xs sm:text-sm break-words leading-snug block font-heading">
@@ -3987,12 +3987,12 @@ ${dictamen.accText}`;
               {/* Cuerpo Principal en 2 Columnas Horizontales Simétricas */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch text-xs">
                 {/* COLUMNA IZQUIERDA (6 cols): Informe Técnico, Accesorios y Ubicación en Cascada */}
-                <div className="lg:col-span-6 flex flex-col justify-between space-y-3">
+                <div className="lg:col-span-6 flex flex-col justify-between space-y-3 min-w-0">
                   {/* 1. Informe Técnico / Mensaje de Servicio */}
                   <div>
-                    <div className="h-7 flex items-center justify-between mb-1.5 gap-2 flex-nowrap">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider truncate">
+                    <div className="min-h-7 flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider">
                           Informe Técnico / Mensaje de Servicio
                         </span>
                         {selectedTicket.idOrdenCde && selectedTicket.mensaje && (
@@ -4029,16 +4029,16 @@ ${dictamen.accText}`;
 
                   {/* 2. Sección de Accesorios Incluidos / Devueltos con el Equipo */}
                   <div>
-                    <div className="h-6 flex items-center justify-between mb-1.5">
+                    <div className="min-h-6 flex items-center justify-between gap-2 flex-wrap mb-1.5">
                       <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-black" />
-                        Accesorios Incluidos / Devueltos con el Equipo
+                        <Package className="w-3.5 h-3.5 text-black shrink-0" />
+                        <span>Accesorios Incluidos / Devueltos con el Equipo</span>
                       </span>
                       {modalAccessoriesList.length > 0 && (
                         <button
                           type="button"
                           onClick={handleClearModalAccessories}
-                          className="text-xs font-heading font-bold text-[#E76F51] hover:underline cursor-pointer"
+                          className="text-xs font-heading font-bold text-[#E76F51] hover:underline cursor-pointer shrink-0"
                         >
                           Limpiar todos
                         </button>
@@ -4054,7 +4054,7 @@ ${dictamen.accText}`;
                               key={idx}
                               className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#FFD23F] text-black rounded-full text-xs font-mono font-bold border-2 border-black shadow-[1px_1px_0px_#000]"
                             >
-                              <Tag className="w-3 h-3 text-black" />
+                              <Tag className="w-3 h-3 text-black shrink-0" />
                               <span>{acc}</span>
                               <button
                                 type="button"
@@ -4074,7 +4074,7 @@ ${dictamen.accText}`;
                       </div>
 
                       {/* Input para agregar accesorio personalizado (también se guarda como acceso directo) */}
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-1.5">
                         <input
                           type="text"
                           value={modalNewAccessory}
@@ -4086,12 +4086,12 @@ ${dictamen.accText}`;
                             }
                           }}
                           placeholder="Escriba un accesorio y presione Enter o + Agregar (se guardará en accesos directos)"
-                          className="flex-1 px-3 py-1.5 text-xs bg-white border-2 border-black focus:outline-none rounded-lg transition-colors placeholder:text-neutral-500 font-sans text-black shadow-[1px_1px_0px_#000]"
+                          className="flex-1 min-w-0 px-3 py-1.5 text-xs bg-white border-2 border-black focus:outline-none rounded-lg transition-colors placeholder:text-neutral-500 font-sans text-black shadow-[1px_1px_0px_#000]"
                         />
                         <button
                           type="button"
                           onClick={() => handleAddModalAccessory(modalNewAccessory)}
-                          className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-[#FFD23F] text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+                          className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-[#FFD23F] text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer whitespace-nowrap shrink-0"
                           title="Agregar accesorio y guardar como acceso directo"
                         >
                           + Agregar
@@ -4307,10 +4307,10 @@ ${dictamen.accText}`;
                 </div>
 
                 {/* COLUMNA DERECHA (6 cols): Cambiar Estado + Dictamen Técnico QC / WhatsApp */}
-                <div className="lg:col-span-6 flex flex-col justify-between space-y-3">
+                <div className="lg:col-span-6 flex flex-col justify-between space-y-3 min-w-0">
                   {/* 1. Acciones de cambio de estado en el modal (Ordenado por color y nombre alfabético) */}
                   <div>
-                    <div className="h-7 flex items-center justify-between mb-1.5 gap-2">
+                    <div className="min-h-7 flex items-center justify-between mb-1.5 gap-2 flex-wrap">
                       <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider">
                         Cambiar Estado de la Orden
                       </span>
@@ -4319,7 +4319,7 @@ ${dictamen.accText}`;
                       </span>
                     </div>
                     <div className="p-3 bg-[#FAF6EE] border-2 border-black rounded-xl shadow-[2px_2px_0px_#000]">
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                      <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-1.5">
                         {modalStatusOptions.map((st) => {
                           const isActive =
                             (selectedTicket.estado || "").trim().toLowerCase() ===
@@ -4357,9 +4357,9 @@ ${dictamen.accText}`;
                       modalDictamenTipo
                     );
                     return (
-                      <div className="flex-1 flex flex-col">
-                        <div className="h-6 flex items-center justify-between mb-1.5 gap-2 flex-nowrap">
-                          <span className="text-xs font-heading font-extrabold text-black uppercase tracking-wider truncate">
+                      <div className="flex-1 flex flex-col min-w-0">
+                        <div className="min-h-6 flex items-center justify-between mb-1.5 gap-2 flex-wrap">
+                          <span className="text-xs font-heading font-extrabold text-black uppercase tracking-wider">
                             {isTicketDanesa(selectedTicket.cliente)
                               ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
                               : "Dictamen Técnico · Resolución QC (WhatsApp)"}
@@ -4369,9 +4369,9 @@ ${dictamen.accText}`;
                           </span>
                         </div>
 
-                        <div className="flex-1 p-3.5 bg-[#FAF6EE] border-2 border-black rounded-xl space-y-2.5 shadow-[2px_2px_0px_#000] flex flex-col justify-between">
+                        <div className="flex-1 p-3 sm:p-3.5 bg-[#FAF6EE] border-2 border-black rounded-xl space-y-2.5 shadow-[2px_2px_0px_#000] flex flex-col justify-between">
                           {/* Selector rápido de resoluciones QC ordenado por color y nombre */}
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                          <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-1.5">
                             {DICTAMEN_QC_OPTIONS.map((opt, idx) => {
                               const selected = modalDictamenTipo === opt.id;
                               const isFirstAuto = idx === 0 && DICTAMEN_QC_OPTIONS.length % 3 === 1;
@@ -4382,7 +4382,7 @@ ${dictamen.accText}`;
                                   onClick={() => handleCambiarDictamen(selectedTicket.idOrden, opt.id)}
                                   title={opt.label}
                                   className={`min-h-[34px] w-full inline-flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] font-heading font-extrabold rounded-lg border-2 transition-all cursor-pointer text-center leading-tight active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
-                                    isFirstAuto ? "sm:col-span-3" : ""
+                                    isFirstAuto ? "xs:col-span-2 sm:col-span-3" : ""
                                   } ${selected ? opt.chipActive : opt.chipInactive}`}
                                 >
                                   {selected && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
@@ -4425,19 +4425,19 @@ ${dictamen.accText}`;
               </div>
 
               {/* Pie de Acciones Horizontal Compacto */}
-              <div className="pt-2.5 border-t-2 border-black flex justify-between items-center gap-2 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="pt-2.5 border-t-2 border-black flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-2">
+                <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-2 flex-wrap">
                   {isTicketDanesa(selectedTicket.cliente) ? (
                     <button
                       type="button"
                       onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-heading font-extrabold shadow-[2px_2px_0px_#000] border-2 border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all ${
+                      className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-heading font-extrabold shadow-[2px_2px_0px_#000] border-2 border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all ${
                         selectedTicket.recibidoEnDeposito
                           ? "bg-black text-[#FFD23F]"
                           : "bg-[#2A9D8F] text-white"
                       }`}
                     >
-                      <CheckCircle2 className="w-4 h-4 text-white" />
+                      <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
                       <span>
                         {selectedTicket.recibidoEnDeposito
                           ? "Recibido en Sucursal (Actualizar)"
@@ -4448,7 +4448,7 @@ ${dictamen.accText}`;
                     <button
                       type="button"
                       onClick={() => handleNotificarWhatsAppRecepcion(selectedTicket)}
-                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-heading font-extrabold shadow-[2px_2px_0px_#000] border-2 border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all ${
+                      className={`inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-heading font-extrabold shadow-[2px_2px_0px_#000] border-2 border-black active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer transition-all ${
                         selectedTicket.recibidoEnDeposito
                           ? "bg-[#2A9D8F] text-white"
                           : "bg-[#FFD23F] text-black"
@@ -4456,12 +4456,12 @@ ${dictamen.accText}`;
                     >
                       {selectedTicket.recibidoEnDeposito ? (
                         <>
-                          <CheckCircle2 className="w-4 h-4 text-white" />
+                          <CheckCircle2 className="w-4 h-4 text-white shrink-0" />
                           <span>Recibido · Listo para retiro (Re-notificar)</span>
                         </>
                       ) : (
                         <>
-                          <MessageSquare className="w-4 h-4 text-black" />
+                          <MessageSquare className="w-4 h-4 text-black shrink-0" />
                           <span>Notificar por WhatsApp &amp; Marcar Recibido</span>
                         </>
                       )}
@@ -4474,17 +4474,17 @@ ${dictamen.accText}`;
                       setAutoPrintTicket(e.shiftKey);
                       setShowPrintModal(selectedTicket);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#FFD23F] hover:bg-yellow-400 text-black rounded-lg text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#FFD23F] hover:bg-yellow-400 text-black rounded-lg text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                     title="Imprimir comprobante térmico con código de barras CODE128 (Shift+Clic para imprimir directo)"
                   >
-                    <Printer className="w-4 h-4 text-black" />
+                    <Printer className="w-4 h-4 text-black shrink-0" />
                     <span>Imprimir Boleta Térmica</span>
                   </button>
                 </div>
 
                 <button
                   onClick={() => setSelectedTicket(null)}
-                  className="px-5 py-2 bg-[#FFFDF9] hover:bg-neutral-200 text-black rounded-lg text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+                  className="px-5 py-2 bg-[#FFFDF9] hover:bg-neutral-200 text-black rounded-lg text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer text-center"
                 >
                   Cerrar
                 </button>

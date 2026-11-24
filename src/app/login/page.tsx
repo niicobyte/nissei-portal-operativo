@@ -396,19 +396,19 @@ function LoginForm() {
   };
 
   return (
-    <main className="min-h-dvh bg-[#FAF6EE] py-6 sm:py-10 2xl:py-16 px-3 sm:px-6 lg:px-8 flex items-center justify-center">
-      <div className="max-w-5xl 2xl:max-w-6xl 3xl:max-w-7xl w-full space-y-6 sm:space-y-8">
+    <main className="min-h-dvh bg-[#FAF6EE] py-4 sm:py-6 xl:py-8 2xl:py-12 px-3 sm:px-5 lg:px-8 flex items-center justify-center">
+      <div className="max-w-5xl 2xl:max-w-6xl 3xl:max-w-7xl w-full space-y-4 sm:space-y-6 min-w-0">
         
         {/* Cabecera NISSEI Retro */}
-        <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#FFD23F] border-2 border-black rounded-full text-xs sm:text-sm font-heading font-extrabold text-black shadow-[2px_2px_0px_#000]">
-            <Terminal className="w-4 h-4 text-black" />
-            <span>NISSEI S.A. · CONTROL DE ACCESO OPERATIVO</span>
+        <div className="text-center space-y-1.5 sm:space-y-2">
+          <div className="inline-flex items-center gap-2 px-3 sm:px-3.5 py-1 sm:py-1.5 bg-[#FFD23F] border-2 border-black rounded-full text-[11px] sm:text-xs font-heading font-extrabold text-black shadow-[2px_2px_0px_#000] max-w-full">
+            <Terminal className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-black shrink-0" />
+            <span className="truncate">NISSEI S.A. · CONTROL DE ACCESO OPERATIVO</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl 2xl:text-5xl font-heading font-extrabold text-black tracking-tight">
+          <h1 className="text-2xl sm:text-3xl xl:text-4xl 2xl:text-5xl font-heading font-extrabold text-black tracking-tight">
             Identificación de Operador y Sector
           </h1>
-          <p className="text-sm sm:text-base text-neutral-800 font-medium max-w-2xl mx-auto">
+          <p className="text-xs sm:text-sm xl:text-base text-neutral-800 font-medium max-w-2xl mx-auto">
             Seleccione el sector operativo correspondiente: Taller de Montajes de PC o Recepción Post-Venta.
           </p>
         </div>
@@ -455,7 +455,7 @@ function LoginForm() {
 
           <div className="grid grid-cols-1 lg:grid-cols-12">
             {/* Columna Izquierda: Los 3 Sectores Principales (7 cols) */}
-            <div className="lg:col-span-7 p-6 sm:p-8 space-y-4 border-b lg:border-b-0 lg:border-r-3 border-black bg-[#FAF6EE]">
+            <div className="lg:col-span-7 p-4 sm:p-6 xl:p-7 space-y-3.5 border-b-2 lg:border-b-0 lg:border-r-3 border-black bg-[#FAF6EE] min-w-0">
               <div>
                 <h2 className="text-xs font-mono font-bold text-black uppercase tracking-wider bg-[#FFD23F] inline-block px-2 py-0.5 border border-black rounded shadow-[1px_1px_0px_#000]">
                   1. Seleccione sector operativo
@@ -463,20 +463,20 @@ function LoginForm() {
               </div>
 
             {/* Los 3 Sectores Operativos con Telemetría en Vivo */}
-            <div className="space-y-3">
+            <div className="space-y-2.5 sm:space-y-3">
               
               {/* Opción 1: Recepción Post-Venta */}
               <button
                 type="button"
                 onClick={() => handleSelectSector("RECEPCION")}
-                className={`w-full p-4 sm:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
+                className={`w-full p-3.5 sm:p-4 xl:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
                   activeSector === "RECEPCION"
                     ? "bg-black text-[#FFD23F] shadow-[4px_4px_0px_#000]"
                     : "bg-[#FFFDF9] text-black shadow-[3px_3px_0px_#000] hover:bg-[#FAF6EE] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-black ${activeSector === "RECEPCION" ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]" : "bg-white text-black shadow-[1px_1px_0px_#000]"}`}>
                       <AnimatedReceptionBox
                         className="w-5 h-5 sm:w-6 sm:h-6"
@@ -485,10 +485,10 @@ function LoginForm() {
                       />
                     </span>
                     <div className="min-w-0">
-                      <strong className="block text-base sm:text-lg font-heading font-extrabold truncate">Recepción Post-Venta</strong>
-                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "RECEPCION" ? "text-[#FFD23F]" : "text-[#2A9D8F]"}`}>
+                      <strong className="block text-sm sm:text-base xl:text-lg font-heading font-extrabold truncate">Recepción Post-Venta</strong>
+                      <span className={`text-[11px] sm:text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "RECEPCION" ? "text-[#FFD23F]" : "text-[#2A9D8F]"}`}>
                         <span className="w-2 h-2 rounded-full bg-[#2A9D8F] animate-pulse shrink-0"></span>
-                        Telemetría en Vivo
+                        <span className="truncate">Telemetría en Vivo</span>
                       </span>
                     </div>
                   </div>
@@ -496,17 +496,17 @@ function LoginForm() {
                 </div>
 
                 {/* Telemetría 3 métricas */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5 sm:gap-2">
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "RECEPCION"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Ingresos Hoy</span>
                       <PackageOpen className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.recepcion.ingresosHoy}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -514,16 +514,16 @@ function LoginForm() {
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "RECEPCION"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Notificadas</span>
                       <MessageSquare className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.recepcion.notificaciones}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -531,16 +531,16 @@ function LoginForm() {
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "RECEPCION"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Listos Retiro</span>
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.recepcion.listosEntrega}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -554,14 +554,14 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => handleSelectSector("DEPOSITO")}
-                className={`w-full p-4 sm:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
+                className={`w-full p-3.5 sm:p-4 xl:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
                   activeSector === "DEPOSITO"
                     ? "bg-black text-[#FFD23F] shadow-[4px_4px_0px_#000]"
                     : "bg-[#FFFDF9] text-black shadow-[3px_3px_0px_#000] hover:bg-[#FAF6EE] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-black ${activeSector === "DEPOSITO" ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]" : "bg-white text-black shadow-[1px_1px_0px_#000]"}`}>
                       <SpeedTruck
                         className="w-5 h-5 sm:w-6 sm:h-6"
@@ -569,10 +569,10 @@ function LoginForm() {
                       />
                     </span>
                     <div className="min-w-0">
-                      <strong className="block text-base sm:text-lg font-heading font-extrabold truncate">SATI ASU - CDE</strong>
-                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "DEPOSITO" ? "text-[#FFD23F]" : "text-[#E76F51]"}`}>
+                      <strong className="block text-sm sm:text-base xl:text-lg font-heading font-extrabold truncate">SATI ASU - CDE</strong>
+                      <span className={`text-[11px] sm:text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "DEPOSITO" ? "text-[#FFD23F]" : "text-[#E76F51]"}`}>
                         <span className="w-2 h-2 rounded-full bg-[#E76F51] animate-pulse shrink-0"></span>
-                        Monitoreo Logístico
+                        <span className="truncate">Monitoreo Logístico</span>
                       </span>
                     </div>
                   </div>
@@ -580,17 +580,17 @@ function LoginForm() {
                 </div>
 
                 {/* Telemetría 3 métricas */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5 sm:gap-2">
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "DEPOSITO"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">En Camino</span>
                       <Truck className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.deposito.enCamino}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -598,16 +598,16 @@ function LoginForm() {
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "DEPOSITO"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">En CDE</span>
                       <Building2 className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.deposito.enCde}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -615,16 +615,16 @@ function LoginForm() {
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "DEPOSITO"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Recibidos ASU</span>
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.deposito.recibidosAsu}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -638,14 +638,14 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => handleSelectSector("MONTAJES")}
-                className={`w-full p-4 sm:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
+                className={`w-full p-3.5 sm:p-4 xl:p-5 rounded-xl border-2 border-black text-left transition-all cursor-pointer ${
                   activeSector === "MONTAJES"
                     ? "bg-black text-[#FFD23F] shadow-[4px_4px_0px_#000]"
                     : "bg-[#FFFDF9] text-black shadow-[3px_3px_0px_#000] hover:bg-[#FAF6EE] hover:translate-x-[-1px] hover:translate-y-[-1px]"
                 }`}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3.5 min-w-0">
+                <div className="flex items-center justify-between gap-2 mb-2.5 sm:mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <span className={`w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0 border-2 border-black ${activeSector === "MONTAJES" ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]" : "bg-white text-black shadow-[1px_1px_0px_#000]"}`}>
                       <AnimatedCpu
                         className="w-5 h-5 sm:w-6 sm:h-6"
@@ -654,10 +654,10 @@ function LoginForm() {
                       />
                     </span>
                     <div className="min-w-0">
-                      <strong className="block text-base sm:text-lg font-heading font-extrabold truncate">Taller de Montajes de PC</strong>
-                      <span className={`text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "MONTAJES" ? "text-[#FFD23F]" : "text-[#2A9D8F]"}`}>
+                      <strong className="block text-sm sm:text-base xl:text-lg font-heading font-extrabold truncate">Taller de Montajes de PC</strong>
+                      <span className={`text-[11px] sm:text-xs font-mono uppercase tracking-wider flex items-center gap-1.5 font-bold ${activeSector === "MONTAJES" ? "text-[#FFD23F]" : "text-[#2A9D8F]"}`}>
                         <span className="w-2 h-2 rounded-full bg-[#2A9D8F] animate-pulse shrink-0"></span>
-                        Ensambles &amp; Hardware
+                        <span className="truncate">Ensambles &amp; Hardware</span>
                       </span>
                     </div>
                   </div>
@@ -665,17 +665,17 @@ function LoginForm() {
                 </div>
 
                 {/* Telemetría 3 métricas */}
-                <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                <div className="grid grid-cols-1 xs:grid-cols-3 gap-1.5 sm:gap-2">
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "MONTAJES"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">En Cola</span>
                       <Layers className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.montajes.enCola}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -683,16 +683,16 @@ function LoginForm() {
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "MONTAJES"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">En Banco</span>
                       <Cpu className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.montajes.enBanco}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -700,16 +700,16 @@ function LoginForm() {
                     </span>
                   </div>
 
-                  <div className={`p-2.5 sm:p-3 rounded-lg border-2 border-black flex flex-col justify-between ${
+                  <div className={`p-2 sm:p-2.5 rounded-lg border-2 border-black flex flex-col justify-between min-w-0 ${
                     activeSector === "MONTAJES"
                       ? "bg-neutral-900 border-neutral-700 text-[#FFD23F]"
                       : "bg-[#FAF6EE] text-black shadow-[1px_1px_0px_#000]"
                   }`}>
-                    <span className="text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
+                    <span className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center justify-between gap-1">
                       <span className="truncate">Finalizados</span>
                       <CheckCircle2 className="w-3.5 h-3.5 shrink-0 opacity-80" />
                     </span>
-                    <span className="text-xl sm:text-2xl font-black font-mono mt-1">
+                    <span className="text-lg sm:text-xl xl:text-2xl font-black font-mono mt-0.5 tabular-nums">
                       {telemetry.montajes.finalizados}
                     </span>
                     <span className="text-[10px] font-mono mt-0.5 truncate opacity-80">
@@ -723,7 +723,7 @@ function LoginForm() {
           </div>
 
           {/* Columna Derecha: Formulario de Contraseña del Perfil Seleccionado (5 cols) */}
-          <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between bg-[#FFFDF9]">
+          <div className="lg:col-span-5 p-4 sm:p-6 xl:p-7 flex flex-col justify-between gap-5 bg-[#FFFDF9] min-w-0">
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
                 <h2 className="text-xs font-mono font-bold text-black uppercase tracking-wider bg-[#FFD23F] inline-block px-2 py-0.5 border border-black rounded shadow-[1px_1px_0px_#000]">

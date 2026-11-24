@@ -19,8 +19,8 @@ export function ThemeToggle({ variant = "default", className = "" }: ThemeToggle
   const activeDark = mounted && isDark;
   const sizeClass =
     variant === "compact"
-      ? "h-8 px-2.5 text-[11px] gap-1.5"
-      : "h-12 px-3 text-xs gap-2";
+      ? "h-8 px-2.5 text-[11px] gap-1.5 shrink-0"
+      : "h-10 sm:h-11 px-2.5 sm:px-3 text-xs gap-1.5 shrink-0";
   const colorClass = activeDark
     ? "bg-[#FFD23F] hover:bg-[#FACC15] text-black"
     : "bg-[#FFFDF9] hover:bg-[#FFD23F] text-black";

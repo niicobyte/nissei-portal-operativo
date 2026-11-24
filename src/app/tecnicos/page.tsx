@@ -530,72 +530,72 @@ export default function TecnicosDashboardPage() {
         />
 
         {/* 5 KPIs Principales Basados en los Datos Reales de montaje.csv (Neo-Brutalismo Retro) */}
-        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5 sm:gap-4 2xl:gap-6">
+        <section className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-3.5 2xl:gap-5">
           
           {/* KPI 1: Total Órdenes */}
-          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
-            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Órdenes en Taller</span>
-            <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] min-w-0">
+            <span className="text-xs text-neutral-700 block font-heading font-extrabold uppercase tracking-wider truncate">Órdenes en Taller</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalOrdenes}
               </span>
-              <span className="text-xs sm:text-sm text-neutral-800 font-bold">Registros</span>
+              <span className="text-xs text-neutral-800 font-bold">Registros</span>
             </div>
-            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">Base oficial NISSEI CDE</span>
+            <span className="text-xs text-neutral-700 block mt-1 font-mono font-semibold truncate">Base oficial NISSEI CDE</span>
           </div>
 
           {/* KPI 2: Montajes de PC (con desglose de equipos) */}
-          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
-            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Montajes de PC</span>
-            <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] min-w-0">
+            <span className="text-xs text-neutral-700 block font-heading font-extrabold uppercase tracking-wider truncate">Montajes de PC</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalEquiposMontados}
               </span>
-              <span className="text-xs sm:text-sm text-black font-extrabold font-mono bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
+              <span className="text-xs text-black font-extrabold font-mono bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] whitespace-nowrap">
                 {metrics.totalMontajesOrdenes} órdenes
               </span>
             </div>
-            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">
+            <span className="text-xs text-neutral-700 block mt-1 font-mono font-semibold truncate">
               {metrics.clientesConLote} clientes con 2 equipos
             </span>
           </div>
 
           {/* KPI 3: Expansiones de Notebook */}
-          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
-            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Expansiones Notebook</span>
-            <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] min-w-0">
+            <span className="text-xs text-neutral-700 block font-heading font-extrabold uppercase tracking-wider truncate">Expansiones Notebook</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalExpansiones}
               </span>
-              <span className="text-xs sm:text-sm text-white font-extrabold font-mono bg-[#2A9D8F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
+              <span className="text-xs text-white font-extrabold font-mono bg-[#2A9D8F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] whitespace-nowrap">
                 RAM &amp; SSD
               </span>
             </div>
-            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">SODIMM y discos M.2</span>
+            <span className="text-xs text-neutral-700 block mt-1 font-mono font-semibold truncate">SODIMM y discos M.2</span>
           </div>
 
           {/* KPI 4: Asesores Comerciales Reales */}
-          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
-            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Asesores Comerciales</span>
-            <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] min-w-0">
+            <span className="text-xs text-neutral-700 block font-heading font-extrabold uppercase tracking-wider truncate">Asesores Comerciales</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.totalVendedores}
               </span>
-              <span className="text-xs sm:text-sm text-neutral-800 font-bold">Salón &amp; Web</span>
+              <span className="text-xs text-neutral-800 font-bold whitespace-nowrap">Salón &amp; Web</span>
             </div>
-            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">Ventas canalizadas a taller</span>
+            <span className="text-xs text-neutral-700 block mt-1 font-mono font-semibold truncate">Ventas canalizadas a taller</span>
           </div>
 
           {/* KPI 5: Canales de Venta */}
-          <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] col-span-2 sm:col-span-1">
-            <span className="text-xs sm:text-sm text-neutral-700 block font-heading font-extrabold uppercase tracking-wider">Canal Predominante</span>
-            <div className="flex items-baseline gap-2 mt-1.5">
-              <span className="text-3xl sm:text-4xl 2xl:text-5xl font-mono font-extrabold text-black tabular-nums">
+          <div className="bg-[#FFFDF9] p-3.5 sm:p-4 2xl:p-5 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] xs:col-span-2 md:col-span-1 min-w-0">
+            <span className="text-xs text-neutral-700 block font-heading font-extrabold uppercase tracking-wider truncate">Canal Predominante</span>
+            <div className="flex items-baseline gap-1.5 sm:gap-2 flex-wrap mt-1 min-w-0">
+              <span className="text-2xl sm:text-3xl 2xl:text-4xl font-mono font-extrabold text-black tabular-nums">
                 {metrics.canales.canalTienda}
               </span>
-              <span className="text-xs sm:text-sm text-black font-extrabold bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">Tienda</span>
+              <span className="text-xs text-black font-extrabold bg-[#FFD23F] px-1.5 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">Tienda</span>
             </div>
-            <span className="text-xs text-neutral-700 block mt-1.5 font-mono font-semibold">
+            <span className="text-xs text-neutral-700 block mt-1 font-mono font-semibold truncate">
               {metrics.canales.canalEmpresas} Emp · {metrics.canales.canalEcommerce} Web
             </span>
           </div>
@@ -604,7 +604,7 @@ export default function TecnicosDashboardPage() {
 
         {/* Notificación Toast Neo-Brutalista */}
         {notification && (
-          <div className="fixed top-5 right-5 z-50 max-w-md bg-[#FFD23F] text-black px-4 py-3 rounded-xl text-xs font-heading font-extrabold shadow-[4px_4px_0px_#000] border-2 border-black flex items-start gap-2.5">
+          <div className="fixed top-4 left-3 right-3 sm:left-auto sm:top-5 sm:right-5 z-50 sm:max-w-md bg-[#FFD23F] text-black px-4 py-3 rounded-xl text-xs font-heading font-extrabold shadow-[4px_4px_0px_#000] border-2 border-black flex items-start gap-2.5">
             {/no se pudo|error|falló|no está configurado|sin confirmar/i.test(notification) ? (
               <AlertCircle className="w-4 h-4 text-black shrink-0 mt-0.5" />
             ) : (
@@ -618,10 +618,10 @@ export default function TecnicosDashboardPage() {
         <section className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           
           {/* Columna Izquierda: Ranking de Órdenes por Vendedor Comercial (7 cols) */}
-          <div className="lg:col-span-7 bg-[#FFFDF9] p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b-2 border-black">
+          <div className="lg:col-span-7 bg-[#FFFDF9] p-4 sm:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 min-w-0">
+            <div className="flex items-center justify-between gap-2 flex-wrap pb-3 border-b-2 border-black">
               <div className="flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-black" />
+                <ShoppingBag className="w-4 h-4 text-black shrink-0" />
                 <h3 className="text-sm font-heading font-extrabold text-black">
                   Órdenes por Asesor / Vendedor Comercial
                 </h3>
@@ -636,8 +636,8 @@ export default function TecnicosDashboardPage() {
                 const pct = Math.round((v.ordenes / (metrics.totalOrdenes || 1)) * 100);
                 return (
                   <div key={v.nombre} className="space-y-1.5 p-2.5 rounded-lg bg-[#FAF6EE] border-2 border-black shadow-[2px_2px_0px_#000]">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2 flex-wrap text-xs">
+                      <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
                         <strong className="text-black font-heading font-bold">{v.nombre}</strong>
                         <span className="text-[11px] text-neutral-700 font-mono font-semibold">
                           ({v.montajes} Montajes · {v.expansiones} Expansiones)
@@ -659,18 +659,18 @@ export default function TecnicosDashboardPage() {
               })}
             </div>
 
-            <div className="pt-2 text-[11px] text-neutral-700 border-t-2 border-black flex items-center justify-between font-mono font-medium">
+            <div className="pt-2 text-[11px] text-neutral-700 border-t-2 border-black flex items-center justify-between gap-2 flex-wrap font-mono font-medium">
               <span>Supervisión de pedidos comercializados desde Salón Central CDE y Web.</span>
               <span className="font-mono text-black font-bold">Registro NISSEI</span>
             </div>
           </div>
 
           {/* Columna Derecha: Canales y Desglose de Modalidades (5 cols) */}
-          <div className="lg:col-span-5 bg-[#FFFDF9] p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 flex flex-col justify-between">
+          <div className="lg:col-span-5 bg-[#FFFDF9] p-4 sm:p-5 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4 flex flex-col justify-between min-w-0">
             <div className="space-y-3">
               <div className="flex items-center justify-between pb-3 border-b-2 border-black">
                 <div className="flex items-center gap-2">
-                  <Layers className="w-4 h-4 text-black" />
+                  <Layers className="w-4 h-4 text-black shrink-0" />
                   <h3 className="text-sm font-heading font-extrabold text-black">
                     Modalidades &amp; Canales Comerciales
                   </h3>
@@ -678,7 +678,7 @@ export default function TecnicosDashboardPage() {
               </div>
 
               {/* Comparativa Montaje vs Expansión */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
                 <div className="p-3 rounded-lg border-2 border-black bg-[#FFFDF9] shadow-[2px_2px_0px_#000] space-y-1">
                   <span className="text-[10px] font-mono text-black uppercase font-extrabold px-1.5 py-0.5 rounded bg-[#FFD23F] border border-black inline-block">
                     Montaje de PC Completa
@@ -756,17 +756,17 @@ export default function TecnicosDashboardPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {metrics.cargaPorTecnico.map((t) => (
               <div
                 key={t.nombre}
-                className="p-3.5 rounded-lg border-2 border-black bg-[#FAF6EE] space-y-1.5 hover:bg-[#FFD23F]/20 shadow-[2px_2px_0px_#000] transition-colors"
+                className="p-3.5 rounded-lg border-2 border-black bg-[#FAF6EE] space-y-1.5 hover:bg-[#FFD23F]/20 shadow-[2px_2px_0px_#000] transition-colors min-w-0"
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <strong className="text-xs font-heading font-extrabold text-black">
                     {t.nombre}
                   </strong>
-                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full tabular-nums border border-black shadow-[1px_1px_0px_#000] ${
+                  <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-full tabular-nums border border-black shadow-[1px_1px_0px_#000] whitespace-nowrap ${
                     t.total > 0
                       ? "bg-[#2A9D8F] text-white"
                       : "bg-neutral-200 text-black"
@@ -783,11 +783,11 @@ export default function TecnicosDashboardPage() {
         </section>
 
         {/* Tabla de Órdenes de Montaje & Expansión (Neo-Brutalismo Retro) */}
-        <section className="bg-[#FFFDF9] rounded-xl border-2 border-black overflow-hidden shadow-[4px_4px_0px_#000] space-y-4 p-4 sm:p-5">
+        <section className="bg-[#FFFDF9] rounded-xl border-2 border-black overflow-hidden shadow-[4px_4px_0px_#000] space-y-4 p-3.5 sm:p-5">
           
           {/* Barra Superior con Filtros */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b-2 border-black">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b-2 border-black">
+            <div className="min-w-0">
               <h3 className="text-base font-heading font-extrabold text-black">
                 Cola de Órdenes de Montajes &amp; Expansiones
               </h3>
@@ -796,10 +796,10 @@ export default function TecnicosDashboardPage() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
               <Link
                 href="/tecnicos/nuevo"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-heading font-extrabold text-[#FFD23F] bg-black hover:bg-neutral-800 border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-heading font-extrabold text-[#FFD23F] bg-black hover:bg-neutral-800 border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all whitespace-nowrap"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>+ Nuevo Ingreso</span>
@@ -808,22 +808,22 @@ export default function TecnicosDashboardPage() {
           </div>
 
           {/* Filtros Activos: Buscador, Modalidad, Técnico y Vendedor */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-2.5 sm:gap-3">
             
             {/* Buscador */}
-            <div className="lg:col-span-5 relative">
-              <Search className="w-4 h-4 text-black absolute left-3.5 top-3" />
+            <div className="sm:col-span-2 xl:col-span-5 relative min-w-0">
+              <Search className="w-4 h-4 text-black absolute left-3.5 top-3 pointer-events-none" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar por cliente, Nº registro interno, hardware..."
-                className="w-full text-sm bg-[#FAF6EE] border-2 border-black rounded-lg pl-10 pr-3.5 py-2.5 outline-none focus:bg-white text-black font-medium shadow-[2px_2px_0px_#000] transition-colors"
+                className="w-full min-w-0 text-sm bg-[#FAF6EE] border-2 border-black rounded-lg pl-10 pr-3.5 py-2.5 outline-none focus:bg-white text-black font-medium shadow-[2px_2px_0px_#000] transition-colors"
               />
             </div>
 
             {/* Filtro por Modalidad: Todos / Montaje / Expansión */}
-            <div className="lg:col-span-3 flex items-center gap-2">
+            <div className="xl:col-span-3 flex items-center gap-2 min-w-0">
               <CleanSelect
                 value={tipoServicioFilter}
                 onChange={(val) => setTipoServicioFilter(val as any)}
@@ -835,7 +835,7 @@ export default function TecnicosDashboardPage() {
             </div>
 
             {/* Filtro por Técnico (Nicolas Solis, Magaly Yegros, Juan Ronnebeck) */}
-            <div className="lg:col-span-2 flex items-center gap-2">
+            <div className="xl:col-span-2 flex items-center gap-2 min-w-0">
               <CleanSelect
                 value={tecnicoFilter}
                 onChange={(val) => setTecnicoFilter(val)}
@@ -847,7 +847,7 @@ export default function TecnicosDashboardPage() {
             </div>
 
             {/* Filtro por Vendedor */}
-            <div className="lg:col-span-2 flex items-center gap-2">
+            <div className="xl:col-span-2 flex items-center gap-2 min-w-0">
               <CleanSelect
                 value={vendedorFilter}
                 onChange={(val) => setVendedorFilter(val)}
@@ -1059,28 +1059,28 @@ export default function TecnicosDashboardPage() {
         {/* Modal de Detalle Completo de Orden de Montaje */}
         {/* Modal de Detalle Completo de la Orden (Neo-Brutalismo Retro) */}
         {selectedOrderForDetail && (
-          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 animate-in fade-in">
-            <div className="bg-[#FFFDF9] rounded-xl max-w-xl w-full p-5 sm:p-6 shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-2 sm:p-4 animate-in fade-in">
+            <div className="bg-[#FFFDF9] rounded-xl max-w-[96vw] sm:max-w-xl w-full p-4 sm:p-6 shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[94dvh] overflow-y-auto overscroll-contain">
               
-              <div className="flex items-center justify-between border-b-2 border-black pb-3">
-                <div>
-                  <span className="text-[11px] font-mono text-neutral-700 uppercase font-bold tracking-wider">
+              <div className="flex items-start justify-between gap-2 border-b-2 border-black pb-3">
+                <div className="min-w-0">
+                  <span className="text-[11px] font-mono text-neutral-700 uppercase font-bold tracking-wider block">
                     DETALLE DE ORDEN DE MONTAJE &amp; TALLER
                   </span>
-                  <h3 className="text-lg font-heading font-extrabold text-black">
+                  <h3 className="text-base sm:text-lg font-heading font-extrabold text-black break-words">
                     Orden #{selectedOrderForDetail.id} · {selectedOrderForDetail.cliente}
                   </h3>
                 </div>
                 <button
                   onClick={() => setSelectedOrderForDetail(null)}
-                  className="text-neutral-500 hover:text-black text-xl font-bold p-1 cursor-pointer transition-colors"
+                  className="text-neutral-500 hover:text-black text-xl font-bold p-1 cursor-pointer transition-colors shrink-0"
                 >
                   ✕
                 </button>
               </div>
 
               {/* Ficha Resumen */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs bg-[#FAF6EE] p-3.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs bg-[#FAF6EE] p-3.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
                 <div>
                   <span className="text-neutral-700 block font-mono text-[10px] uppercase font-bold">Nº Registro Interno:</span>
                   <strong className="text-black font-mono text-sm">{selectedOrderForDetail.nro_reg}</strong>
@@ -1290,7 +1290,7 @@ export default function TecnicosDashboardPage() {
             }
           `}</style>
 
-          <div className="bg-[#FFFDF9] rounded-xl w-full max-w-lg p-5 shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[92dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
+          <div className="bg-[#FFFDF9] rounded-xl w-full max-w-[96vw] sm:max-w-lg p-3.5 sm:p-5 shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[94dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
 
             {/* Cabecera del modal (oculta al imprimir) */}
             <div className="flex items-start justify-between gap-2 border-b-2 border-black pb-3 print:hidden">
@@ -1351,7 +1351,7 @@ export default function TecnicosDashboardPage() {
                   <label className="block text-[11px] font-heading font-extrabold text-black uppercase tracking-wider">
                     Ancho del rollo / cabezal:
                   </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 xs:grid-cols-3 gap-2">
                     {(Object.keys(THERMAL_PROFILE_META) as ThermalPaperProfile[]).map((key) => {
                       const active = thermalSettings.paperProfile === key;
                       return (
@@ -1408,7 +1408,7 @@ export default function TecnicosDashboardPage() {
                 </div>
 
                 {/* Escala y Centrados X / Y */}
-                <div className="grid grid-cols-3 gap-2.5 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                   <div className="space-y-1">
                     <div className="flex items-center justify-between text-[11px]">
                       <span className="font-heading font-bold text-black">Escala:</span>

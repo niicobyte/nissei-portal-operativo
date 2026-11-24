@@ -944,23 +944,25 @@ export default function NuevoIngresoMontajePage() {
       <div className="w-full max-w-[1680px] 3xl:max-w-[2200px] 4xl:max-w-[2560px] mx-auto space-y-5 lg:space-y-6 2xl:space-y-8 min-w-0">
         
         {/* Cabecera con Botón Volver Mejorado Neo-Brutalismo */}
-        <div className="flex items-center justify-between pb-4 border-b-2 border-black gap-2 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b-2 border-black gap-3">
           <Link
             href="/tecnicos"
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs sm:text-sm font-heading font-extrabold text-black bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 h-10 sm:h-11 text-xs sm:text-sm font-heading font-extrabold text-black bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer whitespace-nowrap"
           >
-            <ArrowLeft className="w-4 h-4 text-black stroke-[2.5]" />
+            <ArrowLeft className="w-4 h-4 text-black stroke-[2.5] shrink-0" />
             <span>Volver al Dashboard de Montajes</span>
           </Link>
-          <AuthBadge requiredModule="tecnicos" />
+          <div className="self-start sm:self-auto">
+            <AuthBadge requiredModule="tecnicos" />
+          </div>
         </div>
 
         <div className="space-y-1.5">
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black text-xs font-mono font-bold border-2 border-black shadow-[2px_2px_0px_#000]">
-            <Wrench className="w-3.5 h-3.5 text-black" />
+            <Wrench className="w-3.5 h-3.5 text-black shrink-0" />
             <span>TALLER DE MONTAJES &amp; ENSAMBLES</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-heading font-extrabold text-black tracking-tight">
+          <h1 className="text-xl sm:text-2xl xl:text-3xl 2xl:text-4xl font-heading font-extrabold text-black tracking-tight">
             Nuevo Ingreso de Montaje &amp; Ensamble de PC
           </h1>
           <p className="text-xs sm:text-sm text-neutral-800 max-w-4xl font-medium">
@@ -993,13 +995,13 @@ export default function NuevoIngresoMontajePage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <form onSubmit={handleSubmit} onKeyDown={handleFormKeyDown} className="grid grid-cols-1 xl:grid-cols-12 gap-5 lg:gap-6 items-start">
           
           {/* COLUMNA PRINCIPAL DE FORMULARIO (8 cols) */}
-          <div className="lg:col-span-8 space-y-6">
+          <div className="xl:col-span-8 space-y-5 lg:space-y-6 min-w-0">
 
             {/* SECCIÓN 1: APARTADO DE VENDEDOR & CANAL COMERCIAL */}
-            <section className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
+            <section className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 border-black shadow-[4px_4px_0px_#000] space-y-4">
               <div className="flex items-center justify-between border-b-2 border-black pb-3">
                 <div className="flex items-center gap-2.5">
                   <span className="w-8 h-8 rounded-lg bg-[#FFD23F] text-black border-2 border-black text-xs sm:text-sm flex items-center justify-center font-heading font-black shadow-[1px_1px_0px_#000]">
@@ -1280,7 +1282,7 @@ export default function NuevoIngresoMontajePage() {
                   </div>
 
                   {/* SKU con datalist de autocompletado */}
-                  <div className="sm:col-span-3">
+                  <div className="sm:col-span-4 md:col-span-3">
                     <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       SKU (Código) *
                     </label>
@@ -1303,7 +1305,7 @@ export default function NuevoIngresoMontajePage() {
                   </div>
 
                   {/* Categoría (se autoselecciona al coincidir SKU o se elige manual) */}
-                  <div className="sm:col-span-3">
+                  <div className="sm:col-span-8 md:col-span-4">
                     <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       Categoría *
                     </label>
@@ -1319,7 +1321,7 @@ export default function NuevoIngresoMontajePage() {
                   </div>
 
                   {/* Descripción del Hardware */}
-                  <div className="sm:col-span-6">
+                  <div className="sm:col-span-12 md:col-span-5">
                     <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       Descripción del Hardware *
                     </label>
@@ -1342,7 +1344,7 @@ export default function NuevoIngresoMontajePage() {
                   </div>
 
                   {/* Serial / IMEI */}
-                  <div className="sm:col-span-8">
+                  <div className="sm:col-span-7 md:col-span-8">
                     <label className="text-xs sm:text-sm text-black font-heading font-extrabold block mb-1 font-mono">
                       Serial Físico / IMEI (Opcional · vacío = N/A)
                     </label>
@@ -1364,13 +1366,13 @@ export default function NuevoIngresoMontajePage() {
                   </div>
 
                   {/* Botón Agregar */}
-                  <div className="sm:col-span-4 flex items-end">
+                  <div className="sm:col-span-5 md:col-span-4 flex items-end">
                     <button
                       type="button"
                       onClick={() => handleAddComponent()}
-                      className="w-full inline-flex items-center justify-center gap-2 py-3 px-4 bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs sm:text-sm font-heading font-extrabold rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
+                      className="w-full inline-flex items-center justify-center gap-2 py-2.5 sm:py-3 px-4 bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs sm:text-sm font-heading font-extrabold rounded-xl border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer whitespace-nowrap"
                     >
-                      <Plus className="w-4 h-4 stroke-[3]" />
+                      <Plus className="w-4 h-4 stroke-[3] shrink-0" />
                       <span>+ Agregar a la Orden</span>
                     </button>
                   </div>
@@ -1480,11 +1482,11 @@ export default function NuevoIngresoMontajePage() {
 
                     {/* Badges de Consumo Eléctrico y Estado */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border-2 border-black text-xs font-mono font-bold text-black shadow-[2px_2px_0px_#000]">
-                        <Zap className="w-3.5 h-3.5 text-black" />
+                      <div className="inline-flex items-center gap-1.5 flex-wrap px-3 py-1 rounded-xl bg-white border-2 border-black text-xs font-mono font-bold text-black shadow-[2px_2px_0px_#000]">
+                        <Zap className="w-3.5 h-3.5 text-black shrink-0" />
                         <span>Consumo: ~{resultadoCompatibilidad.consumoTotalWatts}W</span>
-                        <span className="text-neutral-400">|</span>
-                        <span className="text-neutral-700">Fuente recomendada: {resultadoCompatibilidad.fuenteRecomendadaWatts}W+</span>
+                        <span className="text-neutral-400 hidden xs:inline">|</span>
+                        <span className="text-neutral-700">Fuente rec.: {resultadoCompatibilidad.fuenteRecomendadaWatts}W+</span>
                       </div>
 
                       <span
@@ -1562,7 +1564,7 @@ export default function NuevoIngresoMontajePage() {
 
                   {/* Checklist de Compatibilidad cuando está 100% Compatible */}
                   {resultadoCompatibilidad.totalErrores === 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                    <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
                       <div className="p-2.5 rounded-xl bg-white border-2 border-black flex items-center gap-2 shadow-[2px_2px_0px_#000]">
                         <CheckCircle2 className="w-4 h-4 text-[#2A9D8F] shrink-0 stroke-[2.5]" />
                         <span className="font-mono font-bold text-black">Socket CPU &amp; Placa</span>
@@ -1828,60 +1830,60 @@ export default function NuevoIngresoMontajePage() {
           </div>
 
           {/* COLUMNA LATERAL: RESUMEN, WHATSAPP & BOTÓN REGISTRAR (4 cols) */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="xl:col-span-4 space-y-5 min-w-0 xl:sticky xl:top-4">
 
             {/* Tarjeta Resumen de la Orden Neo-Brutalista */}
-            <div className="bg-[#FFFDF9] p-5 sm:p-6 rounded-xl border-3 border-black shadow-[6px_6px_0px_#000] space-y-4 sticky top-6">
-              <div className="border-b-2 border-black pb-3">
+            <div className="bg-[#FFFDF9] p-4 sm:p-5 2xl:p-6 rounded-xl border-2 sm:border-3 border-black shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000] space-y-3.5 xl:max-h-[calc(100dvh-2rem)] xl:overflow-y-auto overscroll-contain">
+              <div className="border-b-2 border-black pb-2.5">
                 <span className="text-xs sm:text-sm font-heading font-extrabold text-black uppercase tracking-wider bg-[#FFD23F] px-2.5 py-1 border-2 border-black rounded shadow-[2px_2px_0px_#000] inline-block">
                   Resumen de Ingreso al Taller
                 </span>
               </div>
 
-              <div className="space-y-2.5 text-xs sm:text-sm divide-y-2 divide-dashed divide-black/20">
-                <div className="pt-2 flex justify-between items-center">
-                  <span className="font-mono text-neutral-700 text-xs">Vendedor:</span>
-                  <strong className="text-black font-mono font-bold text-right">
+              <div className="space-y-2 text-xs sm:text-sm divide-y-2 divide-dashed divide-black/20">
+                <div className="pt-2 flex justify-between items-center gap-2">
+                  <span className="font-mono text-neutral-700 text-xs shrink-0">Vendedor:</span>
+                  <strong className="text-black font-mono font-bold text-right truncate">
                     {salesAgent === "OTRO" ? customSalesAgent || "No especificado" : salesAgent}
                   </strong>
                 </div>
 
-                <div className="pt-2 flex justify-between items-center">
-                  <span className="font-mono text-neutral-700 text-xs">Canal:</span>
-                  <span className="font-mono font-bold text-black">{salesChannel}</span>
+                <div className="pt-2 flex justify-between items-center gap-2">
+                  <span className="font-mono text-neutral-700 text-xs shrink-0">Canal:</span>
+                  <span className="font-mono font-bold text-black text-right truncate">{salesChannel}</span>
                 </div>
 
-                <div className="pt-2 flex justify-between items-center">
-                  <span className="font-mono text-neutral-700 text-xs">Nro. Registro / Interno:</span>
-                  <span className="font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
+                <div className="pt-2 flex justify-between items-center gap-2">
+                  <span className="font-mono text-neutral-700 text-xs shrink-0">Nro. Registro / Interno:</span>
+                  <span className="font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000] truncate max-w-[180px]">
                     {nroRegistroInterno || "---"}
                   </span>
                 </div>
 
-                <div className="pt-2 flex justify-between items-center">
-                  <span className="font-mono text-neutral-700 text-xs">Cliente:</span>
-                  <strong className="text-black font-mono font-bold text-right truncate max-w-[180px]">
+                <div className="pt-2 flex justify-between items-center gap-2">
+                  <span className="font-mono text-neutral-700 text-xs shrink-0">Cliente:</span>
+                  <strong className="text-black font-mono font-bold text-right truncate max-w-[200px]">
                     {clientName || "Sin asignar"}
                   </strong>
                 </div>
 
-                <div className="pt-2 flex justify-between items-center">
-                  <span className="font-mono text-neutral-700 text-xs">Modalidad:</span>
-                  <span className="px-2 py-0.5 rounded bg-[#FAF6EE] text-black font-mono text-xs font-bold border border-black shadow-[1px_1px_0px_#000]">
+                <div className="pt-2 flex justify-between items-center gap-2">
+                  <span className="font-mono text-neutral-700 text-xs shrink-0">Modalidad:</span>
+                  <span className="px-2 py-0.5 rounded bg-[#FAF6EE] text-black font-mono text-xs font-bold border border-black shadow-[1px_1px_0px_#000] whitespace-nowrap">
                     {tipoServicio === "Montaje" ? "Montaje PC" : "Expansión Notebook"}
                   </span>
                 </div>
 
-                <div className="pt-2 flex justify-between items-center">
-                  <span className="font-mono text-neutral-700 text-xs">Cantidad de Equipos:</span>
+                <div className="pt-2 flex justify-between items-center gap-2">
+                  <span className="font-mono text-neutral-700 text-xs shrink-0">Cantidad de Equipos:</span>
                   <span className="font-mono font-bold text-black">
                     {cantidadEquipos} {cantidadEquipos === 1 ? "unidad" : "unidades"}
                   </span>
                 </div>
 
-                <div className="pt-2 flex justify-between items-center">
-                  <span className="font-mono text-neutral-700 text-xs">Técnico Responsable:</span>
-                  <span className="text-black font-mono font-bold">
+                <div className="pt-2 flex justify-between items-center gap-2">
+                  <span className="font-mono text-neutral-700 text-xs shrink-0">Técnico Responsable:</span>
+                  <span className="text-black font-mono font-bold text-right truncate">
                     {assignedTech === "OTRO" ? customTech || "No especificado" : assignedTech}
                   </span>
                 </div>

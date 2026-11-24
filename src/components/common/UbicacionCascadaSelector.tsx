@@ -286,7 +286,7 @@ export function UbicacionCascadaSelector({
           </div>
 
           {/* NIVEL 2: SUB-OPCIONES EN CASCADA */}
-          <div className="sm:col-span-4 flex flex-col sm:border-l-2 sm:border-black sm:pl-3">
+          <div className="sm:col-span-4 flex flex-col border-t-2 border-dashed border-black/25 pt-2.5 sm:border-t-0 sm:pt-0 sm:border-l-2 sm:border-solid sm:border-black sm:pl-3 min-w-0">
             <div className="h-5 flex items-center mb-1.5 px-1">
               <span className="block text-xs font-mono font-bold uppercase tracking-wider text-black truncate whitespace-nowrap">
                 {activeMain === "ESTANTE"
@@ -394,7 +394,7 @@ export function UbicacionCascadaSelector({
           </div>
 
           {/* NIVEL 3: DESPLIEGUE FINAL DE UBICACIÓN */}
-          <div className="sm:col-span-4 flex flex-col sm:border-l-2 sm:border-black sm:pl-3">
+          <div className="sm:col-span-4 flex flex-col border-t-2 border-dashed border-black/25 pt-2.5 sm:border-t-0 sm:pt-0 sm:border-l-2 sm:border-solid sm:border-black sm:pl-3 min-w-0">
             <div className="h-5 flex items-center mb-1.5 px-1">
               <span className="block text-xs font-mono font-bold uppercase tracking-wider text-black truncate whitespace-nowrap">
                 {activeMain === "ESTANTE" && (activeSub === "A" || activeSub === "B")

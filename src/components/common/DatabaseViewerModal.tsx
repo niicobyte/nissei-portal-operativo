@@ -538,58 +538,58 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
   const isCloudRailway = Boolean(serverInfo?.isRailway || displayHost.includes("railway"));
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 lg:p-6">
-      <div className={`bg-[#FFFDF9] w-full max-w-7xl 3xl:max-w-[1800px] h-[92dvh] rounded-xl border-3 border-black shadow-[8px_8px_0px_#000] flex flex-col overflow-hidden transition-all duration-300 ${isSessionLocked ? "blur-md pointer-events-none select-none opacity-25" : ""}`}>
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-1.5 sm:p-3 lg:p-5">
+      <div className={`bg-[#FFFDF9] w-full max-w-[98vw] xl:max-w-7xl 3xl:max-w-[1850px] h-[95dvh] sm:h-[92dvh] rounded-xl border-2 sm:border-3 border-black shadow-[4px_4px_0px_#000] sm:shadow-[8px_8px_0px_#000] flex flex-col overflow-hidden transition-all duration-300 ${isSessionLocked ? "blur-md pointer-events-none select-none opacity-25" : ""}`}>
         {/* Cabecera del Visor de Base de Datos Neo-Brutalista Retro */}
-        <div className="bg-[#FAF6EE] text-black px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b-2 border-black">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#FFD23F] border-2 border-black flex items-center justify-center text-black shadow-[2px_2px_0px_#000]">
-              <Database className="w-5 h-5 text-black" />
+        <div className="bg-[#FAF6EE] text-black px-3 sm:px-5 py-2.5 sm:py-3.5 flex flex-col md:flex-row md:items-center md:justify-between gap-2.5 sm:gap-3 border-b-2 border-black shrink-0">
+          <div className="flex items-start sm:items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-[#FFD23F] border-2 border-black flex items-center justify-center text-black shadow-[2px_2px_0px_#000] shrink-0">
+              <Database className="w-4 h-4 sm:w-5 sm:h-5 text-black" />
             </div>
-            <div>
-              <div className="flex items-center gap-2.5 flex-wrap">
-                <h2 className="text-base sm:text-lg font-heading font-extrabold text-black tracking-tight">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className="text-sm sm:text-base lg:text-lg font-heading font-extrabold text-black tracking-tight">
                   Visor de Base de Datos MySQL
                 </h2>
-                <span className="px-2 py-0.5 text-[11px] font-mono font-bold bg-[#FFFDF9] border-2 border-black rounded text-black shadow-[1px_1px_0px_#000]">
+                <span className="px-2 py-0.5 text-[10px] sm:text-[11px] font-mono font-bold bg-[#FFFDF9] border-2 border-black rounded text-black shadow-[1px_1px_0px_#000]">
                   DB: {displayDb}
                 </span>
                 {mysqlConnected ? (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#2A9D8F]/20 text-black border-2 border-black shadow-[1px_1px_0px_#000]">
-                    <CheckCircle2 className="w-3 h-3 text-black" />
-                    {isCloudRailway ? "MySQL Cloud Activo (Railway)" : `MySQL Activo (${displayHost})`}
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold bg-[#2A9D8F]/20 text-black border-2 border-black shadow-[1px_1px_0px_#000]">
+                    <CheckCircle2 className="w-3 h-3 text-black shrink-0" />
+                    <span className="truncate">{isCloudRailway ? "MySQL Cloud Activo (Railway)" : `MySQL Activo (${displayHost})`}</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFD23F] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
-                    <HardDrive className="w-3 h-3 text-black" />
-                    MySQL en la Nube (Conectando...)
+                  <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold bg-[#FFD23F] text-black border-2 border-black shadow-[1px_1px_0px_#000]">
+                    <HardDrive className="w-3 h-3 text-black shrink-0" />
+                    <span>MySQL en la Nube (Conectando...)</span>
                   </span>
                 )}
                 {/* Temporizador de Seguridad de 30 Segundos */}
                 <span
-                  className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold border-2 border-black shadow-[1px_1px_0px_#000] transition-colors ${
+                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-mono font-bold border-2 border-black shadow-[1px_1px_0px_#000] transition-colors ${
                     secondsRemaining <= 10
                       ? "bg-[#E76F51] text-white animate-pulse"
                       : "bg-[#FFFDF9] text-black"
                   }`}
                   title="Sesión protegida en MySQL: Expira automáticamente a los 30 segundos y requiere re-autenticación"
                 >
-                  <Clock className={`w-3 h-3 ${secondsRemaining <= 10 ? "text-white" : "text-black"}`} />
+                  <Clock className={`w-3 h-3 shrink-0 ${secondsRemaining <= 10 ? "text-white" : "text-black"}`} />
                   <span>Sesión: {secondsRemaining}s</span>
                 </span>
               </div>
-              <p className="text-xs text-neutral-800 mt-0.5 font-mono font-medium">
+              <p className="text-[11px] sm:text-xs text-neutral-800 mt-0.5 font-mono font-medium break-all sm:break-normal">
                 Host: {displayHost} · Motor: InnoDB utf8mb4 · Última lectura: {lastSyncTime || "--:--"}
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center gap-2 self-end md:self-center flex-wrap shrink-0">
             <button
               type="button"
               onClick={loadAllData}
               disabled={isLoading}
-              className="px-3 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? "animate-spin" : ""}`} />
               <span>Recargar</span>
@@ -598,7 +598,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
               <button
                 type="button"
                 onClick={handleExportJSON}
-                className="px-3 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] text-black text-xs font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Exportar JSON</span>
@@ -607,7 +607,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={onClose}
-              className="p-2 rounded-lg bg-[#FFFDF9] hover:bg-[#E76F51] hover:text-white text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-lg bg-[#FFFDF9] hover:bg-[#E76F51] hover:text-white text-black border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
               title="Cerrar visor de base de datos"
             >
               <X className="w-4 h-4" />
@@ -616,18 +616,18 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
         </div>
 
         {/* Pestañas de Tablas de la Base de Datos Neo-Brutalista Retro */}
-        <div className="bg-[#FAF6EE] px-5 pt-3 border-b-2 border-black flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-2 sm:pb-0">
+        <div className="bg-[#FAF6EE] px-3 sm:px-5 pt-2 border-b-2 border-black shrink-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1.5 sm:pb-0">
             <button
               type="button"
               onClick={() => { setActiveTab("taller_reparaciones"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
+              className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "taller_reparaciones"
                   ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
                   : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <Wrench className="w-3.5 h-3.5" />
+              <Wrench className="w-3.5 h-3.5 shrink-0" />
               <span className="font-mono">taller_reparaciones</span>
               <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "taller_reparaciones" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {reparaciones.length}
@@ -637,13 +637,13 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("recepcion_tickets"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
+              className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "recepcion_tickets"
                   ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
                   : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <AnimatedReceptionBox className="w-3.5 h-3.5" beamColor="bg-emerald-500" pingColor="bg-emerald-500" />
+              <AnimatedReceptionBox className="w-3.5 h-3.5 shrink-0" beamColor="bg-emerald-500" pingColor="bg-emerald-500" />
               <span className="font-mono">recepcion_tickets</span>
               <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "recepcion_tickets" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {recepcion.length}
@@ -653,13 +653,13 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("recepcion_cde_tickets"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
+              className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "recepcion_cde_tickets"
                   ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
                   : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <SpeedTruck className="w-3.5 h-3.5" smokeColor="bg-amber-400" />
+              <SpeedTruck className="w-3.5 h-3.5 shrink-0" smokeColor="bg-amber-400" />
               <span className="font-mono">recepcion_cde_tickets</span>
               <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "recepcion_cde_tickets" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {cde.length}
@@ -669,13 +669,13 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("ordenes_montaje"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
+              className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "ordenes_montaje"
                   ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
                   : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <AnimatedCpu className="w-3.5 h-3.5" coreColor="bg-cyan-500" />
+              <AnimatedCpu className="w-3.5 h-3.5 shrink-0" coreColor="bg-cyan-500" />
               <span className="font-mono">ordenes_montaje</span>
               <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "ordenes_montaje" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {montajes.length}
@@ -685,13 +685,13 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("usuarios"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
+              className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "usuarios"
                   ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
                   : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <Users className="w-3.5 h-3.5" />
+              <Users className="w-3.5 h-3.5 shrink-0" />
               <span className="font-mono">usuarios</span>
               <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono font-extrabold ${activeTab === "usuarios" ? "bg-[#FFD23F] text-black border border-black" : "bg-black text-white"}`}>
                 {usuarios.length}
@@ -701,13 +701,13 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             <button
               type="button"
               onClick={() => { setActiveTab("sql_schema"); setPage(1); }}
-              className={`px-3.5 py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
+              className={`shrink-0 whitespace-nowrap px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-t-lg text-xs font-heading font-extrabold transition-all flex items-center gap-1.5 sm:gap-2 border-t-2 border-x-2 border-black cursor-pointer ${
                 activeTab === "sql_schema"
                   ? "bg-black text-[#FFD23F] shadow-[2px_0px_0px_#000]"
                   : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
               }`}
             >
-              <Code2 className="w-3.5 h-3.5" />
+              <Code2 className="w-3.5 h-3.5 shrink-0" />
               <span>Estructura SQL</span>
             </button>
           </div>
@@ -715,16 +715,16 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
         {/* Barra de Filtros y Búsqueda Neo-Brutalista Retro */}
         {activeTab !== "sql_schema" && (
-          <div className="px-5 py-3 bg-[#FAF6EE] border-b-2 border-black flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-2 flex-1 max-w-xl">
-              <div className="relative flex-1">
-                <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5" />
+          <div className="px-3 sm:px-5 py-2.5 bg-[#FAF6EE] border-b-2 border-black flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-2.5 shrink-0">
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 flex-1 lg:max-w-xl min-w-0">
+              <div className="relative flex-1 min-w-[180px]">
+                <Search className="w-4 h-4 text-neutral-500 absolute left-3 top-2.5 pointer-events-none" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder={`Buscar en tabla ${activeTab} (orden, cliente, serie, técnico, fallo...)`}
-                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-white text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] focus:bg-[#FFFDF9] outline-none font-mono font-medium"
+                  className="w-full min-w-0 pl-9 pr-3 py-1.5 text-xs bg-white text-black border-2 border-black rounded-lg shadow-[2px_2px_0px_#000] focus:bg-[#FFFDF9] outline-none font-mono font-medium"
                 />
               </div>
 
@@ -732,7 +732,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-xs bg-white text-black border-2 border-black rounded-lg px-2.5 py-1.5 font-heading font-extrabold shadow-[2px_2px_0px_#000] outline-none cursor-pointer"
+                  className="w-full sm:w-auto text-xs bg-white text-black border-2 border-black rounded-lg px-2.5 py-1.5 font-heading font-extrabold shadow-[2px_2px_0px_#000] outline-none cursor-pointer"
                 >
                   <option value="ALL">Todos los estados</option>
                   <option value="SIN_ASIGNAR">SIN_ASIGNAR</option>
@@ -745,7 +745,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="text-xs bg-white text-black border-2 border-black rounded-lg px-2.5 py-1.5 font-heading font-extrabold shadow-[2px_2px_0px_#000] outline-none cursor-pointer"
+                  className="w-full sm:w-auto text-xs bg-white text-black border-2 border-black rounded-lg px-2.5 py-1.5 font-heading font-extrabold shadow-[2px_2px_0px_#000] outline-none cursor-pointer"
                 >
                   <option value="ALL">Todas las etapas</option>
                   <option value="PENDIENTE_PIEZAS">PENDIENTE_PIEZAS</option>
@@ -757,7 +757,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
             </div>
 
             {/* Paginación */}
-            <div className="flex items-center justify-between sm:justify-end gap-3 text-xs text-black font-mono">
+            <div className="flex items-center justify-between lg:justify-end gap-2.5 text-xs text-black font-mono flex-wrap">
               <span>
                 Mostrando{" "}
                 <strong>
@@ -1188,11 +1188,11 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
           {/* 5. ESTRUCTURA SQL */}
           {activeTab === "sql_schema" && (
-            <div className="p-6 max-w-5xl mx-auto space-y-4">
-              <div className="flex items-center justify-between bg-[#FAF6EE] p-4 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
-                <div>
+            <div className="p-3 sm:p-6 max-w-5xl mx-auto space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#FAF6EE] p-3.5 sm:p-4 rounded-xl border-2 border-black shadow-[3px_3px_0px_#000]">
+                <div className="min-w-0">
                   <h3 className="text-sm font-heading font-extrabold text-black flex items-center gap-2">
-                    <Table2 className="w-4 h-4 text-black" />
+                    <Table2 className="w-4 h-4 text-black shrink-0" />
                     <span>Esquema Oficial MySQL (`src/lib/mysql.ts`)</span>
                   </h3>
                   <p className="text-xs text-neutral-700 mt-0.5 font-medium">
@@ -1202,7 +1202,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 <button
                   type="button"
                   onClick={handleCopySql}
-                  className="px-3.5 py-1.5 rounded-lg bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs font-heading font-extrabold flex items-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer"
+                  className="shrink-0 self-start sm:self-center px-3.5 py-1.5 rounded-lg bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs font-heading font-extrabold flex items-center gap-1.5 border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] transition-all cursor-pointer whitespace-nowrap"
                 >
                   {copiedSql ? (
                     <>
@@ -1218,7 +1218,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 </button>
               </div>
 
-              <pre className="p-5 rounded-xl bg-black text-[#FFD23F] font-mono text-xs overflow-x-auto leading-relaxed border-2 border-black shadow-[4px_4px_0px_#000]">
+              <pre className="p-3.5 sm:p-5 rounded-xl bg-black text-[#FFD23F] font-mono text-[11px] sm:text-xs overflow-x-auto leading-relaxed border-2 border-black shadow-[4px_4px_0px_#000]">
                 {SQL_SCHEMA_TEXT}
               </pre>
             </div>
@@ -1228,24 +1228,24 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
       {/* Toast informativo Neo-Brutalista */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-[80] bg-[#FFD23F] text-black text-xs font-heading font-extrabold px-4 py-2.5 rounded-xl shadow-[4px_4px_0px_#000] border-2 border-black flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <Check className="w-4 h-4 text-black stroke-[3]" />
+        <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:bottom-6 sm:right-6 z-[80] sm:max-w-md bg-[#FFD23F] text-black text-xs font-heading font-extrabold px-4 py-2.5 rounded-xl shadow-[4px_4px_0px_#000] border-2 border-black flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <Check className="w-4 h-4 text-black stroke-[3] shrink-0" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {/* Modal de confirmación para eliminar fila Neo-Brutalista */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FFFDF9] rounded-xl max-w-md w-full shadow-[8px_8px_0px_#000] border-3 border-black overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-6">
-              <div className="w-12 h-12 rounded-xl bg-[#E76F51] border-2 border-black text-white flex items-center justify-center mb-4 shadow-[2px_2px_0px_#000]">
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-[#FFFDF9] rounded-xl max-w-md w-full shadow-[6px_6px_0px_#000] sm:shadow-[8px_8px_0px_#000] border-2 sm:border-3 border-black overflow-hidden animate-in fade-in zoom-in-95 duration-150 max-h-[92dvh] overflow-y-auto">
+            <div className="p-4 sm:p-6">
+              <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-[#E76F51] border-2 border-black text-white flex items-center justify-center mb-3.5 sm:mb-4 shadow-[2px_2px_0px_#000]">
                 <AlertTriangle className="w-6 h-6 text-white" />
               </div>
               <h3 className="text-base font-heading font-extrabold text-black mb-1">
                 ¿Eliminar registro de la base de datos?
               </h3>
-              <p className="text-xs text-neutral-800 mb-4 leading-relaxed font-medium">
+              <p className="text-xs text-neutral-800 mb-4 leading-relaxed font-medium break-words">
                 Esta acción eliminará permanentemente{" "}
                 <span className="font-mono font-bold text-black bg-[#FFD23F] px-1 border border-black rounded">{confirmDelete.label}</span>{" "}
                 de la tabla <span className="font-mono font-bold text-black">{confirmDelete.table}</span> en MySQL y en el almacenamiento local.
@@ -1254,7 +1254,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 <strong className="font-bold">Advertencia:</strong> Esta operación no se puede deshacer.
               </div>
 
-              <div className="flex items-center justify-end gap-2.5">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <button
                   type="button"
                   disabled={isDeleting}
@@ -1289,30 +1289,30 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
 
       {/* Pantalla de Re-autenticación de Seguridad (30 segundos expirados) Neo-Brutalista */}
       {isSessionLocked && (
-        <div className="fixed inset-0 z-[75] bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-[#FFFDF9] rounded-xl max-w-md w-full shadow-[8px_8px_0px_#000] border-3 border-black overflow-hidden">
-            <div className="bg-black text-[#FFD23F] px-5 py-4 flex items-center justify-between border-b-2 border-black">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-lg bg-[#FFD23F] text-black border-2 border-black flex items-center justify-center shadow-[1px_1px_0px_#000]">
+        <div className="fixed inset-0 z-[75] bg-black/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-[#FFFDF9] rounded-xl max-w-md w-full shadow-[6px_6px_0px_#000] sm:shadow-[8px_8px_0px_#000] border-2 sm:border-3 border-black overflow-hidden max-h-[94dvh] overflow-y-auto">
+            <div className="bg-black text-[#FFD23F] px-4 sm:px-5 py-3.5 sm:py-4 flex items-center justify-between gap-2 border-b-2 border-black">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-lg bg-[#FFD23F] text-black border-2 border-black flex items-center justify-center shadow-[1px_1px_0px_#000] shrink-0">
                   <ShieldAlert className="w-5 h-5 text-black" />
                 </div>
-                <div>
-                  <h3 className="text-sm font-heading font-extrabold text-[#FFD23F] tracking-tight">Sesión MySQL Expirada (30s)</h3>
-                  <p className="text-[11px] text-neutral-300 font-mono">Límite de seguridad alcanzado</p>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-heading font-extrabold text-[#FFD23F] tracking-tight truncate">Sesión MySQL Expirada (30s)</h3>
+                  <p className="text-[11px] text-neutral-300 font-mono truncate">Límite de seguridad alcanzado</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-lg bg-neutral-900 hover:bg-[#E76F51] text-white border-2 border-black transition-colors cursor-pointer"
+                className="p-1.5 rounded-lg bg-neutral-900 hover:bg-[#E76F51] text-white border-2 border-black transition-colors cursor-pointer shrink-0"
                 title="Cerrar visor MySQL"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <form onSubmit={handleReauthSubmit} className="p-6 space-y-4">
-              <div className="p-3.5 bg-[#FAF6EE] rounded-xl border-2 border-black text-black text-xs leading-relaxed flex items-start gap-2.5 shadow-[2px_2px_0px_#000]">
+            <form onSubmit={handleReauthSubmit} className="p-4 sm:p-6 space-y-4">
+              <div className="p-3 sm:p-3.5 bg-[#FAF6EE] rounded-xl border-2 border-black text-black text-xs leading-relaxed flex items-start gap-2.5 shadow-[2px_2px_0px_#000]">
                 <Clock className="w-4 h-4 text-black shrink-0 mt-0.5" />
                 <div>
                   <strong className="block font-heading font-extrabold text-black">Tiempo de visualización agotado</strong>
@@ -1358,7 +1358,7 @@ export default function DatabaseViewerModal({ isOpen, onClose }: DatabaseViewerM
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2.5 pt-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
                 <button
                   type="button"
                   onClick={onClose}

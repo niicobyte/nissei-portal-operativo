@@ -27,8 +27,8 @@ export function HeaderActions({
   extraActions,
 }: HeaderActionsProps) {
   return (
-    <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 sm:pb-6 border-b-2 border-black">
-      <div className="space-y-1.5">
+    <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-3.5 lg:gap-4 pb-4 sm:pb-5 border-b-2 border-black">
+      <div className="space-y-1.5 min-w-0 flex-1">
         {!hideBadge && (
           <div className="flex items-center gap-2 flex-wrap">
             <Link
@@ -47,7 +47,7 @@ export function HeaderActions({
             )}
           </div>
         )}
-        <h1 className="text-2xl sm:text-3xl font-heading font-extrabold tracking-tight text-[#111111]">
+        <h1 className="text-xl sm:text-2xl xl:text-3xl font-heading font-extrabold tracking-tight text-[#111111]">
           {title}
         </h1>
         <p className="text-xs sm:text-sm text-neutral-800 font-medium max-w-3xl">
@@ -55,7 +55,7 @@ export function HeaderActions({
         </p>
       </div>
 
-      <div className="flex items-center gap-2.5 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap shrink-0 self-start lg:self-center lg:justify-end w-full sm:w-auto">
         {extraActions}
         <AuthBadge
           requiredModule={activeModule}
@@ -66,7 +66,7 @@ export function HeaderActions({
         {newActionLabel && newActionHref && (
           <Link
             href={newActionHref}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs sm:text-sm font-heading font-extrabold px-4 py-2 rounded-lg border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer"
+            className="w-full sm:w-auto h-10 sm:h-11 inline-flex items-center justify-center gap-2 bg-[#FFD23F] hover:bg-[#FACC15] text-black text-xs sm:text-sm font-heading font-extrabold px-3.5 sm:px-4 rounded-lg border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer whitespace-nowrap shrink-0"
           >
             <span>{newActionLabel}</span>
           </Link>

@@ -122,9 +122,9 @@ html {
 }
 
 @media screen {
-  /* Teléfonos (320px a 639px): escalado fluido y cómodo a la vista */
+  /* Teléfonos (320px a 639px): escalado fluido sin desbordar pantallas angostas */
   html {
-    font-size: clamp(14.5px, 4vw, 16px);
+    font-size: clamp(13.5px, 3.75vw, 15px);
     scrollbar-gutter: stable;
     scrollbar-width: thin;
     scrollbar-color: rgba(113, 113, 122, 0.45) transparent;
@@ -133,49 +133,53 @@ html {
   /* Tablets (640px a 1023px — iPad Mini, iPad Air/Pro, Galaxy Tab) */
   @media (min-width: 640px) {
     html {
-      font-size: clamp(15px, 1.8vw, 16.75px);
+      font-size: clamp(14px, 1.65vw, 15.25px);
     }
   }
 
-  /* Notebooks y Monitores de 13" a 15.6" (1024px a 1535px — HD / WXGA / HD+) */
+  /* Notebooks y escritorios compactos o escalados (1024px a 1599px — 125% / 150% DPI, 1366x768) */
   @media (min-width: 1024px) {
     html {
-      font-size: clamp(15.5px, 0.85vw + 7px, 17.5px);
+      font-size: clamp(13.75px, 0.42vw + 8.6px, 15px);
     }
   }
 
-  @media (min-width: 1024px) and (max-height: 760px) {
+  /* Monitores Full HD estándar (1600px a 2239px) */
+  @media (min-width: 1600px) {
     html {
-      font-size: clamp(15px, 0.75vw + 6.8px, 16.5px);
+      font-size: clamp(14.5px, 0.32vw + 9px, 15.75px);
     }
   }
 
-  /* Monitores de 19" a 24" (1536px a 1919px) */
-  @media (min-width: 1536px) {
+  /* Compensación inteligente para pantallas con Zoom (110%-175%), DPI de Windows (125%-150%) o baja altura vertical */
+  @media (min-width: 1024px) and (max-width: 2239px) and (min-resolution: 1.15dppx),
+         (min-width: 1024px) and (max-height: 880px) {
     html {
-      font-size: clamp(16.5px, 0.6vw + 7.5px, 18.5px);
+      font-size: clamp(13.5px, 0.35vw + 8.2px, 14.75px);
     }
   }
 
-  /* Monitores Full HD y QHD de 24" a 32" (1920px a 2479px) */
-  @media (min-width: 1920px) {
+  /* Monitores QHD / 2K y Ultrawide nativos (2240px a 3199px) */
+  @media (min-width: 2240px) and (min-height: 960px) {
     html {
-      font-size: clamp(17.5px, 0.5vw + 8.5px, 20px);
-    }
-  }
-
-  /* Monitores 2K / Ultrawide y Smart TVs de 32" a 55" (2480px a 3199px) */
-  @media (min-width: 2480px) {
-    html {
-      font-size: clamp(19.5px, 0.5vw + 10px, 23px);
+      font-size: clamp(16px, 0.4vw + 7px, 18.5px);
     }
   }
 
   /* TVs 4K / Pantallas Industriales de 55", 65", 75" y 85"+ (3200px y 3840px+) */
   @media (min-width: 3200px) {
     html {
-      font-size: clamp(22px, 0.55vw + 8px, 28px);
+      font-size: clamp(19px, 0.48vw + 6px, 24px);
     }
+  }
+
+  /* Utilidad para barras horizontales desplazables sin barra invasiva */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
   }
 
   /* Evita zoom automático únicamente en Safari iOS (iPhone/iPad) al enfocar inputs */
