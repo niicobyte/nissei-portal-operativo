@@ -4668,12 +4668,12 @@ export default function ArmarPcPresupuestadorPage() {
               {presetTabMode === "PRESUPUESTO" && (
                 <div className="space-y-3 animate-in fade-in duration-150">
                   {/* Barra de Preferencia de Plataforma CPU para Presupuesto en Guaraníes */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 sm:p-3 rounded-xl bg-zinc-50 border border-zinc-200">
-                    <span className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
-                      <Cpu className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                  <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 sm:p-3 rounded-xl bg-[#FAF6EE] border-2 border-black shadow-[3px_3px_0px_#000]">
+                    <span className="text-xs font-heading font-extrabold text-black flex items-center gap-1.5">
+                      <Cpu className="w-4 h-4 text-black shrink-0" />
                       <span>Preferencia de Procesador (CPU) al armar por Guaraníes:</span>
                     </span>
-                    <div className="inline-flex p-1 bg-white rounded-xl border border-zinc-200 text-xs font-bold flex-wrap gap-1">
+                    <div className="inline-flex p-1 bg-[#FFFDF9] rounded-lg border-2 border-black text-xs font-heading font-bold flex-wrap gap-1 shadow-[2px_2px_0px_#000]">
                       <button
                         type="button"
                         onClick={() => {
@@ -4682,10 +4682,10 @@ export default function ArmarPcPresupuestadorPage() {
                             buildPcByTargetBudget(customTargetBudget, "AUTO");
                           }
                         }}
-                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                           budgetCpuPreference === "AUTO"
-                            ? "bg-zinc-900 text-white shadow-2xs"
-                            : "text-zinc-600 hover:text-zinc-900"
+                            ? "bg-black text-[#FFD23F] border border-black shadow-[1px_1px_0px_#000]"
+                            : "text-black border border-transparent hover:bg-[#FAF6EE]"
                         }`}
                       >
                         ✨ Automático (Mejor Opción)
@@ -4698,13 +4698,17 @@ export default function ArmarPcPresupuestadorPage() {
                             buildPcByTargetBudget(customTargetBudget, "AMD");
                           }
                         }}
-                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                           budgetCpuPreference === "AMD"
-                            ? "bg-rose-600 text-white shadow-2xs"
-                            : "text-zinc-700 hover:bg-rose-50"
+                            ? "bg-[#E76F51] text-white border border-black shadow-[1px_1px_0px_#000]"
+                            : "text-black border border-transparent hover:bg-[#FAF6EE]"
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-full bg-rose-500" />
+                        <span
+                          className={`w-2 h-2 rounded-full border border-black ${
+                            budgetCpuPreference === "AMD" ? "bg-white" : "bg-[#E76F51]"
+                          }`}
+                        />
                         <span>AMD Ryzen</span>
                       </button>
                       <button
@@ -4715,13 +4719,17 @@ export default function ArmarPcPresupuestadorPage() {
                             buildPcByTargetBudget(customTargetBudget, "INTEL");
                           }
                         }}
-                        className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer flex items-center gap-1 ${
+                        className={`px-2.5 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1.5 ${
                           budgetCpuPreference === "INTEL"
-                            ? "bg-sky-600 text-white shadow-2xs"
-                            : "text-zinc-700 hover:bg-sky-50"
+                            ? "bg-[#2A9D8F] text-white border border-black shadow-[1px_1px_0px_#000]"
+                            : "text-black border border-transparent hover:bg-[#FAF6EE]"
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-full bg-sky-500" />
+                        <span
+                          className={`w-2 h-2 rounded-full border border-black ${
+                            budgetCpuPreference === "INTEL" ? "bg-white" : "bg-[#2A9D8F]"
+                          }`}
+                        />
                         <span>Intel Core</span>
                       </button>
                     </div>
@@ -4742,27 +4750,33 @@ export default function ArmarPcPresupuestadorPage() {
                             setSelectedBudgetForCpuMenu(item.monto);
                             buildPcByTargetBudget(item.monto, budgetCpuPreference);
                           }}
-                          className={`p-3 sm:p-3.5 rounded-xl border text-left transition-all group cursor-pointer shadow-2xs hover:shadow-xs disabled:opacity-50 flex flex-col justify-between ${
+                          className={`p-3 sm:p-3.5 rounded-lg border-2 border-black text-left transition-all group cursor-pointer shadow-[3px_3px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[5px_5px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none disabled:opacity-50 flex flex-col justify-between ${
                             isSelectedMonto
-                              ? "bg-emerald-100/80 border-emerald-600 ring-2 ring-emerald-500/20"
-                              : "bg-emerald-50/50 hover:bg-emerald-100/70 border-emerald-200/90 hover:border-emerald-400"
+                              ? "bg-[#FFD23F] text-black"
+                              : "bg-[#FFFDF9] hover:bg-[#FAF6EE] text-black"
                           }`}
                         >
                           <div>
                             <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                              <span className="text-lg shrink-0">{item.icono}</span>
-                              <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded bg-emerald-600 text-white shadow-2xs whitespace-nowrap shrink-0">
+                              <span className="text-xl shrink-0">{item.icono}</span>
+                              <span
+                                className={`text-[10px] sm:text-[11px] font-mono font-bold px-2 py-0.5 rounded-full border border-black transition-colors whitespace-nowrap shrink-0 ${
+                                  isSelectedMonto
+                                    ? "bg-black text-[#FFD23F]"
+                                    : "bg-[#FAF6EE] text-black group-hover:bg-black group-hover:text-white"
+                                }`}
+                              >
                                 {item.labelMonto}
                               </span>
                             </div>
-                            <span className="text-xs sm:text-sm font-bold text-zinc-900 block group-hover:text-black leading-tight">
+                            <span className="text-xs sm:text-sm font-heading font-extrabold text-black block leading-tight">
                               {item.nombre}
                             </span>
-                            <span className="text-[11px] text-zinc-600 block leading-snug mt-1">
+                            <span className="text-[11px] text-neutral-700 block leading-snug mt-1 font-medium">
                               {item.gama}
                             </span>
                           </div>
-                          <span className="text-[10px] sm:text-[11px] font-mono text-zinc-800 bg-white/90 px-2 py-1 rounded-lg border border-emerald-200 block line-clamp-2 leading-tight mt-2.5 font-semibold">
+                          <span className="text-[10px] sm:text-[11px] font-mono text-white bg-[#2A9D8F] px-2 py-1 rounded-md border border-black block line-clamp-2 leading-tight mt-2.5 font-bold shadow-[1px_1px_0px_#000]">
                             {item.tag}
                           </span>
                         </button>
@@ -4771,16 +4785,16 @@ export default function ArmarPcPresupuestadorPage() {
                   </div>
 
                   {/* Input Asistido para Monto Personalizado en Guaraníes + Botones de Ajuste Rápido (100% Adaptable) */}
-                  <div className="p-3.5 sm:p-4 rounded-xl bg-zinc-50 border border-zinc-200 flex flex-col gap-3">
+                  <div className="p-3.5 sm:p-4 rounded-xl bg-[#FAF6EE] border-2 border-black shadow-[3px_3px_0px_#000] flex flex-col gap-3">
                     <div className="flex items-start sm:items-center gap-3 w-full">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold shrink-0">
+                      <div className="w-9 h-9 rounded-lg bg-[#FFD23F] border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center text-black font-mono font-black shrink-0">
                         ₲
                       </div>
                       <div className="flex-1 min-w-0">
-                        <span className="text-xs sm:text-sm font-bold text-zinc-900 block leading-snug">
+                        <span className="text-xs sm:text-sm font-heading font-extrabold text-black block leading-snug">
                           ¿El cliente tiene un presupuesto específico en Guaraníes?
                         </span>
-                        <span className="text-xs text-zinc-600 block leading-relaxed mt-0.5">
+                        <span className="text-xs text-neutral-700 font-medium block leading-relaxed mt-0.5">
                           Ingresá cualquier monto (ej: 5.500.000, 8.000.000, 12.500.000) y el optimizador calcula la mejor PC compatible sin pasarse.
                         </span>
                       </div>
@@ -4797,13 +4811,13 @@ export default function ArmarPcPresupuestadorPage() {
                             setSelectedBudgetForCpuMenu(nextVal);
                             buildPcByTargetBudget(nextVal, budgetCpuPreference);
                           }}
-                          className="px-3 py-2.5 rounded-xl bg-white hover:bg-zinc-100 border border-zinc-300 text-xs font-mono font-bold text-zinc-700 cursor-pointer shrink-0 transition-colors"
+                          className="px-3 py-2.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black text-xs font-mono font-extrabold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer shrink-0 transition-all"
                           title="Restar 500.000 Gs al presupuesto"
                         >
                           -500k
                         </button>
                         <div className="relative flex-1 min-w-[120px]">
-                          <span className="absolute left-3 top-2.5 text-xs sm:text-sm font-bold font-mono text-zinc-500">
+                          <span className="absolute left-3 top-2.5 text-xs sm:text-sm font-black font-mono text-black pointer-events-none">
                             ₲
                           </span>
                           <input
@@ -4818,7 +4832,7 @@ export default function ArmarPcPresupuestadorPage() {
                               }
                             }}
                             placeholder="10.000.000"
-                            className="w-full bg-white border border-zinc-300 rounded-xl pl-7 pr-3 py-2.5 text-xs sm:text-sm font-mono font-bold text-zinc-900 outline-none focus:border-emerald-600"
+                            className="w-full bg-[#FFFDF9] border-2 border-black rounded-lg pl-7 pr-3 py-2.5 text-xs sm:text-sm font-mono font-extrabold text-black outline-none shadow-[2px_2px_0px_#000] focus:bg-white"
                           />
                         </div>
                         <button
@@ -4830,7 +4844,7 @@ export default function ArmarPcPresupuestadorPage() {
                             setSelectedBudgetForCpuMenu(nextVal);
                             buildPcByTargetBudget(nextVal, budgetCpuPreference);
                           }}
-                          className="px-3 py-2.5 rounded-xl bg-white hover:bg-zinc-100 border border-zinc-300 text-xs font-mono font-bold text-zinc-700 cursor-pointer shrink-0 transition-colors"
+                          className="px-3 py-2.5 rounded-lg bg-[#FFFDF9] hover:bg-[#FFD23F] border-2 border-black text-xs font-mono font-extrabold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer shrink-0 transition-all"
                           title="Sumar 500.000 Gs al presupuesto"
                         >
                           +500k
@@ -4846,7 +4860,7 @@ export default function ArmarPcPresupuestadorPage() {
                           }
                         }}
                         disabled={isLoadingWeb || customTargetBudget <= 0}
-                        className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-2xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-40 flex-1 sm:flex-initial whitespace-nowrap"
+                        className="px-4 py-2.5 rounded-lg bg-[#2A9D8F] hover:bg-[#238276] text-white text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[3px_3px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-40 flex-1 sm:flex-initial whitespace-nowrap"
                       >
                         <Zap className="w-4 h-4 shrink-0" />
                         <span>
@@ -4860,9 +4874,9 @@ export default function ArmarPcPresupuestadorPage() {
 
                   {/* Comparador Interactivo AMD vs Intel para el Presupuesto en Guaraníes */}
                   {budgetBrandPreviews && (selectedBudgetForCpuMenu || budgetAnalysis) && (
-                    <div className="p-3.5 rounded-xl bg-white border border-emerald-300 shadow-2xs space-y-2.5">
+                    <div className="p-3.5 sm:p-4 rounded-xl bg-[#FFFDF9] border-2 border-black shadow-[4px_4px_0px_#000] space-y-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs font-extrabold text-zinc-900 flex items-center gap-1.5">
+                        <span className="text-xs sm:text-sm font-heading font-extrabold text-black flex items-center gap-1.5">
                           <span>🧠</span>
                           <span>
                             Comparativa Inteligente para ₲{" "}
@@ -4870,7 +4884,7 @@ export default function ArmarPcPresupuestadorPage() {
                           </span>
                         </span>
                         {budgetAnalysis && (
-                          <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200">
+                          <span className="text-[11px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#FFD23F] text-black border border-black shadow-[1px_1px_0px_#000]">
                             Aprovechamiento: {budgetAnalysis.pctUsed}% del presupuesto
                           </span>
                         )}
@@ -4878,10 +4892,10 @@ export default function ArmarPcPresupuestadorPage() {
 
                       {/* Veredicto de Rendimiento y Relación Precio/Calidad para el Presupuesto */}
                       {budgetCpuComparison?.veredictoGlobal && (
-                        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50/90 border border-amber-200 text-xs text-amber-950 shadow-2xs">
-                          <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#FFD23F]/30 border-2 border-black text-xs text-black shadow-[2px_2px_0px_#000] font-medium">
+                          <Award className="w-4 h-4 text-black shrink-0" />
                           <span className="leading-snug">
-                            <strong>Análisis NISSEI:</strong> {budgetCpuComparison.veredictoGlobal}
+                            <strong className="font-heading font-extrabold">Análisis NISSEI:</strong> {budgetCpuComparison.veredictoGlobal}
                           </span>
                         </div>
                       )}
@@ -4898,92 +4912,96 @@ export default function ArmarPcPresupuestadorPage() {
                                 setBudgetCpuPreference("AMD");
                                 buildPcByTargetBudget(budgetBrandPreviews.amount, "AMD");
                               }}
-                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                              className={`p-3 sm:p-3.5 rounded-lg border-2 border-black text-left transition-all cursor-pointer flex flex-col justify-between gap-2 shadow-[3px_3px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                                 isCurrent
-                                  ? "bg-rose-50/60 border-rose-500 ring-2 ring-rose-500/15"
-                                  : "bg-zinc-50/70 hover:bg-rose-50/30 border-zinc-200"
+                                  ? "bg-[#FFD23F]/30"
+                                  : "bg-[#FAF6EE] hover:bg-[#FFFDF9]"
                               }`}
                             >
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="text-xs font-black text-rose-900 flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-rose-600" />
-                                    Opción AMD Ryzen ({amd.socketUsed || "AM4/AM5"})
+                                  <span className="text-xs font-heading font-extrabold text-black flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-[#E76F51] border border-black shrink-0" />
+                                    <span>Opción AMD Ryzen ({amd.socketUsed || "AM4/AM5"})</span>
                                   </span>
-                                  <span className="font-mono text-xs font-black text-zinc-900">
+                                  <span className="font-mono text-xs font-black text-black">
                                     {amd.ok ? `₲ ${amd.totalPyg.toLocaleString("es-PY")}` : "Sin stock"}
                                   </span>
                                 </div>
                                 {amd.ok ? (
-                                  <p className="text-[11px] text-zinc-600 mt-1 line-clamp-2 leading-snug">
-                                    <strong>{amd.cpuName}</strong> + {amd.gpuName} · {amd.ramSummary} ·{" "}
+                                  <p className="text-[11px] text-neutral-700 mt-1 line-clamp-2 leading-snug font-medium">
+                                    <strong className="text-black">{amd.cpuName}</strong> + {amd.gpuName} · {amd.ramSummary} ·{" "}
                                     {amd.ssdSummary}
                                   </p>
                                 ) : (
-                                  <p className="text-[11px] text-amber-800 mt-1">
+                                  <p className="text-[11px] text-[#E76F51] font-bold mt-1">
                                     {amd.faltantes.join(", ")}
                                   </p>
                                 )}
 
                                 {/* Porcentaje de Rendimiento & Análisis de Conveniencia por Precio */}
                                 {amd.ok && budgetCpuComparison && (
-                                  <div className="pt-2 border-t border-rose-200/60 space-y-1.5 text-left">
+                                  <div className="pt-2 border-t-2 border-dashed border-black/20 space-y-1.5 text-left">
                                     <div className="flex items-center justify-between text-[11px]">
-                                      <span className="font-bold text-zinc-700 flex items-center gap-1">
-                                        <TrendingUp className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                                      <span className="font-heading font-bold text-black flex items-center gap-1">
+                                        <TrendingUp className="w-3.5 h-3.5 text-[#E76F51] shrink-0" />
                                         <span>Rendimiento Estimado:</span>
                                       </span>
-                                      <span className="font-mono font-extrabold text-zinc-900">
+                                      <span className="font-mono font-extrabold text-black">
                                         {budgetCpuComparison.amd.pct}%
                                         {budgetCpuComparison.amd.esGanadorRendimiento && (
-                                          <span className="text-emerald-700 font-bold ml-1 text-[10px]">
+                                          <span className="text-[#2A9D8F] font-bold ml-1 text-[10px]">
                                             (+potencia)
                                           </span>
                                         )}
                                       </span>
                                     </div>
-                                    <div className="w-full h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                                    <div className="w-full h-2.5 rounded-full bg-[#FFFDF9] border-2 border-black overflow-hidden p-0.5">
                                       <div
-                                        className="h-full rounded-full bg-rose-500 transition-all duration-300"
+                                        className="h-full rounded-full bg-[#E76F51] transition-all duration-300"
                                         style={{ width: `${budgetCpuComparison.amd.pct}%` }}
                                       />
                                     </div>
                                     <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
                                       <span
-                                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                                        className={`text-[9.5px] px-2 py-0.5 rounded-full border border-black font-mono font-bold ${
                                           budgetCpuComparison.amd.esMasConveniente
-                                            ? "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black"
-                                            : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                                            ? "bg-[#2A9D8F] text-white"
+                                            : "bg-[#FFFDF9] text-black"
                                         }`}
                                       >
                                         {budgetCpuComparison.amd.etiquetaConveniencia}
                                       </span>
                                       {budgetCpuComparison.amd.esMasBarato && budgetCpuComparison.amd.ahorroPyg > 0 && (
-                                        <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                                        <span className="text-[10px] font-mono font-bold text-[#2A9D8F]">
                                           Ahorrás ₲ {budgetCpuComparison.amd.ahorroPyg.toLocaleString("es-PY")}
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-[10.5px] text-zinc-600 leading-snug">
+                                    <p className="text-[10.5px] text-neutral-700 leading-snug font-medium">
                                       {budgetCpuComparison.amd.analisis}
                                     </p>
                                   </div>
                                 )}
                               </div>
                               {amd.ok && (
-                                <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-zinc-200/60">
+                                <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t-2 border-dashed border-black/20">
                                   <span
                                     className={
                                       amd.diffPyg >= 0
-                                        ? "text-emerald-700 font-bold"
-                                        : "text-amber-700 font-bold"
+                                        ? "text-[#2A9D8F] font-bold"
+                                        : "text-[#E76F51] font-bold"
                                     }
                                   >
                                     {amd.diffPyg >= 0
                                       ? `Sobran ₲ ${amd.diffPyg.toLocaleString("es-PY")}`
                                       : `Excede por ₲ ${Math.abs(amd.diffPyg).toLocaleString("es-PY")}`}
                                   </span>
-                                  <span className="font-bold text-rose-700">
+                                  <span
+                                    className={`font-bold px-2 py-0.5 rounded-full border border-black ${
+                                      isCurrent ? "bg-black text-[#FFD23F]" : "bg-[#FFFDF9] text-black"
+                                    }`}
+                                  >
                                     {isCurrent ? "✓ Aplicado" : "Aplicar AMD →"}
                                   </span>
                                 </div>
@@ -5003,87 +5021,87 @@ export default function ArmarPcPresupuestadorPage() {
                                 setBudgetCpuPreference("INTEL");
                                 buildPcByTargetBudget(budgetBrandPreviews.amount, "INTEL");
                               }}
-                              className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                              className={`p-3 sm:p-3.5 rounded-lg border-2 border-black text-left transition-all cursor-pointer flex flex-col justify-between gap-2 shadow-[3px_3px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
                                 isCurrent
-                                  ? "bg-sky-50/60 border-sky-500 ring-2 ring-sky-500/15"
-                                  : "bg-zinc-50/70 hover:bg-sky-50/30 border-zinc-200"
+                                  ? "bg-[#FFD23F]/30"
+                                  : "bg-[#FAF6EE] hover:bg-[#FFFDF9]"
                               }`}
                             >
                               <div className="space-y-1.5">
                                 <div className="flex items-center justify-between gap-2">
-                                  <span className="text-xs font-black text-sky-900 flex items-center gap-1.5">
-                                    <span className="w-2 h-2 rounded-full bg-sky-600" />
-                                    Opción Intel Core ({intel.socketUsed || "LGA1700"})
+                                  <span className="text-xs font-heading font-extrabold text-black flex items-center gap-1.5">
+                                    <span className="w-2.5 h-2.5 rounded-full bg-[#2A9D8F] border border-black shrink-0" />
+                                    <span>Opción Intel Core ({intel.socketUsed || "LGA1700"})</span>
                                   </span>
-                                  <span className="font-mono text-xs font-black text-zinc-900">
+                                  <span className="font-mono text-xs font-black text-black">
                                     {intel.ok
                                       ? `₲ ${intel.totalPyg.toLocaleString("es-PY")}`
                                       : "Sin stock"}
                                   </span>
                                 </div>
                                 {intel.ok ? (
-                                  <p className="text-[11px] text-zinc-600 mt-1 line-clamp-2 leading-snug">
-                                    <strong>{intel.cpuName}</strong> + {intel.gpuName} ·{" "}
+                                  <p className="text-[11px] text-neutral-700 mt-1 line-clamp-2 leading-snug font-medium">
+                                    <strong className="text-black">{intel.cpuName}</strong> + {intel.gpuName} ·{" "}
                                     {intel.ramSummary} · {intel.ssdSummary}
                                   </p>
                                 ) : (
-                                  <p className="text-[11px] text-amber-800 mt-1">
+                                  <p className="text-[11px] text-[#E76F51] font-bold mt-1">
                                     {intel.faltantes.join(", ")}
                                   </p>
                                 )}
 
                                 {/* Porcentaje de Rendimiento & Análisis de Conveniencia por Precio */}
                                 {intel.ok && budgetCpuComparison && (
-                                  <div className="pt-2 border-t border-sky-200/60 space-y-1.5 text-left">
+                                  <div className="pt-2 border-t-2 border-dashed border-black/20 space-y-1.5 text-left">
                                     <div className="flex items-center justify-between text-[11px]">
-                                      <span className="font-bold text-zinc-700 flex items-center gap-1">
-                                        <TrendingUp className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                                      <span className="font-heading font-bold text-black flex items-center gap-1">
+                                        <TrendingUp className="w-3.5 h-3.5 text-[#2A9D8F] shrink-0" />
                                         <span>Rendimiento Estimado:</span>
                                       </span>
-                                      <span className="font-mono font-extrabold text-zinc-900">
+                                      <span className="font-mono font-extrabold text-black">
                                         {budgetCpuComparison.intel.pct}%
                                         {budgetCpuComparison.intel.esGanadorRendimiento && (
-                                          <span className="text-emerald-700 font-bold ml-1 text-[10px]">
+                                          <span className="text-[#2A9D8F] font-bold ml-1 text-[10px]">
                                             (+potencia)
                                           </span>
                                         )}
                                       </span>
                                     </div>
-                                    <div className="w-full h-1.5 rounded-full bg-zinc-200 overflow-hidden">
+                                    <div className="w-full h-2.5 rounded-full bg-[#FFFDF9] border-2 border-black overflow-hidden p-0.5">
                                       <div
-                                        className="h-full rounded-full bg-sky-500 transition-all duration-300"
+                                        className="h-full rounded-full bg-[#2A9D8F] transition-all duration-300"
                                         style={{ width: `${budgetCpuComparison.intel.pct}%` }}
                                       />
                                     </div>
                                     <div className="flex items-center justify-between gap-1 flex-wrap pt-0.5">
                                       <span
-                                        className={`text-[9.5px] font-bold px-1.5 py-0.5 rounded ${
+                                        className={`text-[9.5px] px-2 py-0.5 rounded-full border border-black font-mono font-bold ${
                                           budgetCpuComparison.intel.esMasConveniente
-                                            ? "bg-emerald-100 text-emerald-900 border border-emerald-300 font-black"
-                                            : "bg-zinc-100 text-zinc-700 border border-zinc-200"
+                                            ? "bg-[#2A9D8F] text-white"
+                                            : "bg-[#FFFDF9] text-black"
                                         }`}
                                       >
                                         {budgetCpuComparison.intel.etiquetaConveniencia}
                                       </span>
                                       {budgetCpuComparison.intel.esMasBarato && budgetCpuComparison.intel.ahorroPyg > 0 && (
-                                        <span className="text-[10px] font-mono font-semibold text-emerald-700">
+                                        <span className="text-[10px] font-mono font-bold text-[#2A9D8F]">
                                           Ahorrás ₲ {budgetCpuComparison.intel.ahorroPyg.toLocaleString("es-PY")}
                                         </span>
                                       )}
                                     </div>
-                                    <p className="text-[10.5px] text-zinc-600 leading-snug">
+                                    <p className="text-[10.5px] text-neutral-700 leading-snug font-medium">
                                       {budgetCpuComparison.intel.analisis}
                                     </p>
                                   </div>
                                 )}
                               </div>
                               {intel.ok && (
-                                <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t border-zinc-200/60">
+                                <div className="flex items-center justify-between text-[10px] font-mono pt-1.5 border-t-2 border-dashed border-black/20">
                                   <span
                                     className={
                                       intel.diffPyg >= 0
-                                        ? "text-emerald-700 font-bold"
-                                        : "text-amber-700 font-bold"
+                                        ? "text-[#2A9D8F] font-bold"
+                                        : "text-[#E76F51] font-bold"
                                     }
                                   >
                                     {intel.diffPyg >= 0
@@ -5092,7 +5110,11 @@ export default function ArmarPcPresupuestadorPage() {
                                           "es-PY"
                                         )}`}
                                   </span>
-                                  <span className="font-bold text-sky-700">
+                                  <span
+                                    className={`font-bold px-2 py-0.5 rounded-full border border-black ${
+                                      isCurrent ? "bg-black text-[#FFD23F]" : "bg-[#FFFDF9] text-black"
+                                    }`}
+                                  >
                                     {isCurrent ? "✓ Aplicado" : "Aplicar Intel →"}
                                   </span>
                                 </div>
