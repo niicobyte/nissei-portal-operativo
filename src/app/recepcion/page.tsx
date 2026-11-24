@@ -2430,19 +2430,15 @@ ${dictamen.accText}`;
         {/* Panel de Notificación y Recuento de Actualización por CSV */}
         {csvReport && (
           <section
-            className={`rounded-xl border p-4 sm:p-5 shadow-sm space-y-4 ${
-              csvReport.cambios.length > 0
-                ? "bg-emerald-50/70 border-emerald-200"
-                : "bg-zinc-100/80 border-zinc-300"
+            className={`rounded-xl border-2 border-black p-3.5 sm:p-5 shadow-[4px_4px_0px_#000] space-y-3.5 sm:space-y-4 ${
+              csvReport.cambios.length > 0 ? "bg-[#FFD23F]/25" : "bg-[#FFFDF9]"
             }`}
           >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 min-w-0">
                 <div
-                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                    csvReport.cambios.length > 0
-                      ? "bg-emerald-600 text-white"
-                      : "bg-zinc-800 text-white"
+                  className={`w-9 h-9 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] flex items-center justify-center shrink-0 ${
+                    csvReport.cambios.length > 0 ? "bg-black text-[#FFD23F]" : "bg-black text-white"
                   }`}
                 >
                   {csvReport.cambios.length > 0 ? (
@@ -2451,18 +2447,18 @@ ${dictamen.accText}`;
                     <Info className="w-5 h-5" />
                   )}
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="text-sm sm:text-base font-extrabold text-zinc-900">
+                    <h3 className="text-sm sm:text-base font-heading font-extrabold text-black">
                       {csvReport.cambios.length > 0
                         ? `¡Actualización completada! Se detectaron ${csvReport.cambios.length} cambio(s) en el CSV`
                         : "Archivo CSV verificado: No se detectaron cambios de estado"}
                     </h3>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-white border border-zinc-200 text-zinc-600">
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFFDF9] border-2 border-black text-black shadow-[1px_1px_0px_#000] break-all sm:break-normal">
                       {csvReport.fileName} · {csvReport.timestamp}
                     </span>
                   </div>
-                  <p className="text-xs text-zinc-600 mt-0.5">
+                  <p className="text-xs text-neutral-800 mt-0.5 font-medium">
                     {csvReport.cambios.length > 0
                       ? `Se actualizaron ${csvReport.totalActualizadas} estado(s) y se cargaron ${csvReport.totalNuevas} orden(es) que no estaban en Recepción directamente al dashboard y a MySQL.`
                       : `Se compararon las ${csvReport.totalFilasLeidas.toLocaleString()} órdenes del archivo CSV y todas coinciden con los estados actuales del dashboard.`}
@@ -2473,7 +2469,7 @@ ${dictamen.accText}`;
               <button
                 type="button"
                 onClick={() => setCsvReport(null)}
-                className="self-end sm:self-center px-2.5 py-1 rounded-lg bg-white border border-zinc-200 hover:bg-zinc-100 text-xs font-semibold text-zinc-600 flex items-center gap-1"
+                className="self-end sm:self-center shrink-0 px-3 py-1.5 rounded-lg bg-[#FFFDF9] hover:bg-[#E76F51] hover:text-white border-2 border-black text-xs font-heading font-extrabold text-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none flex items-center gap-1 cursor-pointer transition-all whitespace-nowrap"
               >
                 <X className="w-3.5 h-3.5" />
                 <span>Cerrar resumen</span>
@@ -2481,28 +2477,28 @@ ${dictamen.accText}`;
             </div>
 
             {/* Tarjetas de Recuento de la Carga CSV */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-              <div className="bg-white p-3 rounded-lg border border-zinc-200">
-                <span className="text-[11px] text-zinc-500 block">Órdenes leídas en CSV</span>
-                <strong className="text-lg font-extrabold text-zinc-900 font-mono">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-2.5">
+              <div className="bg-[#FFFDF9] p-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] min-w-0">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 block uppercase truncate">Órdenes leídas en CSV</span>
+                <strong className="text-lg sm:text-xl font-mono font-extrabold text-black tabular-nums">
                   {csvReport.totalFilasLeidas.toLocaleString()}
                 </strong>
               </div>
-              <div className="bg-white p-3 rounded-lg border border-zinc-200">
-                <span className="text-[11px] text-zinc-500 block">Estados actualizados</span>
-                <strong className="text-lg font-extrabold text-emerald-700 font-mono">
+              <div className="bg-[#FFFDF9] p-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] min-w-0">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 block uppercase truncate">Estados actualizados</span>
+                <strong className="text-lg sm:text-xl font-mono font-extrabold text-[#2A9D8F] tabular-nums">
                   {csvReport.totalActualizadas.toLocaleString()}
                 </strong>
               </div>
-              <div className="bg-white p-3 rounded-lg border border-zinc-200">
-                <span className="text-[11px] text-zinc-500 block">Nuevas agregadas (Recepción + MySQL)</span>
-                <strong className="text-lg font-extrabold text-sky-700 font-mono">
+              <div className="bg-[#FFFDF9] p-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] min-w-0">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 block uppercase truncate">Nuevas agregadas (Recepción + MySQL)</span>
+                <strong className="text-lg sm:text-xl font-mono font-extrabold text-sky-700 tabular-nums">
                   {csvReport.totalNuevas.toLocaleString()}
                 </strong>
               </div>
-              <div className="bg-white p-3 rounded-lg border border-zinc-200">
-                <span className="text-[11px] text-zinc-500 block">Órdenes sin cambios</span>
-                <strong className="text-lg font-extrabold text-zinc-600 font-mono">
+              <div className="bg-[#FFFDF9] p-3 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] min-w-0">
+                <span className="text-[11px] font-mono font-bold text-neutral-700 block uppercase truncate">Órdenes sin cambios</span>
+                <strong className="text-lg sm:text-xl font-mono font-extrabold text-neutral-700 tabular-nums">
                   {csvReport.totalSinCambios.toLocaleString()}
                 </strong>
               </div>
@@ -2512,45 +2508,45 @@ ${dictamen.accText}`;
 
             {/* Tabla detallada de las órdenes que cambiaron de estado o se agregaron */}
             {csvReport.cambios.length > 0 && (
-              <div className="bg-white rounded-lg border border-zinc-200 overflow-hidden">
-                <div className="px-3.5 py-2 bg-zinc-50 border-b border-zinc-200 flex items-center justify-between">
-                  <span className="text-xs font-bold text-zinc-800">
+              <div className="bg-[#FFFDF9] rounded-lg border-2 border-black overflow-hidden shadow-[2px_2px_0px_#000]">
+                <div className="px-3.5 py-2 bg-[#FAF6EE] border-b-2 border-black flex items-center justify-between gap-2 flex-wrap">
+                  <span className="text-xs font-heading font-extrabold text-black">
                     Detalle de órdenes actualizadas y nuevas agregadas ({csvReport.cambios.length})
                   </span>
-                  <span className="text-[11px] font-mono text-zinc-500">
+                  <span className="text-[11px] font-mono font-bold text-neutral-700">
                     Haz clic en una orden para buscarla en la tabla
                   </span>
                 </div>
-                <div className="max-h-56 overflow-y-auto divide-y divide-zinc-100">
+                <div className="max-h-56 overflow-y-auto divide-y divide-black/10">
                   {csvReport.cambios.map((c, idx) => (
                     <div
                       key={`${c.idOrden}-${idx}`}
                       onClick={() => setSearchTerm(c.idOrden)}
-                      className="px-3.5 py-2 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-zinc-50 cursor-pointer transition-colors"
+                      className="px-3.5 py-2 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-[#FFD23F]/20 cursor-pointer transition-colors"
                     >
-                      <div className="flex items-center gap-2.5">
-                        <span className="font-mono font-bold text-zinc-900 bg-zinc-100 px-2 py-0.5 rounded border border-zinc-200">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border-2 border-black shadow-[1px_1px_0px_#000] shrink-0">
                           #{c.idOrden}
                         </span>
-                        <div>
-                          <strong className="text-zinc-900">{c.cliente}</strong>
-                          <span className="text-zinc-500 ml-2 font-mono text-[11px]">
+                        <div className="min-w-0">
+                          <strong className="text-black font-heading font-bold">{c.cliente}</strong>
+                          <span className="text-neutral-700 ml-2 font-mono text-[11px] font-semibold break-words">
                             {c.equipo}
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap justify-end">
                         {c.estadoAnterior.includes("NUEVA") ? (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-sky-200 text-black border-2 border-black shadow-[1px_1px_0px_#000]">
                             + NUEVA EN RECEPCIÓN Y MYSQL
                           </span>
                         ) : (
-                          <span className="px-2 py-0.5 rounded text-[11px] font-mono bg-zinc-100 text-zinc-500 line-through border border-zinc-200">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-neutral-200 text-neutral-700 line-through border-2 border-black/40">
                             {c.estadoAnterior}
                           </span>
                         )}
-                        <ArrowRight className="w-3.5 h-3.5 text-zinc-400" />
+                        <ArrowRight className="w-3.5 h-3.5 text-black shrink-0" />
                         {getStatusBadge(c.estadoNuevo)}
                       </div>
                     </div>

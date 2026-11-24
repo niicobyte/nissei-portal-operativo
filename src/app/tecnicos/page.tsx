@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { HeaderActions } from "@/components/common/HeaderActions";
 import { AuthGuard } from "@/components/common/AuthGuard";
@@ -1227,8 +1228,11 @@ export default function TecnicosDashboardPage() {
       </div>
 
       {/* Modal Sticker Térmico Configurable (80mm / 58mm) para Identificación de Montaje */}
-      {selectedOrderForCert && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block animate-in fade-in">
+      {selectedOrderForCert && typeof document !== "undefined" && createPortal((
+        <div
+          id="thermal-print-modal-overlay"
+          className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-3 sm:p-4 print:static print:inset-auto print:bg-transparent print:p-0 print:block animate-in fade-in"
+        >
           <style media="print">{buildThermalPrintCss(thermalSettings)}</style>
 
           {/* Estilos especiales para ultra negro y cabezales térmicos POS */}
@@ -1268,8 +1272,11 @@ export default function TecnicosDashboardPage() {
             }
             @media print {
               body.thermal-80mm-print,
+              body.thermal-80mm-print #thermal-sticker-wrapper,
               body.thermal-80mm-print #thermal-sticker-80mm,
               body.thermal-80mm-print #thermal-sticker-80mm * {
+                background: #ffffff !important;
+                background-color: #ffffff !important;
                 color: #000000 !important;
                 -webkit-text-fill-color: #000000 !important;
                 border-color: #000000 !important;
@@ -1290,7 +1297,10 @@ export default function TecnicosDashboardPage() {
             }
           `}</style>
 
-          <div className="bg-[#FFFDF9] rounded-xl w-full max-w-[96vw] sm:max-w-lg p-3.5 sm:p-5 shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[94dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none">
+          <div
+            id="thermal-print-modal-card"
+            className="bg-[#FFFDF9] rounded-xl w-full max-w-[96vw] sm:max-w-lg p-3.5 sm:p-5 shadow-[4px_4px_0px_#000] sm:shadow-[6px_6px_0px_#000] space-y-4 border-2 border-black max-h-[94dvh] overflow-y-auto overscroll-contain print:w-auto print:max-w-none print:max-h-none print:overflow-visible print:p-0 print:m-0 print:border-0 print:shadow-none print:rounded-none print:bg-white"
+          >
 
             {/* Cabecera del modal (oculta al imprimir) */}
             <div className="flex items-start justify-between gap-2 border-b-2 border-black pb-3 print:hidden">
@@ -1704,7 +1714,7 @@ export default function TecnicosDashboardPage() {
 
           </div>
         </div>
-      )}
+      ), document.body)}
 
     </main>
     </AuthGuard>

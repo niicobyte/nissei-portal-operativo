@@ -1535,9 +1535,9 @@ export default function RecepcionCdeDashboardPage() {
                     <div
                       key={`${c.idOrden}-${idx}`}
                       onClick={() => setSearchTerm(c.idOrden)}
-                      className="px-3.5 py-2 text-xs flex items-center justify-between hover:bg-[#FAF6EE] cursor-pointer transition-colors"
+                      className="px-3.5 py-2 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-[#FFD23F]/20 cursor-pointer transition-colors"
                     >
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <span className="font-mono font-bold text-black bg-[#FFD23F] px-2 py-0.5 rounded border border-black shadow-[1px_1px_0px_#000]">
                           #{c.idOrden}
                         </span>
@@ -1554,8 +1554,8 @@ export default function RecepcionCdeDashboardPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[11px] bg-neutral-200 text-neutral-700 line-through font-mono">
+                      <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 flex-wrap justify-end">
+                        <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-neutral-200 text-neutral-700 line-through font-mono border-2 border-black/40">
                           {c.estadoAnterior}
                         </span>
                         <ArrowRight className="w-3 h-3 text-black" />
@@ -1565,7 +1565,7 @@ export default function RecepcionCdeDashboardPage() {
                             <span>En Tránsito (Transportadora)</span>
                           </span>
                         ) : (
-                          <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#2A9D8F] text-white border-2 border-black shadow-[1px_1px_0px_#000]">
                             {c.estadoNuevo}
                           </span>
                         )}
