@@ -952,35 +952,42 @@ export default function TecnicosDashboardPage() {
                       {/* Técnico Responsable */}
                       <td className="py-4 px-4 whitespace-nowrap">
                         {order.tecnico && order.tecnico !== "Sin Asignar" ? (
-                          <div className="flex items-center gap-2">
-                            <div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-[160px] shrink-0 min-w-0">
                               <div className="font-bold text-black flex items-center gap-1.5 text-sm font-heading">
-                                <UserCheck className="w-4 h-4 text-[#2A9D8F]" />
-                                <span>{order.tecnico}</span>
+                                <UserCheck className="w-4 h-4 text-[#2A9D8F] shrink-0" />
+                                <span className="truncate">{order.tecnico}</span>
                               </div>
-                              <span className="text-xs text-neutral-700 font-mono font-semibold">Técnico Asignado</span>
+                              <span className="text-xs text-neutral-700 font-mono font-semibold block">
+                                Técnico Asignado
+                              </span>
                             </div>
-                            <CleanSelect
-                              value={order.tecnico}
-                              onChange={(val) => {
-                                if (val) handleAssignTecnico(order.id, val);
-                              }}
-                              options={listaTecnicos.map((t) => ({
-                                value: t,
-                                label: t,
-                              }))}
-                              size="sm"
-                              dropdownWidth="w-48"
-                              align="right"
-                              className="text-xs py-1 px-2.5"
-                            />
+                            <div className="w-[168px] shrink-0">
+                              <CleanSelect
+                                value={order.tecnico}
+                                onChange={(val) => {
+                                  if (val) handleAssignTecnico(order.id, val);
+                                }}
+                                options={listaTecnicos.map((t) => ({
+                                  value: t,
+                                  label: t,
+                                }))}
+                                size="sm"
+                                dropdownWidth="w-48"
+                                align="right"
+                                fullWidth
+                                className="w-full text-xs py-1 px-2.5"
+                              />
+                            </div>
                           </div>
                         ) : (
-                          <div className="space-y-1">
-                            <span className="inline-block text-xs font-mono font-bold text-neutral-800 bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
-                              Sin Asignar (Histórico)
-                            </span>
-                            <div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-[160px] shrink-0 min-w-0">
+                              <span className="inline-block text-xs font-mono font-bold text-neutral-800 bg-[#FAF6EE] border border-black px-2 py-0.5 rounded shadow-[1px_1px_0px_#000]">
+                                Sin Asignar (Histórico)
+                              </span>
+                            </div>
+                            <div className="w-[168px] shrink-0">
                               <CleanSelect
                                 value=""
                                 onChange={(val) => {
@@ -993,7 +1000,9 @@ export default function TecnicosDashboardPage() {
                                 }))}
                                 size="sm"
                                 dropdownWidth="w-48"
-                                className="text-xs py-1 px-2.5"
+                                align="right"
+                                fullWidth
+                                className="w-full text-xs py-1 px-2.5"
                               />
                             </div>
                           </div>
@@ -1001,26 +1010,28 @@ export default function TecnicosDashboardPage() {
                       </td>
 
                       {/* Progreso */}
-                      <td className="py-4 px-4 w-32">
-                        <div className="flex items-center justify-between text-xs font-mono font-extrabold mb-1.5 tabular-nums text-black">
-                          <span>{order.progreso}%</span>
-                        </div>
-                        <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-2.5 overflow-hidden shadow-[1px_1px_0px_#000]">
-                          <div
-                            className={`h-full rounded-full transition-all ${
-                              order.progreso === 100 ? "bg-[#2A9D8F]" : "bg-black"
-                            }`}
-                            style={{ width: `${order.progreso}%` }}
-                          />
+                      <td className="py-4 px-4 w-36 whitespace-nowrap">
+                        <div className="w-28">
+                          <div className="flex items-center justify-between text-xs font-mono font-extrabold mb-1.5 tabular-nums text-black">
+                            <span>{order.progreso}%</span>
+                          </div>
+                          <div className="w-full bg-[#FAF6EE] border-2 border-black rounded-full h-2.5 overflow-hidden shadow-[1px_1px_0px_#000]">
+                            <div
+                              className={`h-full rounded-full transition-all ${
+                                order.progreso === 100 ? "bg-[#2A9D8F]" : "bg-black"
+                              }`}
+                              style={{ width: `${order.progreso}%` }}
+                            />
+                          </div>
                         </div>
                       </td>
 
                       {/* Acciones */}
                       <td className="py-4 px-4 text-right whitespace-nowrap">
-                        <div className="inline-flex items-center gap-2">
+                        <div className="inline-flex items-center justify-end gap-2">
                           <button
                             onClick={() => setSelectedOrderForDetail(order)}
-                            className="p-2 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all flex items-center justify-center cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                            className="w-9 h-9 p-0 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all inline-flex items-center justify-center shrink-0 cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             title="Ver Detalle Completo"
                           >
                             <Eye className="w-4 h-4" />
@@ -1028,20 +1039,20 @@ export default function TecnicosDashboardPage() {
                           
                           <button
                             onClick={() => setSelectedOrderForCert(order)}
-                            className="p-2 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all flex items-center justify-center cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
+                            className="w-9 h-9 p-0 text-black bg-[#FFFDF9] hover:bg-[#FFD23F] rounded-lg transition-all inline-flex items-center justify-center shrink-0 cursor-pointer border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none"
                             title="Imprimir Sticker Térmico"
                           >
                             <Printer className="w-4 h-4" />
                           </button>
 
                           {order.estado.toLowerCase() === "entregado" || order.estado.toLowerCase() === "entregada" ? (
-                            <span className="px-3 py-1 bg-neutral-200 text-black border-2 border-black rounded-lg font-mono text-xs font-bold">
+                            <span className="w-[100px] h-9 px-0 inline-flex items-center justify-center shrink-0 text-center bg-neutral-200 text-black border-2 border-black rounded-lg font-mono text-xs font-bold">
                               Entregado
                             </span>
                           ) : (
                             <button
                               onClick={() => handleEntregar(order.id)}
-                              className="px-3 py-1.5 bg-[#FFD23F] hover:bg-yellow-400 text-black border-2 border-black rounded-lg font-heading font-extrabold text-xs transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
+                              className="w-[100px] h-9 px-0 inline-flex items-center justify-center shrink-0 text-center bg-[#FFD23F] hover:bg-yellow-400 text-black border-2 border-black rounded-lg font-heading font-extrabold text-xs transition-all shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none cursor-pointer"
                             >
                               Entregar
                             </button>
