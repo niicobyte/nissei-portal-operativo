@@ -3980,12 +3980,12 @@ ${dictamen.accText}`;
                 </div>
               </div>
 
-              {/* Cuerpo Principal en 2 Columnas Horizontales Simétricas */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch text-xs">
-                {/* COLUMNA IZQUIERDA (6 cols): Informe Técnico, Accesorios y Ubicación en Cascada */}
-                <div className="lg:col-span-6 flex flex-col justify-between space-y-3 min-w-0">
+              {/* Cuerpo Principal en 2 Filas Horizontales Sincronizadas */}
+              <div className="space-y-3 text-xs">
+                {/* FILA 1: Informe Técnico (altura fija automática igualada) ↔ Cambiar Estado de la Orden */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-4 items-stretch">
                   {/* 1. Informe Técnico / Mensaje de Servicio */}
-                  <div>
+                  <div className="lg:col-span-6 flex flex-col min-w-0">
                     <div className="min-h-7 flex items-center justify-between mb-1.5 gap-2 flex-wrap">
                       <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                         <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider">
@@ -4018,294 +4018,13 @@ ${dictamen.accText}`;
                       value={modalMensaje}
                       onChange={(e) => setModalMensaje(e.target.value)}
                       placeholder="Añada o modifique aquí el informe técnico, observaciones del laboratorio, pruebas ejecutadas..."
-                      rows={3}
-                      className="w-full p-2.5 bg-white border-2 border-black rounded-xl text-xs sm:text-sm text-black leading-relaxed outline-none transition-all placeholder:text-neutral-500 font-sans shadow-[2px_2px_0px_#000] focus:ring-0"
+                      rows={5}
+                      className="w-full flex-1 min-h-[140px] lg:min-h-0 resize-none p-2.5 bg-white border-2 border-black rounded-xl text-xs sm:text-sm text-black leading-relaxed outline-none transition-all placeholder:text-neutral-500 font-sans shadow-[2px_2px_0px_#000] focus:ring-0"
                     />
                   </div>
 
-                  {/* 2. Sección de Accesorios Incluidos / Devueltos con el Equipo */}
-                  <div>
-                    <div className="min-h-6 flex items-center justify-between gap-2 flex-wrap mb-1.5">
-                      <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5">
-                        <Package className="w-3.5 h-3.5 text-black shrink-0" />
-                        <span>Accesorios Incluidos / Devueltos con el Equipo</span>
-                      </span>
-                      {modalAccessoriesList.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={handleClearModalAccessories}
-                          className="text-xs font-heading font-bold text-[#E76F51] hover:underline cursor-pointer shrink-0"
-                        >
-                          Limpiar todos
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="p-3 bg-[#FAF6EE] border-2 border-black rounded-xl space-y-2.5 shadow-[2px_2px_0px_#000]">
-                      {/* Chips de accesorios actuales */}
-                      <div className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
-                        {modalAccessoriesList.length > 0 ? (
-                          modalAccessoriesList.map((acc, idx) => (
-                            <span
-                              key={idx}
-                              className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#FFD23F] text-black rounded-full text-xs font-mono font-bold border-2 border-black shadow-[1px_1px_0px_#000]"
-                            >
-                              <Tag className="w-3 h-3 text-black shrink-0" />
-                              <span>{acc}</span>
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveModalAccessory(idx)}
-                                className="ml-1 text-black hover:text-[#E76F51] font-bold leading-none cursor-pointer"
-                                title="Quitar accesorio de esta orden"
-                              >
-                                ×
-                              </button>
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs font-mono text-neutral-600 italic">
-                            Sin accesorios registrados (se notificará &quot;Sin accesorios adicionales&quot;)
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Input para agregar accesorio personalizado (también se guarda como acceso directo) */}
-                      <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-1.5">
-                        <input
-                          type="text"
-                          value={modalNewAccessory}
-                          onChange={(e) => setModalNewAccessory(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              handleAddModalAccessory(modalNewAccessory);
-                            }
-                          }}
-                          placeholder="Escriba un accesorio y presione Enter o + Agregar (se guardará en accesos directos)"
-                          className="flex-1 min-w-0 px-3 py-1.5 text-xs bg-white border-2 border-black focus:outline-none rounded-lg transition-colors placeholder:text-neutral-500 font-sans text-black shadow-[1px_1px_0px_#000]"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => handleAddModalAccessory(modalNewAccessory)}
-                          className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-[#FFD23F] text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer whitespace-nowrap shrink-0"
-                          title="Agregar accesorio y guardar como acceso directo"
-                        >
-                          + Agregar
-                        </button>
-                      </div>
-
-                      {/* Accesos directos personalizados guardados por el usuario */}
-                      <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t-2 border-dashed border-black text-[11px]">
-                        <span className="text-neutral-700 mr-0.5 font-mono text-[10px] uppercase font-bold">
-                          ACCESOS DIRECTOS:
-                        </span>
-
-                        {quickAccessories
-                          .filter((sug) => !isCableShortcut(sug))
-                          .map((sug) => {
-                          const isAdded = modalAccessoriesList.includes(sug);
-                          return (
-                            <span
-                              key={sug}
-                              className={`inline-flex items-center rounded-full border-2 border-black text-[11px] font-mono font-bold transition-all shadow-[1px_1px_0px_#000] ${
-                                isAdded
-                                  ? "bg-[#2A9D8F] text-white"
-                                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
-                              }`}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => handleAddModalAccessory(sug)}
-                                className="px-2.5 py-0.5 cursor-pointer"
-                                title={`Agregar "${sug}" a la orden`}
-                              >
-                                + {sug}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => removeQuickAccessoryShortcut(sug)}
-                                className="pr-2 pl-0.5 text-neutral-500 hover:text-[#E76F51] font-bold leading-none cursor-pointer"
-                                title={`Quitar "${sug}" de los accesos directos`}
-                              >
-                                ×
-                              </button>
-                            </span>
-                          );
-                        })}
-
-                        {/* Selector desplegable Neo-Brutalista de Cables (USB-C a USB-C, USB-A a USB-C, Cable de carga) */}
-                        <div ref={cableDropdownRef} className="relative inline-block">
-                          <button
-                            type="button"
-                            onClick={() => setIsCableDropdownOpen((prev) => !prev)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border-2 border-black text-[11px] font-mono font-bold transition-all shadow-[1px_1px_0px_#000] cursor-pointer select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
-                              anyCableAdded
-                                ? "bg-[#2A9D8F] text-white"
-                                : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
-                            } ${isCableDropdownOpen ? "bg-[#FFD23F] text-black ring-1 ring-black" : ""}`}
-                            title="Desplegar y seleccionar tipo de cable (USB-C, USB-A, Carga)"
-                          >
-                            <Cable className="w-3 h-3 shrink-0" />
-                            <span>{anyCableAdded ? "✓ Cable" : "+ Cable"}</span>
-                            <ChevronDown
-                              className={`w-3 h-3 shrink-0 transition-transform duration-150 ${
-                                isCableDropdownOpen ? "rotate-180" : ""
-                              }`}
-                            />
-                          </button>
-
-                          {isCableDropdownOpen && (
-                            <div
-                              role="menu"
-                              className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 max-w-[calc(100vw-2rem)] rounded-xl border-2 border-black bg-[#FFFDF9] p-2 shadow-[4px_4px_0px_#000] space-y-1.5 animate-in fade-in zoom-in-95 duration-100"
-                            >
-                              <div className="flex items-center justify-between px-1 pb-1 border-b-2 border-black/10">
-                                <span className="text-[10px] font-heading font-extrabold text-black uppercase tracking-wider flex items-center gap-1.5">
-                                  <Cable className="w-3.5 h-3.5 text-black" />
-                                  Tipo de Cable / Conector
-                                </span>
-                                <span className="text-[9px] font-mono font-bold text-neutral-500">
-                                  3 opciones
-                                </span>
-                              </div>
-
-                              <div className="space-y-1">
-                                {CABLE_ACCESSORY_OPTIONS.map((opt) => {
-                                  const isSelected = modalAccessoriesList.includes(opt.value);
-                                  return (
-                                    <button
-                                      key={opt.value}
-                                      type="button"
-                                      role="menuitem"
-                                      onClick={() => handleToggleCableOption(opt.value)}
-                                      className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all cursor-pointer select-none border ${
-                                        isSelected
-                                          ? "bg-black text-[#FFD23F] border-black shadow-[2px_2px_0px_#000]"
-                                          : "border-transparent text-black hover:bg-[#FFD23F] hover:border-black"
-                                      }`}
-                                    >
-                                      <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-1.5">
-                                          <span
-                                            className={`text-xs font-heading font-extrabold truncate ${
-                                              isSelected ? "text-[#FFD23F]" : "text-black"
-                                            }`}
-                                          >
-                                            {opt.label}
-                                          </span>
-                                          <span
-                                            className={`text-[9px] font-mono font-black uppercase px-1.5 py-0.2 rounded border ${
-                                              isSelected
-                                                ? "bg-[#FFD23F] text-black border-black"
-                                                : "bg-[#FAF6EE] text-black border-black/70"
-                                            }`}
-                                          >
-                                            {opt.badge}
-                                          </span>
-                                        </div>
-                                        <p
-                                          className={`text-[10px] font-sans mt-0.5 truncate ${
-                                            isSelected
-                                              ? "text-zinc-300 font-medium"
-                                              : "text-zinc-600 font-bold"
-                                          }`}
-                                        >
-                                          {opt.description}
-                                        </p>
-                                      </div>
-
-                                      {isSelected ? (
-                                        <Check className="w-4 h-4 text-[#FFD23F] shrink-0" />
-                                      ) : (
-                                        <Plus className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
-                                      )}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-
-                        {isAddingQuickShortcut ? (
-                          <div className="inline-flex items-center gap-1">
-                            <input
-                              type="text"
-                              autoFocus
-                              value={newQuickShortcutText}
-                              onChange={(e) => setNewQuickShortcutText(e.target.value)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                  e.preventDefault();
-                                  const clean = newQuickShortcutText.trim();
-                                  if (clean) {
-                                    saveQuickAccessoryShortcut(clean);
-                                    handleAddModalAccessory(clean);
-                                  }
-                                  setNewQuickShortcutText("");
-                                  setIsAddingQuickShortcut(false);
-                                } else if (e.key === "Escape") {
-                                  setNewQuickShortcutText("");
-                                  setIsAddingQuickShortcut(false);
-                                }
-                              }}
-                              placeholder="Nombre del acceso directo..."
-                              className="px-2 py-0.5 text-[11px] bg-white border-2 border-black rounded-lg outline-none w-40 font-mono text-black"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const clean = newQuickShortcutText.trim();
-                                if (clean) {
-                                  saveQuickAccessoryShortcut(clean);
-                                  handleAddModalAccessory(clean);
-                                }
-                                setNewQuickShortcutText("");
-                                setIsAddingQuickShortcut(false);
-                              }}
-                              className="px-2 py-0.5 bg-[#2A9D8F] hover:bg-emerald-600 text-white rounded-lg text-[11px] font-heading font-extrabold border-2 border-black shadow-[1px_1px_0px_#000] cursor-pointer"
-                            >
-                              Guardar
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setNewQuickShortcutText("");
-                                setIsAddingQuickShortcut(false);
-                              }}
-                              className="px-1.5 py-0.5 text-neutral-600 hover:text-black font-bold text-[11px] cursor-pointer"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setIsAddingQuickShortcut(true)}
-                            className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-dashed border-black transition-all cursor-pointer shadow-[1px_1px_0px_#000]"
-                            title="Crear y guardar un nuevo acceso directo de accesorio"
-                          >
-                            <Plus className="w-3 h-3 text-black" />
-                            <span>Agregar acceso directo</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. Sección de Ubicación del Producto en Cascada (Estantes / Muebles) */}
-                  <UbicacionCascadaSelector
-                    value={modalUbicacion}
-                    onChange={(nuevaUbicacion) =>
-                      handleCambiarUbicacion(selectedTicket.idOrden, nuevaUbicacion)
-                    }
-                  />
-                </div>
-
-                {/* COLUMNA DERECHA (6 cols): Cambiar Estado + Dictamen Técnico QC / WhatsApp */}
-                <div className="lg:col-span-6 flex flex-col justify-between space-y-3 min-w-0">
-                  {/* 1. Acciones de cambio de estado en el modal (Ordenado por color y nombre alfabético) */}
-                  <div>
+                  {/* 2. Cambiar Estado de la Orden */}
+                  <div className="lg:col-span-6 flex flex-col min-w-0">
                     <div className="min-h-7 flex items-center justify-between mb-1.5 gap-2 flex-wrap">
                       <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider">
                         Cambiar Estado de la Orden
@@ -4314,7 +4033,7 @@ ${dictamen.accText}`;
                         Ordenado por color y nombre
                       </span>
                     </div>
-                    <div className="p-3 bg-[#FAF6EE] border-2 border-black rounded-xl shadow-[2px_2px_0px_#000]">
+                    <div className="flex-1 p-3 bg-[#FAF6EE] border-2 border-black rounded-xl shadow-[2px_2px_0px_#000]">
                       <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-3 gap-1.5">
                         {modalStatusOptions.map((st) => {
                           const isActive =
@@ -4339,8 +4058,294 @@ ${dictamen.accText}`;
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* 2. Selector de Dictamen Técnico / Resolución QC + Vista previa en vivo para WhatsApp */}
+                {/* FILA 2: Accesorios + Ubicación en Cascada ↔ Dictamen Técnico QC / Resolución */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 lg:gap-4 items-stretch">
+                  {/* COLUMNA IZQUIERDA (6 cols): Accesorios + Ubicación en Cascada */}
+                  <div className="lg:col-span-6 flex flex-col gap-3 min-w-0">
+                    {/* Sección de Accesorios Incluidos / Devueltos con el Equipo */}
+                    <div className="flex-1 flex flex-col min-w-0">
+                      <div className="min-h-6 flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-black font-heading font-extrabold text-xs uppercase tracking-wider flex items-center gap-1.5 truncate">
+                          <Package className="w-3.5 h-3.5 text-black shrink-0" />
+                          <span className="truncate">Accesorios Incluidos / Devueltos con el Equipo</span>
+                        </span>
+                        {modalAccessoriesList.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={handleClearModalAccessories}
+                            className="text-xs font-heading font-bold text-[#E76F51] hover:underline cursor-pointer shrink-0 whitespace-nowrap"
+                          >
+                            Limpiar todos
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="flex-1 p-3 bg-[#FAF6EE] border-2 border-black rounded-xl shadow-[2px_2px_0px_#000] flex flex-col justify-between gap-2.5">
+                        {/* Chips de accesorios actuales */}
+                        <div className="flex flex-wrap items-center gap-1.5 min-h-[24px]">
+                          {modalAccessoriesList.length > 0 ? (
+                            modalAccessoriesList.map((acc, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-[#FFD23F] text-black rounded-full text-xs font-mono font-bold border-2 border-black shadow-[1px_1px_0px_#000]"
+                              >
+                                <Tag className="w-3 h-3 text-black shrink-0" />
+                                <span>{acc}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveModalAccessory(idx)}
+                                  className="ml-1 text-black hover:text-[#E76F51] font-bold leading-none cursor-pointer"
+                                  title="Quitar accesorio de esta orden"
+                                >
+                                  ×
+                                </button>
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-xs font-mono text-neutral-600 italic">
+                              Sin accesorios registrados (se notificará &quot;Sin accesorios adicionales&quot;)
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Input para agregar accesorio personalizado (también se guarda como acceso directo) */}
+                        <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-1.5">
+                          <input
+                            type="text"
+                            value={modalNewAccessory}
+                            onChange={(e) => setModalNewAccessory(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                handleAddModalAccessory(modalNewAccessory);
+                              }
+                            }}
+                            placeholder="Escriba un accesorio y presione Enter o + Agregar (se guardará en accesos directos)"
+                            className="flex-1 min-w-0 px-3 py-1.5 text-xs bg-white border-2 border-black focus:outline-none rounded-lg transition-colors placeholder:text-neutral-500 font-sans text-black shadow-[1px_1px_0px_#000]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAddModalAccessory(modalNewAccessory)}
+                            className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-[#FFD23F] text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer whitespace-nowrap shrink-0"
+                            title="Agregar accesorio y guardar como acceso directo"
+                          >
+                            + Agregar
+                          </button>
+                        </div>
+
+                        {/* Accesos directos personalizados guardados por el usuario */}
+                        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t-2 border-dashed border-black text-[11px]">
+                          <span className="text-neutral-700 mr-0.5 font-mono text-[10px] uppercase font-bold">
+                            ACCESOS DIRECTOS:
+                          </span>
+
+                          {quickAccessories
+                            .filter((sug) => !isCableShortcut(sug))
+                            .map((sug) => {
+                              const isAdded = modalAccessoriesList.includes(sug);
+                              return (
+                                <span
+                                  key={sug}
+                                  className={`inline-flex items-center rounded-full border-2 border-black text-[11px] font-mono font-bold transition-all shadow-[1px_1px_0px_#000] ${
+                                    isAdded
+                                      ? "bg-[#2A9D8F] text-white"
+                                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleAddModalAccessory(sug)}
+                                    className="px-2.5 py-0.5 cursor-pointer"
+                                    title={`Agregar "${sug}" a la orden`}
+                                  >
+                                    + {sug}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeQuickAccessoryShortcut(sug)}
+                                    className="pr-2 pl-0.5 text-neutral-500 hover:text-[#E76F51] font-bold leading-none cursor-pointer"
+                                    title={`Quitar "${sug}" de los accesos directos`}
+                                  >
+                                    ×
+                                  </button>
+                                </span>
+                              );
+                            })}
+
+                          {/* Selector desplegable Neo-Brutalista de Cables (USB-C a USB-C, USB-A a USB-C, Cable de carga) */}
+                          <div ref={cableDropdownRef} className="relative inline-block">
+                            <button
+                              type="button"
+                              onClick={() => setIsCableDropdownOpen((prev) => !prev)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full border-2 border-black text-[11px] font-mono font-bold transition-all shadow-[1px_1px_0px_#000] cursor-pointer select-none active:translate-x-[1px] active:translate-y-[1px] active:shadow-none ${
+                                anyCableAdded
+                                  ? "bg-[#2A9D8F] text-white"
+                                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
+                              } ${isCableDropdownOpen ? "bg-[#FFD23F] text-black ring-1 ring-black" : ""}`}
+                              title="Desplegar y seleccionar tipo de cable (USB-C, USB-A, Carga)"
+                            >
+                              <Cable className="w-3 h-3 shrink-0" />
+                              <span>{anyCableAdded ? "✓ Cable" : "+ Cable"}</span>
+                              <ChevronDown
+                                className={`w-3 h-3 shrink-0 transition-transform duration-150 ${
+                                  isCableDropdownOpen ? "rotate-180" : ""
+                                }`}
+                              />
+                            </button>
+
+                            {isCableDropdownOpen && (
+                              <div
+                                role="menu"
+                                className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 max-w-[calc(100vw-2rem)] rounded-xl border-2 border-black bg-[#FFFDF9] p-2 shadow-[4px_4px_0px_#000] space-y-1.5 animate-in fade-in zoom-in-95 duration-100"
+                              >
+                                <div className="flex items-center justify-between px-1 pb-1 border-b-2 border-black/10">
+                                  <span className="text-[10px] font-heading font-extrabold text-black uppercase tracking-wider flex items-center gap-1.5">
+                                    <Cable className="w-3.5 h-3.5 text-black" />
+                                    Tipo de Cable / Conector
+                                  </span>
+                                  <span className="text-[9px] font-mono font-bold text-neutral-500">
+                                    3 opciones
+                                  </span>
+                                </div>
+
+                                <div className="space-y-1">
+                                  {CABLE_ACCESSORY_OPTIONS.map((opt) => {
+                                    const isSelected = modalAccessoriesList.includes(opt.value);
+                                    return (
+                                      <button
+                                        key={opt.value}
+                                        type="button"
+                                        role="menuitem"
+                                        onClick={() => handleToggleCableOption(opt.value)}
+                                        className={`w-full flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg text-left transition-all cursor-pointer select-none border ${
+                                          isSelected
+                                            ? "bg-black text-[#FFD23F] border-black shadow-[2px_2px_0px_#000]"
+                                            : "border-transparent text-black hover:bg-[#FFD23F] hover:border-black"
+                                        }`}
+                                      >
+                                        <div className="min-w-0 flex-1">
+                                          <div className="flex items-center gap-1.5">
+                                            <span
+                                              className={`text-xs font-heading font-extrabold truncate ${
+                                                isSelected ? "text-[#FFD23F]" : "text-black"
+                                              }`}
+                                            >
+                                              {opt.label}
+                                            </span>
+                                            <span
+                                              className={`text-[9px] font-mono font-black uppercase px-1.5 py-0.2 rounded border ${
+                                                isSelected
+                                                  ? "bg-[#FFD23F] text-black border-black"
+                                                  : "bg-[#FAF6EE] text-black border-black/70"
+                                              }`}
+                                            >
+                                              {opt.badge}
+                                            </span>
+                                          </div>
+                                          <p
+                                            className={`text-[10px] font-sans mt-0.5 truncate ${
+                                              isSelected
+                                                ? "text-zinc-300 font-medium"
+                                                : "text-zinc-600 font-bold"
+                                            }`}
+                                          >
+                                            {opt.description}
+                                          </p>
+                                        </div>
+
+                                        {isSelected ? (
+                                          <Check className="w-4 h-4 text-[#FFD23F] shrink-0" />
+                                        ) : (
+                                          <Plus className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                                        )}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {isAddingQuickShortcut ? (
+                            <div className="inline-flex items-center gap-1">
+                              <input
+                                type="text"
+                                autoFocus
+                                value={newQuickShortcutText}
+                                onChange={(e) => setNewQuickShortcutText(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    const clean = newQuickShortcutText.trim();
+                                    if (clean) {
+                                      saveQuickAccessoryShortcut(clean);
+                                      handleAddModalAccessory(clean);
+                                    }
+                                    setNewQuickShortcutText("");
+                                    setIsAddingQuickShortcut(false);
+                                  } else if (e.key === "Escape") {
+                                    setNewQuickShortcutText("");
+                                    setIsAddingQuickShortcut(false);
+                                  }
+                                }}
+                                placeholder="Nombre del acceso directo..."
+                                className="px-2 py-0.5 text-[11px] bg-white border-2 border-black rounded-lg outline-none w-40 font-mono text-black"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const clean = newQuickShortcutText.trim();
+                                  if (clean) {
+                                    saveQuickAccessoryShortcut(clean);
+                                    handleAddModalAccessory(clean);
+                                  }
+                                  setNewQuickShortcutText("");
+                                  setIsAddingQuickShortcut(false);
+                                }}
+                                className="px-2 py-0.5 bg-[#2A9D8F] hover:bg-emerald-600 text-white rounded-lg text-[11px] font-heading font-extrabold border-2 border-black shadow-[1px_1px_0px_#000] cursor-pointer"
+                              >
+                                Guardar
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNewQuickShortcutText("");
+                                  setIsAddingQuickShortcut(false);
+                                }}
+                                className="px-1.5 py-0.5 text-neutral-600 hover:text-black font-bold text-[11px] cursor-pointer"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setIsAddingQuickShortcut(true)}
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-dashed border-black transition-all cursor-pointer shadow-[1px_1px_0px_#000]"
+                              title="Crear y guardar un nuevo acceso directo de accesorio"
+                            >
+                              <Plus className="w-3 h-3 text-black" />
+                              <span>Agregar acceso directo</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sección de Ubicación del Producto en Cascada (Estantes / Muebles) */}
+                    <div className="shrink-0">
+                      <UbicacionCascadaSelector
+                        value={modalUbicacion}
+                        onChange={(nuevaUbicacion) =>
+                          handleCambiarUbicacion(selectedTicket.idOrden, nuevaUbicacion)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  {/* COLUMNA DERECHA (6 cols): Selector de Dictamen Técnico / Resolución QC + Vista previa */}
                   {(() => {
                     const accPreview =
                       modalAccessoriesList.length > 0
@@ -4353,14 +4358,14 @@ ${dictamen.accText}`;
                       modalDictamenTipo
                     );
                     return (
-                      <div className="flex-1 flex flex-col min-w-0">
-                        <div className="min-h-6 flex items-center justify-between mb-1.5 gap-2 flex-wrap">
-                          <span className="text-xs font-heading font-extrabold text-black uppercase tracking-wider">
+                      <div className="lg:col-span-6 flex flex-col min-w-0">
+                        <div className="min-h-6 flex items-center justify-between mb-1.5 gap-2">
+                          <span className="text-xs font-heading font-extrabold text-black uppercase tracking-wider truncate">
                             {isTicketDanesa(selectedTicket.cliente)
                               ? "Dictamen Técnico · Resolución Interna (Stock Propio)"
                               : "Dictamen Técnico · Resolución QC (WhatsApp)"}
                           </span>
-                          <span className="text-[11px] font-mono font-extrabold text-black bg-[#FFD23F] px-2.5 py-0.5 rounded-full border-2 border-black shadow-[1px_1px_0px_#000] shrink-0">
+                          <span className="text-[10px] sm:text-[11px] font-mono font-extrabold text-black bg-[#FFD23F] px-2 py-0.5 rounded-full border-2 border-black shadow-[1px_1px_0px_#000] shrink-0 whitespace-nowrap">
                             {preview.sourceLabel}
                           </span>
                         </div>
