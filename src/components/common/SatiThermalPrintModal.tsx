@@ -670,13 +670,15 @@ export function SatiThermalPrintModal({
               )}
 
               {data.ubicacion && (
-                <div className="border-t-2 border-black border-dashed pt-1.5 leading-snug">
-                  <span className="thermal-label uppercase font-black">
-                    UBICACIÓN:
-                  </span>{" "}
-                  <span className="thermal-value font-black">
-                    {data.ubicacion}
-                  </span>
+                <div className="border-t-2 border-black border-dashed pt-1.5">
+                  <div className="border-2 border-black px-2 py-1 text-center leading-tight">
+                    <span className="block text-[9.5px] thermal-label uppercase font-black tracking-wider">
+                      UBICACIÓN EN DEPÓSITO
+                    </span>
+                    <span className="block text-[13px] thermal-ultra-black uppercase font-black mt-0.5">
+                      {data.ubicacion}
+                    </span>
+                  </div>
                 </div>
               )}
 

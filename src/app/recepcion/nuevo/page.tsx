@@ -354,6 +354,7 @@ export default function NuevoIngresoRetornoPage() {
       fechaVenta?.trim() ||
       (foundOrder as RecepcionTicket)?.fechaVenta?.trim() ||
       "N/A";
+    const ubicacionVal = ubicacion.trim();
 
     return `El equipo de *${clientName || "Cliente"}* ya se encuentra en el sector de Post-Venta y listo para el retiro
 
@@ -363,7 +364,7 @@ export default function NuevoIngresoRetornoPage() {
 📦 *Categoría:* ${tipoComponente}
 🔢 *Serie:* ${serialNumber || "SIN SERIAL"}
 📅 *Fecha de Ingreso:* ${fechaIngresoVal}
-🛒 *Fecha de Venta:* ${fechaVentaVal}
+🛒 *Fecha de Venta:* ${fechaVentaVal}${ubicacionVal ? `\n📍 *Ubicación:* ${ubicacionVal}` : ""}
 
 📊 *Dictamen Técnico:*
 ${statusText}
@@ -897,6 +898,15 @@ ${accText}`;
                     {accessories.length} {accessories.length === 1 ? "ítem" : "ítems"}
                   </span>
                 </div>
+
+                {ubicacion.trim() && (
+                  <div className="pt-2 flex justify-between gap-2">
+                    <span className="text-zinc-500 shrink-0">Ubicación:</span>
+                    <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-mono text-[11px] font-bold text-right">
+                      {ubicacion.trim()}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Previsualización Notificación WhatsApp */}

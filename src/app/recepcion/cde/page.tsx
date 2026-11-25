@@ -34,6 +34,7 @@ import {
   Unlink,
 } from "lucide-react";
 import { SatiThermalPrintModal } from "@/components/common/SatiThermalPrintModal";
+import { extractUbicacionFromText } from "@/components/common/UbicacionCascadaSelector";
 import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect";
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { OrderSearchInput } from "@/components/common/OrderSearchInput";
@@ -2978,6 +2979,10 @@ export default function RecepcionCdeDashboardPage() {
             equipo: `${showPrintModal.marca || ""} ${showPrintModal.modelo || ""}`.trim(),
             serial: showPrintModal.serial,
             estado: showPrintModal.estadoAsu || showPrintModal.estado,
+            ubicacion:
+              (showPrintModal as { ubicacion?: string }).ubicacion ||
+              extractUbicacionFromText(showPrintModal.mensaje) ||
+              undefined,
             informeTecnico: formatSatiSentenceCase(showPrintModal.mensaje),
             subtitulo: "COMPROBANTE DEL SERVICIO POST - VENTA NISSEI",
             fechaIngreso: showPrintModal.fechaIngresoAsu || showPrintModal.fechaIngreso,

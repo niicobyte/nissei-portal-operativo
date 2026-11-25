@@ -1608,6 +1608,11 @@ export default function RecepcionDashboardPage() {
 
     const fechaIngresoVal = ticket.fechaIngreso && ticket.fechaIngreso.trim() ? ticket.fechaIngreso.trim() : "N/A";
     const fechaVentaVal = ticket.fechaVenta && ticket.fechaVenta.trim() ? ticket.fechaVenta.trim() : "N/A";
+    const ubicacionVal = (
+      ticket.ubicacion ||
+      extractUbicacionFromText(ticket.mensaje) ||
+      ""
+    ).trim();
 
     return `${introLine}
 
@@ -1618,7 +1623,7 @@ export default function RecepcionDashboardPage() {
 🔢 *Serie:* ${ticket.serial && ticket.serial !== "S/N" && !ticket.serial.toUpperCase().includes("SIN SERIAL") ? ticket.serial : "SIN SERIAL"}
 📅 *Fecha de Ingreso:* ${fechaIngresoVal}
 🛒 *Fecha de Venta:* ${fechaVentaVal}
-📌 *Estado:* ${dictamen.estadoActual}
+📌 *Estado:* ${dictamen.estadoActual}${ubicacionVal ? `\n📍 *Ubicación:* ${ubicacionVal}` : ""}
 
 📊 *Dictamen Técnico:*
 ${statusText}
@@ -1738,7 +1743,14 @@ ${dictamen.accText}`;
       let errorMsg = "";
 
       if (!isDanesa) {
-        const msg = generarMensajeWhatsAppRecepcion(currentTicket);
+        const ticketConUbicacion =
+          selectedTicket && selectedTicket.idOrden === ticket.idOrden
+            ? {
+                ...currentTicket,
+                ubicacion: modalUbicacion.trim() || currentTicket.ubicacion,
+              }
+            : currentTicket;
+        const msg = generarMensajeWhatsAppRecepcion(ticketConUbicacion);
         const res = await fetch("/api/whatsapp/send", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -4557,8 +4569,17 @@ ${dictamen.accText}`;
                   <button
                     type="button"
                     onClick={(e) => {
+                      const accFinal =
+                        modalAccessoriesList.length > 0
+                          ? modalAccessoriesList.join(", ")
+                          : modalAccesorios.trim();
                       setAutoPrintTicket(e.shiftKey);
-                      setShowPrintModal(selectedTicket);
+                      setShowPrintModal({
+                        ...selectedTicket,
+                        mensaje: modalMensaje,
+                        accesorios: accFinal,
+                        ubicacion: modalUbicacion.trim() || undefined,
+                      });
                     }}
                     className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#FFD23F] hover:bg-yellow-400 text-black rounded-lg text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
                     title="Imprimir comprobante térmico con código de barras CODE128 (Shift+Clic para imprimir directo)"
