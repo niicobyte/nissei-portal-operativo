@@ -55,6 +55,11 @@ import { CleanSelect, CleanSelectOption } from "@/components/common/CleanSelect"
 import CategoryFilterSelect, { CategoryCountItem } from "@/components/common/CategoryFilterSelect";
 import { OrderSearchInput } from "@/components/common/OrderSearchInput";
 import { matchesCategoryFilter, normalizeComponentName } from "@/data/recepcionCategories";
+import {
+  QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY,
+  getComponentAccessoryKey,
+  getDefaultAccessoriesForComponent,
+} from "@/data/recepcionAccesorioPresets";
 import { SpeedTruck } from "@/components/common/SpeedTruck";
 import { readMultipleSpreadsheetsForSati, SPREADSHEET_FILE_ACCEPT } from "@/lib/spreadsheetImport";
 import { SatiDepurationSummary } from "@/components/SatiDepurationSummary";
@@ -772,7 +777,7 @@ export default function RecepcionDashboardPage() {
   const [modalAccesorios, setModalAccesorios] = useState<string>("");
   const [modalAccessoriesList, setModalAccessoriesList] = useState<string[]>([]);
   const [modalNewAccessory, setModalNewAccessory] = useState<string>("");
-  const [quickAccessories, setQuickAccessories] = useState<string[]>([]);
+  const [quickAccessoriesByType, setQuickAccessoriesByType] = useState<Record<string, string[]>>({});
   const [isAddingQuickShortcut, setIsAddingQuickShortcut] = useState(false);
   const [newQuickShortcutText, setNewQuickShortcutText] = useState("");
   const [isCableDropdownOpen, setIsCableDropdownOpen] = useState(false);
@@ -790,7 +795,37 @@ export default function RecepcionDashboardPage() {
     modalUbicacion?: string;
   } | null>(null);
 
-  const QUICK_ACCESSORIES_STORAGE_KEY = "nissei_recepcion_accesorios_rapidos_v1";
+  const activeComponentKey = useMemo(
+    () => getComponentAccessoryKey(selectedTicket?.tipoComponente),
+    [selectedTicket?.tipoComponente]
+  );
+
+  const activeComponentLabel = useMemo(() => {
+    const raw = selectedTicket?.tipoComponente?.trim();
+    return raw || "General";
+  }, [selectedTicket?.tipoComponente]);
+
+  const defaultQuickAccessoriesForType = useMemo(
+    () => getDefaultAccessoriesForComponent(selectedTicket?.tipoComponente),
+    [selectedTicket?.tipoComponente]
+  );
+
+  const hasCustomQuickAccessories = useMemo(
+    () => Object.prototype.hasOwnProperty.call(quickAccessoriesByType, activeComponentKey),
+    [quickAccessoriesByType, activeComponentKey]
+  );
+
+  const quickAccessories = useMemo(() => {
+    if (hasCustomQuickAccessories) {
+      return quickAccessoriesByType[activeComponentKey];
+    }
+    return defaultQuickAccessoriesForType;
+  }, [
+    hasCustomQuickAccessories,
+    quickAccessoriesByType,
+    activeComponentKey,
+    defaultQuickAccessoriesForType,
+  ]);
 
   const CABLE_ACCESSORY_OPTIONS = useMemo(() => [
     {
@@ -871,42 +906,75 @@ export default function RecepcionDashboardPage() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(QUICK_ACCESSORIES_STORAGE_KEY);
+      const raw = localStorage.getItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setQuickAccessories(parsed.map((s) => String(s).trim()).filter(Boolean));
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          const sanitized: Record<string, string[]> = {};
+          for (const [k, list] of Object.entries(parsed)) {
+            if (Array.isArray(list)) {
+              sanitized[k] = list.map((s) => String(s).trim()).filter(Boolean);
+            }
+          }
+          setQuickAccessoriesByType(sanitized);
           return;
         }
       }
-      setQuickAccessories(["Unidad", "Caja", "Manuales"]);
+      setQuickAccessoriesByType({});
     } catch {
-      setQuickAccessories(["Unidad", "Caja", "Manuales"]);
+      setQuickAccessoriesByType({});
     }
   }, []);
 
   const saveQuickAccessoryShortcut = (val: string) => {
     const trimmed = val.trim();
     if (!trimmed || isCableShortcut(trimmed)) return;
-    setQuickAccessories((prev) => {
-      if (prev.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
+    setQuickAccessoriesByType((prev) => {
+      const currentList = Object.prototype.hasOwnProperty.call(prev, activeComponentKey)
+        ? prev[activeComponentKey]
+        : getDefaultAccessoriesForComponent(selectedTicket?.tipoComponente);
+      if (currentList.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
         return prev;
       }
-      const next = [...prev, trimmed];
+      const nextMap = {
+        ...prev,
+        [activeComponentKey]: [...currentList, trimmed],
+      };
       try {
-        localStorage.setItem(QUICK_ACCESSORIES_STORAGE_KEY, JSON.stringify(next));
+        localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
       } catch {}
-      return next;
+      return nextMap;
     });
   };
 
   const removeQuickAccessoryShortcut = (val: string) => {
-    setQuickAccessories((prev) => {
-      const next = prev.filter((p) => p !== val);
+    setQuickAccessoriesByType((prev) => {
+      const currentList = Object.prototype.hasOwnProperty.call(prev, activeComponentKey)
+        ? prev[activeComponentKey]
+        : getDefaultAccessoriesForComponent(selectedTicket?.tipoComponente);
+      const nextList = currentList.filter((p) => p !== val);
+      const nextMap = {
+        ...prev,
+        [activeComponentKey]: nextList,
+      };
       try {
-        localStorage.setItem(QUICK_ACCESSORIES_STORAGE_KEY, JSON.stringify(next));
+        localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
       } catch {}
-      return next;
+      return nextMap;
+    });
+  };
+
+  const resetQuickAccessoriesForCurrentType = () => {
+    setQuickAccessoriesByType((prev) => {
+      if (!Object.prototype.hasOwnProperty.call(prev, activeComponentKey)) {
+        return prev;
+      }
+      const nextMap = { ...prev };
+      delete nextMap[activeComponentKey];
+      try {
+        localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
+      } catch {}
+      return nextMap;
     });
   };
 
@@ -4122,23 +4190,28 @@ ${dictamen.accText}`;
                                 handleAddModalAccessory(modalNewAccessory);
                               }
                             }}
-                            placeholder="Escriba un accesorio y presione Enter o + Agregar (se guardará en accesos directos)"
+                            placeholder={`Agregar accesorio para ${activeComponentLabel} (Enter o + Agregar)`}
                             className="flex-1 min-w-0 px-3 py-1.5 text-xs bg-white border-2 border-black focus:outline-none rounded-lg transition-colors placeholder:text-neutral-500 font-sans text-black shadow-[1px_1px_0px_#000]"
                           />
                           <button
                             type="button"
                             onClick={() => handleAddModalAccessory(modalNewAccessory)}
                             className="px-3 py-1.5 bg-black hover:bg-neutral-800 text-[#FFD23F] text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer whitespace-nowrap shrink-0"
-                            title="Agregar accesorio y guardar como acceso directo"
+                            title={`Agregar accesorio y guardar en accesos directos de ${activeComponentLabel}`}
                           >
                             + Agregar
                           </button>
                         </div>
 
-                        {/* Accesos directos personalizados guardados por el usuario */}
+                        {/* Accesos directos personalizados guardados por tipo de componente */}
                         <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t-2 border-dashed border-black text-[11px]">
-                          <span className="text-neutral-700 mr-0.5 font-mono text-[10px] uppercase font-bold">
-                            ACCESOS DIRECTOS:
+                          <span className="inline-flex items-center gap-1.5 mr-0.5">
+                            <span className="text-neutral-700 font-mono text-[10px] uppercase font-bold">
+                              ACCESOS DIRECTOS:
+                            </span>
+                            <span className="px-1.5 py-0.5 rounded-md bg-[#FFD23F] text-black border border-black font-mono text-[9px] font-black uppercase tracking-tight">
+                              {activeComponentLabel}
+                            </span>
                           </span>
 
                           {quickAccessories
@@ -4166,7 +4239,7 @@ ${dictamen.accText}`;
                                     type="button"
                                     onClick={() => removeQuickAccessoryShortcut(sug)}
                                     className="pr-2 pl-0.5 text-neutral-500 hover:text-[#E76F51] font-bold leading-none cursor-pointer"
-                                    title={`Quitar "${sug}" de los accesos directos`}
+                                    title={`Quitar "${sug}" de accesos directos de ${activeComponentLabel}`}
                                   >
                                     ×
                                   </button>
@@ -4290,8 +4363,8 @@ ${dictamen.accText}`;
                                     setIsAddingQuickShortcut(false);
                                   }
                                 }}
-                                placeholder="Nombre del acceso directo..."
-                                className="px-2 py-0.5 text-[11px] bg-white border-2 border-black rounded-lg outline-none w-40 font-mono text-black"
+                                placeholder={`Nuevo para ${activeComponentLabel}...`}
+                                className="px-2 py-0.5 text-[11px] bg-white border-2 border-black rounded-lg outline-none w-44 font-mono text-black"
                               />
                               <button
                                 type="button"
@@ -4324,10 +4397,22 @@ ${dictamen.accText}`;
                               type="button"
                               onClick={() => setIsAddingQuickShortcut(true)}
                               className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-[#FFFDF9] hover:bg-[#FFD23F] text-black border-2 border-dashed border-black transition-all cursor-pointer shadow-[1px_1px_0px_#000]"
-                              title="Crear y guardar un nuevo acceso directo de accesorio"
+                              title={`Crear y guardar un nuevo acceso directo para ${activeComponentLabel}`}
                             >
                               <Plus className="w-3 h-3 text-black" />
                               <span>Agregar acceso directo</span>
+                            </button>
+                          )}
+
+                          {hasCustomQuickAccessories && (
+                            <button
+                              type="button"
+                              onClick={resetQuickAccessoriesForCurrentType}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#FAF6EE] hover:bg-neutral-200 text-neutral-700 border border-black/50 transition-all cursor-pointer"
+                              title={`Restaurar accesos directos sugeridos para ${activeComponentLabel}`}
+                            >
+                              <RotateCcw className="w-2.5 h-2.5" />
+                              <span>Restaurar</span>
                             </button>
                           )}
                         </div>
