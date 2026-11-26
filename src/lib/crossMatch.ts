@@ -279,6 +279,7 @@ export function matchesSmartSatiSearch(
     serial?: string;
     mensaje?: string;
     ubicacion?: string;
+    tecnico?: string;
   },
   rawQuery: string
 ): boolean {
@@ -296,7 +297,8 @@ export function matchesSmartSatiSearch(
     (t.marca && t.marca.toLowerCase().includes(q)) ||
     (t.serial && t.serial.toLowerCase().includes(q)) ||
     (t.mensaje && t.mensaje.toLowerCase().includes(q)) ||
-    (t.ubicacion && t.ubicacion.toLowerCase().includes(q))
+    (t.ubicacion && t.ubicacion.toLowerCase().includes(q)) ||
+    (t.tecnico && t.tecnico.toLowerCase().includes(q))
   ) {
     return true;
   }

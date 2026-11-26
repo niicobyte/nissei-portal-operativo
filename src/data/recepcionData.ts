@@ -28,6 +28,7 @@ export interface RecepcionTicket {
   serial: string;
   accesorios?: string;
   ubicacion?: string;
+  tecnico?: string;
   dictamenTipo?: string;
   esNuevoIngreso?: boolean;
   esEstadoCambiadoReciente?: boolean;
@@ -27313,6 +27314,7 @@ export interface RecepcionCustomDetails {
   mensaje?: string;
   accesorios?: string;
   ubicacion?: string;
+  tecnico?: string;
   dictamenTipo?: string;
   mensajeEditadoManualmente?: boolean;
   updatedAt?: string;
@@ -27384,6 +27386,7 @@ export function getStoredTickets(): RecepcionTicket[] {
         mensaje: c.mensajeEditadoManualmente && c.mensaje !== undefined ? c.mensaje : (t.mensaje || c.mensaje || ''),
         accesorios: c.accesorios !== undefined ? c.accesorios : t.accesorios,
         ubicacion: c.ubicacion !== undefined ? c.ubicacion : t.ubicacion,
+        tecnico: c.tecnico !== undefined ? c.tecnico : t.tecnico,
         dictamenTipo: c.dictamenTipo !== undefined ? c.dictamenTipo : t.dictamenTipo,
         mensajeEditadoManualmente: c.mensajeEditadoManualmente !== undefined ? c.mensajeEditadoManualmente : t.mensajeEditadoManualmente,
       };
@@ -27509,6 +27512,11 @@ export function applyCloudRecepcionTickets(rawData: RecepcionTicket[]): Recepcio
         ? custom.ubicacion
         : (t.ubicacion || local?.ubicacion || undefined);
 
+    const finalTecnico =
+      custom?.tecnico !== undefined
+        ? custom.tecnico
+        : (t.tecnico || local?.tecnico || undefined);
+
     const isManualEdit = Boolean(
       custom?.mensajeEditadoManualmente ||
       local?.mensajeEditadoManualmente ||
@@ -27534,6 +27542,7 @@ export function applyCloudRecepcionTickets(rawData: RecepcionTicket[]): Recepcio
       mensaje: finalMensaje,
       accesorios: finalAccesorios,
       ubicacion: finalUbicacion,
+      tecnico: finalTecnico,
       dictamenTipo: finalDictamen,
       mensajeEditadoManualmente: isManualEdit || undefined,
       esNuevoIngreso:
@@ -27664,6 +27673,7 @@ export async function updateTicketDetailsAsync(
     mensaje: updates.mensaje,
     accesorios: updates.accesorios,
     ubicacion: updates.ubicacion,
+      tecnico: updates.tecnico,
     dictamenTipo: updates.dictamenTipo,
     mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
   });
@@ -27675,6 +27685,7 @@ export async function updateTicketDetailsAsync(
       mensaje: updates.mensaje,
       accesorios: updates.accesorios,
       ubicacion: updates.ubicacion,
+      tecnico: updates.tecnico,
       dictamenTipo: updates.dictamenTipo,
       mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
     });
@@ -27716,6 +27727,7 @@ export async function updateTicketDetailsAsync(
           mensaje: updates.mensaje,
           accesorios: updates.accesorios,
           ubicacion: updates.ubicacion,
+      tecnico: updates.tecnico,
           dictamenTipo: updates.dictamenTipo,
           mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
         }),
@@ -27750,6 +27762,7 @@ export function updateTicketDetails(
     mensaje: updates.mensaje,
     accesorios: updates.accesorios,
     ubicacion: updates.ubicacion,
+      tecnico: updates.tecnico,
     dictamenTipo: updates.dictamenTipo,
     mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
   });
@@ -27761,6 +27774,7 @@ export function updateTicketDetails(
       mensaje: updates.mensaje,
       accesorios: updates.accesorios,
       ubicacion: updates.ubicacion,
+      tecnico: updates.tecnico,
       dictamenTipo: updates.dictamenTipo,
       mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
     });
@@ -27800,6 +27814,7 @@ export function updateTicketDetails(
         mensaje: updates.mensaje,
         accesorios: updates.accesorios,
         ubicacion: updates.ubicacion,
+      tecnico: updates.tecnico,
         dictamenTipo: updates.dictamenTipo,
         mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
       }),

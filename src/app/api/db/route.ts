@@ -351,7 +351,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
-    // 4b. Actualizar detalles técnicos, accesorios, ubicación, estado y notas de ticket en Recepción
+    // 4b. Actualizar detalles técnicos, accesorios, ubicación, técnico, estado y notas de ticket en Recepción
     if (action === "UPDATE_RECEPCION_DETALLES") {
       const {
         idOrden,
@@ -361,6 +361,7 @@ export async function POST(req: NextRequest) {
         mensaje,
         accesorios,
         ubicacion,
+        tecnico,
         dictamenTipo,
         mensajeEditadoManualmente,
       } = body;
@@ -376,6 +377,11 @@ export async function POST(req: NextRequest) {
       const cleanAcc = accesorios !== undefined && accesorios !== null ? String(accesorios).trim() : null;
       const hasUbicacionParam = ubicacion !== undefined;
       const cleanUbicacion = ubicacion !== undefined && ubicacion !== null ? String(ubicacion).trim() : null;
+      const hasTecnicoParam = tecnico !== undefined;
+      const cleanTecnico =
+        tecnico !== undefined && tecnico !== null && String(tecnico).trim() !== ""
+          ? String(tecnico).trim()
+          : null;
       const cleanMsg = mensaje !== undefined && mensaje !== null ? String(mensaje).trim() : null;
       const cleanEstado = estado !== undefined && estado !== null && String(estado).trim() !== "" ? String(estado).trim() : null;
       const isDelivered = cleanEstado ? cleanEstado.toLowerCase() === "entregada" : false;
@@ -388,7 +394,7 @@ export async function POST(req: NextRequest) {
         ? String(fechaEntregada).trim()
         : (isDelivered ? fechaHoy : null);
 
-      // Asegurar columnas accesorios y ubicacion en recepcion_tickets y recepcion_cde_tickets
+      // Asegurar columnas accesorios, ubicacion y tecnico en recepcion_tickets y recepcion_cde_tickets
       try {
         await pool.query(
           "ALTER TABLE recepcion_tickets ADD COLUMN accesorios TEXT DEFAULT NULL"
@@ -401,12 +407,22 @@ export async function POST(req: NextRequest) {
       } catch {}
       try {
         await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN tecnico VARCHAR(120) DEFAULT NULL"
+        );
+      } catch {}
+      try {
+        await pool.query(
           "ALTER TABLE recepcion_cde_tickets ADD COLUMN accesorios TEXT DEFAULT NULL"
         );
       } catch {}
       try {
         await pool.query(
           "ALTER TABLE recepcion_cde_tickets ADD COLUMN ubicacion VARCHAR(150) DEFAULT NULL"
+        );
+      } catch {}
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_cde_tickets ADD COLUMN tecnico VARCHAR(120) DEFAULT NULL"
         );
       } catch {}
 
@@ -422,6 +438,7 @@ export async function POST(req: NextRequest) {
              mensaje = COALESCE(?, mensaje),
              accesorios = COALESCE(?, accesorios),
              ubicacion = CASE WHEN ? THEN ? ELSE ubicacion END,
+             tecnico = CASE WHEN ? THEN ? ELSE tecnico END,
              origen = CASE
                WHEN origen = 'NUEVO_INGRESO' THEN 'NUEVO_INGRESO'
                WHEN ? THEN 'RECIEN_ENTREGADO'
@@ -440,6 +457,8 @@ export async function POST(req: NextRequest) {
           cleanAcc,
           hasUbicacionParam ? 1 : 0,
           cleanUbicacion,
+          hasTecnicoParam ? 1 : 0,
+          cleanTecnico,
           isDelivered,
           cleanEstado,
           cleanId,
@@ -455,14 +474,15 @@ export async function POST(req: NextRequest) {
           const finalEst = cleanEstado || baseTicket.estado || "En Asignacion";
           await pool.query(
             `INSERT INTO recepcion_tickets
-             (id_orden, codigo_producto, cliente, mensaje, accesorios, ubicacion, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CSV')
+             (id_orden, codigo_producto, cliente, mensaje, accesorios, ubicacion, tecnico, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CSV')
              ON DUPLICATE KEY UPDATE
                estado = VALUES(estado),
                fecha_entregada = VALUES(fecha_entregada),
                mensaje = VALUES(mensaje),
                accesorios = VALUES(accesorios),
-               ubicacion = VALUES(ubicacion)`,
+               ubicacion = VALUES(ubicacion),
+               tecnico = VALUES(tecnico)`,
             [
               baseTicket.idOrden,
               baseTicket.codigoProducto || "",
@@ -470,6 +490,7 @@ export async function POST(req: NextRequest) {
               cleanMsg !== null ? cleanMsg : (baseTicket.mensaje || ""),
               cleanAcc,
               cleanUbicacion,
+              cleanTecnico,
               baseTicket.fechaIngreso || "",
               cleanFechaEntregada || baseTicket.fechaEntregada || null,
               baseTicket.fechaVenta || null,
@@ -500,6 +521,7 @@ export async function POST(req: NextRequest) {
                mensaje = COALESCE(?, mensaje),
                accesorios = COALESCE(?, accesorios),
                ubicacion = CASE WHEN ? THEN ? ELSE ubicacion END,
+               tecnico = CASE WHEN ? THEN ? ELSE tecnico END,
                updated_at = NOW()
            WHERE id_orden = ?`,
           [
@@ -512,6 +534,8 @@ export async function POST(req: NextRequest) {
             cleanAcc,
             hasUbicacionParam ? 1 : 0,
             cleanUbicacion,
+            hasTecnicoParam ? 1 : 0,
+            cleanTecnico,
             cdeTargetId,
           ]
         ).catch(() => {});

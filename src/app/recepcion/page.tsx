@@ -783,6 +783,9 @@ export default function RecepcionDashboardPage() {
   const [isCableDropdownOpen, setIsCableDropdownOpen] = useState(false);
   const cableDropdownRef = useRef<HTMLDivElement | null>(null);
   const [modalUbicacion, setModalUbicacion] = useState<string>("");
+  const [modalTecnico, setModalTecnico] = useState<string>("");
+  const [savedTecnicos, setSavedTecnicos] = useState<string[]>([]);
+  const [newTecnicoInput, setNewTecnicoInput] = useState<string>("");
   const [isSavingDetails, setIsSavingDetails] = useState(false);
   const modalTextareaRef = useRef<HTMLTextAreaElement>(null);
   const draftHydratedRef = useRef(false);
@@ -793,7 +796,10 @@ export default function RecepcionDashboardPage() {
     modalAccessoriesList: string[];
     modalNewAccessory: string;
     modalUbicacion?: string;
+    modalTecnico?: string;
   } | null>(null);
+
+  const TECNICOS_RECEPCION_STORAGE_KEY = "nissei_recepcion_tecnicos_lista_v1";
 
   const activeComponentKey = useMemo(
     () => getComponentAccessoryKey(selectedTicket?.tipoComponente),
@@ -926,6 +932,22 @@ export default function RecepcionDashboardPage() {
     }
   }, []);
 
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(TECNICOS_RECEPCION_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setSavedTecnicos(parsed.map((s) => String(s).trim()).filter(Boolean));
+          return;
+        }
+      }
+      setSavedTecnicos([]);
+    } catch {
+      setSavedTecnicos([]);
+    }
+  }, []);
+
   const saveQuickAccessoryShortcut = (val: string) => {
     const trimmed = val.trim();
     if (!trimmed || isCableShortcut(trimmed)) return;
@@ -999,6 +1021,12 @@ export default function RecepcionDashboardPage() {
             ? pending.modalUbicacion
             : (selectedTicket.ubicacion || extractUbicacionFromText(selectedTicket.mensaje))
         );
+        setModalTecnico(
+          pending.modalTecnico !== undefined
+            ? pending.modalTecnico
+            : (selectedTicket.tecnico || "")
+        );
+        setNewTecnicoInput("");
         pendingModalDraftRef.current = null;
         return;
       }
@@ -1022,6 +1050,8 @@ export default function RecepcionDashboardPage() {
       setIsAddingQuickShortcut(false);
       setNewQuickShortcutText("");
       setModalUbicacion(selectedTicket.ubicacion || extractUbicacionFromText(rawMsg));
+      setModalTecnico(selectedTicket.tecnico || "");
+      setNewTecnicoInput("");
     }
   }, [selectedTicket]);
 
@@ -1129,6 +1159,7 @@ export default function RecepcionDashboardPage() {
       modalAccessoriesList?: string[];
       modalNewAccessory?: string;
       modalUbicacion?: string;
+      modalTecnico?: string;
     }>("recepcion_workspace");
 
     if (draft) {
@@ -1168,6 +1199,10 @@ export default function RecepcionDashboardPage() {
               draft.modalUbicacion !== undefined
                 ? draft.modalUbicacion
                 : (matched.ubicacion || extractUbicacionFromText(matched.mensaje)),
+            modalTecnico:
+              draft.modalTecnico !== undefined
+                ? draft.modalTecnico
+                : (matched.tecnico || ""),
           };
           setSelectedTicket(matched);
         }
@@ -1207,6 +1242,7 @@ export default function RecepcionDashboardPage() {
     modalAccessoriesList,
     modalNewAccessory,
     modalUbicacion,
+    modalTecnico,
   });
 
   useEffect(() => {
@@ -1228,6 +1264,7 @@ export default function RecepcionDashboardPage() {
     modalAccessoriesList,
     modalNewAccessory,
     modalUbicacion,
+    modalTecnico,
   ]);
 
   useFlushDraftBeforeLogout(() => {
@@ -1388,7 +1425,7 @@ export default function RecepcionDashboardPage() {
     }
   };
 
-  // Guardar notas o comentarios del informe técnico, dictamen, ubicación y accesorios de la orden
+  // Guardar notas o comentarios del informe técnico, dictamen, ubicación, técnico y accesorios de la orden
   const handleGuardarMensaje = async () => {
     if (!selectedTicket || isSavingDetails) return;
     setIsSavingDetails(true);
@@ -1404,6 +1441,7 @@ export default function RecepcionDashboardPage() {
         mensaje: modalMensaje,
         accesorios: accFinal,
         ubicacion: modalUbicacion.trim(),
+        tecnico: modalTecnico.trim(),
         dictamenTipo: modalDictamenTipo,
         mensajeEditadoManualmente: true,
         idOrdenCde: selectedTicket.idOrdenCde,
@@ -1420,11 +1458,12 @@ export default function RecepcionDashboardPage() {
         mensaje: modalMensaje,
         accesorios: accFinal,
         ubicacion: modalUbicacion.trim(),
+        tecnico: modalTecnico.trim(),
         dictamenTipo: modalDictamenTipo,
         mensajeEditadoManualmente: true,
       });
       showToast(
-        `✓ Cambios guardados (accesorios, ubicación e informe de la orden #${selectedTicket.idOrden} sincronizados con éxito).`
+        `✓ Cambios guardados (accesorios, ubicación, técnico e informe de la orden #${selectedTicket.idOrden} sincronizados con éxito).`
       );
     } catch (err) {
       console.error("Error guardando detalles de orden:", err);
@@ -1451,6 +1490,7 @@ export default function RecepcionDashboardPage() {
         mensaje: modalMensaje,
         accesorios: accFinal,
         ubicacion: nuevaUbicacion,
+        tecnico: modalTecnico.trim(),
         dictamenTipo: modalDictamenTipo,
         mensajeEditadoManualmente: true,
         idOrdenCde: selectedTicket?.idOrdenCde,
@@ -1466,6 +1506,7 @@ export default function RecepcionDashboardPage() {
         setSelectedTicket(enrichedSelected || {
           ...selectedTicket,
           ubicacion: nuevaUbicacion,
+          tecnico: modalTecnico.trim(),
           mensaje: modalMensaje,
           accesorios: accFinal,
           dictamenTipo: modalDictamenTipo,
@@ -1483,6 +1524,85 @@ export default function RecepcionDashboardPage() {
     }
   };
 
+  // Asignar o quitar técnico responsable en la orden y persistir de inmediato
+  const handleCambiarTecnico = async (idOrden: string, nuevoTecnico: string) => {
+    const clean = nuevoTecnico.trim();
+    setModalTecnico(clean);
+    const accFinal =
+      modalAccessoriesList.length > 0
+        ? modalAccessoriesList.join(", ")
+        : modalAccesorios.trim();
+
+    try {
+      const updated = await updateTicketDetailsAsync(idOrden, {
+        estado: selectedTicket?.estado,
+        fechaEntregada: selectedTicket?.fechaEntregada,
+        mensaje: modalMensaje,
+        accesorios: accFinal,
+        ubicacion: modalUbicacion.trim(),
+        tecnico: clean,
+        dictamenTipo: modalDictamenTipo,
+        mensajeEditadoManualmente: true,
+        idOrdenCde: selectedTicket?.idOrdenCde,
+      });
+      const cdeTickets = getStoredCdeTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+      setTickets(enriched);
+      if (selectedTicket && selectedTicket.idOrden === idOrden) {
+        const enrichedSelected = enriched.find((t) => t.idOrden === idOrden);
+        setSelectedTicket(enrichedSelected || {
+          ...selectedTicket,
+          tecnico: clean,
+          ubicacion: modalUbicacion.trim(),
+          mensaje: modalMensaje,
+          accesorios: accFinal,
+          dictamenTipo: modalDictamenTipo,
+          mensajeEditadoManualmente: true,
+        });
+      }
+      if (clean) {
+        showToast(`👨‍🔧 Técnico asignado: "${clean}" en orden #${idOrden}`);
+      } else {
+        showToast(`👨‍🔧 Técnico removido de la orden #${idOrden}`);
+      }
+    } catch (err) {
+      console.error("Error al actualizar técnico:", err);
+      showToast(`👨‍🔧 Técnico actualizado localmente para la orden #${idOrden}.`);
+    }
+  };
+
+  const handleAgregarTecnicoALista = () => {
+    const clean = newTecnicoInput.trim();
+    if (!clean) return;
+    setSavedTecnicos((prev) => {
+      if (prev.some((t) => t.toLowerCase() === clean.toLowerCase())) {
+        return prev;
+      }
+      const next = [...prev, clean];
+      try {
+        localStorage.setItem(TECNICOS_RECEPCION_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+    setNewTecnicoInput("");
+    if (selectedTicket) {
+      void handleCambiarTecnico(selectedTicket.idOrden, clean);
+    }
+  };
+
+  const handleEliminarTecnicoDeLista = (nombre: string) => {
+    setSavedTecnicos((prev) => {
+      const next = prev.filter((t) => t !== nombre);
+      try {
+        localStorage.setItem(TECNICOS_RECEPCION_STORAGE_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
   // Actualizar dictamen técnico / resolución QC de una orden en vivo
   const handleCambiarDictamen = (idOrden: string, dictamenId: string) => {
     setModalDictamenTipo(dictamenId);
@@ -1497,6 +1617,7 @@ export default function RecepcionDashboardPage() {
       mensaje: modalMensaje,
       accesorios: accFinal,
       ubicacion: modalUbicacion.trim(),
+      tecnico: modalTecnico.trim(),
       mensajeEditadoManualmente: true,
       idOrdenCde: selectedTicket?.idOrdenCde,
     });
@@ -1514,6 +1635,7 @@ export default function RecepcionDashboardPage() {
         mensaje: modalMensaje,
         accesorios: accFinal,
         ubicacion: modalUbicacion.trim(),
+        tecnico: modalTecnico.trim(),
         mensajeEditadoManualmente: true,
       });
     }
@@ -1539,6 +1661,10 @@ export default function RecepcionDashboardPage() {
       ? modalUbicacion.trim()
       : (targetTicket?.ubicacion || "");
 
+    const tecnicoFinal = isTargetSelected
+      ? modalTecnico.trim()
+      : (targetTicket?.tecnico || "");
+
     const msgFinal = isTargetSelected ? modalMensaje : (targetTicket?.mensaje || "");
     const dictamenFinal = isTargetSelected ? modalDictamenTipo : (targetTicket?.dictamenTipo || "AUTO");
     const cdeId = isTargetSelected ? selectedTicket?.idOrdenCde : targetTicket?.idOrdenCde;
@@ -1553,6 +1679,7 @@ export default function RecepcionDashboardPage() {
         mensaje: msgFinal,
         accesorios: accFinal,
         ubicacion: ubicacionFinal,
+        tecnico: tecnicoFinal,
         dictamenTipo: dictamenFinal,
         mensajeEditadoManualmente: true,
         idOrdenCde: cdeId,
@@ -1572,6 +1699,7 @@ export default function RecepcionDashboardPage() {
           mensaje: msgFinal,
           accesorios: accFinal,
           ubicacion: ubicacionFinal,
+          tecnico: tecnicoFinal,
           dictamenTipo: dictamenFinal,
           mensajeEditadoManualmente: true,
           fechaEntregada: fechaEnt,
@@ -1613,6 +1741,7 @@ export default function RecepcionDashboardPage() {
       extractUbicacionFromText(ticket.mensaje) ||
       ""
     ).trim();
+    const tecnicoVal = (ticket.tecnico || "").trim();
 
     return `${introLine}
 
@@ -1623,7 +1752,7 @@ export default function RecepcionDashboardPage() {
 🔢 *Serie:* ${ticket.serial && ticket.serial !== "S/N" && !ticket.serial.toUpperCase().includes("SIN SERIAL") ? ticket.serial : "SIN SERIAL"}
 📅 *Fecha de Ingreso:* ${fechaIngresoVal}
 🛒 *Fecha de Venta:* ${fechaVentaVal}
-📌 *Estado:* ${dictamen.estadoActual}${ubicacionVal ? `\n📍 *Ubicación:* ${ubicacionVal}` : ""}
+📌 *Estado:* ${dictamen.estadoActual}${ubicacionVal ? `\n📍 *Ubicación:* ${ubicacionVal}` : ""}${tecnicoVal ? `\n👨‍🔧 *Técnico:* ${tecnicoVal}` : ""}
 
 📊 *Dictamen Técnico:*
 ${statusText}
@@ -1687,19 +1816,21 @@ ${dictamen.accText}`;
       }
     }
 
-    // Si el mensaje, accesorios, ubicación o dictamen en el modal fueron modificados, guardarlos antes de notificar
+    // Si el mensaje, accesorios, ubicación, técnico o dictamen en el modal fueron modificados, guardarlos antes de notificar
     let currentTicket = ticket;
     if (selectedTicket && selectedTicket.idOrden === ticket.idOrden) {
       if (
         modalMensaje !== ticket.mensaje ||
         accFinal !== (ticket.accesorios || "") ||
         modalUbicacion.trim() !== (ticket.ubicacion || "") ||
+        modalTecnico.trim() !== (ticket.tecnico || "") ||
         modalDictamenTipo !== (ticket.dictamenTipo || "AUTO")
       ) {
         const updated = updateTicketDetails(ticket.idOrden, {
           mensaje: modalMensaje,
           accesorios: accFinal,
           ubicacion: modalUbicacion.trim(),
+          tecnico: modalTecnico.trim(),
           dictamenTipo: modalDictamenTipo,
           mensajeEditadoManualmente: true,
         });
@@ -1715,6 +1846,7 @@ ${dictamen.accText}`;
           mensaje: modalMensaje,
           accesorios: accFinal,
           ubicacion: modalUbicacion.trim(),
+          tecnico: modalTecnico.trim(),
           dictamenTipo: modalDictamenTipo,
           mensajeEditadoManualmente: true,
         };
@@ -1748,6 +1880,7 @@ ${dictamen.accText}`;
             ? {
                 ...currentTicket,
                 ubicacion: modalUbicacion.trim() || currentTicket.ubicacion,
+                tecnico: modalTecnico.trim() || currentTicket.tecnico,
               }
             : currentTicket;
         const msg = generarMensajeWhatsAppRecepcion(ticketConUbicacion);
@@ -3656,6 +3789,15 @@ ${dictamen.accText}`;
                               </span>
                             );
                           })()}
+                          {ticket.tecnico && (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-[#2A9D8F] text-white border border-black font-mono font-bold shadow-[1px_1px_0px_#000]"
+                              title={`Técnico asignado: ${ticket.tecnico}`}
+                            >
+                              <UserCheck className="w-3 h-3 text-white shrink-0" />
+                              <span>{ticket.tecnico}</span>
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -4526,6 +4668,119 @@ ${dictamen.accText}`;
                     );
                   })()}
                 </div>
+
+                {/* FILA 3: Sección de Técnicos Asignables y Gestionables por el Usuario */}
+                <div className="space-y-1.5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-heading font-extrabold text-black uppercase tracking-wider flex items-center gap-1.5">
+                        <Wrench className="w-3.5 h-3.5 text-black" />
+                        <span>Técnico Asignado</span>
+                      </span>
+                      {modalTecnico.trim() ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FFD23F] text-black border-2 border-black font-mono text-[10px] font-extrabold shadow-[1px_1px_0px_#000]">
+                          <UserCheck className="w-3 h-3 text-black shrink-0" />
+                          <span>{modalTecnico.trim()}</span>
+                        </span>
+                      ) : (
+                        <span className="text-[11px] font-mono text-neutral-600 italic">
+                          Sin técnico asignado
+                        </span>
+                      )}
+                    </div>
+
+                    {modalTecnico.trim() && (
+                      <button
+                        type="button"
+                        onClick={() => handleCambiarTecnico(selectedTicket.idOrden, "")}
+                        className="text-[11px] font-mono font-bold text-[#E76F51] hover:underline cursor-pointer"
+                      >
+                        Quitar técnico
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="p-2.5 sm:p-3 bg-[#FAF6EE] border-2 border-black rounded-xl shadow-[2px_2px_0px_#000] flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0 flex-1">
+                      {savedTecnicos.length > 0 ? (
+                        savedTecnicos.map((tec) => {
+                          const isSelected =
+                            modalTecnico.trim().toLowerCase() === tec.toLowerCase();
+                          return (
+                            <span
+                              key={tec}
+                              className={`inline-flex items-center rounded-full border-2 border-black text-[11px] font-mono font-bold transition-all shadow-[1px_1px_0px_#000] ${
+                                isSelected
+                                  ? "bg-[#2A9D8F] text-white"
+                                  : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F]"
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleCambiarTecnico(
+                                    selectedTicket.idOrden,
+                                    isSelected ? "" : tec
+                                  )
+                                }
+                                className="inline-flex items-center gap-1 px-2.5 py-0.5 cursor-pointer"
+                                title={
+                                  isSelected
+                                    ? `Quitar técnico "${tec}" de esta orden`
+                                    : `Asignar técnico "${tec}" a esta orden`
+                                }
+                              >
+                                {isSelected && <Check className="w-3 h-3 stroke-[3] shrink-0" />}
+                                <span>{tec}</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleEliminarTecnicoDeLista(tec)}
+                                className={`pr-2 pl-0.5 font-bold leading-none cursor-pointer ${
+                                  isSelected
+                                    ? "text-white/80 hover:text-white"
+                                    : "text-neutral-500 hover:text-[#E76F51]"
+                                }`}
+                                title={`Eliminar "${tec}" de la lista de técnicos`}
+                              >
+                                ×
+                              </button>
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-[11px] font-mono text-neutral-600 italic">
+                          Sin técnicos cargados aún. Agregá uno con el campo de la derecha.
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col xs:flex-row items-stretch xs:items-center gap-1.5 shrink-0">
+                      <input
+                        type="text"
+                        value={newTecnicoInput}
+                        onChange={(e) => setNewTecnicoInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAgregarTecnicoALista();
+                          }
+                        }}
+                        placeholder="Nombre del técnico..."
+                        className="px-3 py-1 text-xs bg-white border-2 border-black focus:outline-none rounded-lg placeholder:text-neutral-500 font-sans text-black shadow-[1px_1px_0px_#000] w-full xs:w-48"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAgregarTecnicoALista}
+                        className="inline-flex items-center justify-center gap-1 px-3 py-1 bg-black hover:bg-neutral-800 text-[#FFD23F] text-xs font-heading font-extrabold rounded-lg border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer whitespace-nowrap"
+                        title="Agregar técnico a la lista y asignarlo a esta orden"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Agregar técnico</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Pie de Acciones Horizontal Compacto */}
@@ -4585,6 +4840,7 @@ ${dictamen.accText}`;
                         mensaje: modalMensaje,
                         accesorios: accFinal,
                         ubicacion: modalUbicacion.trim() || undefined,
+                        tecnico: modalTecnico.trim() || undefined,
                       });
                     }}
                     className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-[#FFD23F] hover:bg-yellow-400 text-black rounded-lg text-xs sm:text-sm font-heading font-extrabold border-2 border-black shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all cursor-pointer"
@@ -4616,6 +4872,7 @@ ${dictamen.accText}`;
               cliente: showPrintModal.cliente,
               equipo: `${showPrintModal.marca || ""} ${showPrintModal.modelo || ""}`.trim(),
               serial: showPrintModal.serial,
+              tecnico: showPrintModal.tecnico || undefined,
               estado: showPrintModal.estado,
               accesorios: showPrintModal.accesorios,
               ubicacion: showPrintModal.ubicacion || extractUbicacionFromText(showPrintModal.mensaje) || undefined,
