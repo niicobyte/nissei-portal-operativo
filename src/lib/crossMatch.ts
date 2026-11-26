@@ -1195,14 +1195,28 @@ export function crossMatchAsuWithCde(
       const resolvedAccesorios =
         asu.accesorios || match.accesorios || undefined;
 
+      const resolvedUbicacion =
+        asu.ubicacion || match.ubicacion || undefined;
+
+      const resolvedTecnico =
+        asu.tecnico || match.tecnico || undefined;
+
+      const resolvedDictamen =
+        asu.dictamenTipo || match.dictamenTipo || undefined;
+
+      const resolvedManualEdit =
+        Boolean(asu.mensajeEditadoManualmente || match.mensajeEditadoManualmente) || undefined;
+
       const dias = tieneDespachoValido ? calcularDiasResolucion(asu.fechaIngreso, match.fechaEntregada) : null;
 
       return {
         ...asu,
         mensaje: resolvedMensaje,
         accesorios: resolvedAccesorios,
-        mensajeEditadoManualmente: asu.mensajeEditadoManualmente,
-        dictamenTipo: asu.dictamenTipo,
+        ubicacion: resolvedUbicacion,
+        tecnico: resolvedTecnico,
+        mensajeEditadoManualmente: resolvedManualEdit,
+        dictamenTipo: resolvedDictamen,
         mensajeCde: match.mensaje || undefined,
         idOrdenCde: match.idOrden,
         estadoCde: match.estado,

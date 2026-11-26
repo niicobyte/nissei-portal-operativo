@@ -27359,6 +27359,21 @@ export function saveStoredCustomDetails(idOrden: string, details: RecepcionCusto
   }
 }
 
+export function clearStoredCustomDetails(idOrden: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const cleanId = String(idOrden).trim();
+    if (!cleanId) return;
+    const map = getStoredCustomDetails();
+    if (map.delete(cleanId)) {
+      const obj = Object.fromEntries(map.entries());
+      localStorage.setItem(RECEPCION_CUSTOM_DETAILS_STORAGE_KEY, JSON.stringify(obj));
+    }
+  } catch {
+    // ignore storage errors
+  }
+}
+
 export function getStoredTickets(): RecepcionTicket[] {
   if (typeof window === 'undefined') return INITIAL_RECEPCION_DATA;
   try {
@@ -27504,36 +27519,38 @@ export function applyCloudRecepcionTickets(rawData: RecepcionTicket[]): Recepcio
 
     const finalAccesorios =
       custom?.accesorios !== undefined
-        ? custom.accesorios
-        : (t.accesorios || local?.accesorios || undefined);
+        ? (custom.accesorios || undefined)
+        : (t.accesorios || undefined);
 
     const finalUbicacion =
       custom?.ubicacion !== undefined
-        ? custom.ubicacion
-        : (t.ubicacion || local?.ubicacion || undefined);
+        ? (custom.ubicacion || undefined)
+        : (t.ubicacion || undefined);
 
     const finalTecnico =
       custom?.tecnico !== undefined
-        ? custom.tecnico
-        : (t.tecnico || local?.tecnico || undefined);
+        ? (custom.tecnico || undefined)
+        : (t.tecnico || undefined);
 
     const isManualEdit = Boolean(
       custom?.mensajeEditadoManualmente ||
-      local?.mensajeEditadoManualmente ||
       t.mensajeEditadoManualmente
     );
 
     const finalMensaje =
-      isManualEdit && custom?.mensaje !== undefined
+      custom?.mensajeEditadoManualmente && custom?.mensaje !== undefined
         ? custom.mensaje
-        : (isManualEdit && local?.mensaje ? local.mensaje : (t.mensaje || custom?.mensaje || local?.mensaje || ''));
+        : (t.mensaje || custom?.mensaje || '');
 
-    const finalDictamen = custom?.dictamenTipo || t.dictamenTipo || local?.dictamenTipo;
-    const finalEstado = custom?.estado || local?.estado || t.estado;
+    const finalDictamen =
+      custom?.dictamenTipo !== undefined
+        ? custom.dictamenTipo
+        : t.dictamenTipo;
+    const finalEstado = custom?.estado || t.estado || local?.estado || '';
     const finalFechaEntregada =
       custom?.fechaEntregada !== undefined
         ? custom.fechaEntregada
-        : (local?.fechaEntregada !== undefined ? local.fechaEntregada : t.fechaEntregada);
+        : (t.fechaEntregada !== undefined ? t.fechaEntregada : local?.fechaEntregada);
 
     return {
       ...t,
@@ -27698,6 +27715,7 @@ export async function updateTicketDetailsAsync(
   });
 
   const current = getStoredTickets();
+  const targetSnapshot = current.find((t) => String(t.idOrden).trim() === String(idOrden).trim());
   const updated = current.map((t) => {
     if (t.idOrden !== idOrden) return t;
     return {
@@ -27727,13 +27745,32 @@ export async function updateTicketDetailsAsync(
           mensaje: updates.mensaje,
           accesorios: updates.accesorios,
           ubicacion: updates.ubicacion,
-      tecnico: updates.tecnico,
+          tecnico: updates.tecnico,
           dictamenTipo: updates.dictamenTipo,
           mensajeEditadoManualmente: updates.mensajeEditadoManualmente,
+          ticketSnapshot: targetSnapshot
+            ? {
+                idOrden: targetSnapshot.idOrden,
+                codigoProducto: targetSnapshot.codigoProducto,
+                cliente: targetSnapshot.cliente,
+                fechaIngreso: targetSnapshot.fechaIngreso,
+                fechaEntregada: targetSnapshot.fechaEntregada,
+                fechaVenta: targetSnapshot.fechaVenta,
+                estado: targetSnapshot.estado,
+                tipoComponente: targetSnapshot.tipoComponente,
+                marca: targetSnapshot.marca,
+                modelo: targetSnapshot.modelo,
+                serial: targetSnapshot.serial,
+              }
+            : undefined,
         }),
       });
       const json = await res.json().catch(() => null);
       if (res.ok && json?.ok && Array.isArray(json.data) && json.data.length > 0) {
+        clearStoredCustomDetails(idOrden);
+        if (updates.idOrdenCde) {
+          clearStoredCustomDetails(updates.idOrdenCde);
+        }
         return applyCloudRecepcionTickets(json.data as RecepcionTicket[]);
       }
     } catch (err) {
@@ -27742,6 +27779,49 @@ export async function updateTicketDetailsAsync(
   }
 
   return updated;
+}
+
+export interface RecepcionPortalConfigPayload {
+  recepcion_tecnicos_lista?: string[];
+  recepcion_accesorios_por_tipo?: Record<string, string[]>;
+}
+
+export async function fetchRecepcionPortalConfig(): Promise<RecepcionPortalConfigPayload | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    const res = await fetch('/api/db?module=portal_config', { cache: 'no-store' });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.ok || !json?.data || typeof json.data !== 'object') {
+      return null;
+    }
+    return json.data as RecepcionPortalConfigPayload;
+  } catch (err) {
+    console.warn('[MySQL Config Sync Warning]:', err);
+    return null;
+  }
+}
+
+export async function saveRecepcionPortalConfig(
+  configKey: 'recepcion_tecnicos_lista' | 'recepcion_accesorios_por_tipo',
+  configValue: unknown
+): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  try {
+    const res = await fetch('/api/db', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'SAVE_PORTAL_CONFIG',
+        configKey,
+        configValue,
+      }),
+    });
+    const json = await res.json().catch(() => null);
+    return Boolean(res.ok && json?.ok);
+  } catch (err) {
+    console.warn('[MySQL Save Config Warning]:', err);
+    return false;
+  }
 }
 
 export function updateTicketDetails(

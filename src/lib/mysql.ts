@@ -311,6 +311,22 @@ export async function ensureDatabaseInitialized(): Promise<void> {
 
       try {
         await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN dictamen_tipo VARCHAR(80) DEFAULT NULL"
+        );
+      } catch {
+        // La columna dictamen_tipo ya existe en la tabla
+      }
+
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN mensaje_editado_manualmente TINYINT(1) DEFAULT 0"
+        );
+      } catch {
+        // La columna mensaje_editado_manualmente ya existe en la tabla
+      }
+
+      try {
+        await pool.query(
           "ALTER TABLE recepcion_tickets ADD COLUMN recibido_en_deposito TINYINT(1) DEFAULT 0"
         );
       } catch {
@@ -426,6 +442,31 @@ export async function ensureDatabaseInitialized(): Promise<void> {
       } catch {
         // La columna tecnico ya existe
       }
+
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_cde_tickets ADD COLUMN dictamen_tipo VARCHAR(80) DEFAULT NULL"
+        );
+      } catch {
+        // La columna dictamen_tipo ya existe
+      }
+
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_cde_tickets ADD COLUMN mensaje_editado_manualmente TINYINT(1) DEFAULT 0"
+        );
+      } catch {
+        // La columna mensaje_editado_manualmente ya existe
+      }
+
+      // Configuración compartida del portal en MySQL (listas de técnicos y accesos directos de accesorios)
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS portal_config (
+          config_key VARCHAR(100) PRIMARY KEY,
+          config_value LONGTEXT NOT NULL,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+      `);
 
       // Tabla de cruces manuales de órdenes SATI (ASU ↔ CDE) confirmados por el usuario
       await pool.query(`
@@ -915,6 +956,8 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
             c.accesorios AS matched_cde_accesorios,
             c.ubicacion AS matched_cde_ubicacion,
             c.tecnico AS matched_cde_tecnico,
+            c.dictamen_tipo AS matched_cde_dictamen_tipo,
+            c.mensaje_editado_manualmente AS matched_cde_manual_edit,
             c.fecha_entregada AS matched_cde_despacho,
             c.fecha_ingreso AS matched_cde_ingreso,
             c.estado AS matched_cde_estado
@@ -925,10 +968,19 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
   );
   return rows.map((r) => {
     const cdeMsg = (r.matched_cde_mensaje || "").trim();
-    const finalMsg = cdeMsg || r.mensaje || "";
-    const directAcc = r.accesorios || r.matched_cde_accesorios || undefined;
+    const asuMsg = (r.mensaje || "").trim();
+    const isManualEdit = Boolean(r.mensaje_editado_manualmente || r.matched_cde_manual_edit);
+    const finalMsg =
+      Boolean(r.mensaje_editado_manualmente) && asuMsg
+        ? r.mensaje || ""
+        : cdeMsg || r.mensaje || "";
+    const directAcc =
+      r.accesorios !== null && r.accesorios !== undefined
+        ? r.accesorios || undefined
+        : r.matched_cde_accesorios || undefined;
     const directUbicacion = r.ubicacion || r.matched_cde_ubicacion || undefined;
     const directTecnico = r.tecnico || r.matched_cde_tecnico || undefined;
+    const directDictamen = r.dictamen_tipo || r.matched_cde_dictamen_tipo || undefined;
     const parsedAcc = !directAcc && String(finalMsg).includes("Accesorios:")
       ? String(finalMsg).split(/Accesorios:/i)[1]?.trim()
       : undefined;
@@ -952,6 +1004,8 @@ export async function dbGetRecepcionTickets(): Promise<RecepcionTicket[]> {
       accesorios: directAcc || parsedAcc,
       ubicacion: directUbicacion,
       tecnico: directTecnico,
+      dictamenTipo: directDictamen,
+      mensajeEditadoManualmente: isManualEdit || undefined,
       esNuevoIngreso:
         r.origen === "NUEVO_INGRESO" ||
         String(finalMsg).includes("Accesorios:"),
@@ -1071,6 +1125,10 @@ export async function dbGetCdeTickets(): Promise<RecepcionCdeTicket[]> {
     marca: r.marca,
     serial: r.serial,
     accesorios: r.accesorios || undefined,
+    ubicacion: r.ubicacion || undefined,
+    tecnico: r.tecnico || undefined,
+    dictamenTipo: r.dictamen_tipo || undefined,
+    mensajeEditadoManualmente: Boolean(r.mensaje_editado_manualmente) || undefined,
     diasResolucion: r.dias_resolucion,
     esDanesa: Boolean(r.es_danesa),
     recibidoEnDeposito: Boolean(r.recibido_en_deposito),
@@ -1164,6 +1222,40 @@ export async function dbSaveSatiCheckin(
        recibido = VALUES(recibido),
        fecha_recibido = VALUES(fecha_recibido)`,
     [idOrden.trim(), idOrdenAsu ? idOrdenAsu.trim() : null, idOrdenCde ? idOrdenCde.trim() : null, recibido ? 1 : 0, fecha]
+  );
+}
+
+export async function dbGetPortalConfig(keys?: string[]): Promise<Record<string, unknown>> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  const [rows] = await pool.query<mysql.RowDataPacket[]>(
+    "SELECT config_key, config_value FROM portal_config"
+  );
+  const keySet = Array.isArray(keys) && keys.length > 0 ? new Set(keys) : null;
+  const result: Record<string, unknown> = {};
+  for (const row of rows) {
+    const k = String(row.config_key || "").trim();
+    if (!k || (keySet && !keySet.has(k))) continue;
+    try {
+      result[k] = JSON.parse(String(row.config_value || "null"));
+    } catch {
+      result[k] = row.config_value;
+    }
+  }
+  return result;
+}
+
+export async function dbSavePortalConfig(key: string, value: unknown): Promise<void> {
+  await ensureDatabaseInitialized();
+  const pool = getPool();
+  const serialized = JSON.stringify(value ?? null);
+  await pool.query(
+    `INSERT INTO portal_config (config_key, config_value)
+     VALUES (?, ?)
+     ON DUPLICATE KEY UPDATE
+       config_value = VALUES(config_value),
+       updated_at = NOW()`,
+    [key.trim(), serialized]
   );
 }
 

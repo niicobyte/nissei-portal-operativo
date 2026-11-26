@@ -30,6 +30,10 @@ export interface RecepcionCdeTicket {
   marca: string;
   serial: string;
   accesorios?: string;
+  ubicacion?: string;
+  tecnico?: string;
+  dictamenTipo?: string;
+  mensajeEditadoManualmente?: boolean;
   // Campos calculados y operativos de depósito
   diasResolucion?: number | null;
   esDanesa?: boolean;

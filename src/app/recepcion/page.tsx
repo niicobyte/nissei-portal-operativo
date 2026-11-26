@@ -74,6 +74,8 @@ import {
   INITIAL_RECEPCION_DATA,
   getStoredTickets,
   fetchTicketsFromMySQL,
+  fetchRecepcionPortalConfig,
+  saveRecepcionPortalConfig,
   updateTicketStatus,
   updateTicketDetails,
   updateTicketDetailsAsync,
@@ -936,56 +938,62 @@ export default function RecepcionDashboardPage() {
     }
   }, []);
 
+  const prevOpenTicketIdRef = useRef<string | null>(null);
+  const latestAccessoriesSeqRef = useRef(0);
+
   const saveQuickAccessoryShortcut = (val: string) => {
     const trimmed = val.trim();
     if (!trimmed || isCableShortcut(trimmed)) return;
-    setQuickAccessoriesByType((prev) => {
-      const currentList = Object.prototype.hasOwnProperty.call(prev, activeComponentKey)
-        ? prev[activeComponentKey]
-        : getDefaultAccessoriesForComponent(selectedTicket?.tipoComponente);
-      if (currentList.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
-        return prev;
-      }
-      const nextMap = {
-        ...prev,
-        [activeComponentKey]: [...currentList, trimmed],
-      };
-      try {
-        localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
-      } catch {}
-      return nextMap;
-    });
+    const currentList = Object.prototype.hasOwnProperty.call(
+      quickAccessoriesByType,
+      activeComponentKey
+    )
+      ? quickAccessoriesByType[activeComponentKey]
+      : getDefaultAccessoriesForComponent(selectedTicket?.tipoComponente);
+    if (currentList.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
+      return;
+    }
+    const nextMap = {
+      ...quickAccessoriesByType,
+      [activeComponentKey]: [...currentList, trimmed],
+    };
+    setQuickAccessoriesByType(nextMap);
+    try {
+      localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
+    } catch {}
+    void saveRecepcionPortalConfig("recepcion_accesorios_por_tipo", nextMap);
   };
 
   const removeQuickAccessoryShortcut = (val: string) => {
-    setQuickAccessoriesByType((prev) => {
-      const currentList = Object.prototype.hasOwnProperty.call(prev, activeComponentKey)
-        ? prev[activeComponentKey]
-        : getDefaultAccessoriesForComponent(selectedTicket?.tipoComponente);
-      const nextList = currentList.filter((p) => p !== val);
-      const nextMap = {
-        ...prev,
-        [activeComponentKey]: nextList,
-      };
-      try {
-        localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
-      } catch {}
-      return nextMap;
-    });
+    const currentList = Object.prototype.hasOwnProperty.call(
+      quickAccessoriesByType,
+      activeComponentKey
+    )
+      ? quickAccessoriesByType[activeComponentKey]
+      : getDefaultAccessoriesForComponent(selectedTicket?.tipoComponente);
+    const nextList = currentList.filter((p) => p !== val);
+    const nextMap = {
+      ...quickAccessoriesByType,
+      [activeComponentKey]: nextList,
+    };
+    setQuickAccessoriesByType(nextMap);
+    try {
+      localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
+    } catch {}
+    void saveRecepcionPortalConfig("recepcion_accesorios_por_tipo", nextMap);
   };
 
   const resetQuickAccessoriesForCurrentType = () => {
-    setQuickAccessoriesByType((prev) => {
-      if (!Object.prototype.hasOwnProperty.call(prev, activeComponentKey)) {
-        return prev;
-      }
-      const nextMap = { ...prev };
-      delete nextMap[activeComponentKey];
-      try {
-        localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
-      } catch {}
-      return nextMap;
-    });
+    if (!Object.prototype.hasOwnProperty.call(quickAccessoriesByType, activeComponentKey)) {
+      return;
+    }
+    const nextMap = { ...quickAccessoriesByType };
+    delete nextMap[activeComponentKey];
+    setQuickAccessoriesByType(nextMap);
+    try {
+      localStorage.setItem(QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY, JSON.stringify(nextMap));
+    } catch {}
+    void saveRecepcionPortalConfig("recepcion_accesorios_por_tipo", nextMap);
   };
 
   const parseAccesoriosString = (raw: string | undefined): string[] => {
@@ -997,6 +1005,9 @@ export default function RecepcionDashboardPage() {
 
   useEffect(() => {
     if (selectedTicket) {
+      const isNewTicketOpened = prevOpenTicketIdRef.current !== selectedTicket.idOrden;
+      prevOpenTicketIdRef.current = selectedTicket.idOrden;
+
       const pending = pendingModalDraftRef.current;
       if (pending && pending.idOrden === selectedTicket.idOrden) {
         setModalMensaje(pending.modalMensaje);
@@ -1014,7 +1025,9 @@ export default function RecepcionDashboardPage() {
             ? pending.modalTecnico
             : (selectedTicket.tecnico || "")
         );
-        setNewTecnicoInput("");
+        if (isNewTicketOpened) {
+          setNewTecnicoInput("");
+        }
         pendingModalDraftRef.current = null;
         return;
       }
@@ -1034,14 +1047,72 @@ export default function RecepcionDashboardPage() {
       setModalDictamenTipo(selectedTicket.dictamenTipo || "AUTO");
       setModalAccesorios(accRaw);
       setModalAccessoriesList(parseAccesoriosString(accRaw));
-      setModalNewAccessory("");
-      setIsAddingQuickShortcut(false);
-      setNewQuickShortcutText("");
       setModalUbicacion(selectedTicket.ubicacion || extractUbicacionFromText(rawMsg));
       setModalTecnico(selectedTicket.tecnico || "");
-      setNewTecnicoInput("");
+      if (isNewTicketOpened) {
+        setModalNewAccessory("");
+        setIsAddingQuickShortcut(false);
+        setNewQuickShortcutText("");
+        setNewTecnicoInput("");
+      }
+    } else {
+      prevOpenTicketIdRef.current = null;
     }
   }, [selectedTicket]);
+
+  const persistModalAccessories = async (nextList: string[]) => {
+    if (!selectedTicket) return;
+    const targetId = selectedTicket.idOrden;
+    const targetEstado = selectedTicket.estado;
+    const targetFechaEntregada = selectedTicket.fechaEntregada;
+    const targetCdeId = selectedTicket.idOrdenCde;
+    const accNext = nextList.join(", ");
+    const seq = ++latestAccessoriesSeqRef.current;
+
+    setTickets((prev) =>
+      prev.map((t) =>
+        t.idOrden === targetId ? { ...t, accesorios: accNext } : t
+      )
+    );
+
+    try {
+      const updated = await updateTicketDetailsAsync(targetId, {
+        estado: targetEstado,
+        fechaEntregada: targetFechaEntregada,
+        mensaje: modalMensaje,
+        accesorios: accNext,
+        ubicacion: modalUbicacion.trim(),
+        tecnico: modalTecnico.trim(),
+        dictamenTipo: modalDictamenTipo,
+        mensajeEditadoManualmente: true,
+        idOrdenCde: targetCdeId,
+      });
+      if (seq !== latestAccessoriesSeqRef.current) return;
+      const cdeTickets = getStoredCdeTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+      setTickets(enriched);
+      setSelectedTicket((prev) => {
+        if (!prev || prev.idOrden !== targetId) return prev;
+        const enrichedSelected = enriched.find((t) => t.idOrden === targetId);
+        return (
+          enrichedSelected || {
+            ...prev,
+            accesorios: accNext,
+            mensaje: modalMensaje,
+            ubicacion: modalUbicacion.trim(),
+            tecnico: modalTecnico.trim(),
+            dictamenTipo: modalDictamenTipo,
+            mensajeEditadoManualmente: true,
+          }
+        );
+      });
+    } catch (err) {
+      console.error("Error sincronizando accesorios:", err);
+    }
+  };
 
   const handleAddModalAccessory = (val: string) => {
     const trimmed = val.trim();
@@ -1050,6 +1121,7 @@ export default function RecepcionDashboardPage() {
       const updated = [...modalAccessoriesList, trimmed];
       setModalAccessoriesList(updated);
       setModalAccesorios(updated.join(", "));
+      void persistModalAccessories(updated);
     }
     // Guardar automáticamente como acceso directo para próximas órdenes
     saveQuickAccessoryShortcut(trimmed);
@@ -1060,11 +1132,13 @@ export default function RecepcionDashboardPage() {
     const updated = modalAccessoriesList.filter((_, i) => i !== index);
     setModalAccessoriesList(updated);
     setModalAccesorios(updated.join(", "));
+    void persistModalAccessories(updated);
   };
 
   const handleClearModalAccessories = () => {
     setModalAccessoriesList([]);
     setModalAccesorios("");
+    void persistModalAccessories([]);
   };
   const [showPrintModal, setShowPrintModal] = useState<RecepcionTicket | null>(null);
   const [autoPrintTicket, setAutoPrintTicket] = useState(false);
@@ -1081,7 +1155,7 @@ export default function RecepcionDashboardPage() {
     const baseAsu = getStoredTickets();
     const baseCde = getStoredCdeTickets();
     try {
-      const [dbAsu, dbCde] = await Promise.all([
+      const [dbAsu, dbCde, cloudConfig] = await Promise.all([
         fetchTicketsFromMySQL({ throwOnError: showFeedback }).catch((err) => {
           if (showFeedback) throw err;
           return baseAsu;
@@ -1090,7 +1164,43 @@ export default function RecepcionDashboardPage() {
           if (showFeedback) throw err;
           return baseCde;
         }),
+        fetchRecepcionPortalConfig().catch(() => null),
       ]);
+      if (cloudConfig) {
+        if (Array.isArray(cloudConfig.recepcion_tecnicos_lista)) {
+          const cloudTecnicos = cloudConfig.recepcion_tecnicos_lista
+            .map((s) => String(s).trim())
+            .filter(Boolean);
+          setSavedTecnicos(cloudTecnicos);
+          try {
+            localStorage.setItem(
+              TECNICOS_RECEPCION_STORAGE_KEY,
+              JSON.stringify(cloudTecnicos)
+            );
+          } catch {}
+        }
+        if (
+          cloudConfig.recepcion_accesorios_por_tipo &&
+          typeof cloudConfig.recepcion_accesorios_por_tipo === "object" &&
+          !Array.isArray(cloudConfig.recepcion_accesorios_por_tipo)
+        ) {
+          const sanitizedMap: Record<string, string[]> = {};
+          for (const [k, list] of Object.entries(
+            cloudConfig.recepcion_accesorios_por_tipo
+          )) {
+            if (Array.isArray(list)) {
+              sanitizedMap[k] = list.map((s) => String(s).trim()).filter(Boolean);
+            }
+          }
+          setQuickAccessoriesByType(sanitizedMap);
+          try {
+            localStorage.setItem(
+              QUICK_ACCESSORIES_BY_TYPE_STORAGE_KEY,
+              JSON.stringify(sanitizedMap)
+            );
+          } catch {}
+        }
+      }
       const finalAsu = dbAsu && dbAsu.length > 0 ? dbAsu : baseAsu;
       const finalCde = dbCde && dbCde.length > 0 ? dbCde : baseCde;
       const checkins = getStoredCdeCheckins();
@@ -1565,16 +1675,14 @@ export default function RecepcionDashboardPage() {
   const handleAgregarTecnicoALista = () => {
     const clean = newTecnicoInput.trim();
     if (!clean) return;
-    setSavedTecnicos((prev) => {
-      if (prev.some((t) => t.toLowerCase() === clean.toLowerCase())) {
-        return prev;
-      }
-      const next = [...prev, clean];
+    if (!savedTecnicos.some((t) => t.toLowerCase() === clean.toLowerCase())) {
+      const next = [...savedTecnicos, clean];
+      setSavedTecnicos(next);
       try {
         localStorage.setItem(TECNICOS_RECEPCION_STORAGE_KEY, JSON.stringify(next));
       } catch {}
-      return next;
-    });
+      void saveRecepcionPortalConfig("recepcion_tecnicos_lista", next);
+    }
     setNewTecnicoInput("");
     if (selectedTicket) {
       void handleCambiarTecnico(selectedTicket.idOrden, clean);
@@ -1582,50 +1690,58 @@ export default function RecepcionDashboardPage() {
   };
 
   const handleEliminarTecnicoDeLista = (nombre: string) => {
-    setSavedTecnicos((prev) => {
-      const next = prev.filter((t) => t !== nombre);
-      try {
-        localStorage.setItem(TECNICOS_RECEPCION_STORAGE_KEY, JSON.stringify(next));
-      } catch {}
-      return next;
-    });
+    const next = savedTecnicos.filter((t) => t !== nombre);
+    setSavedTecnicos(next);
+    try {
+      localStorage.setItem(TECNICOS_RECEPCION_STORAGE_KEY, JSON.stringify(next));
+    } catch {}
+    void saveRecepcionPortalConfig("recepcion_tecnicos_lista", next);
   };
 
-  // Actualizar dictamen técnico / resolución QC de una orden en vivo
-  const handleCambiarDictamen = (idOrden: string, dictamenId: string) => {
+  // Actualizar dictamen técnico / resolución QC de una orden en vivo y sincronizar con MySQL
+  const handleCambiarDictamen = async (idOrden: string, dictamenId: string) => {
     setModalDictamenTipo(dictamenId);
     const accFinal =
       modalAccessoriesList.length > 0
         ? modalAccessoriesList.join(", ")
         : modalAccesorios.trim();
 
-    const updated = updateTicketDetails(idOrden, {
-      estado: selectedTicket?.estado,
-      dictamenTipo: dictamenId,
-      mensaje: modalMensaje,
-      accesorios: accFinal,
-      ubicacion: modalUbicacion.trim(),
-      tecnico: modalTecnico.trim(),
-      mensajeEditadoManualmente: true,
-      idOrdenCde: selectedTicket?.idOrdenCde,
-    });
-    const cdeTickets = getStoredCdeTickets();
-    const checkins = getStoredCdeCheckins();
-    const overrides = getStoredSatiOverrides();
-    const cross = getStoredSatiCrossMatches();
-    const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
-    setTickets(enriched);
-    if (selectedTicket && selectedTicket.idOrden === idOrden) {
-      const enrichedSelected = enriched.find((t) => t.idOrden === idOrden);
-      setSelectedTicket(enrichedSelected || {
-        ...selectedTicket,
+    try {
+      const updated = await updateTicketDetailsAsync(idOrden, {
+        estado: selectedTicket?.estado,
+        fechaEntregada: selectedTicket?.fechaEntregada,
         dictamenTipo: dictamenId,
         mensaje: modalMensaje,
         accesorios: accFinal,
         ubicacion: modalUbicacion.trim(),
         tecnico: modalTecnico.trim(),
         mensajeEditadoManualmente: true,
+        idOrdenCde: selectedTicket?.idOrdenCde,
       });
+      const cdeTickets = getStoredCdeTickets();
+      const checkins = getStoredCdeCheckins();
+      const overrides = getStoredSatiOverrides();
+      const cross = getStoredSatiCrossMatches();
+      const enriched = crossMatchAsuWithCde(updated, cdeTickets, checkins, overrides, cross);
+      setTickets(enriched);
+      setSelectedTicket((prev) => {
+        if (!prev || prev.idOrden !== idOrden) return prev;
+        const enrichedSelected = enriched.find((t) => t.idOrden === idOrden);
+        return (
+          enrichedSelected || {
+            ...prev,
+            dictamenTipo: dictamenId,
+            mensaje: modalMensaje,
+            accesorios: accFinal,
+            ubicacion: modalUbicacion.trim(),
+            tecnico: modalTecnico.trim(),
+            mensajeEditadoManualmente: true,
+          }
+        );
+      });
+    } catch (err) {
+      console.error("Error al actualizar dictamen técnico:", err);
+      showToast(`✓ Dictamen de orden #${idOrden} guardado localmente.`);
     }
   };
 
@@ -1816,13 +1932,16 @@ ${dictamen.accText}`;
         modalTecnico.trim() !== (ticket.tecnico || "") ||
         modalDictamenTipo !== (ticket.dictamenTipo || "AUTO")
       ) {
-        const updated = updateTicketDetails(ticket.idOrden, {
+        const updated = await updateTicketDetailsAsync(ticket.idOrden, {
+          estado: ticket.estado,
+          fechaEntregada: ticket.fechaEntregada,
           mensaje: modalMensaje,
           accesorios: accFinal,
           ubicacion: modalUbicacion.trim(),
           tecnico: modalTecnico.trim(),
           dictamenTipo: modalDictamenTipo,
           mensajeEditadoManualmente: true,
+          idOrdenCde: ticket.idOrdenCde,
         });
         const cdeTickets = getStoredCdeTickets();
         const checkins = getStoredCdeCheckins();

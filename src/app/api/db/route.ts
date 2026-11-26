@@ -13,6 +13,8 @@ import {
   dbGetSatiCheckins,
   dbSaveSatiCheckin,
   dbGetCatalogoSku,
+  dbGetPortalConfig,
+  dbSavePortalConfig,
   upsertSkusToMySQL,
   seedReparacionesTable,
   seedRecepcionTable,
@@ -56,7 +58,14 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, serverInfo, data });
     }
     if (mod === "recepcion") {
-      const data = await dbGetRecepcionTickets();
+      const [data, config] = await Promise.all([
+        dbGetRecepcionTickets(),
+        dbGetPortalConfig(["recepcion_tecnicos_lista", "recepcion_accesorios_por_tipo"]).catch(() => ({})),
+      ]);
+      return NextResponse.json({ ok: true, serverInfo, data, config });
+    }
+    if (mod === "portal_config") {
+      const data = await dbGetPortalConfig();
       return NextResponse.json({ ok: true, serverInfo, data });
     }
     if (mod === "montajes") {
@@ -351,6 +360,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, data });
     }
 
+    // 4a. Guardar configuración compartida del portal (lista de técnicos / accesos directos)
+    if (action === "SAVE_PORTAL_CONFIG") {
+      const { configKey, configValue } = body;
+      const ALLOWED_CONFIG_KEYS = new Set([
+        "recepcion_tecnicos_lista",
+        "recepcion_accesorios_por_tipo",
+      ]);
+      const cleanKey = String(configKey || "").trim();
+      if (!ALLOWED_CONFIG_KEYS.has(cleanKey)) {
+        return NextResponse.json(
+          { ok: false, error: "Clave de configuración no permitida." },
+          { status: 400 }
+        );
+      }
+      await dbSavePortalConfig(cleanKey, configValue);
+      const data = await dbGetPortalConfig([cleanKey]);
+      return NextResponse.json({ ok: true, data });
+    }
+
     // 4b. Actualizar detalles técnicos, accesorios, ubicación, técnico, estado y notas de ticket en Recepción
     if (action === "UPDATE_RECEPCION_DETALLES") {
       const {
@@ -364,6 +392,7 @@ export async function POST(req: NextRequest) {
         tecnico,
         dictamenTipo,
         mensajeEditadoManualmente,
+        ticketSnapshot,
       } = body;
 
       if (!idOrden) {
@@ -374,14 +403,28 @@ export async function POST(req: NextRequest) {
       }
 
       const cleanId = String(idOrden).trim();
-      const cleanAcc = accesorios !== undefined && accesorios !== null ? String(accesorios).trim() : null;
+      const hasAccesoriosParam = accesorios !== undefined;
+      const cleanAcc =
+        accesorios !== undefined && accesorios !== null && String(accesorios).trim() !== ""
+          ? String(accesorios).trim()
+          : null;
       const hasUbicacionParam = ubicacion !== undefined;
-      const cleanUbicacion = ubicacion !== undefined && ubicacion !== null ? String(ubicacion).trim() : null;
+      const cleanUbicacion =
+        ubicacion !== undefined && ubicacion !== null && String(ubicacion).trim() !== ""
+          ? String(ubicacion).trim()
+          : null;
       const hasTecnicoParam = tecnico !== undefined;
       const cleanTecnico =
         tecnico !== undefined && tecnico !== null && String(tecnico).trim() !== ""
           ? String(tecnico).trim()
           : null;
+      const hasDictamenParam = dictamenTipo !== undefined;
+      const cleanDictamen =
+        dictamenTipo !== undefined && dictamenTipo !== null && String(dictamenTipo).trim() !== ""
+          ? String(dictamenTipo).trim()
+          : null;
+      const hasManualEditParam = mensajeEditadoManualmente !== undefined;
+      const cleanManualEdit = mensajeEditadoManualmente ? 1 : 0;
       const cleanMsg = mensaje !== undefined && mensaje !== null ? String(mensaje).trim() : null;
       const cleanEstado = estado !== undefined && estado !== null && String(estado).trim() !== "" ? String(estado).trim() : null;
       const isDelivered = cleanEstado ? cleanEstado.toLowerCase() === "entregada" : false;
@@ -394,7 +437,7 @@ export async function POST(req: NextRequest) {
         ? String(fechaEntregada).trim()
         : (isDelivered ? fechaHoy : null);
 
-      // Asegurar columnas accesorios, ubicacion y tecnico en recepcion_tickets y recepcion_cde_tickets
+      // Asegurar columnas accesorios, ubicacion, tecnico, dictamen_tipo y mensaje_editado_manualmente en ambas tablas
       try {
         await pool.query(
           "ALTER TABLE recepcion_tickets ADD COLUMN accesorios TEXT DEFAULT NULL"
@@ -412,6 +455,16 @@ export async function POST(req: NextRequest) {
       } catch {}
       try {
         await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN dictamen_tipo VARCHAR(80) DEFAULT NULL"
+        );
+      } catch {}
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_tickets ADD COLUMN mensaje_editado_manualmente TINYINT(1) DEFAULT 0"
+        );
+      } catch {}
+      try {
+        await pool.query(
           "ALTER TABLE recepcion_cde_tickets ADD COLUMN accesorios TEXT DEFAULT NULL"
         );
       } catch {}
@@ -425,6 +478,16 @@ export async function POST(req: NextRequest) {
           "ALTER TABLE recepcion_cde_tickets ADD COLUMN tecnico VARCHAR(120) DEFAULT NULL"
         );
       } catch {}
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_cde_tickets ADD COLUMN dictamen_tipo VARCHAR(80) DEFAULT NULL"
+        );
+      } catch {}
+      try {
+        await pool.query(
+          "ALTER TABLE recepcion_cde_tickets ADD COLUMN mensaje_editado_manualmente TINYINT(1) DEFAULT 0"
+        );
+      } catch {}
 
       // 1. Actualizar en recepcion_tickets
       const [updateResult] = await pool.query<any>(
@@ -436,9 +499,11 @@ export async function POST(req: NextRequest) {
                ELSE fecha_entregada
              END,
              mensaje = COALESCE(?, mensaje),
-             accesorios = COALESCE(?, accesorios),
+             accesorios = CASE WHEN ? THEN ? ELSE accesorios END,
              ubicacion = CASE WHEN ? THEN ? ELSE ubicacion END,
              tecnico = CASE WHEN ? THEN ? ELSE tecnico END,
+             dictamen_tipo = CASE WHEN ? THEN ? ELSE dictamen_tipo END,
+             mensaje_editado_manualmente = CASE WHEN ? THEN ? ELSE mensaje_editado_manualmente END,
              origen = CASE
                WHEN origen = 'NUEVO_INGRESO' THEN 'NUEVO_INGRESO'
                WHEN ? THEN 'RECIEN_ENTREGADO'
@@ -454,43 +519,68 @@ export async function POST(req: NextRequest) {
           isDelivered,
           fechaHoy,
           cleanMsg,
+          hasAccesoriosParam ? 1 : 0,
           cleanAcc,
           hasUbicacionParam ? 1 : 0,
           cleanUbicacion,
           hasTecnicoParam ? 1 : 0,
           cleanTecnico,
+          hasDictamenParam ? 1 : 0,
+          cleanDictamen,
+          hasManualEditParam ? 1 : 0,
+          cleanManualEdit,
           isDelivered,
           cleanEstado,
           cleanId,
         ]
       );
 
-      // Si no existía en recepcion_tickets (orden base del sistema que aún no fue alterada en MySQL), insertarla
+      // Si no existía en recepcion_tickets (orden base del sistema o snapshot CSV que aún no fue alterado en MySQL), insertarlo
       if (updateResult && updateResult.affectedRows === 0) {
-        const baseTicket = INITIAL_RECEPCION_DATA.find(
-          (t) => String(t.idOrden).trim() === cleanId
-        );
+        const baseTicket =
+          INITIAL_RECEPCION_DATA.find((t) => String(t.idOrden).trim() === cleanId) ||
+          (ticketSnapshot && typeof ticketSnapshot === "object"
+            ? (ticketSnapshot as {
+                idOrden?: string;
+                codigoProducto?: string;
+                cliente?: string;
+                mensaje?: string;
+                fechaIngreso?: string;
+                fechaEntregada?: string;
+                fechaVenta?: string;
+                estado?: string;
+                tipoComponente?: string;
+                marca?: string;
+                modelo?: string;
+                serial?: string;
+              })
+            : null);
+
         if (baseTicket) {
           const finalEst = cleanEstado || baseTicket.estado || "En Asignacion";
           await pool.query(
             `INSERT INTO recepcion_tickets
-             (id_orden, codigo_producto, cliente, mensaje, accesorios, ubicacion, tecnico, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CSV')
+             (id_orden, codigo_producto, cliente, mensaje, accesorios, ubicacion, tecnico, dictamen_tipo, mensaje_editado_manualmente, fecha_ingreso, fecha_entregada, fecha_venta, estado, tipo_componente, marca, modelo, serial, origen)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'CSV')
              ON DUPLICATE KEY UPDATE
                estado = VALUES(estado),
                fecha_entregada = VALUES(fecha_entregada),
                mensaje = VALUES(mensaje),
                accesorios = VALUES(accesorios),
                ubicacion = VALUES(ubicacion),
-               tecnico = VALUES(tecnico)`,
+               tecnico = VALUES(tecnico),
+               dictamen_tipo = VALUES(dictamen_tipo),
+               mensaje_editado_manualmente = VALUES(mensaje_editado_manualmente)`,
             [
-              baseTicket.idOrden,
+              String(baseTicket.idOrden || cleanId).trim(),
               baseTicket.codigoProducto || "",
-              baseTicket.cliente,
+              baseTicket.cliente || "Cliente",
               cleanMsg !== null ? cleanMsg : (baseTicket.mensaje || ""),
               cleanAcc,
               cleanUbicacion,
               cleanTecnico,
+              cleanDictamen,
+              cleanManualEdit,
               baseTicket.fechaIngreso || "",
               cleanFechaEntregada || baseTicket.fechaEntregada || null,
               baseTicket.fechaVenta || null,
@@ -519,9 +609,11 @@ export async function POST(req: NextRequest) {
                  ELSE fecha_entregada
                END,
                mensaje = COALESCE(?, mensaje),
-               accesorios = COALESCE(?, accesorios),
+               accesorios = CASE WHEN ? THEN ? ELSE accesorios END,
                ubicacion = CASE WHEN ? THEN ? ELSE ubicacion END,
                tecnico = CASE WHEN ? THEN ? ELSE tecnico END,
+               dictamen_tipo = CASE WHEN ? THEN ? ELSE dictamen_tipo END,
+               mensaje_editado_manualmente = CASE WHEN ? THEN ? ELSE mensaje_editado_manualmente END,
                updated_at = NOW()
            WHERE id_orden = ?`,
           [
@@ -531,11 +623,16 @@ export async function POST(req: NextRequest) {
             isDelivered,
             fechaHoy,
             cleanMsg,
+            hasAccesoriosParam ? 1 : 0,
             cleanAcc,
             hasUbicacionParam ? 1 : 0,
             cleanUbicacion,
             hasTecnicoParam ? 1 : 0,
             cleanTecnico,
+            hasDictamenParam ? 1 : 0,
+            cleanDictamen,
+            hasManualEditParam ? 1 : 0,
+            cleanManualEdit,
             cdeTargetId,
           ]
         ).catch(() => {});
@@ -612,7 +709,10 @@ export async function POST(req: NextRequest) {
              ON DUPLICATE KEY UPDATE
                codigo_producto = VALUES(codigo_producto),
                cliente = VALUES(cliente),
-               mensaje = VALUES(mensaje),
+               mensaje = CASE
+                 WHEN mensaje_editado_manualmente = 1 THEN mensaje
+                 ELSE VALUES(mensaje)
+               END,
                fecha_ingreso = VALUES(fecha_ingreso),
                fecha_entregada = COALESCE(VALUES(fecha_entregada), fecha_entregada),
                fecha_venta = VALUES(fecha_venta),
