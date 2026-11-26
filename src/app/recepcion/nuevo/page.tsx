@@ -337,9 +337,9 @@ export default function NuevoIngresoRetornoPage() {
     if (dictamen === "REPARADO") {
       statusText = "✅ *REPARADA CON ÉXITO*";
     } else if (dictamen === "SIN_DEFECTO") {
-      statusText = "ℹ️ *SIN DEFECTO COMPROBADO*\nEl equipo superó el ciclo de pruebas continuas de 48hs sin reproducir la falla indicada. Conserva su garantía de fábrica.";
+      statusText = "ℹ️ *SIN DEFECTO COMPROBADO*";
     } else {
-      statusText = "⚠️ *NO REPARADO / DERIVADO A RMA*\nSe requiere gestión de garantía con fabricante o emisión de nota de crédito comercial.";
+      statusText = "⚠️ *NO REPARADO / DERIVADO A RMA*";
     }
 
     const accText = accessories.length > 0 ? accessories.join(", ") : "Sin accesorios adicionales";

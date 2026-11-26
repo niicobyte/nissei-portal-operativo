@@ -147,7 +147,7 @@ const DEFAULT_ESTADO_VISUAL: EstadoVisualConfig = {
   activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
   readyForPickup: false,
   whatsappHeader: "Actualización del estado en taller",
-  whatsappBody: "El equipo se encuentra bajo gestión del sector de Post-Venta.",
+  whatsappBody: "",
 };
 
 function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
@@ -165,7 +165,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       isDelivered: true,
       readyForPickup: true,
       whatsappHeader: "✅ *ENTREGADA*",
-      whatsappBody: "Confirmamos que el equipo figura como entregado conforme en el sector de Post-Venta.",
+      whatsappBody: "",
     };
   }
   if (norm.includes("cambio") && norm.includes("nuevo")) {
@@ -175,7 +175,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: true,
       whatsappHeader: "✨ *APROBADO CAMBIO POR NUEVO (GARANTÍA)*",
-      whatsappBody: "El proveedor autorizó la garantía oficial y se realizó el cambio por un equipo nuevo. La nueva unidad se encuentra lista para su entrega o retiro.",
+      whatsappBody: "",
     };
   }
   if (norm.includes("nota de credito") || norm.includes("nota de credito")) {
@@ -185,7 +185,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: true,
       whatsappHeader: "💳 *NOTA DE CRÉDITO COMERCIAL (PROVEEDOR)*",
-      whatsappBody: "El proveedor aprobó la emisión de Nota de Crédito comercial por el valor del producto para su aplicación en el salón comercial.",
+      whatsappBody: "",
     };
   }
   if (norm === "reparada") {
@@ -205,7 +205,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: true,
       whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
-      whatsappBody: "El equipo se encuentra en etapa final de pruebas y control de calidad en Post-Venta.",
+      whatsappBody: "",
     };
   }
   if (norm.includes("pendiente") && norm.includes("repuesto")) {
@@ -215,7 +215,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: "⏳ *PENDIENTE POR REPUESTO*",
-      whatsappBody: "El equipo se encuentra en espera de llegada/disponibilidad de repuesto para completar su reparación.",
+      whatsappBody: "",
     };
   }
   if (norm.includes("reparacion")) {
@@ -225,7 +225,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: "🔧 *EN REPARACIÓN*",
-      whatsappBody: "El equipo se encuentra en proceso de diagnóstico e intervención técnica en taller.",
+      whatsappBody: "",
     };
   }
   if (norm === "asignada") {
@@ -235,7 +235,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: "👨‍🔧 *ASIGNADA A TÉCNICO*",
-      whatsappBody: "La orden ya fue asignada a un técnico especialista para su revisión.",
+      whatsappBody: "",
     };
   }
   if (norm.includes("en asignacion")) {
@@ -245,7 +245,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: "📋 *EN ASIGNACIÓN*",
-      whatsappBody: "La orden fue registrada y aguarda asignación al equipo técnico.",
+      whatsappBody: "",
     };
   }
   if (norm.includes("sin reparo") || norm.includes("liquidacion") || norm.includes("rechaz")) {
@@ -256,7 +256,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       isDanger: norm.includes("sin reparo"),
       readyForPickup: norm.includes("sin reparo"),
       whatsappHeader: `⚠️ *${(estado || "SIN REPARO").toUpperCase()}*`,
-      whatsappBody: "Se requiere gestión comercial, autorización o retiro según el dictamen técnico informado.",
+      whatsappBody: "",
     };
   }
   if (norm.includes("presupuest")) {
@@ -266,7 +266,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: `💰 *${(estado || "PRESUPUESTADA").toUpperCase()}*`,
-      whatsappBody: "Se emitió el presupuesto correspondiente y aguarda confirmación del cliente.",
+      whatsappBody: "",
     };
   }
   if (norm.includes("stock")) {
@@ -276,7 +276,7 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: false,
       whatsappHeader: `📦 *${(estado || "ENVIADO STOCK").toUpperCase()}*`,
-      whatsappBody: "El equipo fue derivado internamente a Stock.",
+      whatsappBody: "",
     };
   }
 
@@ -351,8 +351,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "CAMBIO_NUEVO",
     label: "Cambio por nuevo",
     whatsappHeader: "✨ *CAMBIO POR EQUIPO NUEVO*",
-    whatsappBody:
-      "El proveedor autorizó la garantía oficial y se realizó el cambio por un equipo nuevo. La nueva unidad se encuentra lista para su entrega o retiro.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-[#2A9D8F]/25 text-black border-2 border-black hover:bg-[#2A9D8F]/45 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -361,8 +360,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "PRESUPUESTO_PENDIENTE",
     label: "Presupuesto · Aguarda aprobación",
     whatsappHeader: "💰 *PRESUPUESTO EMITIDO · AGUARDA APROBACIÓN*",
-    whatsappBody:
-      "La reparación se encuentra fuera de garantía y se emitió presupuesto técnico aguardando aprobación del cliente.",
+    whatsappBody: "",
     readyForPickup: false,
     chipInactive: "bg-teal-100 text-black border-2 border-black hover:bg-teal-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -381,8 +379,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "SIN_DEFECTO",
     label: "Sin defectos / Normal",
     whatsappHeader: "ℹ️ *SIN DEFECTO COMPROBADO*",
-    whatsappBody:
-      "El equipo funciona dentro de los parámetros normales de fábrica y no reprodujo la falla reportada. Conserva su garantía vigente.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-cyan-100 text-black border-2 border-black hover:bg-cyan-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -392,8 +389,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "QC_PRUEBAS",
     label: "Control de Calidad (QC)",
     whatsappHeader: "🔬 *EN CONTROL DE CALIDAD (QC)*",
-    whatsappBody:
-      "El equipo se encuentra en fase final de pruebas de verificación y control de calidad.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-purple-100 text-black border-2 border-black hover:bg-purple-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -403,8 +399,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "RMA_NC",
     label: "Derivado a RMA / Nota de crédito",
     whatsappHeader: "⚠️ *DERIVADO A RMA / NOTA DE CRÉDITO*",
-    whatsappBody:
-      "El equipo fue derivado a gestión de garantía con fabricante/importador para cambio o emisión de nota de crédito comercial.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-amber-100 text-black border-2 border-black hover:bg-amber-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -413,8 +408,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "DESGASTE_NATURAL",
     label: "Desgaste natural / Consumible",
     whatsappHeader: "🔋 *DESGASTE NATURAL / CONSUMIBLE*",
-    whatsappBody:
-      "La incidencia corresponde a desgaste normal de uso o componente consumible fuera de cobertura de garantía.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-[#FFD23F]/40 text-black border-2 border-black hover:bg-[#FFD23F]/65 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -423,8 +417,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "SIN_REPARO_REPUESTO",
     label: "Sin reparo · Falta de repuesto",
     whatsappHeader: "⏳ *SIN REPARO POR FALTA DE REPUESTO*",
-    whatsappBody:
-      "No fue posible completar la reparación por falta de disponibilidad del repuesto requerido. Corresponde gestión de cambio / nota de crédito o retiro.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-orange-100 text-black border-2 border-black hover:bg-orange-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -434,8 +427,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "MALA_MANIPULACION",
     label: "Mala manipulación (Cliente)",
     whatsappHeader: "🚫 *MALA MANIPULACIÓN / FUERA DE GARANTÍA*",
-    whatsappBody:
-      "Se constató daño físico, golpe, humedad o manipulación indebida por parte del cliente, por lo que no aplica cobertura de garantía de fábrica.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-[#E76F51]/25 text-black border-2 border-black hover:bg-[#E76F51]/45 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -444,8 +436,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "SIN_REPARO_IRREPARABLE",
     label: "Sin reparo · No reparable",
     whatsappHeader: "❌ *SIN REPARO · NO REPARABLE*",
-    whatsappBody:
-      "El diagnóstico técnico determinó que el daño no es reparable. Se deriva a gestión de garantía, cambio comercial o retiro.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-[#E76F51]/25 text-black border-2 border-black hover:bg-[#E76F51]/45 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -455,8 +446,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "GARANTIA_VENCIDA",
     label: "Garantía vencida",
     whatsappHeader: "📅 *GARANTÍA VENCIDA*",
-    whatsappBody:
-      "El equipo superó el período de garantía oficial vigente; disponible servicio particular bajo presupuesto o retiro.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-neutral-100 text-black border-2 border-black hover:bg-neutral-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -465,8 +455,7 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
     id: "PRESUPUESTO_RECHAZADO",
     label: "Presupuesto rechazado",
     whatsappHeader: "↩️ *PRESUPUESTO RECHAZADO*",
-    whatsappBody:
-      "El presupuesto informado no fue aprobado; el equipo se encuentra disponible para retiro sin reparar.",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-[#FFFDF9] text-[#E76F51] border-2 border-black hover:bg-[#E76F51] hover:text-white font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
