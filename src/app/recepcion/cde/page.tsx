@@ -1801,157 +1801,9 @@ export default function RecepcionCdeDashboardPage() {
           </div>
 
           {/* Filtros Secundarios con CleanSelect */}
-          <div className="flex flex-wrap items-center gap-2.5 pt-3 border-t-2 border-black">
-            {/* Filtro de Tránsito / Recibidos (visible para todos los ámbitos: Danesa, Clientes ASU, Clientes CDE y Todos) */}
-            <div className="flex flex-wrap items-center gap-1.5 bg-[#FAF6EE] p-1.5 rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] max-w-full">
-              <button
-                type="button"
-                onClick={() => {
-                  setTransitFilter("TODOS");
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
-                  transitFilter === "TODOS"
-                    ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
-                    : "bg-[#FFFDF9] text-black hover:bg-[#FAF6EE] shadow-[1px_1px_0px_#000]"
-                }`}
-              >
-                Todos los envíos
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setTransitFilter("EN_TRANSITO");
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
-                  transitFilter === "EN_TRANSITO"
-                    ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
-                    : "bg-[#FFFDF9] text-black hover:bg-[#FAF6EE] shadow-[1px_1px_0px_#000]"
-                }`}
-              >
-                <SpeedTruck
-                  className={`w-3.5 h-3.5 text-black`}
-                  smokeColor={transitFilter === "EN_TRANSITO" ? "bg-black" : "bg-amber-500"}
-                />
-                <span>En camino ({scopeEnTransito})</span>
-              </button>
-              {viewScope !== "CLIENTES_CDE" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTransitFilter("RECIBIDOS");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
-                    transitFilter === "RECIBIDOS"
-                      ? "bg-[#2A9D8F] text-white shadow-[2px_2px_0px_#000]"
-                      : "bg-[#FFFDF9] text-black hover:bg-[#2A9D8F] hover:text-white shadow-[1px_1px_0px_#000]"
-                  }`}
-                >
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Recibidos ({scopeRecibidosCount})</span>
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setTransitFilter("SIN_CRUCE");
-                  setCurrentPage(1);
-                }}
-                className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
-                  transitFilter === "SIN_CRUCE"
-                    ? "bg-[#E76F51] text-white shadow-[2px_2px_0px_#000]"
-                    : "bg-[#FFFDF9] text-black hover:bg-[#E76F51] hover:text-white shadow-[1px_1px_0px_#000]"
-                }`}
-              >
-                <Link2 className="w-3.5 h-3.5" />
-                <span>Sin Cruce ({scopeSinCruceCount})</span>
-              </button>
-            </div>
-
-            {/* Filtro de Fecha de Recepción (Hoy / Ayer / etc.) cuando se selecciona Recibidos (solo ASU y Danesa) */}
-            {viewScope !== "CLIENTES_CDE" && transitFilter === "RECIBIDOS" && (
-              <div className="flex items-center gap-1.5 bg-[#FAF6EE] p-1.5 rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] flex-wrap">
-                <span className="text-[11px] font-bold text-black px-1.5 flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5 text-black" />
-                  <span>Fecha:</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRecibidosDateFilter("TODAS");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
-                    recibidosDateFilter === "TODAS"
-                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                  }`}
-                >
-                  Todas ({countRecibidosTodas})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRecibidosDateFilter("HOY");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
-                    recibidosDateFilter === "HOY"
-                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                  }`}
-                >
-                  Hoy ({countRecibidosHoy})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRecibidosDateFilter("AYER");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
-                    recibidosDateFilter === "AYER"
-                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                  }`}
-                >
-                  Ayer ({countRecibidosAyer})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRecibidosDateFilter("ULTIMOS_7");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
-                    recibidosDateFilter === "ULTIMOS_7"
-                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                  }`}
-                >
-                  Últimos 7 días ({countRecibidos7d})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRecibidosDateFilter("ESTE_MES");
-                    setCurrentPage(1);
-                  }}
-                  className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
-                    recibidosDateFilter === "ESTE_MES"
-                      ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                      : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
-                  }`}
-                >
-                  Este mes ({countRecibidosMes})
-                </button>
-              </div>
-            )}
-
-            {/* Grupo alineado de selectores desplegables y restablecer */}
-            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto sm:flex-1">
+          <div className="flex flex-col gap-2.5 pt-3 border-t-2 border-black">
+            {/* Fila 1: Selectores desplegables uno al lado del otro + Restablecer */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full">
               {/* Filtro de Estado con CleanSelect */}
               <CleanSelect
                 options={statusOptions}
@@ -1994,6 +1846,156 @@ export default function RecepcionCdeDashboardPage() {
                 >
                   Restablecer filtros
                 </button>
+              )}
+            </div>
+
+            {/* Fila 2: Filtro de Tránsito / Recibidos */}
+            <div className="flex flex-wrap items-center gap-2.5 w-full">
+              <div className="flex flex-wrap items-center gap-1.5 bg-[#FAF6EE] p-1.5 rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] max-w-full">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransitFilter("TODOS");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
+                    transitFilter === "TODOS"
+                      ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FAF6EE] shadow-[1px_1px_0px_#000]"
+                  }`}
+                >
+                  Todos los envíos
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransitFilter("EN_TRANSITO");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
+                    transitFilter === "EN_TRANSITO"
+                      ? "bg-[#FFD23F] text-black shadow-[2px_2px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#FAF6EE] shadow-[1px_1px_0px_#000]"
+                  }`}
+                >
+                  <SpeedTruck
+                    className={`w-3.5 h-3.5 text-black`}
+                    smokeColor={transitFilter === "EN_TRANSITO" ? "bg-black" : "bg-amber-500"}
+                  />
+                  <span>En camino ({scopeEnTransito})</span>
+                </button>
+                {viewScope !== "CLIENTES_CDE" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTransitFilter("RECIBIDOS");
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
+                      transitFilter === "RECIBIDOS"
+                        ? "bg-[#2A9D8F] text-white shadow-[2px_2px_0px_#000]"
+                        : "bg-[#FFFDF9] text-black hover:bg-[#2A9D8F] hover:text-white shadow-[1px_1px_0px_#000]"
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Recibidos ({scopeRecibidosCount})</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTransitFilter("SIN_CRUCE");
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3 py-1 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer border-2 border-black ${
+                    transitFilter === "SIN_CRUCE"
+                      ? "bg-[#E76F51] text-white shadow-[2px_2px_0px_#000]"
+                      : "bg-[#FFFDF9] text-black hover:bg-[#E76F51] hover:text-white shadow-[1px_1px_0px_#000]"
+                  }`}
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  <span>Sin Cruce ({scopeSinCruceCount})</span>
+                </button>
+              </div>
+
+              {/* Filtro de Fecha de Recepción (Hoy / Ayer / etc.) cuando se selecciona Recibidos (solo ASU y Danesa) */}
+              {viewScope !== "CLIENTES_CDE" && transitFilter === "RECIBIDOS" && (
+                <div className="flex items-center gap-1.5 bg-[#FAF6EE] p-1.5 rounded-lg border-2 border-black text-xs font-mono shadow-[2px_2px_0px_#000] flex-wrap">
+                  <span className="text-[11px] font-bold text-black px-1.5 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-black" />
+                    <span>Fecha:</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecibidosDateFilter("TODAS");
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
+                      recibidosDateFilter === "TODAS"
+                        ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                        : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                    }`}
+                  >
+                    Todas ({countRecibidosTodas})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecibidosDateFilter("HOY");
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
+                      recibidosDateFilter === "HOY"
+                        ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                        : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                    }`}
+                  >
+                    Hoy ({countRecibidosHoy})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecibidosDateFilter("AYER");
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
+                      recibidosDateFilter === "AYER"
+                        ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                        : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                    }`}
+                  >
+                    Ayer ({countRecibidosAyer})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecibidosDateFilter("ULTIMOS_7");
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
+                      recibidosDateFilter === "ULTIMOS_7"
+                        ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                        : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                    }`}
+                  >
+                    Últimos 7 días ({countRecibidos7d})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRecibidosDateFilter("ESTE_MES");
+                      setCurrentPage(1);
+                    }}
+                    className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer border-2 border-black ${
+                      recibidosDateFilter === "ESTE_MES"
+                        ? "bg-black text-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                        : "bg-[#FFFDF9] text-black hover:bg-[#FFD23F] shadow-[1px_1px_0px_#000]"
+                    }`}
+                  >
+                    Este mes ({countRecibidosMes})
+                  </button>
+                </div>
               )}
             </div>
           </div>
