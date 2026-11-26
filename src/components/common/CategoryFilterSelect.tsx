@@ -391,13 +391,19 @@ export default function CategoryFilterSelect({
     ).length;
   }, [activeFamilyGroup, normalizedSelectedSet]);
 
+  const isResponsiveMobileFull =
+    className.includes("w-full") && className.includes("sm:w-auto");
+
   return (
     <div
       ref={containerRef}
       className={`relative flex flex-wrap items-center gap-2 ${className}`}
     >
       {/* 1. DESPLEGABLE PRINCIPAL CON BUSCADOR Y ACORDEÓN DE RUBROS */}
-      <div ref={mainAnchorRef} className="relative">
+      <div
+        ref={mainAnchorRef}
+        className={`relative ${isResponsiveMobileFull ? "w-full sm:w-auto" : ""}`}
+      >
         <button
           type="button"
           onClick={() => {
@@ -406,7 +412,11 @@ export default function CategoryFilterSelect({
             setSubOpen(false);
           }}
           aria-expanded={mainOpen}
-          className={`inline-flex items-center justify-between gap-2 rounded-lg border-2 border-black px-2.5 py-1.5 text-xs font-bold transition-all duration-150 outline-none shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer select-none max-w-[230px] sm:max-w-[250px] ${
+          className={`inline-flex items-center justify-between gap-2 rounded-lg border-2 border-black px-2.5 py-1.5 text-xs font-bold transition-all duration-150 outline-none shadow-[2px_2px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] cursor-pointer select-none ${
+            isResponsiveMobileFull
+              ? "w-full sm:w-auto sm:max-w-[250px]"
+              : "max-w-[230px] sm:max-w-[250px]"
+          } ${
             isFiltering
               ? "bg-black text-[#FFD23F]"
               : mainOpen

@@ -50,7 +50,23 @@ export function CleanSelect({
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
-  const isFull = fullWidth || className.includes("w-full");
+  const classTokens = className.trim().split(/\s+/).filter(Boolean);
+  const hasWFull = classTokens.includes("w-full");
+  const isResponsiveSmAuto = !fullWidth && hasWFull && classTokens.includes("sm:w-auto");
+  const isResponsiveMdAuto = !fullWidth && hasWFull && classTokens.includes("md:w-auto");
+  const isResponsiveLgAuto = !fullWidth && hasWFull && classTokens.includes("lg:w-auto");
+  const isFull =
+    fullWidth ||
+    (hasWFull && !isResponsiveSmAuto && !isResponsiveMdAuto && !isResponsiveLgAuto);
+  const wrapperWidthClass = isFull
+    ? "w-full block"
+    : isResponsiveSmAuto
+    ? "w-full block sm:w-auto sm:inline-block"
+    : isResponsiveMdAuto
+    ? "w-full block md:w-auto md:inline-block"
+    : isResponsiveLgAuto
+    ? "w-full block lg:w-auto lg:inline-block"
+    : "inline-block";
   const preferredPopoverWidth = dropdownWidth?.includes("80")
     ? 320
     : dropdownWidth?.includes("72")
@@ -127,7 +143,7 @@ export function CleanSelect({
   const roundedClass = size === "sm" ? "rounded-lg" : "rounded-xl";
 
   return (
-    <div ref={containerRef} className={`relative text-left ${isFull ? "w-full block" : "inline-block"}`}>
+    <div ref={containerRef} className={`relative text-left ${wrapperWidthClass}`}>
       <button
         type="button"
         onClick={() => {

@@ -3419,62 +3419,66 @@ ${dictamen.accText}`;
               </div>
             )}
 
-            {/* Filtro de Estado con CleanSelect */}
-            <CleanSelect
-              options={statusOptions}
-              value={statusFilter}
-              onChange={(val) => {
-                setStatusFilter(val);
-                setCurrentPage(1);
-              }}
-              className="w-full sm:w-auto sm:max-w-[190px]"
-            />
-
-            {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
-            <CategoryFilterSelect
-              categories={categoryCounts}
-              totalCount={scopeTickets.length}
-              selectedFamily={categoryFamily}
-              selectedCategories={selectedCategories}
-              onChange={(famId, cats) => {
-                setCategoryFamily(famId);
-                setSelectedCategories(cats);
-                setCurrentPage(1);
-              }}
-            />
-
-            {/* Ordenamiento */}
-            <CleanSelect
-              options={sortOptions}
-              value={sortBy}
-              onChange={(val) => {
-                setSortBy(val as any);
-                setCurrentPage(1);
-              }}
-              icon={<ArrowUpDown className="w-3.5 h-3.5" />}
-              className="w-full sm:w-auto sm:max-w-[205px]"
-            />
-
-            {/* Resetear Filtros */}
-            {(statusFilter !== "TODOS" || categoryFamily !== "TODOS" || selectedCategories.length > 0 || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter("TODOS");
-                  setCategoryFamily("TODOS");
-                  setSelectedCategories([]);
-                  setTransitFilter("TODOS");
-                  setRecibidosDateFilter("TODAS");
-                  setSearchTerm("");
+            {/* Grupo alineado de selectores desplegables y restablecer */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto sm:flex-1">
+              {/* Filtro de Estado con CleanSelect */}
+              <CleanSelect
+                options={statusOptions}
+                value={statusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val);
                   setCurrentPage(1);
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer ml-auto"
-                title="Restablecer todos los filtros a sus valores predeterminados"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Restablecer filtros</span>
-              </button>
-            )}
+                className="w-full sm:w-auto sm:max-w-[190px]"
+              />
+
+              {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
+              <CategoryFilterSelect
+                categories={categoryCounts}
+                totalCount={scopeTickets.length}
+                selectedFamily={categoryFamily}
+                selectedCategories={selectedCategories}
+                onChange={(famId, cats) => {
+                  setCategoryFamily(famId);
+                  setSelectedCategories(cats);
+                  setCurrentPage(1);
+                }}
+                className="w-full sm:w-auto"
+              />
+
+              {/* Ordenamiento */}
+              <CleanSelect
+                options={sortOptions}
+                value={sortBy}
+                onChange={(val) => {
+                  setSortBy(val as any);
+                  setCurrentPage(1);
+                }}
+                icon={<ArrowUpDown className="w-3.5 h-3.5" />}
+                className="w-full sm:w-auto sm:max-w-[205px]"
+              />
+
+              {/* Resetear Filtros */}
+              {(statusFilter !== "TODOS" || categoryFamily !== "TODOS" || selectedCategories.length > 0 || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("TODOS");
+                    setCategoryFamily("TODOS");
+                    setSelectedCategories([]);
+                    setTransitFilter("TODOS");
+                    setRecibidosDateFilter("TODAS");
+                    setSearchTerm("");
+                    setCurrentPage(1);
+                  }}
+                  className="inline-flex items-center justify-center sm:justify-start gap-1.5 px-3 py-1.5 text-xs text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors cursor-pointer sm:ml-auto"
+                  title="Restablecer todos los filtros a sus valores predeterminados"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Restablecer filtros</span>
+                </button>
+              )}
+            </div>
           </div>
         </section>
 

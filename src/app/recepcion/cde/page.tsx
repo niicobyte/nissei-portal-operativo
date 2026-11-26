@@ -1950,48 +1950,52 @@ export default function RecepcionCdeDashboardPage() {
               </div>
             )}
 
-            {/* Filtro de Estado con CleanSelect */}
-            <CleanSelect
-              options={statusOptions}
-              value={statusFilter}
-              onChange={(val) => {
-                setStatusFilter(val);
-                setCurrentPage(1);
-              }}
-              className="w-full sm:w-auto sm:max-w-[190px]"
-            />
-
-            {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
-            <CategoryFilterSelect
-              categories={categoryCounts}
-              totalCount={scopeTickets.length}
-              selectedFamily={categoryFamily}
-              selectedCategories={selectedCategories}
-              onChange={(famId, cats) => {
-                setCategoryFamily(famId);
-                setSelectedCategories(cats);
-                setCurrentPage(1);
-              }}
-            />
-
-            {/* Resetear Filtros */}
-            {(statusFilter !== "TODOS" || categoryFamily !== "TODOS" || selectedCategories.length > 0 || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
-              <button
-                type="button"
-                onClick={() => {
-                  setStatusFilter("TODOS");
-                  setCategoryFamily("TODOS");
-                  setSelectedCategories([]);
-                  setTransitFilter("TODOS");
-                  setRecibidosDateFilter("TODAS");
-                  setSearchTerm("");
+            {/* Grupo alineado de selectores desplegables y restablecer */}
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 w-full sm:w-auto sm:flex-1">
+              {/* Filtro de Estado con CleanSelect */}
+              <CleanSelect
+                options={statusOptions}
+                value={statusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val);
                   setCurrentPage(1);
                 }}
-                className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 underline ml-auto cursor-pointer"
-              >
-                Restablecer filtros
-              </button>
-            )}
+                className="w-full sm:w-auto sm:max-w-[190px]"
+              />
+
+              {/* Filtro Jerárquico de Categoría / Rubro con buscador y subdesplegables */}
+              <CategoryFilterSelect
+                categories={categoryCounts}
+                totalCount={scopeTickets.length}
+                selectedFamily={categoryFamily}
+                selectedCategories={selectedCategories}
+                onChange={(famId, cats) => {
+                  setCategoryFamily(famId);
+                  setSelectedCategories(cats);
+                  setCurrentPage(1);
+                }}
+                className="w-full sm:w-auto"
+              />
+
+              {/* Resetear Filtros */}
+              {(statusFilter !== "TODOS" || categoryFamily !== "TODOS" || selectedCategories.length > 0 || transitFilter !== "TODOS" || recibidosDateFilter !== "TODAS" || searchTerm) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter("TODOS");
+                    setCategoryFamily("TODOS");
+                    setSelectedCategories([]);
+                    setTransitFilter("TODOS");
+                    setRecibidosDateFilter("TODAS");
+                    setSearchTerm("");
+                    setCurrentPage(1);
+                  }}
+                  className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 underline sm:ml-auto text-center sm:text-left cursor-pointer"
+                >
+                  Restablecer filtros
+                </button>
+              )}
+            </div>
           </div>
         </section>
 
