@@ -335,7 +335,7 @@ export default function NuevoIngresoRetornoPage() {
   const getWhatsAppMessage = () => {
     let statusText = "";
     if (dictamen === "REPARADO") {
-      statusText = "✅ *REPARADO CON ÉXITO*\nEl equipo superó satisfactoriamente las pruebas de control de calidad y está listo para ser retirado.";
+      statusText = "✅ *REPARADA CON ÉXITO*";
     } else if (dictamen === "SIN_DEFECTO") {
       statusText = "ℹ️ *SIN DEFECTO COMPROBADO*\nEl equipo superó el ciclo de pruebas continuas de 48hs sin reproducir la falla indicada. Conserva su garantía de fábrica.";
     } else {

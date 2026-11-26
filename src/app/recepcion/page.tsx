@@ -194,8 +194,8 @@ function getEstadoVisualConfig(estado?: string): EstadoVisualConfig {
       inactiveBtnClass: "bg-sky-100 text-black border-2 border-black hover:bg-sky-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       activeBtnClass: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
       readyForPickup: true,
-      whatsappHeader: "✅ *REPARADO CON ÉXITO*",
-      whatsappBody: "El equipo fue reparado satisfactoriamente, superó las pruebas técnicas y está listo para ser retirado.",
+      whatsappHeader: "✅ *REPARADA CON ÉXITO*",
+      whatsappBody: "",
     };
   }
   if (norm === "qc" || norm.includes("control de calidad")) {
@@ -370,10 +370,9 @@ const DICTAMEN_QC_OPTIONS: DictamenQcOption[] = [
   // 2. Familia Azul / Celeste (Orden alfabético)
   {
     id: "REPARADO",
-    label: "Reparado con éxito",
-    whatsappHeader: "✅ *REPARADO CON ÉXITO*",
-    whatsappBody:
-      "El equipo fue reparado satisfactoriamente, superó las pruebas técnicas y está listo para ser retirado.",
+    label: "Reparada con éxito",
+    whatsappHeader: "✅ *REPARADA CON ÉXITO*",
+    whatsappBody: "",
     readyForPickup: true,
     chipInactive: "bg-sky-100 text-black border-2 border-black hover:bg-sky-200 font-heading font-extrabold shadow-[2px_2px_0px_#000]",
     chipActive: "bg-black text-[#FFD23F] border-2 border-black font-heading font-extrabold shadow-[2px_2px_0px_#000]",
@@ -1722,7 +1721,9 @@ export default function RecepcionDashboardPage() {
     );
     const estLower = dictamen.estadoActual.toLowerCase();
 
-    let statusText = `${dictamen.header}\n${dictamen.body}`;
+    let statusText = dictamen.body
+      ? `${dictamen.header}\n${dictamen.body}`
+      : dictamen.header;
     if (dictamen.detalleTexto) {
       statusText += `\n📝 *Detalle:* ${dictamen.detalleTexto}`;
     }
@@ -4651,7 +4652,9 @@ ${dictamen.accText}`;
                           ) : (
                             <div className="text-xs text-black space-y-1 bg-[#FFFDF9] p-2.5 rounded-lg border-2 border-black shadow-[2px_2px_0px_#000]">
                               <div className="font-heading font-extrabold text-black">{preview.headerPlain}</div>
-                              <p className="text-neutral-800 font-medium leading-snug text-[11px]">{preview.body}</p>
+                              {preview.body && (
+                                <p className="text-neutral-800 font-medium leading-snug text-[11px]">{preview.body}</p>
+                              )}
                               {preview.detalleTexto ? (
                                 <p className="text-neutral-900 font-mono pt-1 border-t-2 border-dashed border-black text-[11px] truncate" title={preview.detalleTexto}>
                                   <span className="font-bold">Detalle:</span> {preview.detalleTexto}
